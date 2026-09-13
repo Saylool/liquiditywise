@@ -191,7 +191,30 @@ An explanation that fails any of this is dropped. The figures were verified
 without it and stand on their own — the page shows the analysis and reports that
 no explanation is available.
 
-Model: **`gpt-5.6-terra`**, in one constant. The job is narrow, so a mid-tier
+**An explanation is reused when nothing it could legitimately say has changed.**
+The key follows from the no-figures rule: because the model cannot quote a price,
+a tick or a percentage, its prose does not depend on them — it refers to "the
+range shown above", and that reference stays true whatever the number beside it
+now says. So the key carries only what the prose is allowed to describe: the
+pool, the two ticks, whether price is inside them, whether either edge was
+truncated, which caveats apply, the horizon and multiplier, the language, the
+model, and a digest of the standing instruction (so editing the prompt discards
+everything written under the old wording). Keying on the figures instead would
+look safer and be useless — the price moves every block, so every visit would
+miss.
+
+Measured on the pool page: **9.3s on the first visit, 0.3s on the next**, one
+model call serving all of them. The figures are never cached; they are
+recomputed and rendered fresh every time, and only the prose about them is
+reused. Failures are not cached either — pinning a rate limit that has since
+cleared would be worse than repeating a call that costs nothing.
+
+Like every in-memory store here it is per-instance, so a platform running several
+copies calls the model once per copy. That costs a little more than a shared
+store and is wrong in no way: an entry is either valid or absent, never stale in
+one place and fresh in another.
+
+Model: **`gpt-5.6-terra`** by default, overridable with `OPENAI_MODEL`. The job is narrow, so a mid-tier
 model is the deliberate choice; what keeps it safe is the contract, not the tier.
 
 **`interpretationTransport.ts` is the only module that knows who the provider

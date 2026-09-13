@@ -7,6 +7,11 @@ import type { ResponseCreateParamsNonStreaming } from "openai/resources/response
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
 import { logDetail, logUnavailable } from "../observability/serverDiagnostics";
+import {
+  createInterpretationCache,
+  interpretationCacheKey,
+} from "./interpretationCache";
+import { BASE_INSTRUCTION } from "./prompts/base";
 import { type InterpretationModel, resolveInterpretationModel } from "./interpretationModel";
 import { interpretRange, type WrittenInterpretation } from "./interpretRange";
 import type { InterpretationOutcome } from "./rangeInterpretationAdapter";
@@ -36,6 +41,32 @@ const LABEL = "interpretation";
 export const interpretationModelInUse = (): InterpretationModel =>
   resolveInterpretationModel(process.env.OPENAI_MODEL);
 
+/**
+ * A bound on how old reused prose may be.
+ *
+ * Not a correctness requirement — the key already covers everything the
+ * sentences could depend on — but an upper limit on how long any one answer
+ * stays in circulation. An hour is long enough that a popular pool costs one
+ * call rather than one per visitor, and short enough that nothing lingers.
+ */
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+/** Ceiling on entries. A few hundred explanations is a few hundred kilobytes. */
+const CACHE_MAX_ENTRIES = 500;
+
+/*
+ * Module-level, so it lives as long as the process. Like every other in-memory
+ * store here it is per-instance: a platform running several copies keeps
+ * several caches and calls the model once per copy. That costs a little more
+ * than a shared store would and is wrong in no way — an entry is either valid
+ * or absent, never stale in one place and fresh in another.
+ */
+const cache = createInterpretationCache<WrittenInterpretation>({
+  ttlMs: CACHE_TTL_MS,
+  maxEntries: CACHE_MAX_ENTRIES,
+  now: () => Date.now(),
+});
+
 export type RangeInterpretationRequest = {
   readonly analysis: PoolRangeAnalysis;
   readonly warnings: readonly string[];
@@ -54,6 +85,17 @@ export const getRangeInterpretation = async (
 ): Promise<InterpretationOutcome<WrittenInterpretation>> => {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = interpretationModelInUse();
+
+  const key = interpretationCacheKey({
+    analysis: request.analysis,
+    warnings: request.warnings,
+    locale: request.locale,
+    model,
+    instruction: BASE_INSTRUCTION,
+  });
+
+  const cached = cache.get(key);
+  if (cached !== undefined) return { status: "success", data: cached };
 
   const outcome = await interpretRange({
     analysis: request.analysis,
@@ -74,6 +116,14 @@ export const getRangeInterpretation = async (
         params as unknown as ResponseCreateParamsNonStreaming,
       ),
   });
+
+  /*
+   * Only a usable answer is kept. Caching a failure would pin whatever went
+   * wrong in place for the next hour — a rate limit that has since cleared, or
+   * a key that has since been fixed — and the failures are cheap to repeat
+   * anyway: a missing key never reaches the network at all.
+   */
+  if (outcome.status === "success") cache.set(key, outcome.data);
 
   /*
    * Logged for its effect, and the narrower outcome returned unchanged. The
