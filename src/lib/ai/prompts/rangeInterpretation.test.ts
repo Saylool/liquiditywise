@@ -136,6 +136,20 @@ describe("buildRangeInterpretationPrompt", () => {
     expect(build().system).toContain("NEVER STATE A FIGURE");
   });
 
+  /*
+   * The page states a few lines above the explanation that this tool does not
+   * predict prices. A model that calls the band the "expected range" puts the
+   * page in contradiction with itself — and the schema cannot see tone, so the
+   * instruction has to carry it.
+   */
+  it("forbids framing the band as a forecast", () => {
+    const { system } = build();
+
+    expect(system).toContain("THE BAND MEASURES THE PAST");
+    expect(system).toContain("expected");
+    expect(system).toContain("does not predict prices");
+  });
+
   it("asks for the four parts the output schema requires", () => {
     const { user } = build();
 
