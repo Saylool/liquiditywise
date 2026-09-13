@@ -153,6 +153,45 @@ Two limits of that, stated rather than papered over:
   untouched. Running locally neither header exists and every request shares one
   bucket — the safe direction to fail.
 
+## The explanation
+
+`getRangeInterpretation` hands one finished analysis to a model and gets back four
+short paragraphs: what the range means, what happens if price leaves it, what the
+volatility figure is saying, and what the analysis does not cover.
+
+**The model produces no figures.** Every number a reader sees is rendered by the
+interface from verified data; the prose refers to them — "the range shown above",
+"the volatility figure" — and the output schema rejects any digit that is not one
+of the protocol's own version names. This removes the most damaging failure
+available to a language model here (quoting a number that is subtly wrong, in a
+paragraph that reads as authoritative) by removing the opportunity rather than by
+checking for it afterwards.
+
+**The contract has nowhere to put advice.** No risk level, no confidence, no
+recommendation, no score. A field the model can fill is a field the model will
+fill. What the schema cannot enforce is tone, so that part is the prompt's job
+and is not claimed as a guarantee.
+
+The request is built from the analysis alone, rendered with the interface's own
+formatters in the reader's language. Nothing a stranger wrote reaches it: the only
+visitor input is a pool address, and it passed a strict hex pattern long before
+any read happened — so there is no opening for an injected instruction to arrive
+through the data.
+
+`output_config.format` asks the API for the right shape, and it is worth knowing
+what that does and does not buy. The generated JSON Schema carries
+`additionalProperties: false` and `required` as real constraints; the length
+bounds and the literal method label survive only as *descriptions* the model
+reads. They are hints there and rules here, which is why the response is parsed
+through the schema rather than trusted.
+
+An explanation that fails any of this is dropped. The figures were verified
+without it and stand on their own — the page shows the analysis and reports that
+no explanation is available.
+
+Model: **Claude Sonnet 5**, in one constant. The job is narrow, so a mid-tier
+model is the deliberate choice; what keeps it safe is the contract, not the tier.
+
 ## Language and theme
 
 The interface is published in **English and Turkish**, and renders in the
@@ -269,6 +308,7 @@ user input
 | `src/lib/ratelimit`   | Fixed-window request counter and the client key it counts against. Pure; the clock is injected. |
 | `src/lib/i18n`        | Published languages, how one is negotiated, and every interface string in each. |
 | `src/lib/theme`       | The three theme choices, the store behind the toggle, and the script that applies one before paint. |
+| `src/lib/ai`          | The prompt layer, the one model call, and the check the answer has to pass. |
 | `src/lib/ai`          | OpenAI client wiring and response handling.                                 |
 | `src/lib/ai/prompts`  | One module per feature, composed on top of a shared base instruction module. |
 | `src/schemas`         | The normalized domain contracts: Zod schemas plus the types inferred from them. |
@@ -323,6 +363,12 @@ The v3 market-data readers need all three of:
 | `THE_GRAPH_API_KEY` | Sent only as an `Authorization: Bearer` header, never in a URL or body. |
 | `UNISWAP_V3_ETHEREUM_SUBGRAPH_ID` | The stable **Subgraph ID** from The Graph Explorer — not a deployment/IPFS id. The gateway resolves it to the latest sufficiently synced deployment. |
 | `ETHEREUM_RPC_URL` | Mainnet JSON-RPC endpoint for read-only `eth_call`. **Treat the whole URL as a secret** — most providers embed the key in the path. |
+
+One more is optional:
+
+| Variable | Purpose |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Writes the plain-language explanation of an already-computed analysis. With it absent every figure is still computed and shown; only the prose is missing. |
 
 Reads are read-only throughout: the RPC path issues `eth_call` and nothing else.
 There is no signing, no account access, and no transaction capability anywhere in
