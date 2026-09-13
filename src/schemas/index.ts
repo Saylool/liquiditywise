@@ -11,3 +11,4 @@ export * from "./dataResult";
 export * from "./analytics";
 export * from "./priceBand";
 export * from "./tickRange";
+export * from "./interpretation";

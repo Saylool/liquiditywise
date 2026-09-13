@@ -30,6 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# local editor/tooling config, not project code
+.claude/
+
 # env files
 .env*
 # ...except the placeholder-only template, which must be committed.
