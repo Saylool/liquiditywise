@@ -1,6 +1,7 @@
 import "server-only";
 
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import type { ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
 
 import type { DataResult, RangeInterpretation } from "../../schemas";
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
@@ -12,7 +13,7 @@ import { interpretRange } from "./interpretRange";
  * The server-only boundary for the explanation.
  *
  * `import "server-only"` makes importing this from a Client Component a build
- * error, which is what keeps `ANTHROPIC_API_KEY` out of a browser bundle. It is
+ * error, which is what keeps `OPENAI_API_KEY` out of a browser bundle. It is
  * deliberately absent from every barrel file, like the other credential paths.
  *
  * It holds no logic — only the two impure things the pure layer cannot own:
@@ -38,7 +39,7 @@ export type RangeInterpretationRequest = {
 export const getRangeInterpretation = async (
   request: RangeInterpretationRequest,
 ): Promise<DataResult<RangeInterpretation>> => {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
 
   return logUnavailable(
     LABEL,
@@ -48,11 +49,14 @@ export const getRangeInterpretation = async (
       locale: request.locale,
       apiKey,
       /*
-       * Constructed inside the call so the key is read per request. The client
-       * is only reached when a key exists — the transport checks that first, and
-       * this function is never invoked without one having been supplied.
+       * The single point where this application's narrowed request meets the
+       * SDK's own parameter type. The cast lives here, at the boundary, rather
+       * than loosening the type every module above it works with.
        */
-      createMessage: (params) => new Anthropic({ apiKey }).messages.create(params),
+      createResponse: (params) =>
+        new OpenAI({ apiKey }).responses.create(
+          params as unknown as ResponseCreateParamsNonStreaming,
+        ),
     }),
   );
 };

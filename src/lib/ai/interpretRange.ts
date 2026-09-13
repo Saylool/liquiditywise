@@ -3,7 +3,7 @@ import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
 import { normalizeRangeInterpretation } from "./rangeInterpretationAdapter";
 import { buildRangeInterpretationPrompt } from "./prompts/rangeInterpretation";
-import { type MessageCreator, requestInterpretation } from "./interpretationTransport";
+import { type ResponseCreator, requestInterpretation } from "./interpretationTransport";
 
 /*
  * Prompt, call, verify — the whole path from a finished analysis to a checked
@@ -20,7 +20,7 @@ export type InterpretRangeInput = {
   readonly warnings: readonly string[];
   readonly locale: Locale;
   readonly apiKey: string | undefined;
-  readonly createMessage: MessageCreator;
+  readonly createResponse: ResponseCreator;
 };
 
 export const interpretRange = async (
@@ -35,7 +35,7 @@ export const interpretRange = async (
   const response = await requestInterpretation({
     prompt,
     apiKey: input.apiKey,
-    createMessage: input.createMessage,
+    createResponse: input.createResponse,
   });
 
   if (!response.ok) {

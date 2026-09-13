@@ -178,19 +178,28 @@ visitor input is a pool address, and it passed a strict hex pattern long before
 any read happened — so there is no opening for an injected instruction to arrive
 through the data.
 
-`output_config.format` asks the API for the right shape, and it is worth knowing
-what that does and does not buy. The generated JSON Schema carries
-`additionalProperties: false` and `required` as real constraints; the length
-bounds and the literal method label survive only as *descriptions* the model
-reads. They are hints there and rules here, which is why the response is parsed
-through the schema rather than trusted.
+**The provider is sent the shape, never the rules.** Two schemas describe the
+interpretation: the real one, which carries the bounds, the fixed label and the
+refusal of any digit, and a wire schema with none of that — just the field names
+and that nothing else may appear. Providers differ in which JSON Schema keywords
+they accept under a strict output format, and one they reject fails the entire
+request; sending the rules would also buy nothing, since an answer is re-checked
+on arrival either way. A compile-time test fails the build if the two schemas
+ever name different fields.
 
 An explanation that fails any of this is dropped. The figures were verified
 without it and stand on their own — the page shows the analysis and reports that
 no explanation is available.
 
-Model: **Claude Sonnet 5**, in one constant. The job is narrow, so a mid-tier
+Model: **`gpt-5.6-terra`**, in one constant. The job is narrow, so a mid-tier
 model is the deliberate choice; what keeps it safe is the contract, not the tier.
+
+**`interpretationTransport.ts` is the only module that knows who the provider
+is.** The contract, the prompt, the check on the way back and the composition
+above them are provider-neutral, and the transport translates the provider's own
+vocabulary — an incomplete response, a refusal block — into the two words the
+verifier understands. Changing supplier is a change to that one file and the
+dependency it imports.
 
 ## Language and theme
 
@@ -368,7 +377,7 @@ One more is optional:
 
 | Variable | Purpose |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Writes the plain-language explanation of an already-computed analysis. With it absent every figure is still computed and shown; only the prose is missing. |
+| `OPENAI_API_KEY` | Writes the plain-language explanation of an already-computed analysis. With it absent every figure is still computed and shown; only the prose is missing. |
 
 Reads are read-only throughout: the RPC path issues `eth_call` and nothing else.
 There is no signing, no account access, and no transaction capability anywhere in

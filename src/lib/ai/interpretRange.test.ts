@@ -13,7 +13,7 @@ import {
   type PoolRangeAnalysis,
 } from "../advisor/poolRangeAnalysis";
 import { interpretRange } from "./interpretRange";
-import type { MessageCreator } from "./interpretationTransport";
+import type { ResponseCreator } from "./interpretationTransport";
 
 const POOL_REF = { protocolVersion: "v3", chainId: 1, id: `0x${"c".repeat(40)}` } as const;
 const FETCHED_AT = "2026-08-21T09:15:00.000Z";
@@ -93,28 +93,31 @@ const interpretation = {
 
 const answering = (text: string) => {
   const seen: { system?: string | undefined; user?: string | undefined } = {};
-  const createMessage: MessageCreator = async (params) => {
-    seen.system = typeof params.system === "string" ? params.system : undefined;
-    seen.user = typeof params.messages[0]?.content === "string" ? params.messages[0].content : "";
-    return { stop_reason: "end_turn", content: [{ type: "text", text }] };
+  const createResponse: ResponseCreator = async (params) => {
+    seen.system = params.input.find((entry) => entry.role === "system")?.content;
+    seen.user = params.input.find((entry) => entry.role === "user")?.content;
+    return { output_text: text };
   };
-  return { seen, createMessage };
+  return { seen, createResponse };
 };
 
-const run = (createMessage: MessageCreator, overrides: Partial<Parameters<typeof interpretRange>[0]> = {}) =>
+const run = (
+  createResponse: ResponseCreator,
+  overrides: Partial<Parameters<typeof interpretRange>[0]> = {},
+) =>
   interpretRange({
     analysis,
     warnings: [],
     locale: "en",
     apiKey: "sk-test",
-    createMessage,
+    createResponse,
     ...overrides,
   });
 
 describe("interpretRange", () => {
   it("turns a finished analysis into a verified explanation", async () => {
-    const { createMessage } = answering(JSON.stringify(interpretation));
-    const result = await run(createMessage);
+    const { createResponse } = answering(JSON.stringify(interpretation));
+    const result = await run(createResponse);
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
@@ -122,8 +125,8 @@ describe("interpretRange", () => {
   });
 
   it("sends the model both halves of the prompt built from that analysis", async () => {
-    const { seen, createMessage } = answering(JSON.stringify(interpretation));
-    await run(createMessage);
+    const { seen, createResponse } = answering(JSON.stringify(interpretation));
+    await run(createResponse);
 
     expect(seen.system).toContain("NEVER STATE A FIGURE");
     expect(seen.user).toContain("USDC / WETH");
@@ -131,22 +134,22 @@ describe("interpretRange", () => {
   });
 
   it("writes in the reader's language", async () => {
-    const { seen, createMessage } = answering(JSON.stringify(interpretation));
-    await run(createMessage, { locale: "tr" });
+    const { seen, createResponse } = answering(JSON.stringify(interpretation));
+    await run(createResponse, { locale: "tr" });
 
     expect(seen.user).toContain("Write in Turkish.");
     expect(seen.user).toContain("%0,30");
   });
 
   it("tells the model about the caveats attached to the analysis", async () => {
-    const { seen, createMessage } = answering(JSON.stringify(interpretation));
-    await run(createMessage, { warnings: ["Some days had no price."] });
+    const { seen, createResponse } = answering(JSON.stringify(interpretation));
+    await run(createResponse, { warnings: ["Some days had no price."] });
 
     expect(seen.user).toContain("- Some days had no price.");
   });
 
   it("passes a transport failure through with its own category", async () => {
-    const refusing: MessageCreator = async () => {
+    const refusing: ResponseCreator = async () => {
       throw Object.assign(new Error("rate limited"), { status: 429 });
     };
 
@@ -160,7 +163,7 @@ describe("interpretRange", () => {
   it("drops an explanation that fails its contract, and keeps the figures", async () => {
     // The analysis is verified with or without prose. An explanation that broke
     // the rules is discarded rather than shown with a caveat.
-    const { createMessage } = answering(
+    const { createResponse } = answering(
       JSON.stringify({
         ...interpretation,
         whatThisRangeMeans:
@@ -168,7 +171,7 @@ describe("interpretRange", () => {
       }),
     );
 
-    const result = await run(createMessage);
+    const result = await run(createResponse);
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
@@ -177,9 +180,9 @@ describe("interpretRange", () => {
 
   it("never reaches the model without a key", async () => {
     let called = 0;
-    const counting: MessageCreator = async () => {
+    const counting: ResponseCreator = async () => {
       called += 1;
-      return { stop_reason: "end_turn", content: [] };
+      return { output_text: "" };
     };
 
     const result = await run(counting, { apiKey: undefined });

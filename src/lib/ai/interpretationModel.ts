@@ -8,8 +8,14 @@
  * nowhere to put a recommendation.
  */
 
-/** Claude Sonnet 5: the price/performance middle of the current range. */
-export const INTERPRETATION_MODEL = "claude-sonnet-5";
+/**
+ * `gpt-5.6-terra`: the price/performance middle of the current range, at $2 per
+ * million input tokens and $12 per million output. Measured against this
+ * application's own prompt that is roughly a cent an analysis, and output
+ * tokens are most of it — which is why the lever that matters is reusing an
+ * answer for figures that have not changed, not shortening the prompt.
+ */
+export const INTERPRETATION_MODEL = "gpt-5.6-terra";
 
 /**
  * Four sections capped at 700 characters each is well under a thousand tokens.

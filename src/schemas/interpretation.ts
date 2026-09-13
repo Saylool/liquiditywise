@@ -69,3 +69,28 @@ export const RangeInterpretationSchema = z.strictObject({
 });
 
 export type RangeInterpretation = z.infer<typeof RangeInterpretationSchema>;
+
+/**
+ * The same shape, with every rule stripped out — this is what the provider is
+ * told to produce.
+ *
+ * Providers differ in which JSON Schema keywords they accept under a strict
+ * output format, and a keyword one of them rejects fails the whole request. So
+ * the wire schema carries only what every provider agrees on: the field names,
+ * their types, and that nothing else may appear. The bounds and the fixed label
+ * are checked here on the way back, where they are enforced rather than merely
+ * requested.
+ *
+ * Sending the rules as well would buy nothing — a constraint the provider
+ * enforces is still re-checked on arrival, because the day a provider quietly
+ * stops enforcing it is not a day this application would notice.
+ *
+ * `interpretation.type-test.ts` fails the build if the two drift apart.
+ */
+export const RangeInterpretationWireSchema = z.strictObject({
+  method: z.string(),
+  whatThisRangeMeans: z.string(),
+  ifPriceLeavesTheRange: z.string(),
+  whatTheVolatilitySays: z.string(),
+  whatThisDoesNotCover: z.string(),
+});

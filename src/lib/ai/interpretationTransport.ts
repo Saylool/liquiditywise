@@ -1,7 +1,6 @@
-import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/messages";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { zodTextFormat } from "openai/helpers/zod";
 
-import { type DataFailureReason, RangeInterpretationSchema } from "../../schemas";
+import { type DataFailureReason, RangeInterpretationWireSchema } from "../../schemas";
 import type { RangeInterpretationPrompt } from "./prompts/rangeInterpretation";
 import { INTERPRETATION_MAX_TOKENS, INTERPRETATION_MODEL } from "./interpretationModel";
 
@@ -13,12 +12,15 @@ import { INTERPRETATION_MAX_TOKENS, INTERPRETATION_MODEL } from "./interpretatio
  * reachable from a test without a key, a network or a bill. The server-only
  * wrapper supplies the real one.
  *
- * `output_config.format` asks the API for the right shape. It is worth knowing
- * what that does and does not buy: the generated JSON Schema carries
- * `additionalProperties: false` and `required` as real constraints, but the
- * length bounds and the literal method label survive only as *descriptions* the
- * model reads. They are hints there and rules on our side — which is why the
- * response is still parsed through the schema rather than trusted.
+ * This is the only module in the project that knows which provider writes the
+ * explanations. The contract, the prompt, the check on the way back and the
+ * composition above them are all provider-neutral, so changing supplier is a
+ * change to this file and the dependency it imports.
+ *
+ * It translates the provider's own vocabulary — an incomplete response, a
+ * refusal content block — into the two words the verifier downstream
+ * understands. That keeps the verifier, which is where the rules actually live,
+ * from having to learn a provider's shapes.
  */
 
 const NOT_CONFIGURED =
@@ -32,22 +34,40 @@ const UNREACHABLE =
 const UNUSABLE_REQUEST =
   "The explanation service refused this request, so no explanation is shown.";
 
-/** The part of a response this module reads. The SDK's `Message` satisfies it. */
-export type InterpretationMessage = {
-  readonly stop_reason: string | null;
-  readonly content: readonly { readonly type: string; readonly text?: string }[];
+/** A content block inside one output item. */
+type OutputContent = { readonly type: string };
+
+/** One item of the response's output list. */
+type OutputItem = { readonly type: string; readonly content?: readonly OutputContent[] };
+
+/**
+ * The part of a response this module reads. Every field is optional, so a real
+ * SDK response satisfies it and a test can build one in a line.
+ */
+export type InterpretationResponse = {
+  readonly output_text?: string | null;
+  readonly incomplete_details?: { readonly reason?: string | null } | null;
+  readonly output?: readonly OutputItem[];
+};
+
+/** The request this module sends. Narrower than the SDK's own parameter type. */
+export type InterpretationRequestParams = {
+  readonly model: string;
+  readonly max_output_tokens: number;
+  readonly input: readonly { readonly role: "system" | "user"; readonly content: string }[];
+  readonly text: { readonly format: unknown };
 };
 
 /**
  * The subset of the SDK this module uses — one call, narrowed so a test can
  * supply a plain function rather than a whole client.
  */
-export type MessageCreator = (
-  params: MessageCreateParamsNonStreaming,
-) => Promise<InterpretationMessage>;
+export type ResponseCreator = (
+  params: InterpretationRequestParams,
+) => Promise<InterpretationResponse>;
 
 export type InterpretationTransportResult =
-  | { readonly ok: true; readonly stopReason: string | null; readonly text: string | null }
+  | { readonly ok: true; readonly stopReason: string; readonly text: string | null }
   | { readonly ok: false; readonly reason: DataFailureReason; readonly message: string };
 
 const failure = (
@@ -74,8 +94,7 @@ const statusOf = (error: unknown): number | undefined => {
  * A throw without a status never reached the service — no connection, or the
  * request timed out waiting. Both are reported as unreachable: the SDK
  * distinguishes them by class, but the distinction changes nothing a reader or
- * an operator would do differently, and the server log records the error's name
- * separately.
+ * an operator would do differently.
  */
 const classifyThrown = (error: unknown): InterpretationTransportResult => {
   const status = statusOf(error);
@@ -90,19 +109,33 @@ const classifyThrown = (error: unknown): InterpretationTransportResult => {
   return failure("invalid-response", UNUSABLE_REQUEST);
 };
 
-/** The text the model wrote, joined across blocks, or `null` when it wrote none. */
-const textOf = (message: InterpretationMessage): string | null => {
-  const parts = message.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text ?? "");
+/**
+ * Translates however this provider says it stopped into the two cases the
+ * verifier downstream treats differently.
+ *
+ * A refusal can arrive two ways — as a refusal block among the output, or as an
+ * incomplete response the safety filter ended — and both mean the same thing to
+ * a reader.
+ */
+const stopReasonOf = (response: InterpretationResponse): string => {
+  const refused = (response.output ?? []).some(
+    (item) =>
+      item.type === "refusal" ||
+      (item.content ?? []).some((content) => content.type === "refusal"),
+  );
+  if (refused) return "refusal";
 
-  return parts.length === 0 ? null : parts.join("");
+  const reason = response.incomplete_details?.reason;
+  if (reason === "max_output_tokens") return "max_tokens";
+  if (reason === "content_filter") return "refusal";
+
+  return "end_turn";
 };
 
 export type InterpretationRequest = {
   readonly prompt: RangeInterpretationPrompt;
   readonly apiKey: string | undefined;
-  readonly createMessage: MessageCreator;
+  readonly createResponse: ResponseCreator;
 };
 
 export const requestInterpretation = async (
@@ -117,15 +150,27 @@ export const requestInterpretation = async (
   }
 
   try {
-    const message = await request.createMessage({
+    const response = await request.createResponse({
       model: INTERPRETATION_MODEL,
-      max_tokens: INTERPRETATION_MAX_TOKENS,
-      system: request.prompt.system,
-      messages: [{ role: "user", content: request.prompt.user }],
-      output_config: { format: zodOutputFormat(RangeInterpretationSchema) },
+      max_output_tokens: INTERPRETATION_MAX_TOKENS,
+      input: [
+        { role: "system", content: request.prompt.system },
+        { role: "user", content: request.prompt.user },
+      ],
+      /*
+       * Shape only. The rules live in `RangeInterpretationSchema` and are
+       * applied to the answer, not requested of the provider.
+       */
+      text: { format: zodTextFormat(RangeInterpretationWireSchema, "range_interpretation") },
     });
 
-    return { ok: true, stopReason: message.stop_reason, text: textOf(message) };
+    const text = response.output_text ?? null;
+
+    return {
+      ok: true,
+      stopReason: stopReasonOf(response),
+      text: text === null || text.length === 0 ? null : text,
+    };
   } catch (error) {
     return classifyThrown(error);
   }
