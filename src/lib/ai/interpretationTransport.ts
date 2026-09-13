@@ -2,7 +2,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 
 import { type DataFailureReason, RangeInterpretationWireSchema } from "../../schemas";
 import type { RangeInterpretationPrompt } from "./prompts/rangeInterpretation";
-import { INTERPRETATION_MAX_TOKENS, INTERPRETATION_MODEL } from "./interpretationModel";
+import { INTERPRETATION_MAX_TOKENS, type InterpretationModel } from "./interpretationModel";
 
 /*
  * The one call to the model, and the mapping from everything that can go wrong
@@ -25,8 +25,12 @@ import { INTERPRETATION_MAX_TOKENS, INTERPRETATION_MODEL } from "./interpretatio
 
 const NOT_CONFIGURED =
   "This application is not configured to write explanations, so none is shown.";
-const REJECTED_CREDENTIALS =
-  "The explanation service rejected the configured credentials, so no explanation is shown.";
+const REJECTED_KEY =
+  "The explanation service did not accept the configured key, so no explanation is shown.";
+const NOT_PERMITTED =
+  "The configured key is not permitted to use the selected model, so no explanation is shown.";
+const UNKNOWN_MODEL =
+  "The selected model is not available to the configured key, so no explanation is shown.";
 const RATE_LIMITED =
   "The explanation service is rate limited right now, so no explanation is shown.";
 const UNREACHABLE =
@@ -45,6 +49,7 @@ type OutputItem = { readonly type: string; readonly content?: readonly OutputCon
  * SDK response satisfies it and a test can build one in a line.
  */
 export type InterpretationResponse = {
+  readonly model?: string | null;
   readonly output_text?: string | null;
   readonly incomplete_details?: { readonly reason?: string | null } | null;
   readonly output?: readonly OutputItem[];
@@ -67,7 +72,17 @@ export type ResponseCreator = (
 ) => Promise<InterpretationResponse>;
 
 export type InterpretationTransportResult =
-  | { readonly ok: true; readonly stopReason: string; readonly text: string | null }
+  | {
+      readonly ok: true;
+      readonly stopReason: string;
+      readonly text: string | null;
+      /**
+       * The model the provider says answered, which is not always the one that
+       * was asked for — an alias can resolve to a dated build. Reported rather
+       * than assumed, so the page credits what actually ran.
+       */
+      readonly model: string | null;
+    }
   | { readonly ok: false; readonly reason: DataFailureReason; readonly message: string };
 
 const failure = (
@@ -100,9 +115,16 @@ const classifyThrown = (error: unknown): InterpretationTransportResult => {
   const status = statusOf(error);
   if (status === undefined) return failure("network-error", UNREACHABLE);
 
-  if (status === 401 || status === 403) {
-    return failure("configuration-error", REJECTED_CREDENTIALS);
-  }
+  /*
+   * Split rather than collapsed into one "credentials" message, because the
+   * three mean different things to whoever has to fix them: a key that is
+   * wrong, a key that is right but not allowed this model, and a model name the
+   * key cannot see. The status alone distinguishes them, so none of the
+   * provider's own text has to be repeated to say which.
+   */
+  if (status === 401) return failure("configuration-error", REJECTED_KEY);
+  if (status === 403) return failure("configuration-error", NOT_PERMITTED);
+  if (status === 404) return failure("configuration-error", UNKNOWN_MODEL);
   if (status === 429) return failure("rate-limited", RATE_LIMITED);
   if (status >= 500) return failure("network-error", UNREACHABLE);
 
@@ -135,6 +157,8 @@ const stopReasonOf = (response: InterpretationResponse): string => {
 export type InterpretationRequest = {
   readonly prompt: RangeInterpretationPrompt;
   readonly apiKey: string | undefined;
+  /** Resolved by the caller, so this module never reads the environment. */
+  readonly model: InterpretationModel;
   readonly createResponse: ResponseCreator;
 };
 
@@ -151,7 +175,7 @@ export const requestInterpretation = async (
 
   try {
     const response = await request.createResponse({
-      model: INTERPRETATION_MODEL,
+      model: request.model,
       max_output_tokens: INTERPRETATION_MAX_TOKENS,
       input: [
         { role: "system", content: request.prompt.system },
@@ -170,6 +194,7 @@ export const requestInterpretation = async (
       ok: true,
       stopReason: stopReasonOf(response),
       text: text === null || text.length === 0 ? null : text,
+      model: response.model ?? null,
     };
   } catch (error) {
     return classifyThrown(error);

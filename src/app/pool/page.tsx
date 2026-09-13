@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
+import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { PreferenceBar } from "@/components/PreferenceBar";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
@@ -9,6 +11,7 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { EvmAddressSchema } from "@/schemas/primitives";
+import { PoolExplanationSection } from "./PoolExplanationSection";
 
 /*
  * The first surface that runs the whole pipeline against live data.
@@ -123,6 +126,21 @@ export default async function PoolRangePage({
     <Shell locale={locale} t={t}>
       <AddressForm t={t} value={parsed.data} />
       <PoolRangeReport result={result} poolAddress={parsed.data} t={t} locale={locale} />
+      {result.status === "unavailable" ? null : (
+        /*
+         * Never awaited by this component, so the figures above are sent as soon
+         * as they exist and the explanation streams in behind them. There is
+         * nothing to explain when the analysis itself produced nothing.
+         */
+        <Suspense fallback={<PoolExplanationPending t={t} />}>
+          <PoolExplanationSection
+            analysis={result.data}
+            warnings={result.status === "partial" ? result.warnings : []}
+            locale={locale}
+            t={t}
+          />
+        </Suspense>
+      )}
     </Shell>
   );
 }

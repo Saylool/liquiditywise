@@ -1,7 +1,8 @@
 import {
-  type DataResult,
+  type DataFailureReason,
+  INTERPRETATION_METHOD,
   type RangeInterpretation,
-  RangeInterpretationSchema,
+  RangeInterpretationSectionsSchema,
 } from "../../schemas";
 
 /*
@@ -12,6 +13,23 @@ import {
  * client, no network, no SDK — which is what makes every failure path below
  * testable with a string.
  *
+/**
+ * Either a verified explanation or a reason there is none.
+ *
+ * Narrower than `DataResult` on purpose: that type has a `partial` state for a
+ * source that supplied some fields and not others, and an explanation has no
+ * such middle. Half of one is not one, and a shape that could express it would
+ * invite somebody to render it.
+ */
+export type InterpretationOutcome<T> =
+  | { readonly status: "success"; readonly data: T }
+  | {
+      readonly status: "unavailable";
+      readonly reason: DataFailureReason;
+      readonly message: string;
+    };
+
+/*
  * The schema is the authority here exactly as it is everywhere else in this
  * project. The API is asked to produce the right *shape*, but the rules that
  * matter — no figures, four sections, nothing extra — are checked on this side,
@@ -25,11 +43,27 @@ const TRUNCATED =
 const MALFORMED =
   "The explanation came back in a form this application cannot verify, so it is not shown.";
 
-const unavailable = (message: string): DataResult<RangeInterpretation> => ({
+const unavailable = (message: string): InterpretationOutcome<RangeInterpretation> => ({
   status: "unavailable",
   reason: "invalid-response",
   message,
 });
+
+/**
+ * Told which rule an answer broke, so an operator is not left guessing.
+ *
+ * Given field names and rule codes only. The reader's message is the same
+ * sentence whichever rule failed — that is deliberate, since none of the
+ * distinctions matter to them — but "could not be verified" is not a useful
+ * thing to find in a log.
+ */
+export type InterpretationDiagnostic = (detail: string) => void;
+
+/** Names what failed without repeating a word the model wrote. */
+const describeIssues = (issues: readonly { path: PropertyKey[]; code: string }[]): string =>
+  issues
+    .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.code}`)
+    .join(", ");
 
 export type RawInterpretationResponse = {
   /** Why the model stopped. `refusal` and `max_tokens` both mean no usable answer. */
@@ -40,7 +74,8 @@ export type RawInterpretationResponse = {
 
 export const normalizeRangeInterpretation = (
   response: RawInterpretationResponse,
-): DataResult<RangeInterpretation> => {
+  onDiagnostic?: InterpretationDiagnostic,
+): InterpretationOutcome<RangeInterpretation> => {
   /*
    * Checked before the text, because a refusal still carries text — an
    * explanation of the refusal — and parsing that as an interpretation would
@@ -67,11 +102,20 @@ export const normalizeRangeInterpretation = (
   } catch {
     // The error carries the model's own text; reporting it would put
     // unvalidated model output in front of a reader.
+    onDiagnostic?.("body was not JSON");
     return unavailable(MALFORMED);
   }
 
-  const interpretation = RangeInterpretationSchema.safeParse(payload);
-  if (!interpretation.success) return unavailable(MALFORMED);
+  const sections = RangeInterpretationSectionsSchema.safeParse(payload);
+  if (!sections.success) {
+    onDiagnostic?.(describeIssues(sections.error.issues));
+    return unavailable(MALFORMED);
+  }
 
-  return { status: "success", data: interpretation.data };
+  /*
+   * The label is attached here rather than asked of the model. It states which
+   * kind of analysis the prose explains, which is this application's claim about
+   * its own pipeline — not something a model could know.
+   */
+  return { status: "success", data: { ...sections.data, method: INTERPRETATION_METHOD } };
 };

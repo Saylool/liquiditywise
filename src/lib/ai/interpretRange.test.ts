@@ -13,6 +13,7 @@ import {
   type PoolRangeAnalysis,
 } from "../advisor/poolRangeAnalysis";
 import { interpretRange } from "./interpretRange";
+import { DEFAULT_INTERPRETATION_MODEL } from "./interpretationModel";
 import type { ResponseCreator } from "./interpretationTransport";
 
 const POOL_REF = { protocolVersion: "v3", chainId: 1, id: `0x${"c".repeat(40)}` } as const;
@@ -79,8 +80,8 @@ const analysis = ((): PoolRangeAnalysis => {
   return result.data;
 })();
 
-const interpretation = {
-  method: INTERPRETATION_METHOD,
+/** What the model returns: four sections. The label is attached afterwards. */
+const sections = {
   whatThisRangeMeans:
     "The suggested range covers the prices shown above, sitting either side of where the pool trades right now. While price stays inside it, the position is the one earning fees here.",
   ifPriceLeavesTheRange:
@@ -110,22 +111,51 @@ const run = (
     warnings: [],
     locale: "en",
     apiKey: "sk-test",
+    model: DEFAULT_INTERPRETATION_MODEL,
     createResponse,
     ...overrides,
   });
 
 describe("interpretRange", () => {
   it("turns a finished analysis into a verified explanation", async () => {
-    const { createResponse } = answering(JSON.stringify(interpretation));
+    const { createResponse } = answering(JSON.stringify(sections));
     const result = await run(createResponse);
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
-    expect(result.data.method).toBe(INTERPRETATION_METHOD);
+    expect(result.data.interpretation.method).toBe(INTERPRETATION_METHOD);
+  });
+
+  /*
+   * Credited from what the provider said answered, not from what was asked for:
+   * an alias can resolve to a dated build, and a page naming the request rather
+   * than the response would be stating something it never confirmed.
+   */
+  it("reports the model the provider says wrote it", async () => {
+    const createResponse: ResponseCreator = async () => ({
+      model: "gpt-5.6-terra-2026-08-01",
+      output_text: JSON.stringify(sections),
+    });
+
+    const result = await run(createResponse);
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.model).toBe("gpt-5.6-terra-2026-08-01");
+  });
+
+  it("falls back to the model it asked for when the provider names none", async () => {
+    const { createResponse } = answering(JSON.stringify(sections));
+
+    const result = await run(createResponse);
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.model).toBe(DEFAULT_INTERPRETATION_MODEL);
   });
 
   it("sends the model both halves of the prompt built from that analysis", async () => {
-    const { seen, createResponse } = answering(JSON.stringify(interpretation));
+    const { seen, createResponse } = answering(JSON.stringify(sections));
     await run(createResponse);
 
     expect(seen.system).toContain("NEVER STATE A FIGURE");
@@ -134,7 +164,7 @@ describe("interpretRange", () => {
   });
 
   it("writes in the reader's language", async () => {
-    const { seen, createResponse } = answering(JSON.stringify(interpretation));
+    const { seen, createResponse } = answering(JSON.stringify(sections));
     await run(createResponse, { locale: "tr" });
 
     expect(seen.user).toContain("Write in Turkish.");
@@ -142,7 +172,7 @@ describe("interpretRange", () => {
   });
 
   it("tells the model about the caveats attached to the analysis", async () => {
-    const { seen, createResponse } = answering(JSON.stringify(interpretation));
+    const { seen, createResponse } = answering(JSON.stringify(sections));
     await run(createResponse, { warnings: ["Some days had no price."] });
 
     expect(seen.user).toContain("- Some days had no price.");
@@ -165,7 +195,7 @@ describe("interpretRange", () => {
     // the rules is discarded rather than shown with a caveat.
     const { createResponse } = answering(
       JSON.stringify({
-        ...interpretation,
+        ...sections,
         whatThisRangeMeans:
           "This range sits around 0.000333 WETH per USDC, which is where the pool trades today and why the bounds landed where they did on either side of it.",
       }),

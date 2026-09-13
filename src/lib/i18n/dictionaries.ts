@@ -207,6 +207,24 @@ const en = {
       "The band is symmetric in log space, which makes it deliberately asymmetric in percentage terms: a move down to half price and a move up to double price are the same distance in logs, and only one of them is “50%”. It assumes no expected return, describes how far price has moved historically, and is not a forecast. The multiplier is not a confidence level. Nothing here sizes a position or says how much of either token to deposit.",
   },
 
+  explanation: {
+    heading: "Explanation",
+    pending: "Writing the explanation…",
+    unavailable: "No explanation is available for this analysis.",
+    /*
+     * Names the author, and draws the line. Prose written by a model sitting
+     * under figures that were computed and cross-checked should say which is
+     * which, or a reader is entitled to assume the same hand produced both.
+     */
+    writtenBy: (model: string) => `Written by ${model}. The figures above were not.`,
+    sections: {
+      whatThisRangeMeans: "What this range means",
+      ifPriceLeavesTheRange: "If price leaves the range",
+      whatTheVolatilitySays: "What the volatility says",
+      whatThisDoesNotCover: "What this does not cover",
+    },
+  },
+
   rateLimited: {
     title: "Too many requests",
     body: (limit: number) =>
@@ -409,6 +427,20 @@ const tr: Dictionary = {
 
     epilogue:
       "Bant log uzayında simetriktir; bu da onu yüzde cinsinden bilerek asimetrik yapar: fiyatın yarıya inmesiyle iki katına çıkması logaritmik olarak aynı mesafedir ve bunlardan yalnızca biri “%50”'dir. Bant beklenen getiriyi sıfır varsayar, fiyatın geçmişte ne kadar hareket ettiğini anlatır ve bir tahmin değildir. Çarpan bir güven düzeyi değildir. Buradaki hiçbir şey pozisyon büyüklüğü belirlemez, hangi tokendan ne kadar yatırılacağını söylemez.",
+  },
+
+  explanation: {
+    heading: "Açıklama",
+    pending: "Açıklama yazılıyor…",
+    unavailable: "Bu analiz için açıklama yok.",
+    writtenBy: (model: string) =>
+      `${model} tarafından yazıldı. Yukarıdaki sayılar ona ait değil.`,
+    sections: {
+      whatThisRangeMeans: "Bu aralık ne demek",
+      ifPriceLeavesTheRange: "Fiyat aralığın dışına çıkarsa",
+      whatTheVolatilitySays: "Volatilite ne söylüyor",
+      whatThisDoesNotCover: "Bu analiz neyi kapsamıyor",
+    },
   },
 
   rateLimited: {

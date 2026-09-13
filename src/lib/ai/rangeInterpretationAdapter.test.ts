@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { INTERPRETATION_METHOD } from "../../schemas";
 import { normalizeRangeInterpretation } from "./rangeInterpretationAdapter";
 
-const interpretation = {
-  method: INTERPRETATION_METHOD,
+/** What the model is asked for: four sections and nothing else. */
+const sections = {
   whatThisRangeMeans:
     "The suggested range covers the prices shown above, sitting either side of where the pool trades right now. While price stays inside it, the position is the one earning fees here.",
   ifPriceLeavesTheRange:
@@ -20,11 +20,53 @@ const respond = (text: string | null, stopReason: string | null = "end_turn") =>
 
 describe("normalizeRangeInterpretation", () => {
   it("accepts an explanation that satisfies its contract", () => {
-    const result = respond(JSON.stringify(interpretation));
+    const result = respond(JSON.stringify(sections));
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
-    expect(result.data.whatThisRangeMeans).toBe(interpretation.whatThisRangeMeans);
+    expect(result.data.whatThisRangeMeans).toBe(sections.whatThisRangeMeans);
+  });
+
+  /*
+   * The label states which kind of analysis the prose explains — this
+   * application's claim about its own pipeline, not something a model could
+   * know. Asking for it meant handing over a magic string to copy, and every
+   * answer that copied it wrong was thrown away for a field nobody had
+   * explained.
+   */
+  it("labels the explanation itself, rather than asking the model to", () => {
+    const result = respond(JSON.stringify(sections));
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.method).toBe(INTERPRETATION_METHOD);
+  });
+
+  it("refuses an answer that tried to set the label", () => {
+    expect(respond(JSON.stringify({ ...sections, method: INTERPRETATION_METHOD })).status).toBe(
+      "unavailable",
+    );
+  });
+
+  it("says which rule an unusable answer broke, without repeating a word of it", () => {
+    const reported: string[] = [];
+    normalizeRangeInterpretation(
+      { stopReason: "end_turn", text: JSON.stringify({ ...sections, whatThisRangeMeans: "Yes." }) },
+      (detail) => reported.push(detail),
+    );
+
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toContain("whatThisRangeMeans");
+    expect(reported[0]).not.toContain("Yes.");
+  });
+
+  it("says so when the body was not JSON at all", () => {
+    const reported: string[] = [];
+    normalizeRangeInterpretation({ stopReason: "end_turn", text: "sorry!" }, (detail) =>
+      reported.push(detail),
+    );
+
+    expect(reported).toEqual(["body was not JSON"]);
   });
 
   /*
@@ -64,7 +106,7 @@ describe("normalizeRangeInterpretation", () => {
     // The rule the contract exists for, enforced here rather than trusted to
     // the API — the generated JSON Schema carries it only as a description.
     const withFigure = {
-      ...interpretation,
+      ...sections,
       whatTheVolatilitySays:
         "The annualised volatility of 70.5% is what widened this range, since a price that moves that much needs more room either side to keep earning.",
     };
@@ -73,13 +115,13 @@ describe("normalizeRangeInterpretation", () => {
   });
 
   it("refuses an explanation carrying a field the contract has no room for", () => {
-    const graded = { ...interpretation, riskLevel: "moderate" };
+    const graded = { ...sections, riskLevel: "moderate" };
 
     expect(respond(JSON.stringify(graded)).status).toBe("unavailable");
   });
 
   it("refuses an explanation missing a section", () => {
-    const partial: Record<string, unknown> = { ...interpretation };
+    const partial: Record<string, unknown> = { ...sections };
     delete partial["whatThisDoesNotCover"];
 
     expect(respond(JSON.stringify(partial)).status).toBe("unavailable");

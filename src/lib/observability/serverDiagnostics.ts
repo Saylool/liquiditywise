@@ -106,6 +106,23 @@ export const loggingFetch = (
 };
 
 /**
+ * Records why something a provider returned could not be used.
+ *
+ * Separate from {@link logUnavailable} because the category a reader is shown —
+ * "this could not be verified" — is deliberately the same whichever rule failed,
+ * and an operator needs to know which one. The caller is responsible for passing
+ * a detail that names structure rather than content: a field and a rule, never
+ * the text that broke them.
+ */
+export const logDetail = (
+  label: string,
+  detail: string,
+  log: DiagnosticLog = consoleLog,
+): void => {
+  log("error", `[${label}] ${detail}`);
+};
+
+/**
  * Records a read that produced nothing, and hands the result straight back so it
  * can wrap a call expression without restructuring it.
  *

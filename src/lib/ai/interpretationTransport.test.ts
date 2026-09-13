@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { INTERPRETATION_MAX_TOKENS, INTERPRETATION_MODEL } from "./interpretationModel";
+import { DEFAULT_INTERPRETATION_MODEL, INTERPRETATION_MAX_TOKENS } from "./interpretationModel";
 import {
   type InterpretationRequestParams,
   type InterpretationResponse,
@@ -29,7 +29,12 @@ const threw = (error: unknown) => {
 };
 
 const send = (createResponse: ResponseCreator) =>
-  requestInterpretation({ prompt, apiKey: "sk-test", createResponse });
+  requestInterpretation({
+    prompt,
+    apiKey: "sk-test",
+    model: DEFAULT_INTERPRETATION_MODEL,
+    createResponse,
+  });
 
 describe("requestInterpretation", () => {
   it("sends the model, the ceiling and both halves of the prompt", async () => {
@@ -38,7 +43,7 @@ describe("requestInterpretation", () => {
 
     expect(calls).toHaveLength(1);
     const [params] = calls;
-    expect(params?.model).toBe(INTERPRETATION_MODEL);
+    expect(params?.model).toBe(DEFAULT_INTERPRETATION_MODEL);
     expect(params?.max_output_tokens).toBe(INTERPRETATION_MAX_TOKENS);
     expect(params?.input).toEqual([
       { role: "system", content: prompt.system },
@@ -77,7 +82,21 @@ describe("requestInterpretation", () => {
       ok: true,
       stopReason: "end_turn",
       text: '{"ok":true}',
+      model: null,
     });
+  });
+
+  /*
+   * Reported, not assumed. An alias can resolve to a dated build, and the page
+   * credits whatever actually answered.
+   */
+  it("passes back which model the provider says answered", async () => {
+    const { createResponse } = answered({
+      model: "gpt-5.6-terra-2026-08-01",
+      output_text: "{}",
+    });
+
+    expect(await send(createResponse)).toMatchObject({ model: "gpt-5.6-terra-2026-08-01" });
   });
 
   it.each([
@@ -156,7 +175,12 @@ describe("requestInterpretation", () => {
      * tell an argument that was omitted from one passed as `undefined`, and
      * `undefined` is precisely the case under test.
      */
-    const result = await requestInterpretation({ prompt, apiKey, createResponse });
+    const result = await requestInterpretation({
+      prompt,
+      apiKey,
+      model: DEFAULT_INTERPRETATION_MODEL,
+      createResponse,
+    });
 
     expect(result).toMatchObject({ ok: false, reason: "configuration-error" });
     expect(calledCount()).toBe(0);

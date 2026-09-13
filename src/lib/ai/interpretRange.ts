@@ -1,8 +1,13 @@
-import type { DataResult, RangeInterpretation } from "../../schemas";
+import type { RangeInterpretation } from "../../schemas";
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
-import { normalizeRangeInterpretation } from "./rangeInterpretationAdapter";
+import {
+  type InterpretationDiagnostic,
+  type InterpretationOutcome,
+  normalizeRangeInterpretation,
+} from "./rangeInterpretationAdapter";
 import { buildRangeInterpretationPrompt } from "./prompts/rangeInterpretation";
+import type { InterpretationModel } from "./interpretationModel";
 import { type ResponseCreator, requestInterpretation } from "./interpretationTransport";
 
 /*
@@ -14,18 +19,35 @@ import { type ResponseCreator, requestInterpretation } from "./interpretationTra
  * that fails its contract is dropped, and the figures stand on their own.
  */
 
+/**
+ * A verified explanation and the model that actually wrote it.
+ *
+ * The model is reported by the provider rather than taken from the request: an
+ * alias can resolve to a dated build, and a page that credited the name it
+ * asked for would be stating something it never confirmed. When the provider
+ * names nothing, the requested model is used and is the closest thing to an
+ * answer available.
+ */
+export type WrittenInterpretation = {
+  readonly interpretation: RangeInterpretation;
+  readonly model: string;
+};
+
 export type InterpretRangeInput = {
   readonly analysis: PoolRangeAnalysis;
   /** The caveats the pipeline attached, so the explanation can account for them. */
   readonly warnings: readonly string[];
   readonly locale: Locale;
   readonly apiKey: string | undefined;
+  readonly model: InterpretationModel;
   readonly createResponse: ResponseCreator;
+  /** Told which rule an unusable answer broke. Optional; nothing depends on it. */
+  readonly onDiagnostic?: InterpretationDiagnostic | undefined;
 };
 
 export const interpretRange = async (
   input: InterpretRangeInput,
-): Promise<DataResult<RangeInterpretation>> => {
+): Promise<InterpretationOutcome<WrittenInterpretation>> => {
   const prompt = buildRangeInterpretationPrompt({
     analysis: input.analysis,
     locale: input.locale,
@@ -35,6 +57,7 @@ export const interpretRange = async (
   const response = await requestInterpretation({
     prompt,
     apiKey: input.apiKey,
+    model: input.model,
     createResponse: input.createResponse,
   });
 
@@ -42,8 +65,15 @@ export const interpretRange = async (
     return { status: "unavailable", reason: response.reason, message: response.message };
   }
 
-  return normalizeRangeInterpretation({
-    stopReason: response.stopReason,
-    text: response.text,
-  });
+  const verified = normalizeRangeInterpretation(
+    { stopReason: response.stopReason, text: response.text },
+    input.onDiagnostic,
+  );
+
+  if (verified.status === "unavailable") return verified;
+
+  return {
+    status: "success",
+    data: { interpretation: verified.data, model: response.model ?? input.model },
+  };
 };

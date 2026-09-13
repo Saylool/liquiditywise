@@ -55,9 +55,18 @@ const ProseSchema = z
       "The explanation must not state figures. Refer to the values shown alongside it instead.",
   });
 
-export const RangeInterpretationSchema = z.strictObject({
-  method: z.literal(INTERPRETATION_METHOD),
-
+/**
+ * What the model actually writes: four sections of prose and nothing else.
+ *
+ * `method` is deliberately absent. It labels which kind of analysis produced
+ * the text, which is this application's statement about its own pipeline, not
+ * something a model could know or should be asked to assert. Leaving it in the
+ * model's output meant either telling it a magic string to copy — inviting it
+ * to get that wrong in a way that discards an otherwise good answer — or, as
+ * happened, not telling it at all and rejecting every answer for a field nobody
+ * had explained.
+ */
+export const RangeInterpretationSectionsSchema = z.strictObject({
   /** What the suggested range covers, in ordinary language. */
   whatThisRangeMeans: ProseSchema,
   /** The mechanic a reader needs: what happens when price moves outside it. */
@@ -66,6 +75,13 @@ export const RangeInterpretationSchema = z.strictObject({
   whatTheVolatilitySays: ProseSchema,
   /** The limits — costs, risks and effects this analysis does not model at all. */
   whatThisDoesNotCover: ProseSchema,
+});
+
+export type RangeInterpretationSections = z.infer<typeof RangeInterpretationSectionsSchema>;
+
+/** The sections, labelled by this application with the model of analysis they explain. */
+export const RangeInterpretationSchema = RangeInterpretationSectionsSchema.extend({
+  method: z.literal(INTERPRETATION_METHOD),
 });
 
 export type RangeInterpretation = z.infer<typeof RangeInterpretationSchema>;
@@ -88,7 +104,6 @@ export type RangeInterpretation = z.infer<typeof RangeInterpretationSchema>;
  * `interpretation.type-test.ts` fails the build if the two drift apart.
  */
 export const RangeInterpretationWireSchema = z.strictObject({
-  method: z.string(),
   whatThisRangeMeans: z.string(),
   ifPriceLeavesTheRange: z.string(),
   whatTheVolatilitySays: z.string(),
