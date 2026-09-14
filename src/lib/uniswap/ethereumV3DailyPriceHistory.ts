@@ -62,10 +62,8 @@ export const V3_DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
   }
 }`;
 
-const INVALID_ADDRESS =
-  "The pool address must be 0x followed by 40 hexadecimal characters, and cannot be the zero address.";
-const NOT_CONFIGURED =
-  "Uniswap v3 market data is not configured on this server. Set THE_GRAPH_API_KEY and UNISWAP_V3_ETHEREUM_SUBGRAPH_ID.";
+const INVALID_ADDRESS = "invalid-pool-address";
+const NOT_CONFIGURED = "market-data-not-configured";
 
 /** Shared with the snapshot reader: no v3 pool is ever deployed at address zero. */
 const PoolAddressSchema = nonZeroEvmAddress(INVALID_ADDRESS);
@@ -99,13 +97,13 @@ export const fetchEthereumV3DailyPriceHistory = async (
 ): Promise<DataResult<PoolDailyPriceHistory>> => {
   const address = PoolAddressSchema.safeParse(request.poolAddress);
   if (!address.success) {
-    return { status: "unavailable", reason: "invalid-input", message: INVALID_ADDRESS };
+    return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
   }
 
   const apiKey = request.apiKey?.trim();
   const subgraphId = request.subgraphId?.trim();
   if (apiKey === undefined || apiKey === "" || subgraphId === undefined || subgraphId === "") {
-    return { status: "unavailable", reason: "configuration-error", message: NOT_CONFIGURED };
+    return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
   // Read before the request so the window reflects the day the query asked about.
@@ -128,7 +126,7 @@ export const fetchEthereumV3DailyPriceHistory = async (
   });
 
   if (!transport.ok) {
-    return { status: "unavailable", reason: transport.reason, message: transport.message };
+    return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
   /*

@@ -1,3 +1,4 @@
+import type { DataFailureNotice, DataWarningNotice } from "../../schemas";
 import {
   type AnalyticsResult,
   MAX_TICK_DISAGREEMENT,
@@ -21,31 +22,22 @@ import {
 
 export type V3TickRangeResult = AnalyticsResult<V3TickRange>;
 
-const INVALID_INPUT =
-  "The pool, price band and snapshot supplied for this range are not valid, or they do not all describe the same pool and the same observation.";
-const CURRENT_PRICE_UNREPRESENTABLE =
-  "This pool's current price lies outside the range Uniswap can express as a tick, so no position range can be built from it.";
-const TICK_DISAGREEMENT =
-  "The source's own tick for this pool does not match the tick its price implies for these token decimals, so no range is published.";
-const TOO_NARROW =
-  "The price band is narrower than one tick spacing on this pool, so it does not describe two distinct position boundaries.";
-const CALCULATION_ERROR =
-  "The tick range calculation produced a result this application cannot verify.";
+const INVALID_INPUT = "range-invalid-input";
+const CURRENT_PRICE_UNREPRESENTABLE = "range-price-unrepresentable";
+const TICK_DISAGREEMENT = "range-tick-disagreement";
+const TOO_NARROW = "range-too-narrow";
+const CALCULATION_ERROR = "range-unverifiable";
 
 /* Fixed warning text in a fixed order, so identical inputs warn identically. */
-const LOWER_TRUNCATED_WARNING =
-  "The lower edge stops at the lowest tick this pool accepts, so the range does not reach as far down as the band.";
-const UPPER_TRUNCATED_WARNING =
-  "The upper edge stops at the highest tick this pool accepts, so the range does not reach as far up as the band.";
-const UNVERIFIED_TICK_WARNING =
-  "The price source did not report the pool's own tick, so the converted tick could not be checked against it.";
-const OUT_OF_RANGE_WARNING =
-  "The pool's current tick lies outside this range, so a position built from it would hold a single token and earn nothing until price returns.";
+const LOWER_TRUNCATED_WARNING = "range-lower-edge-truncated";
+const UPPER_TRUNCATED_WARNING = "range-upper-edge-truncated";
+const UNVERIFIED_TICK_WARNING = "range-tick-unverified";
+const OUT_OF_RANGE_WARNING = "range-excludes-current-price";
 
 const unavailable = (
   reason: "invalid-input" | "insufficient-data" | "calculation-error",
-  message: string,
-): V3TickRangeResult => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): V3TickRangeResult => ({ status: "unavailable", reason, notice });
 
 export type V3TickRangeInput = {
   readonly pool: V3Pool;
@@ -217,7 +209,7 @@ export const calculateV3TickRange = (input: V3TickRangeInput): V3TickRangeResult
   const range = V3TickRangeSchema.safeParse(candidate);
   if (!range.success) return unavailable("calculation-error", CALCULATION_ERROR);
 
-  const warnings: string[] = [];
+  const warnings: DataWarningNotice[] = [];
   if (lowerBoundTruncated) warnings.push(LOWER_TRUNCATED_WARNING);
   if (upperBoundTruncated) warnings.push(UPPER_TRUNCATED_WARNING);
   if (chainReportedTick === null) warnings.push(UNVERIFIED_TICK_WARNING);

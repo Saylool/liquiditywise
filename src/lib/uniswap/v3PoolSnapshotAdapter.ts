@@ -1,5 +1,7 @@
 import {
+  type DataFailureNotice,
   type DataResult,
+  type DataWarningNotice,
   type EvmAddress,
   EvmAddressSchema,
   type PoolMarketSnapshot,
@@ -29,15 +31,14 @@ export { MAX_SOURCE_CLOCK_SKEW_MS, MAX_SOURCE_LAG_MS };
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
 
-const MALFORMED = "The market data source returned a response this application cannot verify.";
-const INDEXING_ERRORS =
-  "The market data source reported indexing errors, so its figures cannot be treated as verified.";
-const NOT_FOUND = "No Uniswap v3 pool was found for this address on Ethereum mainnet.";
+const MALFORMED = "market-data-malformed";
+const INDEXING_ERRORS = "market-data-indexing-errors";
+const NOT_FOUND = "pool-not-found";
 
 const unavailable = (
   reason: "invalid-response" | "not-found" | "stale-data",
-  message: string,
-): DataResult<PoolMarketSnapshot> => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): DataResult<PoolMarketSnapshot> => ({ status: "unavailable", reason, notice });
 
 /**
  * Rolling windows are not derivable from this query. The pool entity exposes a
@@ -45,8 +46,7 @@ const unavailable = (
  * it as one would overstate recent activity by orders of magnitude. The fields
  * stay null and are declared missing instead.
  */
-const ROLLING_VOLUME_WARNING =
-  "Rolling 24h/7d/30d volume is not available from this data source yet; those fields are null rather than estimated.";
+const ROLLING_VOLUME_WARNING = "rolling-volume-unavailable";
 
 /**
  * Fields that may legitimately be null in a snapshot built from this source,
@@ -202,7 +202,7 @@ export const normalizeV3PoolSnapshot = ({
     fetchedAt: snapshot.data.fetchedAt,
     sourceBlockTimestamp: blockTime,
   });
-  if (!freshness.ok) return unavailable(freshness.reason, freshness.message);
+  if (!freshness.ok) return unavailable(freshness.reason, freshness.notice);
 
   const missing = NULLABLE_SNAPSHOT_FIELDS.filter((field) => snapshot.data[field] === null);
   const [firstMissing, ...remainingMissing] = missing;
@@ -214,7 +214,7 @@ export const normalizeV3PoolSnapshot = ({
 
   // Built in a fixed order from a fixed set, so the same response always yields
   // the same warnings in the same positions.
-  const warnings =
+  const warnings: DataWarningNotice[] =
     blockTime === null
       ? [ROLLING_VOLUME_WARNING, FRESHNESS_UNVERIFIED_WARNING]
       : [ROLLING_VOLUME_WARNING];

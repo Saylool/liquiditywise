@@ -249,7 +249,7 @@ describe("coverage and freshness warnings", () => {
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
     expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toContain("fewer daily returns");
+    expect(result.warnings[0]).toBe("band-window-incomplete");
   });
 
   it("returns partial when the current price has no source block time", () => {
@@ -257,7 +257,7 @@ describe("coverage and freshness warnings", () => {
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
-    expect(result.warnings).toEqual([expect.stringContaining("current price source")]);
+    expect(result.warnings).toEqual(["band-price-block-time-unreported"]);
   });
 
   it("returns partial when the volatility has no source block time", () => {
@@ -267,7 +267,7 @@ describe("coverage and freshness warnings", () => {
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
-    expect(result.warnings).toEqual([expect.stringContaining("volatility source")]);
+    expect(result.warnings).toEqual(["band-volatility-block-time-unreported"]);
   });
 
   it("orders several warnings deterministically", () => {
@@ -292,9 +292,9 @@ describe("coverage and freshness warnings", () => {
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
     expect(result.warnings).toHaveLength(3);
-    expect(result.warnings[0]).toContain("fewer daily returns");
-    expect(result.warnings[1]).toContain("current price source");
-    expect(result.warnings[2]).toContain("volatility source");
+    expect(result.warnings[0]).toBe("band-window-incomplete");
+    expect(result.warnings[1]).toBe("band-price-block-time-unreported");
+    expect(result.warnings[2]).toBe("band-volatility-block-time-unreported");
   });
 
   it("keeps warnings free of pool addresses, timestamps and provider text", () => {

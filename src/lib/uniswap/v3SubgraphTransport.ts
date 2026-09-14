@@ -1,4 +1,4 @@
-import type { DataFailureReason } from "../../schemas";
+import type { DataFailureNotice, DataFailureReason } from "../../schemas";
 
 /**
  * The Graph's decentralised gateway, queried by stable Subgraph ID.
@@ -25,25 +25,24 @@ export type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
 export type SubgraphTransportResult =
   | { readonly ok: true; readonly payload: unknown }
-  | { readonly ok: false; readonly reason: DataFailureReason; readonly message: string };
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
 
-const failure = (reason: DataFailureReason, message: string): SubgraphTransportResult => ({
-  ok: false,
-  reason,
-  message,
-});
+const failure = (
+  reason: DataFailureReason,
+  notice: DataFailureNotice,
+): SubgraphTransportResult => ({ ok: false, reason, notice });
 
 /*
- * Every message below is written here, in full, rather than derived from the
- * provider's response. Nothing from the wire reaches the caller: no gateway error
- * text, no response body, no request URL, no header. That is what keeps a
- * credential out of a message that may eventually be rendered to a user.
+ * Every notice below is one of this application's own codes, never anything
+ * derived from the provider's response. Nothing from the wire reaches the
+ * caller: no gateway error text, no response body, no request URL, no header.
+ * That is what keeps a credential out of something a user may eventually read.
  */
-const TIMED_OUT = "The market data request timed out.";
-const UNREACHABLE = "The market data source could not be reached.";
-const REJECTED_CREDENTIALS = "The market data source rejected the configured credentials.";
-const RATE_LIMITED = "The market data source rate limit was exceeded.";
-const UNREADABLE = "The market data source returned an unreadable response.";
+const TIMED_OUT = "market-data-timed-out";
+const UNREACHABLE = "market-data-unreachable";
+const REJECTED_CREDENTIALS = "market-data-credentials-rejected";
+const RATE_LIMITED = "market-data-rate-limited";
+const UNREADABLE = "market-data-unreadable";
 
 /**
  * Maps an HTTP status onto a domain failure, or `null` when the response should

@@ -233,7 +233,7 @@ describe("gaps in the window", () => {
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
     expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toContain("skipped rather than estimated");
+    expect(result.warnings[0]).toContain("volatility-window-incomplete");
     expect(calculate(history(withOneMissingDay))).toEqual(result);
   });
 
@@ -300,7 +300,7 @@ describe("too little data", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain(POOL.id);
+    expect(result.notice).not.toContain(POOL.id);
   });
 });
 

@@ -1,4 +1,5 @@
 import {
+  type DataFailureNotice,
   type DataResult,
   type EvmAddress,
   EvmAddressSchema,
@@ -12,15 +13,14 @@ import { normalizeV3Token } from "./v3TokenAdapter";
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
 
-const MALFORMED = "The market data source returned a response this application cannot verify.";
-const INDEXING_ERRORS =
-  "The market data source reported indexing errors, so its figures cannot be treated as verified.";
-const NOT_FOUND = "No Uniswap v3 pool was found for this address on Ethereum mainnet.";
+const MALFORMED = "market-data-malformed";
+const INDEXING_ERRORS = "market-data-indexing-errors";
+const NOT_FOUND = "pool-not-found";
 
 const unavailable = (
   reason: "invalid-response" | "not-found",
-  message: string,
-): DataResult<V3PoolMetadata> => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): DataResult<V3PoolMetadata> => ({ status: "unavailable", reason, notice });
 
 export type NormalizeV3PoolMetadataInput = {
   /** The decoded JSON body, still untrusted. */

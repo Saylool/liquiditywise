@@ -3,10 +3,8 @@ import { DEFAULT_RPC_TIMEOUT_MS, postEthCall } from "./ethereumRpcTransport";
 import { normalizeV3TickSpacing, TICK_SPACING_CALLDATA } from "./v3TickSpacingAdapter";
 import type { FetchLike } from "./v3SubgraphTransport";
 
-const INVALID_ADDRESS =
-  "The pool address must be 0x followed by 40 hexadecimal characters, and cannot be the zero address.";
-const NOT_CONFIGURED =
-  "On-chain reads are not configured on this server. Set ETHEREUM_RPC_URL.";
+const INVALID_ADDRESS = "invalid-pool-address";
+const NOT_CONFIGURED = "chain-data-not-configured";
 
 /** Shared with the other v3 readers: no v3 pool is ever deployed at address zero. */
 const PoolAddressSchema = nonZeroEvmAddress(INVALID_ADDRESS);
@@ -40,12 +38,12 @@ export const fetchEthereumV3TickSpacing = async (
 ): Promise<DataResult<number>> => {
   const address = PoolAddressSchema.safeParse(request.poolAddress);
   if (!address.success) {
-    return { status: "unavailable", reason: "invalid-input", message: INVALID_ADDRESS };
+    return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
   }
 
   const rpcUrl = request.rpcUrl?.trim();
   if (rpcUrl === undefined || rpcUrl === "") {
-    return { status: "unavailable", reason: "configuration-error", message: NOT_CONFIGURED };
+    return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
   const transport = await postEthCall({
@@ -57,7 +55,7 @@ export const fetchEthereumV3TickSpacing = async (
   });
 
   if (!transport.ok) {
-    return { status: "unavailable", reason: transport.reason, message: transport.message };
+    return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
   return normalizeV3TickSpacing(transport.payload);

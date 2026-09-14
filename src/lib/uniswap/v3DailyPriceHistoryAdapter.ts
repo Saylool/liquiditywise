@@ -1,5 +1,7 @@
 import {
+  type DataFailureNotice,
   type DataResult,
+  type DataWarningNotice,
   type EvmAddress,
   EvmAddressSchema,
   type HistoricalPricePoint,
@@ -17,12 +19,10 @@ import { convertNonNegativeDecimal, unixSecondsToIso } from "./v3SubgraphRawResp
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
 
-const MALFORMED = "The market data source returned a response this application cannot verify.";
-const INDEXING_ERRORS =
-  "The market data source reported indexing errors, so its figures cannot be treated as verified.";
-const NOT_FOUND = "No Uniswap v3 pool was found for this address on Ethereum mainnet.";
-const INSUFFICIENT =
-  "This pool does not have enough completed daily price history to analyse yet.";
+const MALFORMED = "market-data-malformed";
+const INDEXING_ERRORS = "market-data-indexing-errors";
+const NOT_FOUND = "pool-not-found";
+const INSUFFICIENT = "pool-history-insufficient";
 
 /**
  * Raised when the source indexed fewer days than the window covers.
@@ -31,13 +31,12 @@ const INSUFFICIENT =
  * treating a missing day as zero, would put an invented number into a return
  * series and make a volatility figure look better-supported than it is.
  */
-const INCOMPLETE_COVERAGE_WARNING =
-  "The data source did not report a price for every day in this window; the missing days are absent rather than estimated.";
+const INCOMPLETE_COVERAGE_WARNING = "history-window-incomplete";
 
 const unavailable = (
   reason: "invalid-response" | "not-found" | "stale-data" | "insufficient-data",
-  message: string,
-): DataResult<PoolDailyPriceHistory> => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): DataResult<PoolDailyPriceHistory> => ({ status: "unavailable", reason, notice });
 
 /**
  * Fields that may legitimately be incomplete, in the order the domain schema
@@ -100,7 +99,7 @@ export const normalizeV3DailyPriceHistory = ({
   }
 
   const freshness = evaluateSourceFreshness({ fetchedAt, sourceBlockTimestamp });
-  if (!freshness.ok) return unavailable(freshness.reason, freshness.message);
+  if (!freshness.ok) return unavailable(freshness.reason, freshness.notice);
 
   /*
    * Each row is checked against the window's own day-starts rather than against a
@@ -181,7 +180,7 @@ export const normalizeV3DailyPriceHistory = ({
   if (firstMissing === undefined) return { status: "success", data: history.data };
 
   // Fixed order from a fixed set, so identical responses warn identically.
-  const warnings: string[] = [];
+  const warnings: DataWarningNotice[] = [];
   if (isIncomplete) warnings.push(INCOMPLETE_COVERAGE_WARNING);
   if (sourceBlockTimestamp === null) warnings.push(FRESHNESS_UNVERIFIED_WARNING);
 

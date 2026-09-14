@@ -1,3 +1,4 @@
+import type { DataWarningNotice } from "../../schemas";
 import "server-only";
 
 import OpenAI from "openai";
@@ -69,7 +70,7 @@ const cache = createInterpretationCache<WrittenInterpretation>({
 
 export type RangeInterpretationRequest = {
   readonly analysis: PoolRangeAnalysis;
-  readonly warnings: readonly string[];
+  readonly warnings: readonly DataWarningNotice[];
   readonly locale: Locale;
 };
 

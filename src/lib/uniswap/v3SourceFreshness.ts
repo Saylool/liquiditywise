@@ -1,3 +1,5 @@
+import type { DataFailureNotice } from "../../schemas";
+
 /*
  * Source-freshness policy, shared by every v3 reader.
  *
@@ -26,11 +28,9 @@ export const MAX_SOURCE_LAG_MS = 15 * 60 * 1000;
  */
 export const MAX_SOURCE_CLOCK_SKEW_MS = 2 * 60 * 1000;
 
-export const STALE_SOURCE_MESSAGE =
-  "The market data source is too far behind the chain for these figures to be treated as current.";
+export const STALE_SOURCE_MESSAGE = "market-data-stale";
 
-export const FUTURE_BLOCK_TIME_MESSAGE =
-  "The market data source reported a block time ahead of this server's clock, so its figures cannot be verified.";
+export const FUTURE_BLOCK_TIME_MESSAGE = "market-data-future-block-time";
 
 /**
  * Raised when the source reports no block time. Silence would let an unverifiable
@@ -38,15 +38,14 @@ export const FUTURE_BLOCK_TIME_MESSAGE =
  * substituted for the missing value — it records when we asked, not what the
  * answer describes.
  */
-export const FRESHNESS_UNVERIFIED_WARNING =
-  "The data source did not report a block time, so how current these figures are could not be verified.";
+export const FRESHNESS_UNVERIFIED_WARNING = "block-time-unreported";
 
 export type SourceFreshnessVerdict =
   | { readonly ok: true }
   | {
       readonly ok: false;
       readonly reason: "stale-data" | "invalid-response";
-      readonly message: string;
+      readonly notice: DataFailureNotice;
     };
 
 /**
@@ -70,10 +69,10 @@ export const evaluateSourceFreshness = ({
 
   const lagMs = Date.parse(fetchedAt) - Date.parse(sourceBlockTimestamp);
   if (lagMs > MAX_SOURCE_LAG_MS) {
-    return { ok: false, reason: "stale-data", message: STALE_SOURCE_MESSAGE };
+    return { ok: false, reason: "stale-data", notice: STALE_SOURCE_MESSAGE };
   }
   if (lagMs < -MAX_SOURCE_CLOCK_SKEW_MS) {
-    return { ok: false, reason: "invalid-response", message: FUTURE_BLOCK_TIME_MESSAGE };
+    return { ok: false, reason: "invalid-response", notice: FUTURE_BLOCK_TIME_MESSAGE };
   }
   return { ok: true };
 };

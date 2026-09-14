@@ -78,16 +78,23 @@ describe("interpretationCacheKey", () => {
     ["another language", { locale: "tr" as const }],
     ["another model", { model: "gpt-5.6-terra" }],
     ["an edited instruction", { instruction: "Standing rules, revised." }],
-    ["a caveat that now applies", { warnings: ["Some days had no price."] }],
+    ["a caveat that now applies", { warnings: ["history-window-incomplete"] as const }],
   ])("changes for %s", (_label, overrides) => {
     expect(key(overrides)).not.toBe(key());
   });
 
+  /*
+   * A caveat used to be a sentence, and a sentence can contain whatever
+   * character the parts were joined on — so the parts are escaped rather than
+   * joined. They are codes now and cannot contain a separator at all, which
+   * makes this belt and braces; the escaping stays because the key carries other
+   * things that are not codes.
+   */
   it("separates caveats unambiguously", () => {
-    // A separator character is a character a caveat could contain, so the parts
-    // are escaped rather than joined.
-    expect(key({ warnings: ["a", "b"] })).not.toBe(key({ warnings: ["a|b"] }));
-    expect(key({ warnings: ['", "'] })).not.toBe(key({ warnings: ["", ""] }));
+    expect(key({ warnings: ["block-time-unreported", "history-window-incomplete"] })).not.toBe(
+      key({ warnings: ["history-window-incomplete", "block-time-unreported"] }),
+    );
+    expect(key({ warnings: ["block-time-unreported"] })).not.toBe(key({ warnings: [] }));
   });
 });
 

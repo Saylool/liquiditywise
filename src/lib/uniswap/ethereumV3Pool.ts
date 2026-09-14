@@ -3,8 +3,7 @@ import { fetchEthereumV3PoolMetadata } from "./ethereumV3PoolMetadata";
 import { fetchEthereumV3TickSpacing } from "./ethereumV3TickSpacing";
 import type { FetchLike } from "./v3SubgraphTransport";
 
-const INCONSISTENT =
-  "The pool configuration assembled from its two sources could not be verified.";
+const INCONSISTENT = "pool-configuration-inconsistent";
 
 export type EthereumV3PoolRequest = {
   readonly poolAddress: string;
@@ -66,7 +65,7 @@ export const fetchEthereumV3Pool = async (
     tickSpacing: tickSpacing.data,
   });
   if (!pool.success) {
-    return { status: "unavailable", reason: "invalid-response", message: INCONSISTENT };
+    return { status: "unavailable", reason: "invalid-response", notice: INCONSISTENT };
   }
 
   return { status: "success", data: pool.data };

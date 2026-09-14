@@ -1,7 +1,9 @@
 import {
   type AnalyticsFailureReason,
+  type DataFailureNotice,
   type DataFailureReason,
   type DataResult,
+  type DataWarningNotice,
   type HistoricalVolatility,
   type PoolDailyPriceHistory,
   type PoolMarketSnapshot,
@@ -61,15 +63,15 @@ export type PoolRangeAnalysisResult =
       readonly status: "partial";
       readonly data: PoolRangeAnalysis;
       /** Caveats gathered from every stage, in pipeline order. */
-      readonly warnings: readonly string[];
+      readonly warnings: readonly DataWarningNotice[];
     }
   | {
       readonly status: "unavailable";
       /** Where it stopped, so a reader is not left guessing which figure is missing. */
       readonly step: PoolRangeAnalysisStep;
       readonly reason: DataFailureReason | AnalyticsFailureReason;
-      /** Already sanitized by the stage that produced it; safe to show a user. */
-      readonly message: string;
+      /** What the stage that stopped says to tell the reader, as a code. */
+      readonly notice: DataFailureNotice;
     };
 
 export type PoolRangeAnalysisInput = {
@@ -97,17 +99,17 @@ export const DEFAULT_PRICE_BAND_PARAMETERS: PriceBandParameters = {
  * A `partial` fetch is used, not refused: a snapshot that is missing rolling
  * volume still carries the price and tick this pipeline needs, and every figure
  * it *is* missing is either irrelevant here or fails a later stage on its own.
- * Its warnings are carried forward verbatim — they are fixed, already-sanitized
- * text by contract, so nothing from the wire is copied into them here.
+ * Its warnings are carried forward as they are — a fixed set of codes by
+ * contract, so nothing from the wire can be copied into them here.
  */
 const unwrap = <T,>(
   result: DataResult<T>,
-  warnings: string[],
+  warnings: DataWarningNotice[],
 ):
   | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly reason: DataFailureReason; readonly message: string } => {
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice } => {
   if (result.status === "unavailable") {
-    return { ok: false, reason: result.reason, message: result.message };
+    return { ok: false, reason: result.reason, notice: result.notice };
   }
   if (result.status === "partial") warnings.push(...result.warnings);
   return { ok: true, value: result.data };
@@ -124,11 +126,11 @@ const unwrap = <T,>(
  * never reported the same way.
  */
 export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalysisResult => {
-  const warnings: string[] = [];
+  const warnings: DataWarningNotice[] = [];
 
   const pool = unwrap(input.pool, warnings);
   if (!pool.ok) {
-    return { status: "unavailable", step: "pool", reason: pool.reason, message: pool.message };
+    return { status: "unavailable", step: "pool", reason: pool.reason, notice: pool.notice };
   }
 
   const snapshot = unwrap(input.snapshot, warnings);
@@ -137,7 +139,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
       status: "unavailable",
       step: "snapshot",
       reason: snapshot.reason,
-      message: snapshot.message,
+      notice: snapshot.notice,
     };
   }
 
@@ -147,7 +149,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
       status: "unavailable",
       step: "history",
       reason: history.reason,
-      message: history.message,
+      notice: history.notice,
     };
   }
 
@@ -157,7 +159,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
       status: "unavailable",
       step: "volatility",
       reason: volatility.reason,
-      message: volatility.message,
+      notice: volatility.notice,
     };
   }
   if (volatility.status === "partial") warnings.push(...volatility.warnings);
@@ -169,7 +171,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     standardDeviationMultiplier: input.parameters.standardDeviationMultiplier,
   });
   if (band.status === "unavailable") {
-    return { status: "unavailable", step: "band", reason: band.reason, message: band.message };
+    return { status: "unavailable", step: "band", reason: band.reason, notice: band.notice };
   }
   if (band.status === "partial") warnings.push(...band.warnings);
 
@@ -179,7 +181,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     snapshot: snapshot.value,
   });
   if (range.status === "unavailable") {
-    return { status: "unavailable", step: "range", reason: range.reason, message: range.message };
+    return { status: "unavailable", step: "range", reason: range.reason, notice: range.notice };
   }
   if (range.status === "partial") warnings.push(...range.warnings);
 

@@ -1,4 +1,4 @@
-import type { DataFailureReason } from "../../schemas";
+import type { DataFailureNotice, DataFailureReason } from "../../schemas";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 /*
@@ -19,24 +19,24 @@ export const DEFAULT_RPC_TIMEOUT_MS = 10_000;
 
 export type RpcTransportResult =
   | { readonly ok: true; readonly payload: unknown }
-  | { readonly ok: false; readonly reason: DataFailureReason; readonly message: string };
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
 
-const failure = (reason: DataFailureReason, message: string): RpcTransportResult => ({
+const failure = (reason: DataFailureReason, notice: DataFailureNotice): RpcTransportResult => ({
   ok: false,
   reason,
-  message,
+  notice,
 });
 
 /*
- * Fixed messages, written here in full. Nothing from the wire reaches the caller:
+ * Fixed notice codes of this application's own. Nothing from the wire reaches the caller:
  * no provider error text, no response body, and above all no endpoint URL, which
  * would leak the provider key on most services.
  */
-const TIMED_OUT = "The on-chain data request timed out.";
-const UNREACHABLE = "The on-chain data source could not be reached.";
-const REJECTED_CREDENTIALS = "The on-chain data source rejected the configured credentials.";
-const RATE_LIMITED = "The on-chain data source rate limit was exceeded.";
-const UNREADABLE = "The on-chain data source returned an unreadable response.";
+const TIMED_OUT = "chain-data-timed-out";
+const UNREACHABLE = "chain-data-unreachable";
+const REJECTED_CREDENTIALS = "chain-data-credentials-rejected";
+const RATE_LIMITED = "chain-data-rate-limited";
+const UNREADABLE = "chain-data-unreadable";
 
 const classifyStatus = (status: number): RpcTransportResult | null => {
   if (status === 200) return null;

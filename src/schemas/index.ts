@@ -7,6 +7,7 @@ export * from "./primitives";
 export * from "./dataSource";
 export * from "./uniswap";
 export * from "./market";
+export * from "./notices";
 export * from "./dataResult";
 export * from "./analytics";
 export * from "./priceBand";

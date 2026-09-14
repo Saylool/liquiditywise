@@ -105,10 +105,8 @@ ${POOL_CARD_FRAGMENT}`;
  */
 export const POOL_SEARCH_FETCH_LIMIT = POOL_SEARCH_RESULT_LIMIT * 2;
 
-const INVALID_TERMS =
-  "A pool search takes one or two short terms made of letters, digits, and the marks that appear inside tickers.";
-const NOT_CONFIGURED =
-  "Uniswap v3 market data is not configured on this server. Set THE_GRAPH_API_KEY and UNISWAP_V3_ETHEREUM_SUBGRAPH_ID.";
+const INVALID_TERMS = "invalid-search-terms";
+const NOT_CONFIGURED = "market-data-not-configured";
 
 export type EthereumV3PoolSearchRequest = {
   /** What to search for. Validated here; the caller's parse is not trusted. */
@@ -139,13 +137,13 @@ export const fetchEthereumV3PoolSearch = async (
 ): Promise<DataResult<PoolSearchResults>> => {
   const terms = PoolSearchTermsSchema.safeParse(request.terms);
   if (!terms.success) {
-    return { status: "unavailable", reason: "invalid-input", message: INVALID_TERMS };
+    return { status: "unavailable", reason: "invalid-input", notice: INVALID_TERMS };
   }
 
   const apiKey = request.apiKey?.trim();
   const subgraphId = request.subgraphId?.trim();
   if (apiKey === undefined || apiKey === "" || subgraphId === undefined || subgraphId === "") {
-    return { status: "unavailable", reason: "configuration-error", message: NOT_CONFIGURED };
+    return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
   const [first, second] = terms.data;
@@ -163,7 +161,7 @@ export const fetchEthereumV3PoolSearch = async (
   });
 
   if (!transport.ok) {
-    return { status: "unavailable", reason: transport.reason, message: transport.message };
+    return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
   return normalizeV3PoolSearch({

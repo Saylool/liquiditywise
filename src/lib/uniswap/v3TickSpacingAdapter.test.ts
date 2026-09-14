@@ -111,7 +111,7 @@ describe("failing closed", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain("SECRETKEY");
-    expect(result.message).not.toContain("eth-mainnet.example");
+    expect(result.notice).not.toContain("SECRETKEY");
+    expect(result.notice).not.toContain("eth-mainnet.example");
   });
 });

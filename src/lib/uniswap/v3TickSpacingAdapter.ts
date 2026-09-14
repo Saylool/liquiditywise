@@ -1,4 +1,8 @@
-import { type DataResult, V3TickSpacingSchema } from "../../schemas";
+import {
+  type DataFailureNotice,
+  type DataResult,
+  V3TickSpacingSchema,
+} from "../../schemas";
 import { EthCallResponseSchema } from "./v3TickSpacingRawResponse";
 
 /**
@@ -16,14 +20,13 @@ export const TICK_SPACING_CALLDATA = "0xd0c93a7c";
 /** A 32-byte ABI return word: `0x` plus exactly 64 hex characters. */
 const ABI_WORD_PATTERN = /^0x[0-9a-fA-F]{64}$/;
 
-const MALFORMED = "The on-chain data source returned a response this application cannot verify.";
-const NOT_A_POOL =
-  "No Uniswap v3 pool contract answered at this address on Ethereum mainnet.";
+const MALFORMED = "chain-data-malformed";
+const NOT_A_POOL = "pool-contract-not-found";
 
 const unavailable = (
   reason: "invalid-response" | "not-found",
-  message: string,
-): DataResult<number> => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): DataResult<number> => ({ status: "unavailable", reason, notice });
 
 /**
  * Decodes a `tickSpacing()` return value.

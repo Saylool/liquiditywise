@@ -7,8 +7,10 @@ import {
   formatUtcDate,
   formatWhole,
 } from "../../format/displayFormats";
+import { getDictionary } from "../../i18n/dictionaries";
 import type { Locale } from "../../i18n/locales";
 import type { PoolRangeAnalysis } from "../../advisor/poolRangeAnalysis";
+import type { DataWarningNotice } from "../../../schemas";
 import { BASE_INSTRUCTION } from "./base";
 
 /*
@@ -188,9 +190,15 @@ export type RangeInterpretationPromptInput = {
    * Passed in rather than read off the analysis because they belong to the
    * *result*, not the data. The model is given them so its explanation can
    * account for a figure that rests on an incomplete window — the interface
-   * still shows each caveat verbatim on its own.
+   * still shows each caveat on its own.
+   *
+   * Codes, rendered below into the same sentences the page shows, in the same
+   * language. A model reasoning over an English caveat while writing Turkish
+   * prose about it is reasoning about a different page than the one being read
+   * — the same argument that puts the figures through the interface's own
+   * formatters.
    */
-  readonly warnings: readonly string[];
+  readonly warnings: readonly DataWarningNotice[];
 };
 
 export const buildRangeInterpretationPrompt = (
@@ -216,7 +224,7 @@ export const buildRangeInterpretationPrompt = (
       ? "CAVEATS\n- none"
       : section(
           "CAVEATS",
-          warnings.map((warning) => `- ${warning}`),
+          warnings.map((warning) => `- ${getDictionary(locale).notices.warning[warning]}`),
         ),
     `Explain these figures in four parts: what the suggested range means, what happens if price leaves it, what the volatility figure is saying, and what this analysis does not cover. Remember that you may not write any number.`,
   ];

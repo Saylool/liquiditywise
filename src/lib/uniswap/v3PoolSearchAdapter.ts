@@ -1,5 +1,6 @@
 import {
   countExactSymbolMatches,
+  type DataFailureNotice,
   type DataResult,
   POOL_SEARCH_RESULT_LIMIT,
   type PoolSearchMatch,
@@ -15,14 +16,13 @@ import { normalizeV3Token } from "./v3TokenAdapter";
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
 
-const MALFORMED = "The market data source returned a response this application cannot verify.";
-const INDEXING_ERRORS =
-  "The market data source reported indexing errors, so its figures cannot be treated as verified.";
+const MALFORMED = "market-data-malformed";
+const INDEXING_ERRORS = "market-data-indexing-errors";
 
-const unavailable = (message: string): DataResult<PoolSearchResults> => ({
+const unavailable = (notice: DataFailureNotice): DataResult<PoolSearchResults> => ({
   status: "unavailable",
   reason: "invalid-response",
-  message,
+  notice,
 });
 
 /** Told which rule dropped a pool, and nothing about the pool. Optional. */

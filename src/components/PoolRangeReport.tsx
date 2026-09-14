@@ -79,7 +79,7 @@ export function PoolRangeReport({
           {t.report.noRangeHeading}
         </h2>
         <p className="text-sm leading-relaxed">{t.report.stoppedWhile(t.report.steps[step])}</p>
-        <p className="text-sm leading-relaxed text-muted">{result.message}</p>
+        <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
         <p className="font-mono text-xs text-muted">
           {poolAddress} · {result.reason}
         </p>
@@ -117,7 +117,7 @@ export function PoolRangeReport({
           <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
             {warnings.map((warning) => (
               <li key={warning} className="leading-relaxed">
-                {warning}
+                {t.notices.warning[warning]}
               </li>
             ))}
           </ul>

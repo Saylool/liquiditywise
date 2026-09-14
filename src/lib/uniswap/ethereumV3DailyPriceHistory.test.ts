@@ -159,9 +159,9 @@ describe("credential containment", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain(API_KEY);
-    expect(result.message).not.toContain(SUBGRAPH_ID);
-    expect(result.message).not.toContain("Bearer");
+    expect(result.notice).not.toContain(API_KEY);
+    expect(result.notice).not.toContain(SUBGRAPH_ID);
+    expect(result.notice).not.toContain("Bearer");
   });
 
   it("does not echo provider error text", async () => {
@@ -172,8 +172,8 @@ describe("credential containment", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain(providerText);
-    expect(result.message).not.toContain("QmSecretLeak");
+    expect(result.notice).not.toContain(providerText);
+    expect(result.notice).not.toContain("QmSecretLeak");
   });
 });
 

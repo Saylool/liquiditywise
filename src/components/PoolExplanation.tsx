@@ -47,7 +47,7 @@ export function PoolExplanation({
       {result.status === "unavailable" ? (
         <>
           <p className="text-sm leading-relaxed">{t.explanation.unavailable}</p>
-          <p className="text-sm leading-relaxed text-muted">{result.message}</p>
+          <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
         </>
       ) : (
         <>

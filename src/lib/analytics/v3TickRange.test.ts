@@ -121,7 +121,7 @@ const input = (overrides: Record<string, unknown> = {}): V3TickRangeInput =>
 const succeed = (overrides: Record<string, unknown> = {}) => {
   const result = calculateV3TickRange(input(overrides));
   if (result.status === "unavailable") {
-    throw new Error(`expected data, got ${result.reason}: ${result.message}`);
+    throw new Error(`expected data, got ${result.reason}: ${result.notice}`);
   }
   return result;
 };
@@ -223,7 +223,7 @@ describe("the source's own tick as a cross-check", () => {
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
     expect(result.reason).toBe("invalid-input");
-    expect(result.message).toContain("does not match the tick its price implies");
+    expect(result.notice).toBe("range-tick-disagreement");
   });
 
   /*
@@ -241,7 +241,7 @@ describe("the source's own tick as a cross-check", () => {
     if (result.status !== "unavailable") return;
     expect(result.reason).toBe("invalid-input");
     // Specifically the cross-check, not some other rejection along the way.
-    expect(result.message).toContain("does not match the tick its price implies");
+    expect(result.notice).toBe("range-tick-disagreement");
   });
 
   it("proceeds with a warning when the source reported no tick", () => {
@@ -251,7 +251,7 @@ describe("the source's own tick as a cross-check", () => {
     if (result.status !== "partial") return;
     expect(result.data.chainReportedTick).toBeNull();
     expect(result.warnings).toEqual([
-      "The price source did not report the pool's own tick, so the converted tick could not be checked against it.",
+      "range-tick-unverified",
     ]);
   });
 });
@@ -269,7 +269,7 @@ describe("edges the pool cannot express", () => {
     expect(result.data.lowerBoundTruncated).toBe(false);
     expect(result.data.upperBoundTruncated).toBe(true);
     expect(result.warnings).toEqual([
-      "The upper edge stops at the highest tick this pool accepts, so the range does not reach as far up as the band.",
+      "range-upper-edge-truncated",
     ]);
   });
 
@@ -283,8 +283,8 @@ describe("edges the pool cannot express", () => {
     expect(result.data.lowerBoundTruncated).toBe(true);
     expect(result.data.upperBoundTruncated).toBe(true);
     expect(result.warnings).toHaveLength(2);
-    expect(result.warnings[0]).toContain("lower edge");
-    expect(result.warnings[1]).toContain("upper edge");
+    expect(result.warnings[0]).toContain("range-lower-edge-truncated");
+    expect(result.warnings[1]).toContain("range-upper-edge-truncated");
   });
 
   it("warns when truncation leaves the current tick outside the range", () => {
@@ -302,7 +302,7 @@ describe("edges the pool cannot express", () => {
     expect(result.data.currentTick).toBe(887_250);
     expect(result.data.upperTick).toBe(887_220);
     expect(result.data.containsCurrentPrice).toBe(false);
-    expect(result.warnings.at(-1)).toContain("would hold a single token");
+    expect(result.warnings.at(-1)).toBe("range-excludes-current-price");
   });
 });
 
@@ -321,7 +321,7 @@ describe("states with no range to report", () => {
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
     expect(result.reason).toBe("invalid-input");
-    expect(result.message).toContain("lies outside the range Uniswap can express");
+    expect(result.notice).toBe("range-price-unrepresentable");
   });
 
   it("refuses a band narrower than one tick spacing rather than widening it", () => {

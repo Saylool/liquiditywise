@@ -314,6 +314,44 @@ vocabulary — an incomplete response, a refusal block — into the two words th
 verifier understands. Changing supplier is a change to that one file and the
 dependency it imports.
 
+## What the interface says when a read fails
+
+Every sentence about a read that produced nothing, or produced something with a
+caveat, lives in the dictionary beside every other string the interface says.
+The data layer raises a **code** — `pool-not-found`, `market-data-rate-limited`,
+`rolling-volume-unavailable` — and the page turns it into a sentence in the
+reader's language.
+
+They were English sentences, written where they were raised, until a second
+language made that untenable. A Turkish reader was told in English, on every
+single analysis, that rolling volume was unavailable; they would have been told
+in English that their address was malformed, or that the source was rate
+limited, at the exact moment a sentence has to land.
+
+Three things follow from the change, and all three are why it was worth the
+churn through every adapter:
+
+- **A code cannot leak.** `DataResult` used to *ask*, in a comment, that a
+  message never carry an API key, a URL containing one, a stack trace or a raw
+  provider payload. A fixed set of identifiers cannot carry any of them.
+- **Nothing can go untranslated.** The entries are written with `satisfies
+  Record<DataFailureNotice, string>`, so adding a code stops the build until both
+  languages say something about it. A test covers what the compiler cannot see —
+  a Turkish entry that is the English sentence pasted across.
+- **The wording stops being the data layer's business.** An adapter says what
+  happened; what a reader is told about it is the interface's decision, and it
+  can be reworded without touching a read.
+
+The server log keeps the code rather than either sentence. It is the same
+identifier in every language, which is what makes a log line and a support
+question in Turkish matchable at all. For the same reason, a notice a visitor
+reads no longer names an environment variable: which one to set is an operator's
+business and reaches them through the log, exactly.
+
+The model is given the caveats as the same sentences the page shows, in the same
+language — a model reasoning over an English caveat while writing Turkish prose
+about it is reasoning about a different page than the one being read.
+
 ## Language and theme
 
 The interface is published in **English and Turkish**, and renders in the

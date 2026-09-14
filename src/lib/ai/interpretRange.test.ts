@@ -173,9 +173,9 @@ describe("interpretRange", () => {
 
   it("tells the model about the caveats attached to the analysis", async () => {
     const { seen, createResponse } = answering(JSON.stringify(sections));
-    await run(createResponse, { warnings: ["Some days had no price."] });
+    await run(createResponse, { warnings: ["history-window-incomplete"] });
 
-    expect(seen.user).toContain("- Some days had no price.");
+    expect(seen.user).toContain("- The data source did not report a price for every day");
   });
 
   it("passes a transport failure through with its own category", async () => {

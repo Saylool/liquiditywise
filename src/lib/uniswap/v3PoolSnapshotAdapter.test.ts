@@ -66,7 +66,7 @@ describe("normalizeV3PoolSnapshot success", () => {
         source: "uniswap-v3-subgraph",
       },
       missingFields: ["volume24hUsd", "volume7dUsd", "volume30dUsd"],
-      warnings: [expect.stringContaining("Rolling")],
+      warnings: ["rolling-volume-unavailable"],
     });
   });
 
@@ -343,7 +343,7 @@ describe("source freshness", () => {
     if (result.status !== "partial") return;
     expect(result.data.sourceBlockTimestamp).toBeNull();
     expect(result.missingFields).toContain("sourceBlockTimestamp");
-    expect(result.warnings.some((warning) => warning.includes("how current"))).toBe(true);
+    expect(result.warnings).toContain("block-time-unreported");
   });
 
   it("never substitutes the fetch time for a missing block time", () => {
@@ -371,7 +371,7 @@ describe("source freshness", () => {
     expect(withoutBlockTime.warnings).toHaveLength(2);
     // The freshness caveat is appended after the volume caveat, never interleaved.
     expect(withoutBlockTime.warnings[0]).toBe(withBlockTime.warnings[0]);
-    expect(withoutBlockTime.warnings[1]).toContain("how current");
+    expect(withoutBlockTime.warnings[1]).toContain("block-time-unreported");
     expect(withoutBlockTime.missingFields).toEqual([
       "sourceBlockTimestamp",
       "volume24hUsd",
@@ -405,7 +405,7 @@ describe("source freshness", () => {
       "apiKey",
       "SUBGRAPH_ID",
     ]) {
-      expect(result.message).not.toContain(forbidden);
+      expect(result.notice).not.toContain(forbidden);
     }
   });
 });

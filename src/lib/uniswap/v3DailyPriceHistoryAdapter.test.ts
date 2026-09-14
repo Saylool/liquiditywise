@@ -116,7 +116,7 @@ describe("incomplete coverage", () => {
     const missingDay = new Date((FIRST_DAY_UNIX + 10 * DAY) * 1000).toISOString();
     expect(result.data.points.map((point) => point.timestamp)).not.toContain(missingDay);
     expect(result.missingFields).toContain("points");
-    expect(result.warnings.some((warning) => warning.includes("missing days"))).toBe(true);
+    expect(result.warnings).toContain("history-window-incomplete");
   });
 
   it.each([[2], [5], [30]])("returns partial for %s real points", (count) => {
@@ -140,8 +140,8 @@ describe("incomplete coverage", () => {
       "points",
     ]);
     expect(result.warnings).toHaveLength(2);
-    expect(result.warnings[0]).toContain("missing days");
-    expect(result.warnings[1]).toContain("how current");
+    expect(result.warnings[0]).toContain("history-window-incomplete");
+    expect(result.warnings[1]).toContain("block-time-unreported");
   });
 
   it("repeats identical output for an identical payload", () => {
@@ -156,7 +156,7 @@ describe("incomplete coverage", () => {
     if (result.status !== "partial") return;
     expect(result.data.points).toHaveLength(31);
     expect(result.missingFields).toEqual(["sourceBlockTimestamp"]);
-    expect(result.warnings).toEqual([expect.stringContaining("how current")]);
+    expect(result.warnings).toEqual(["block-time-unreported"]);
   });
 });
 
@@ -180,8 +180,8 @@ describe("insufficient history", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain(POOL_ADDRESS);
-    expect(result.message).not.toContain("21500000");
+    expect(result.notice).not.toContain(POOL_ADDRESS);
+    expect(result.notice).not.toContain("21500000");
   });
 });
 

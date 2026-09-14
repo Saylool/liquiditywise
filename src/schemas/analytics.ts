@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { DataFailureNotice, DataWarningNotice } from "./notices";
+
 import { IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
 import { PoolReferenceSchema } from "./uniswap";
 
@@ -371,14 +373,14 @@ export type AnalyticsResult<T> =
   | {
       readonly status: "partial";
       readonly data: T;
-      /** Fixed, sanitized caveats in a deterministic order. */
-      readonly warnings: readonly string[];
+      /** Caveats in a deterministic order, as codes the interface renders. */
+      readonly warnings: readonly DataWarningNotice[];
     }
   | {
       readonly status: "unavailable";
       readonly reason: AnalyticsFailureReason;
-      /** A short, already-sanitized explanation safe to show a user. */
-      readonly message: string;
+      /** What to tell the reader, as a code the interface turns into a sentence. */
+      readonly notice: DataFailureNotice;
     };
 
 export type HistoricalVolatilityResult = AnalyticsResult<HistoricalVolatility>;

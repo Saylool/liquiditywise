@@ -1,3 +1,4 @@
+import type { DataFailureNotice } from "../../schemas";
 import {
   type DataFailureReason,
   INTERPRETATION_METHOD,
@@ -26,7 +27,7 @@ export type InterpretationOutcome<T> =
   | {
       readonly status: "unavailable";
       readonly reason: DataFailureReason;
-      readonly message: string;
+      readonly notice: DataFailureNotice;
     };
 
 /*
@@ -36,17 +37,16 @@ export type InterpretationOutcome<T> =
  * because a constraint the server does not enforce is not a constraint.
  */
 
-const REFUSED =
-  "The model declined to explain this pool's figures, so no explanation is shown.";
-const TRUNCATED =
-  "The explanation was cut off before it was complete, so it is not shown.";
-const MALFORMED =
-  "The explanation came back in a form this application cannot verify, so it is not shown.";
+const REFUSED = "explanation-declined";
+const TRUNCATED = "explanation-truncated";
+const MALFORMED = "explanation-malformed";
 
-const unavailable = (message: string): InterpretationOutcome<RangeInterpretation> => ({
+const unavailable = (
+  notice: DataFailureNotice,
+): InterpretationOutcome<RangeInterpretation> => ({
   status: "unavailable",
   reason: "invalid-response",
-  message,
+  notice,
 });
 
 /**

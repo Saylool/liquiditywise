@@ -1,3 +1,4 @@
+import type { DataFailureNotice } from "../../schemas";
 import {
   ANNUALIZATION_DAYS,
   type HistoricalVolatilityResult,
@@ -18,25 +19,21 @@ import { calculateSampleStatistics } from "./sampleStatistics";
  */
 export const MINIMUM_USABLE_RETURNS = 2;
 
-const INVALID_INPUT =
-  "The price history supplied for this calculation is not a valid normalized history.";
-const INSUFFICIENT =
-  "This pool does not have enough consecutive daily prices to measure volatility.";
-const CALCULATION_ERROR =
-  "The volatility calculation produced a result this application cannot verify.";
+const INVALID_INPUT = "volatility-invalid-input";
+const INSUFFICIENT = "volatility-insufficient-history";
+const CALCULATION_ERROR = "volatility-unverifiable";
 
 /**
  * Raised when the window has gaps. Stated because a volatility measured over 12
  * usable days is a different claim from one measured over 30, and the number
  * alone does not show that.
  */
-const INCOMPLETE_COVERAGE_WARNING =
-  "Some days in this window had no price, so volatility is measured from fewer daily returns than the window covers; the missing days were skipped rather than estimated.";
+const INCOMPLETE_COVERAGE_WARNING = "volatility-window-incomplete";
 
 const unavailable = (
   reason: "invalid-input" | "insufficient-data" | "calculation-error",
-  message: string,
-): HistoricalVolatilityResult => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): HistoricalVolatilityResult => ({ status: "unavailable", reason, notice });
 
 /**
  * Measures close-to-close historical volatility from a normalized daily history.

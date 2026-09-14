@@ -158,14 +158,16 @@ describe("PoolRangeReport", () => {
         status: "partial",
         data: snapshot(),
         missingFields: ["volume24hUsd"],
-        warnings: ["Rolling volume is not available from this source."],
+        warnings: ["rolling-volume-unavailable"],
       },
       history: ok(history()),
       parameters: DEFAULT_PRICE_BAND_PARAMETERS,
     });
 
     const partialMarkup = render(result);
-    expect(partialMarkup).toContain("Rolling volume is not available from this source.");
+    expect(partialMarkup).toContain(
+      "Rolling 24h/7d/30d volume is not available from this data source yet",
+    );
     // Singular and plural are both grammatical; a single template for both is not.
     expect(partialMarkup).toContain("One caveat applies");
     expect(partialMarkup).not.toContain("One caveat apply");
@@ -178,7 +180,7 @@ describe("PoolRangeReport", () => {
         status: "partial",
         data: snapshot({ sourceBlockTimestamp: null }),
         missingFields: ["volume24hUsd"],
-        warnings: ["A fetch caveat."],
+        warnings: ["block-time-unreported"],
       },
       history: ok(history()),
       parameters: DEFAULT_PRICE_BAND_PARAMETERS,
@@ -245,19 +247,18 @@ describe("PoolRangeReport in Turkish", () => {
         status: "unavailable",
         step: "history",
         reason: "network-error",
-        message: "The market data service could not be reached.",
+        notice: "market-data-unreachable",
       },
       "tr",
     );
 
     expect(failed).toContain("havuzun günlük fiyat geçmişi okunurken");
     /*
-     * The message itself stays English. It is produced in the data layer as a
-     * fixed sentence, and translating it means turning it into a code there
-     * rather than text here — a change to a layer this project has verified line
-     * by line, and its own phase.
+     * And the sentence itself, which used to arrive from the data layer already
+     * written in English and went out to a Turkish page that way.
      */
-    expect(failed).toContain("The market data service could not be reached.");
+    expect(failed).toContain("Piyasa verisi kaynağına ulaşılamadı.");
+    expect(failed).not.toContain("could not be reached");
   });
 
   it("formats every figure it shows", () => {
@@ -272,11 +273,11 @@ describe("PoolRangeReport when there is nothing to show", () => {
       status: "unavailable",
       step: "history",
       reason: "network-error",
-      message: "The market data service could not be reached.",
+      notice: "market-data-unreachable",
     });
 
     expect(failed).toContain("reading the pool&#x27;s daily price history");
-    expect(failed).toContain("The market data service could not be reached.");
+    expect(failed).toContain("The market data source could not be reached.");
     expect(failed).toContain("network-error");
   });
 
@@ -285,7 +286,7 @@ describe("PoolRangeReport when there is nothing to show", () => {
       status: "unavailable",
       step: "pool",
       reason: "configuration-error",
-      message: "This application is not configured to read Uniswap data.",
+      notice: "market-data-not-configured",
     });
 
     expect(failed).not.toContain("Suggested tick range");

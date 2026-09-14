@@ -152,17 +152,17 @@ describe("logUnavailable", () => {
   const failure: DataResult<number> = {
     status: "unavailable",
     reason: "invalid-response",
-    message: "The market data source returned an unreadable response.",
+    notice: "market-data-unreadable",
   };
 
-  it("pairs the category with the wording the user saw", () => {
+  it("pairs the category with the notice the reader was shown", () => {
     const { lines, log } = capture();
 
     logUnavailable("v3-pool", failure, log);
 
     expect(lines[0]).toContain("[v3-pool]");
     expect(lines[0]).toContain("invalid-response");
-    expect(lines[0]).toContain("The market data source returned an unreadable response.");
+    expect(lines[0]).toContain("market-data-unreadable");
   });
 
   it("hands the result back unchanged", () => {
@@ -184,7 +184,7 @@ describe("logUnavailable", () => {
     (reason) => {
       const { entries, log } = capture();
 
-      logUnavailable("v3-pool", { status: "unavailable", reason, message: "Nothing here." }, log);
+      logUnavailable("v3-pool", { status: "unavailable", reason, notice: "pool-not-found" }, log);
 
       // A mistyped address must not read like an outage, or the channel stops
       // being worth reading.
@@ -197,7 +197,7 @@ describe("logUnavailable", () => {
     (reason) => {
       const { entries, log } = capture();
 
-      logUnavailable("v3-pool", { status: "unavailable", reason, message: "Went wrong." }, log);
+      logUnavailable("v3-pool", { status: "unavailable", reason, notice: "market-data-unreachable" }, log);
 
       expect(entries[0]?.level).toBe("error");
     },
@@ -211,7 +211,7 @@ describe("logUnavailable", () => {
       status: "partial",
       data: 1,
       missingFields: ["toFixed"],
-      warnings: ["A caveat."],
+      warnings: ["block-time-unreported"],
     }, log);
 
     expect(lines).toEqual([]);

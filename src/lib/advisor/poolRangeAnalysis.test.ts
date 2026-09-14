@@ -103,7 +103,7 @@ const input = (overrides: Partial<PoolRangeAnalysisInput> = {}): PoolRangeAnalys
 const succeed = (overrides: Partial<PoolRangeAnalysisInput> = {}) => {
   const result = analysePoolRange(input(overrides));
   if (result.status === "unavailable") {
-    throw new Error(`expected data, got ${result.step}/${result.reason}: ${result.message}`);
+    throw new Error(`expected data, got ${result.step}/${result.reason}: ${result.notice}`);
   }
   return result;
 };
@@ -171,7 +171,7 @@ describe("a stage that cannot produce a figure", () => {
   const unreachable = <T,>(): DataResult<T> => ({
     status: "unavailable",
     reason: "network-error",
-    message: "The market data service could not be reached.",
+    notice: "market-data-unreachable",
   });
 
   it.each([
@@ -185,7 +185,7 @@ describe("a stage that cannot produce a figure", () => {
     if (result.status !== "unavailable") return;
     expect(result.step).toBe(step);
     expect(result.reason).toBe("network-error");
-    expect(result.message).toBe("The market data service could not be reached.");
+    expect(result.notice).toBe("market-data-unreachable");
   });
 
   it("stops at the volatility step when the history is too short", () => {
@@ -252,7 +252,7 @@ describe("caveats", () => {
           status: "partial",
           data: snapshot(),
           missingFields: ["volume24hUsd", "volume7dUsd", "volume30dUsd"],
-          warnings: ["Rolling volume is not available from this source."],
+          warnings: ["rolling-volume-unavailable"],
         },
       }),
     );
@@ -260,7 +260,7 @@ describe("caveats", () => {
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
     expect(result.data.range.lowerTick).toBeLessThan(result.data.range.upperTick);
-    expect(result.warnings).toContain("Rolling volume is not available from this source.");
+    expect(result.warnings).toContain("rolling-volume-unavailable");
   });
 
   it("gathers caveats from every stage in pipeline order", () => {
@@ -270,7 +270,7 @@ describe("caveats", () => {
           status: "partial",
           data: snapshot(),
           missingFields: ["volume24hUsd"],
-          warnings: ["A fetch caveat."],
+          warnings: ["block-time-unreported"],
         },
         // Two missing days leave the volatility window incomplete.
         history: ok(history(31, [7, 8])),
@@ -288,9 +288,9 @@ describe("caveats", () => {
      * wording differs, and so does what each one is about.
      */
     expect(result.warnings).toHaveLength(3);
-    expect(result.warnings[0]).toBe("A fetch caveat.");
-    expect(result.warnings[1]).toContain("volatility is measured from fewer daily returns");
-    expect(result.warnings[2]).toContain("this band is based on fewer daily returns");
+    expect(result.warnings[0]).toBe("block-time-unreported");
+    expect(result.warnings[1]).toBe("volatility-window-incomplete");
+    expect(result.warnings[2]).toBe("band-window-incomplete");
   });
 
   it("reports a clean run with no caveats as a success", () => {
@@ -308,7 +308,12 @@ describe("caveats", () => {
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
-    expect(result.warnings.some((warning) => warning.includes("stops at the"))).toBe(true);
+    expect(
+      result.warnings.some(
+        (warning) =>
+          warning === "range-lower-edge-truncated" || warning === "range-upper-edge-truncated",
+      ),
+    ).toBe(true);
   });
 });
 

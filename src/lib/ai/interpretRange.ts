@@ -1,3 +1,4 @@
+import type { DataWarningNotice } from "../../schemas";
 import type { RangeInterpretation } from "../../schemas";
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
@@ -36,7 +37,7 @@ export type WrittenInterpretation = {
 export type InterpretRangeInput = {
   readonly analysis: PoolRangeAnalysis;
   /** The caveats the pipeline attached, so the explanation can account for them. */
-  readonly warnings: readonly string[];
+  readonly warnings: readonly DataWarningNotice[];
   readonly locale: Locale;
   readonly apiKey: string | undefined;
   readonly model: InterpretationModel;
@@ -62,7 +63,7 @@ export const interpretRange = async (
   });
 
   if (!response.ok) {
-    return { status: "unavailable", reason: response.reason, message: response.message };
+    return { status: "unavailable", reason: response.reason, notice: response.notice };
   }
 
   const verified = normalizeRangeInterpretation(

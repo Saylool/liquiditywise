@@ -1,3 +1,4 @@
+import type { DataFailureNotice, DataWarningNotice } from "../../schemas";
 import {
   type AnalyticsResult,
   ANNUALIZATION_DAYS,
@@ -15,29 +16,23 @@ import {
 
 export type VolatilityPriceBandResult = AnalyticsResult<VolatilityPriceBand>;
 
-const INVALID_INPUT =
-  "The market data supplied for this price band is not valid, or the snapshot and volatility describe different pools.";
-const NO_CURRENT_PRICE =
-  "The current price for this pool is unavailable, so a price band cannot be centred.";
-const CALCULATION_ERROR =
-  "The price band calculation produced a result this application cannot verify.";
+const INVALID_INPUT = "band-invalid-input";
+const NO_CURRENT_PRICE = "band-no-current-price";
+const CALCULATION_ERROR = "band-unverifiable";
 
 /*
  * Fixed warning text in a fixed order, so identical inputs warn identically and
  * nothing from the wire — pool address, timestamp, provider message — leaks into
  * something a user may eventually read.
  */
-const INCOMPLETE_COVERAGE_WARNING =
-  "Some days in the volatility window had no price, so this band is based on fewer daily returns than the window covers.";
-const CURRENT_PRICE_FRESHNESS_WARNING =
-  "The current price source did not report a block time, so how current it is could not be independently verified.";
-const VOLATILITY_FRESHNESS_WARNING =
-  "The volatility source did not report a block time, so how current it is could not be independently verified.";
+const INCOMPLETE_COVERAGE_WARNING = "band-window-incomplete";
+const CURRENT_PRICE_FRESHNESS_WARNING = "band-price-block-time-unreported";
+const VOLATILITY_FRESHNESS_WARNING = "band-volatility-block-time-unreported";
 
 const unavailable = (
   reason: "invalid-input" | "insufficient-data" | "calculation-error",
-  message: string,
-): VolatilityPriceBandResult => ({ status: "unavailable", reason, message });
+  notice: DataFailureNotice,
+): VolatilityPriceBandResult => ({ status: "unavailable", reason, notice });
 
 export type VolatilityPriceBandInput = {
   readonly snapshot: PoolMarketSnapshot;
@@ -181,7 +176,7 @@ export const calculateVolatilityPriceBand = (
   const band = VolatilityPriceBandSchema.safeParse(candidate);
   if (!band.success) return unavailable("calculation-error", CALCULATION_ERROR);
 
-  const warnings: string[] = [];
+  const warnings: DataWarningNotice[] = [];
   if (vol.returnCoverageRatio < 1) warnings.push(INCOMPLETE_COVERAGE_WARNING);
   if (price.sourceBlockTimestamp === null) warnings.push(CURRENT_PRICE_FRESHNESS_WARNING);
   if (vol.sourceBlockTimestamp === null) warnings.push(VOLATILITY_FRESHNESS_WARNING);

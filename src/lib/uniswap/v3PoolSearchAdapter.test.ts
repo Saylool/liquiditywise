@@ -244,12 +244,12 @@ describe("normalizeV3PoolSearch", () => {
     const result = normalize(body);
 
     expect(result.status).toBe("unavailable");
-    expect(result.status === "unavailable" && result.message).toContain("indexing errors");
+    expect(result.status === "unavailable" && result.notice).toBe("market-data-indexing-errors");
   });
 
   it("never puts the source's own text in a message a reader may see", () => {
     const result = normalize({ errors: [{ message: "Bearer abc123 rejected" }], data: null });
 
-    expect(result.status === "unavailable" && result.message).not.toContain("abc123");
+    expect(result.status === "unavailable" && result.notice).not.toContain("abc123");
   });
 });

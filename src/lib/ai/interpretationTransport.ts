@@ -1,6 +1,10 @@
 import { zodTextFormat } from "openai/helpers/zod";
 
-import { type DataFailureReason, RangeInterpretationWireSchema } from "../../schemas";
+import {
+  type DataFailureNotice,
+  type DataFailureReason,
+  RangeInterpretationWireSchema,
+} from "../../schemas";
 import type { RangeInterpretationPrompt } from "./prompts/rangeInterpretation";
 import { INTERPRETATION_MAX_TOKENS, type InterpretationModel } from "./interpretationModel";
 
@@ -23,20 +27,13 @@ import { INTERPRETATION_MAX_TOKENS, type InterpretationModel } from "./interpret
  * from having to learn a provider's shapes.
  */
 
-const NOT_CONFIGURED =
-  "This application is not configured to write explanations, so none is shown.";
-const REJECTED_KEY =
-  "The explanation service did not accept the configured key, so no explanation is shown.";
-const NOT_PERMITTED =
-  "The configured key is not permitted to use the selected model, so no explanation is shown.";
-const UNKNOWN_MODEL =
-  "The selected model is not available to the configured key, so no explanation is shown.";
-const RATE_LIMITED =
-  "The explanation service is rate limited right now, so no explanation is shown.";
-const UNREACHABLE =
-  "The explanation service could not be reached, so no explanation is shown.";
-const UNUSABLE_REQUEST =
-  "The explanation service refused this request, so no explanation is shown.";
+const NOT_CONFIGURED = "explanation-not-configured";
+const REJECTED_KEY = "explanation-key-rejected";
+const NOT_PERMITTED = "explanation-model-not-permitted";
+const UNKNOWN_MODEL = "explanation-model-unknown";
+const RATE_LIMITED = "explanation-rate-limited";
+const UNREACHABLE = "explanation-unreachable";
+const UNUSABLE_REQUEST = "explanation-request-refused";
 
 /** A content block inside one output item. */
 type OutputContent = { readonly type: string };
@@ -83,12 +80,12 @@ export type InterpretationTransportResult =
        */
       readonly model: string | null;
     }
-  | { readonly ok: false; readonly reason: DataFailureReason; readonly message: string };
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
 
 const failure = (
   reason: DataFailureReason,
-  message: string,
-): InterpretationTransportResult => ({ ok: false, reason, message });
+  notice: DataFailureNotice,
+): InterpretationTransportResult => ({ ok: false, reason, notice });
 
 /**
  * An HTTP status, when the thrown value carries one.

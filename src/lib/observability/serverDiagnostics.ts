@@ -126,9 +126,10 @@ export const logDetail = (
  * Records a read that produced nothing, and hands the result straight back so it
  * can wrap a call expression without restructuring it.
  *
- * The message is safe to log precisely because `DataResult` already requires it
- * to be safe to *show*. Logging it here pairs the category with the wording the
- * user saw, so a support question and a server log line can be matched up.
+ * The notice code is logged rather than the sentence a reader saw. It is the
+ * same identifier in every language, which is what makes a log line and a
+ * support question in Turkish matchable at all — and it cannot carry anything
+ * from the wire, because a code never came from there.
  */
 export const logUnavailable = <T,>(
   label: string,
@@ -137,7 +138,7 @@ export const logUnavailable = <T,>(
 ): DataResult<T> => {
   if (result.status === "unavailable") {
     const level: DiagnosticLevel = ORDINARY_OUTCOMES.has(result.reason) ? "warn" : "error";
-    log(level, `[${label}] unavailable (${result.reason}): ${result.message}`);
+    log(level, `[${label}] unavailable (${result.reason}): ${result.notice}`);
   }
 
   return result;

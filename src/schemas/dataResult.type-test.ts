@@ -39,7 +39,7 @@ export const partialResult: DataResult<PoolMarketSnapshot> = {
   status: "partial",
   data: snapshot,
   missingFields: ["tvlUsd", "volume7dUsd"],
-  warnings: ["figures are one block behind"],
+  warnings: ["block-time-unreported"],
 };
 
 export function rejectedAtCompileTime(

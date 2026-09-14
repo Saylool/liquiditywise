@@ -1,3 +1,4 @@
+import type { DataWarningNotice } from "../../schemas";
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
 
@@ -46,7 +47,7 @@ export const digestInstruction = (instruction: string): string => {
 
 export type InterpretationCacheKeyInput = {
   readonly analysis: PoolRangeAnalysis;
-  readonly warnings: readonly string[];
+  readonly warnings: readonly DataWarningNotice[];
   readonly locale: Locale;
   readonly model: string;
   /** The standing instruction the prose was written under. */

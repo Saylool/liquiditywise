@@ -68,17 +68,17 @@ describe("PoolExplanation", () => {
     const failed = render({
       status: "unavailable",
       reason: "configuration-error",
-      message: "This application is not configured to write explanations, so none is shown.",
+      notice: "explanation-not-configured",
     });
 
     expect(failed).toContain("Explanation");
     expect(failed).toContain("No explanation is available");
-    expect(failed).toContain("not configured");
+    expect(failed).toContain("not configured to write explanations");
     expect(failed).not.toContain("What this range means");
   });
 
   it("credits nobody when nothing was written", () => {
-    const failed = render({ status: "unavailable", reason: "network-error", message: "Down." });
+    const failed = render({ status: "unavailable", reason: "network-error", notice: "market-data-unreachable" });
 
     expect(failed).not.toContain("gpt-5.6-terra");
   });

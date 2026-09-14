@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../../../schemas";
+import type {
+  DataResult,
+  DataWarningNotice,
+  PoolDailyPriceHistory,
+  PoolMarketSnapshot,
+  V3Pool,
+} from "../../../schemas";
 import {
   analysePoolRange,
   DEFAULT_PRICE_BAND_PARAMETERS,
@@ -74,7 +80,7 @@ const analysis = ((): PoolRangeAnalysis => {
   return result.data;
 })();
 
-const build = (locale: "en" | "tr" = "en", warnings: readonly string[] = []) =>
+const build = (locale: "en" | "tr" = "en", warnings: readonly DataWarningNotice[] = []) =>
   buildRangeInterpretationPrompt({ analysis, locale, warnings });
 
 describe("buildRangeInterpretationPrompt", () => {
@@ -86,7 +92,7 @@ describe("buildRangeInterpretationPrompt", () => {
     // This is what lets it sit in front of the prompt cache instead of
     // invalidating it on every call.
     expect(build("en").system).toBe(BASE_INSTRUCTION);
-    expect(build("tr", ["A caveat."]).system).toBe(BASE_INSTRUCTION);
+    expect(build("tr", ["block-time-unreported"]).system).toBe(BASE_INSTRUCTION);
   });
 
   it("names the language to write in", () => {
@@ -127,7 +133,9 @@ describe("buildRangeInterpretationPrompt", () => {
   });
 
   it("passes the caveats through, and says so when there are none", () => {
-    expect(build("en", ["Some days had no price."]).user).toContain("- Some days had no price.");
+    expect(build("en", ["history-window-incomplete"]).user).toContain(
+      "- The data source did not report a price for every day",
+    );
     expect(build().user).toContain("CAVEATS\n- none");
   });
 

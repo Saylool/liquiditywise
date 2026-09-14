@@ -79,7 +79,7 @@ describe("normalizeRangeInterpretation", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).toContain("declined");
+    expect(result.notice).toContain("declined");
   });
 
   it("says an answer was cut off rather than calling it malformed", () => {
@@ -89,7 +89,7 @@ describe("normalizeRangeInterpretation", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).toContain("cut off");
+    expect(result.notice).toBe("explanation-truncated");
   });
 
   it.each([
@@ -139,7 +139,7 @@ describe("normalizeRangeInterpretation", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain("IGNORE");
-    expect(result.message).not.toContain("guaranteed");
+    expect(result.notice).not.toContain("IGNORE");
+    expect(result.notice).not.toContain("guaranteed");
   });
 });

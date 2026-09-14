@@ -3,6 +3,7 @@ import { getRangeInterpretation } from "@/lib/ai/getRangeInterpretation";
 import type { PoolRangeAnalysis } from "@/lib/advisor/poolRangeAnalysis";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
+import type { DataWarningNotice } from "@/schemas";
 
 /**
  * Fetches the explanation for one finished analysis.
@@ -21,7 +22,7 @@ export async function PoolExplanationSection({
   t,
 }: {
   analysis: PoolRangeAnalysis;
-  warnings: readonly string[];
+  warnings: readonly DataWarningNotice[];
   locale: Locale;
   t: Dictionary;
 }) {

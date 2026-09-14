@@ -250,7 +250,7 @@ describe("failing closed", () => {
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
-    expect(result.message).not.toContain(POOL_ADDRESS);
-    expect(result.message).not.toContain("-1");
+    expect(result.notice).not.toContain(POOL_ADDRESS);
+    expect(result.notice).not.toContain("-1");
   });
 });

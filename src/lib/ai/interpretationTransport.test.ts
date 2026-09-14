@@ -227,8 +227,8 @@ describe("requestInterpretation", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.message).not.toContain("sk-proj-SECRET");
-    expect(result.message).not.toContain("https://");
+    expect(result.notice).not.toContain("sk-proj-SECRET");
+    expect(result.notice).not.toContain("https://");
   });
 
   it("repeats nothing from a throw that never carried a status either", async () => {
@@ -240,8 +240,8 @@ describe("requestInterpretation", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.message).not.toContain("SECRET");
-    expect(result.message).not.toContain("https://");
-    expect(result.message).not.toContain("ECONNREFUSED");
+    expect(result.notice).not.toContain("SECRET");
+    expect(result.notice).not.toContain("https://");
+    expect(result.notice).not.toContain("ECONNREFUSED");
   });
 });

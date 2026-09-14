@@ -129,7 +129,7 @@ describe("PoolSearchResults", () => {
     const markup = render({
       status: "unavailable",
       reason: "rate-limited",
-      message: "The market data source rate limit was exceeded.",
+      notice: "market-data-rate-limited",
     });
 
     expect(markup).toContain("The search could not be run");
@@ -140,7 +140,7 @@ describe("PoolSearchResults", () => {
     const markup = render({
       status: "unavailable",
       reason: "network-error",
-      message: "The market data source could not be reached.",
+      notice: "market-data-unreachable",
     });
 
     expect(markup).not.toContain("href=\"/pool?address=");

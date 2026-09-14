@@ -1,3 +1,4 @@
+import type { DataFailureNotice, DataWarningNotice } from "../../schemas/notices";
 import type { Locale } from "./locales";
 
 /*
@@ -260,6 +261,135 @@ const en = {
     },
   },
 
+  /*
+   * Every sentence this application says about a read that did not go well.
+   *
+   * They lived in the data layer until search made a second language matter:
+   * an adapter raised an English sentence and it travelled, unchanged, to a page
+   * being read in Turkish. Now the adapter raises a code and the wording is
+   * here, where all the other wording is.
+   *
+   * `satisfies` is what keeps this honest. Add a code to `notices.ts` and this
+   * object stops compiling until it says something about it, in both languages.
+   */
+  notices: {
+    failure: {
+      "invalid-pool-address":
+        "The pool address must be 0x followed by 40 hexadecimal characters, and cannot be the zero address.",
+      "invalid-search-terms":
+        "A pool search takes one or two short terms made of letters, digits, and the marks that appear inside tickers.",
+      "market-data-not-configured":
+        "Uniswap v3 market data is not configured on this server.",
+      "chain-data-not-configured":
+        "On-chain reads are not configured on this server.",
+      "explanation-not-configured":
+        "This application is not configured to write explanations, so none is shown.",
+      "market-data-timed-out":
+        "The market data request timed out.",
+      "market-data-unreachable":
+        "The market data source could not be reached.",
+      "market-data-credentials-rejected":
+        "The market data source rejected the configured credentials.",
+      "market-data-rate-limited":
+        "The market data source rate limit was exceeded.",
+      "market-data-unreadable":
+        "The market data source returned an unreadable response.",
+      "market-data-malformed":
+        "The market data source returned a response this application cannot verify.",
+      "market-data-indexing-errors":
+        "The market data source reported indexing errors, so its figures cannot be treated as verified.",
+      "market-data-stale":
+        "The market data source is too far behind the chain for these figures to be treated as current.",
+      "market-data-future-block-time":
+        "The market data source reported a block time ahead of this server's clock, so its figures cannot be verified.",
+      "chain-data-timed-out":
+        "The on-chain data request timed out.",
+      "chain-data-unreachable":
+        "The on-chain data source could not be reached.",
+      "chain-data-credentials-rejected":
+        "The on-chain data source rejected the configured credentials.",
+      "chain-data-rate-limited":
+        "The on-chain data source rate limit was exceeded.",
+      "chain-data-unreadable":
+        "The on-chain data source returned an unreadable response.",
+      "chain-data-malformed":
+        "The on-chain data source returned a response this application cannot verify.",
+      "pool-not-found":
+        "No Uniswap v3 pool was found for this address on Ethereum mainnet.",
+      "pool-contract-not-found":
+        "No Uniswap v3 pool contract answered at this address on Ethereum mainnet.",
+      "pool-configuration-inconsistent":
+        "The pool configuration assembled from its two sources could not be verified.",
+      "pool-history-insufficient":
+        "This pool does not have enough completed daily price history to analyse yet.",
+      "volatility-invalid-input":
+        "The price history supplied for this calculation is not a valid normalized history.",
+      "volatility-insufficient-history":
+        "This pool does not have enough consecutive daily prices to measure volatility.",
+      "volatility-unverifiable":
+        "The volatility calculation produced a result this application cannot verify.",
+      "band-invalid-input":
+        "The market data supplied for this price band is not valid, or the snapshot and volatility describe different pools.",
+      "band-no-current-price":
+        "The current price for this pool is unavailable, so a price band cannot be centred.",
+      "band-unverifiable":
+        "The price band calculation produced a result this application cannot verify.",
+      "range-invalid-input":
+        "The pool, price band and snapshot supplied for this range are not valid, or they do not all describe the same pool and the same observation.",
+      "range-price-unrepresentable":
+        "This pool's current price lies outside the range Uniswap can express as a tick, so no position range can be built from it.",
+      "range-tick-disagreement":
+        "The source's own tick for this pool does not match the tick its price implies for these token decimals, so no range is published.",
+      "range-too-narrow":
+        "The price band is narrower than one tick spacing on this pool, so it does not describe two distinct position boundaries.",
+      "range-unverifiable":
+        "The tick range calculation produced a result this application cannot verify.",
+      "explanation-key-rejected":
+        "The explanation service did not accept the configured key, so no explanation is shown.",
+      "explanation-model-not-permitted":
+        "The configured key is not permitted to use the selected model, so no explanation is shown.",
+      "explanation-model-unknown":
+        "The selected model is not available to the configured key, so no explanation is shown.",
+      "explanation-rate-limited":
+        "The explanation service is rate limited right now, so no explanation is shown.",
+      "explanation-unreachable":
+        "The explanation service could not be reached, so no explanation is shown.",
+      "explanation-request-refused":
+        "The explanation service refused this request, so no explanation is shown.",
+      "explanation-declined":
+        "The model declined to explain this pool's figures, so no explanation is shown.",
+      "explanation-truncated":
+        "The explanation was cut off before it was complete, so it is not shown.",
+      "explanation-malformed":
+        "The explanation came back in a form this application cannot verify, so it is not shown.",
+    } satisfies Record<DataFailureNotice, string>,
+
+    warning: {
+      "rolling-volume-unavailable":
+        "Rolling 24h/7d/30d volume is not available from this data source yet; those fields are absent rather than estimated.",
+      "block-time-unreported":
+        "The data source did not report a block time, so how current these figures are could not be verified.",
+      "history-window-incomplete":
+        "The data source did not report a price for every day in this window; the missing days are absent rather than estimated.",
+      "volatility-window-incomplete":
+        "Some days in this window had no price, so volatility is measured from fewer daily returns than the window covers; the missing days were skipped rather than estimated.",
+      "band-window-incomplete":
+        "Some days in the volatility window had no price, so this band is based on fewer daily returns than the window covers.",
+      "band-price-block-time-unreported":
+        "The current price source did not report a block time, so how current it is could not be independently verified.",
+      "band-volatility-block-time-unreported":
+        "The volatility source did not report a block time, so how current it is could not be independently verified.",
+      "range-lower-edge-truncated":
+        "The lower edge stops at the lowest tick this pool accepts, so the range does not reach as far down as the band.",
+      "range-upper-edge-truncated":
+        "The upper edge stops at the highest tick this pool accepts, so the range does not reach as far up as the band.",
+      "range-tick-unverified":
+        "The price source did not report the pool's own tick, so the converted tick could not be checked against it.",
+      "range-excludes-current-price":
+        "The pool's current tick lies outside this range, so a position built from it would hold a single token and earn nothing until price returns.",
+    } satisfies Record<DataWarningNotice, string>,
+  },
+
   rateLimited: {
     title: "Too many requests",
     body: (limit: number) =>
@@ -509,6 +639,124 @@ const tr: Dictionary = {
       whatTheVolatilitySays: "Volatilite ne söylüyor",
       whatThisDoesNotCover: "Bu analiz neyi kapsamıyor",
     },
+  },
+
+  notices: {
+    failure: {
+      "invalid-pool-address":
+        "Havuz adresi 0x ile başlayıp tam olarak 40 onaltılık karakterle devam etmeli ve sıfır adresi olamaz.",
+      "invalid-search-terms":
+        "Havuz araması bir ya da iki kısa terim alır: harfler, rakamlar ve tickerlarda geçen işaretler.",
+      "market-data-not-configured":
+        "Bu sunucuda Uniswap v3 piyasa verisi yapılandırılmamış.",
+      "chain-data-not-configured":
+        "Bu sunucuda zincir üstü okuma yapılandırılmamış.",
+      "explanation-not-configured":
+        "Bu uygulama açıklama yazacak şekilde yapılandırılmamış, bu yüzden açıklama gösterilmiyor.",
+      "market-data-timed-out":
+        "Piyasa verisi isteği zaman aşımına uğradı.",
+      "market-data-unreachable":
+        "Piyasa verisi kaynağına ulaşılamadı.",
+      "market-data-credentials-rejected":
+        "Piyasa verisi kaynağı yapılandırılmış kimlik bilgilerini kabul etmedi.",
+      "market-data-rate-limited":
+        "Piyasa verisi kaynağının istek sınırı aşıldı.",
+      "market-data-unreadable":
+        "Piyasa verisi kaynağı okunamayan bir yanıt döndürdü.",
+      "market-data-malformed":
+        "Piyasa verisi kaynağı, bu uygulamanın doğrulayamadığı bir yanıt döndürdü.",
+      "market-data-indexing-errors":
+        "Piyasa verisi kaynağı indeksleme hataları bildirdi, bu yüzden verdiği sayılar doğrulanmış sayılamaz.",
+      "market-data-stale":
+        "Piyasa verisi kaynağı zincirin o kadar gerisinde ki bu sayılar güncel kabul edilemez.",
+      "market-data-future-block-time":
+        "Piyasa verisi kaynağı, bu sunucunun saatinin ilerisinde bir blok zamanı bildirdi; bu yüzden verdiği sayılar doğrulanamıyor.",
+      "chain-data-timed-out":
+        "Zincir üstü veri isteği zaman aşımına uğradı.",
+      "chain-data-unreachable":
+        "Zincir üstü veri kaynağına ulaşılamadı.",
+      "chain-data-credentials-rejected":
+        "Zincir üstü veri kaynağı yapılandırılmış kimlik bilgilerini kabul etmedi.",
+      "chain-data-rate-limited":
+        "Zincir üstü veri kaynağının istek sınırı aşıldı.",
+      "chain-data-unreadable":
+        "Zincir üstü veri kaynağı okunamayan bir yanıt döndürdü.",
+      "chain-data-malformed":
+        "Zincir üstü veri kaynağı, bu uygulamanın doğrulayamadığı bir yanıt döndürdü.",
+      "pool-not-found":
+        "Ethereum mainnet üzerinde bu adrese ait bir Uniswap v3 havuzu bulunamadı.",
+      "pool-contract-not-found":
+        "Ethereum mainnet üzerinde bu adreste yanıt veren bir Uniswap v3 havuz sözleşmesi yok.",
+      "pool-configuration-inconsistent":
+        "Havuzun iki kaynaktan derlenen yapılandırması doğrulanamadı.",
+      "pool-history-insufficient":
+        "Bu havuzun analiz için yeterli tamamlanmış günlük fiyat geçmişi henüz yok.",
+      "volatility-invalid-input":
+        "Bu hesaplama için verilen fiyat geçmişi geçerli bir normalize geçmiş değil.",
+      "volatility-insufficient-history":
+        "Bu havuzun volatilite ölçmeye yetecek kadar ardışık günlük fiyatı yok.",
+      "volatility-unverifiable":
+        "Volatilite hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "band-invalid-input":
+        "Bu fiyat bandı için verilen piyasa verisi geçerli değil ya da anlık durum ile volatilite farklı havuzları anlatıyor.",
+      "band-no-current-price":
+        "Bu havuzun güncel fiyatı yok, bu yüzden bir fiyat bandı ortalanamıyor.",
+      "band-unverifiable":
+        "Fiyat bandı hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "range-invalid-input":
+        "Bu aralık için verilen havuz, fiyat bandı ve anlık durum geçerli değil ya da hepsi aynı havuzu ve aynı gözlemi anlatmıyor.",
+      "range-price-unrepresentable":
+        "Bu havuzun güncel fiyatı, Uniswap'ın tick olarak ifade edebildiği aralığın dışında; bu yüzden ondan bir pozisyon aralığı kurulamıyor.",
+      "range-tick-disagreement":
+        "Kaynağın bu havuz için bildirdiği tick, fiyatının bu token ondalıklarıyla ima ettiği tick ile uyuşmuyor; bu yüzden aralık yayımlanmıyor.",
+      "range-too-narrow":
+        "Fiyat bandı bu havuzun bir tick adımından dar, bu yüzden iki ayrı pozisyon sınırı tanımlamıyor.",
+      "range-unverifiable":
+        "Tick aralığı hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "explanation-key-rejected":
+        "Açıklama servisi yapılandırılmış anahtarı kabul etmedi, bu yüzden açıklama gösterilmiyor.",
+      "explanation-model-not-permitted":
+        "Yapılandırılmış anahtarın seçilen modeli kullanma izni yok, bu yüzden açıklama gösterilmiyor.",
+      "explanation-model-unknown":
+        "Seçilen model bu anahtara açık değil, bu yüzden açıklama gösterilmiyor.",
+      "explanation-rate-limited":
+        "Açıklama servisi şu anda istek sınırında, bu yüzden açıklama gösterilmiyor.",
+      "explanation-unreachable":
+        "Açıklama servisine ulaşılamadı, bu yüzden açıklama gösterilmiyor.",
+      "explanation-request-refused":
+        "Açıklama servisi bu isteği reddetti, bu yüzden açıklama gösterilmiyor.",
+      "explanation-declined":
+        "Model bu havuzun sayılarını açıklamayı reddetti, bu yüzden açıklama gösterilmiyor.",
+      "explanation-truncated":
+        "Açıklama tamamlanmadan kesildi, bu yüzden gösterilmiyor.",
+      "explanation-malformed":
+        "Açıklama, bu uygulamanın doğrulayamadığı bir biçimde geldi, bu yüzden gösterilmiyor.",
+    } satisfies Record<DataFailureNotice, string>,
+
+    warning: {
+      "rolling-volume-unavailable":
+        "Kayan 24s/7g/30g hacmi bu veri kaynağında henüz yok; o alanlar tahmin edilmek yerine boş bırakıldı.",
+      "block-time-unreported":
+        "Veri kaynağı bir blok zamanı bildirmedi, bu yüzden bu sayıların ne kadar güncel olduğu doğrulanamadı.",
+      "history-window-incomplete":
+        "Veri kaynağı bu penceredeki her gün için fiyat bildirmedi; eksik günler tahmin edilmek yerine boş bırakıldı.",
+      "volatility-window-incomplete":
+        "Bu penceredeki bazı günlerin fiyatı yoktu, bu yüzden volatilite pencerenin kapsadığından daha az günlük getiriyle ölçüldü; eksik günler tahmin edilmek yerine atlandı.",
+      "band-window-incomplete":
+        "Volatilite penceresindeki bazı günlerin fiyatı yoktu, bu yüzden bu bant pencerenin kapsadığından daha az günlük getiriye dayanıyor.",
+      "band-price-block-time-unreported":
+        "Güncel fiyat kaynağı bir blok zamanı bildirmedi, bu yüzden ne kadar güncel olduğu bağımsız olarak doğrulanamadı.",
+      "band-volatility-block-time-unreported":
+        "Volatilite kaynağı bir blok zamanı bildirmedi, bu yüzden ne kadar güncel olduğu bağımsız olarak doğrulanamadı.",
+      "range-lower-edge-truncated":
+        "Alt kenar bu havuzun kabul ettiği en düşük tick'te duruyor, bu yüzden aralık aşağıda bandın indiği kadar inmiyor.",
+      "range-upper-edge-truncated":
+        "Üst kenar bu havuzun kabul ettiği en yüksek tick'te duruyor, bu yüzden aralık yukarıda bandın çıktığı kadar çıkmıyor.",
+      "range-tick-unverified":
+        "Fiyat kaynağı havuzun kendi tick'ini bildirmedi, bu yüzden dönüştürülen tick ona karşı kontrol edilemedi.",
+      "range-excludes-current-price":
+        "Havuzun güncel tick'i bu aralığın dışında; burada kurulacak bir pozisyon tek token tutar ve fiyat dönene kadar hiçbir şey kazanmaz.",
+    } satisfies Record<DataWarningNotice, string>,
   },
 
   rateLimited: {

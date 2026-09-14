@@ -33,8 +33,7 @@ export const V3_POOL_SNAPSHOT_QUERY = `query PoolMarketSnapshot($poolId: ID!) {
   }
 }`;
 
-const INVALID_ADDRESS =
-  "The pool address must be 0x followed by 40 hexadecimal characters, and cannot be the zero address.";
+const INVALID_ADDRESS = "invalid-pool-address";
 
 /**
  * A pool address the caller supplied.
@@ -45,8 +44,7 @@ const INVALID_ADDRESS =
  * "not the zero address" in the schema layer.
  */
 const PoolAddressSchema = nonZeroEvmAddress(INVALID_ADDRESS);
-const NOT_CONFIGURED =
-  "Uniswap v3 market data is not configured on this server. Set THE_GRAPH_API_KEY and UNISWAP_V3_ETHEREUM_SUBGRAPH_ID.";
+const NOT_CONFIGURED = "market-data-not-configured";
 
 export type EthereumV3PoolSnapshotRequest = {
   readonly poolAddress: string;
@@ -76,13 +74,13 @@ export const fetchEthereumV3PoolMarketSnapshot = async (
 ): Promise<DataResult<PoolMarketSnapshot>> => {
   const address = PoolAddressSchema.safeParse(request.poolAddress);
   if (!address.success) {
-    return { status: "unavailable", reason: "invalid-input", message: INVALID_ADDRESS };
+    return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
   }
 
   const apiKey = request.apiKey?.trim();
   const subgraphId = request.subgraphId?.trim();
   if (apiKey === undefined || apiKey === "" || subgraphId === undefined || subgraphId === "") {
-    return { status: "unavailable", reason: "configuration-error", message: NOT_CONFIGURED };
+    return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
   const transport = await postV3SubgraphQuery({
@@ -95,7 +93,7 @@ export const fetchEthereumV3PoolMarketSnapshot = async (
   });
 
   if (!transport.ok) {
-    return { status: "unavailable", reason: transport.reason, message: transport.message };
+    return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
   return normalizeV3PoolSnapshot({

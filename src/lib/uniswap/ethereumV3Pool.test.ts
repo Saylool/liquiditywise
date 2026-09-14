@@ -154,11 +154,15 @@ describe("propagating failures without flattening them", () => {
 
     expect(noGraph).toMatchObject({ status: "unavailable", reason: "configuration-error" });
     expect(noRpc).toMatchObject({ status: "unavailable", reason: "configuration-error" });
-    // Same category, different remedy — the messages must not be identical.
+    /*
+     * Same category, different remedy, so the notices must differ. The sentence
+     * a visitor reads no longer names the environment variable — that is an
+     * operator's business, and it reaches them through the notice in the server
+     * log, which is precise in a way a translated sentence could not stay.
+     */
     if (noGraph.status !== "unavailable" || noRpc.status !== "unavailable") return;
-    expect(noGraph.message).not.toBe(noRpc.message);
-    expect(noGraph.message).toContain("THE_GRAPH_API_KEY");
-    expect(noRpc.message).toContain("ETHEREUM_RPC_URL");
+    expect(noGraph.notice).toBe("market-data-not-configured");
+    expect(noRpc.notice).toBe("chain-data-not-configured");
   });
 
   it.each([
@@ -192,9 +196,9 @@ describe("credential containment across both sources", () => {
     for (const result of failures) {
       expect(result.status).toBe("unavailable");
       if (result.status !== "unavailable") continue;
-      expect(result.message).not.toContain("RPC-SECRET-MUST-NEVER-LEAK");
-      expect(result.message).not.toContain(RPC_URL);
-      expect(result.message).not.toContain(API_KEY);
+      expect(result.notice).not.toContain("RPC-SECRET-MUST-NEVER-LEAK");
+      expect(result.notice).not.toContain(RPC_URL);
+      expect(result.notice).not.toContain(API_KEY);
     }
   });
 
@@ -231,9 +235,9 @@ describe("credential containment across both sources", () => {
     ]);
     for (const result of results) {
       if (result.status !== "unavailable") continue;
-      expect(result.message).not.toContain("RPC-SECRET-MUST-NEVER-LEAK");
-      expect(result.message).not.toContain(RPC_URL);
-      expect(result.message).not.toContain("eth-mainnet.example.test");
+      expect(result.notice).not.toContain("RPC-SECRET-MUST-NEVER-LEAK");
+      expect(result.notice).not.toContain(RPC_URL);
+      expect(result.notice).not.toContain("eth-mainnet.example.test");
     }
   });
 

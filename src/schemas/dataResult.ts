@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { DataFailureNotice, DataWarningNotice } from "./notices";
+
 /**
  * Why a fetch produced no usable data. Categories, not prose, so that callers
  * can branch on them and the UI can pick its own wording per case.
@@ -76,18 +78,24 @@ export type DataResult<T> =
        * the invalid shape would need guarding at every construction site.
        */
       readonly missingFields: NonEmptyReadonlyArray<FieldNameOf<T>>;
-      /** Non-fatal caveats, e.g. that a figure is stale. May be empty. */
-      readonly warnings: readonly string[];
+      /**
+       * Non-fatal caveats, as codes the interface turns into sentences in the
+       * reader's language. May be empty.
+       */
+      readonly warnings: readonly DataWarningNotice[];
     }
   | {
       readonly status: "unavailable";
       readonly reason: DataFailureReason;
       /**
-       * A short, already-sanitized explanation safe to show a user.
+       * What to tell the reader, as a code the interface turns into a sentence
+       * in their language.
        *
-       * Must never carry an API key, a URL containing one, a stack trace, an
-       * environment value or a raw provider payload. Anything needed for
-       * debugging is logged server-side instead.
+       * A code rather than prose, so that a message cannot carry an API key, a
+       * URL containing one, a stack trace, an environment value or a raw
+       * provider payload — the old contract asked for that in a comment, and
+       * this one cannot express it. Anything needed for debugging is logged
+       * server-side instead.
        */
-      readonly message: string;
+      readonly notice: DataFailureNotice;
     };

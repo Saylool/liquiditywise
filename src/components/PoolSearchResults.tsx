@@ -84,10 +84,13 @@ export function PoolSearchResults({
         <>
           <p className="text-sm leading-relaxed">{t.search.unavailableHeading}</p>
           {/*
-           * `DataResult` already promises this message carries no key, no URL
-           * and no provider text, which is what makes it safe to render.
+           * A code, turned into a sentence here. Nothing the provider wrote can
+           * reach this line, because nothing the provider wrote ever became one
+           * of the codes.
            */}
-          <p className="text-sm leading-relaxed text-muted">{result.message}</p>
+          <p className="text-sm leading-relaxed text-muted">
+            {t.notices.failure[result.notice]}
+          </p>
         </>
       ) : result.data.matches.length === 0 ? (
         <>
