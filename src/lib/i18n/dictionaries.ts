@@ -125,6 +125,22 @@ const en = {
     loading: "Reading live Uniswap data…",
   },
 
+  /*
+   * The controls that change the band. The field labels are not here: they are
+   * `report.horizon` and `report.multiplier`, the same words the figures are
+   * labelled with a few lines above, so a reader changing one can see which
+   * number they are changing.
+   */
+  parameters: {
+    heading: "Change the range",
+    apply: "Recalculate",
+    days: (days: string) => `${days} days`,
+    sigma: (value: string) => `${value}σ`,
+    note: "The horizon says how far the measured movement is laid forward. It does not change the measurement: volatility always comes from the last 30 completed days, whichever horizon is chosen. A larger multiplier makes the range wider, and is not a confidence level.",
+    fellBack:
+      "Part of what was asked for could not be read, so the default was used where that happened. The horizon and multiplier actually used are shown above.",
+  },
+
   search: {
     label: "A pair, or a pool address",
     placeholder: "WETH/USDC",
@@ -507,6 +523,16 @@ const tr: Dictionary = {
     invalidAddress:
       "Bu bir Ethereum adresi değil. Adres, 0x ile başlayıp tam olarak 40 onaltılık karakterle devam eder.",
     loading: "Canlı Uniswap verisi okunuyor…",
+  },
+
+  parameters: {
+    heading: "Aralığı değiştir",
+    apply: "Yeniden hesapla",
+    days: (days: string) => `${days} gün`,
+    sigma: (value: string) => `${value}σ`,
+    note: "Ufuk, ölçülen hareketin ne kadar ileriye taşındığını söyler. Ölçümün kendisini değiştirmez: hangi ufuk seçilirse seçilsin volatilite her zaman tamamlanmış son 30 günden gelir. Daha büyük bir çarpan aralığı genişletir; bir güven düzeyi değildir.",
+    fellBack:
+      "İstenenlerin bir kısmı okunamadı, o alanda varsayılan kullanıldı. Gerçekten kullanılan ufuk ve çarpan yukarıda yazıyor.",
   },
 
   search: {

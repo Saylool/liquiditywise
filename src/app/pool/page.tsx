@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { BandParametersForm } from "@/components/BandParametersForm";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { PoolLookupForm } from "@/components/PoolLookupForm";
@@ -10,6 +11,11 @@ import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { PoolSearchResults } from "@/components/PoolSearchResults";
 import { PreferenceBar } from "@/components/PreferenceBar";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
+import {
+  HORIZON_PARAMETER,
+  MULTIPLIER_PARAMETER,
+  readRequestedParameters,
+} from "@/lib/advisor/requestedParameters";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -91,12 +97,32 @@ export default async function PoolRangePage({
   const address = EvmAddressSchema.safeParse(single(requestedAddress));
 
   if (address.success) {
-    const result = await getPoolRangeAnalysis(address.data);
+    /*
+     * The band's two parameters come from the URL like the pool does, so a
+     * particular reading of a particular pool is one link.
+     */
+    const requested = readRequestedParameters(
+      params[HORIZON_PARAMETER],
+      params[MULTIPLIER_PARAMETER],
+    );
+    const result = await getPoolRangeAnalysis(address.data, requested.parameters);
 
     return (
       <Shell locale={locale} t={t}>
         <PoolLookupForm t={t} value={address.data} />
         <PoolRangeReport result={result} poolAddress={address.data} t={t} locale={locale} />
+        {/*
+         * Below the figures it changes, so the horizon and multiplier the
+         * analysis actually used are on screen above the control that sets them
+         * — which is what the fallback message points at.
+         */}
+        <BandParametersForm
+          poolAddress={address.data}
+          parameters={requested.parameters}
+          fellBack={requested.fellBack}
+          t={t}
+          locale={locale}
+        />
         {result.status === "unavailable" ? null : (
           /*
            * Never awaited by this component, so the figures above are sent as soon

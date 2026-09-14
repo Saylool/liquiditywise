@@ -63,6 +63,11 @@ const scientificPercent = byLocale(
 
 const wholeNumber = byLocale((tag) => new Intl.NumberFormat(tag, { maximumFractionDigits: 0 }));
 
+/** Enough places for the multipliers anyone would ask for, and no trailing zero. */
+const multiplierNumber = byLocale(
+  (tag) => new Intl.NumberFormat(tag, { maximumFractionDigits: 2 }),
+);
+
 const feePercent = byLocale(
   (tag) =>
     new Intl.NumberFormat(tag, {
@@ -126,6 +131,18 @@ export const formatPercent = (ratio: number, locale: Locale = DEFAULT_FORMAT_LOC
 /** A plain count, grouped. Rounds nothing away: every caller passes an integer. */
 export const formatWhole = (value: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string =>
   Number.isFinite(value) ? wholeNumber[locale].format(value) : ABSENT;
+
+/**
+ * A standard-deviation multiplier, which is not always whole.
+ *
+ * Its own formatter because {@link formatWhole} rounds to nothing after the
+ * point: a band asked for at 1.5σ would have been labelled "2σ" on the page and
+ * described as two standard deviations to the model, while the arithmetic behind
+ * it used 1.5 the whole time. A figure that disagrees with the number it came
+ * from is the failure this project spends most of its effort avoiding.
+ */
+export const formatMultiplier = (value: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string =>
+  Number.isFinite(value) ? multiplierNumber[locale].format(value) : ABSENT;
 
 /**
  * A tick index. Identical to {@link formatWhole} today, but named separately

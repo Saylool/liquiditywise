@@ -215,6 +215,37 @@ box that takes ordinary words is a larger invitation to do that than one that
 took a 40-character address. `chargeableRequest.ts` holds that rule, apart from
 the proxy that applies it, so it can be tested without a framework.
 
+## Choosing the band
+
+The band has two parameters and the pipeline has always taken both. Until
+recently every visitor saw the same one — thirty days, one standard deviation —
+because the page never passed anything else. They are now in the URL, beside the
+pool, so a particular reading of a particular pool is one link: reloadable,
+linkable, and comparable by opening two of them.
+
+`?days=` and `?sigma=`, set by a plain GET form with no client JavaScript.
+
+**The interface offers less than the schema accepts, and accepts everything the
+schema does.** The buttons stop at a quarter because volatility is always
+measured over the last 30 completed days whatever horizon is chosen — the
+horizon says how far that measured movement is laid forward, not how much
+history went into measuring it, and a year-ahead band drawn from a month of
+observations is a much larger extrapolation than it looks. A value typed into
+the URL that the calculator would accept is still accepted, and the select keeps
+it rather than silently snapping to an offered one.
+
+**A value that cannot be read falls back per field**, and the page says so. One
+mistyped multiplier does not throw away a horizon that was fine; refusing the
+whole analysis over a mistyped URL would be worse than either, and using a
+default without saying so would show a band nobody asked for. The horizon and
+multiplier actually used are printed above the control that sets them.
+
+Exposing the multiplier turned up a formatting bug that had been latent the
+whole time: the figure was rendered with the whole-number formatter, so a band
+asked for at 1.5σ would have been labelled **2σ** on the page and described to
+the model as two standard deviations, while the arithmetic behind it used 1.5.
+It now has its own formatter.
+
 ## The explanation
 
 `getRangeInterpretation` hands one finished analysis to a model and gets back four

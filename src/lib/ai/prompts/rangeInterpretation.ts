@@ -1,5 +1,6 @@
 import {
   formatFeePpm,
+  formatMultiplier,
   formatPercent,
   formatPrice,
   formatTick,
@@ -127,7 +128,7 @@ const describeBand = (analysis: PoolRangeAnalysis, locale: Locale): readonly str
     line("Horizon", `${formatWhole(parameters.horizonDays, locale)} days`),
     line(
       "Standard deviation multiplier",
-      formatWhole(parameters.standardDeviationMultiplier, locale),
+      formatMultiplier(parameters.standardDeviationMultiplier, locale),
     ),
     line("Band lower bound", formatPrice(band.lowerPrice, locale)),
     line("Band upper bound", formatPrice(band.upperPrice, locale)),

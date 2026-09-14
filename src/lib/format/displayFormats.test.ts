@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ABSENT,
   formatFeePpm,
+  formatMultiplier,
   formatPercent,
   formatPrice,
   formatTick,
@@ -184,5 +185,30 @@ describe("formatUtcMinute / formatUtcDate", () => {
       expect(formatUtcMinute(value)).toBe(ABSENT);
       expect(formatUtcDate(value)).toBe(ABSENT);
     }
+  });
+});
+
+/*
+ * Its own formatter because `formatWhole` rounds to nothing after the point: a
+ * band asked for at 1.5σ would have been labelled "2σ" while the arithmetic
+ * behind it used 1.5 the whole time.
+ */
+describe("formatMultiplier", () => {
+  it("keeps a fraction that formatWhole would round away", () => {
+    expect(formatMultiplier(1.5)).toBe("1.5");
+    expect(formatWhole(1.5)).toBe("2");
+  });
+
+  it("writes a whole multiplier without a decimal tail", () => {
+    expect(formatMultiplier(1)).toBe("1");
+    expect(formatMultiplier(2)).toBe("2");
+  });
+
+  it("writes it the way the reader's language writes a decimal", () => {
+    expect(formatMultiplier(1.5, "tr")).toBe("1,5");
+  });
+
+  it("reports a figure it cannot format as absent rather than as a number", () => {
+    expect(formatMultiplier(Number.NaN)).toBe(formatWhole(Number.NaN));
   });
 });

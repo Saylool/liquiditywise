@@ -5,6 +5,7 @@ import type {
 import {
   ABSENT,
   formatFeePpm,
+  formatMultiplier,
   formatPercent,
   formatPrice,
   formatTick,
@@ -222,7 +223,7 @@ export function PoolRangeReport({
         />
         <Figure
           label={t.report.multiplier}
-          value={`${formatWhole(parameters.standardDeviationMultiplier, locale)}σ`}
+          value={`${formatMultiplier(parameters.standardDeviationMultiplier, locale)}σ`}
           note={t.report.multiplierNote}
         />
         <Figure label={t.report.lowerBound} value={formatPrice(band.lowerPrice, locale)} />
