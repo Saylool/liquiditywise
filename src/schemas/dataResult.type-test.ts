@@ -38,7 +38,7 @@ export function readFeePpm(pool: Pool): number | null {
 export const partialResult: DataResult<PoolMarketSnapshot> = {
   status: "partial",
   data: snapshot,
-  missingFields: ["tvlUsd", "volume7dUsd"],
+  missingFields: ["tvlUsd", "sourceBlockNumber"],
   warnings: ["block-time-unreported"],
 };
 

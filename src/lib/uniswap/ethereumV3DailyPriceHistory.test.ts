@@ -24,6 +24,10 @@ const successBody = {
       id: `${POOL_ADDRESS}-${index}`,
       date: WINDOW.rangeStartUnixSeconds + index * DAY,
       token1Price: String(2500 + index),
+      high: String((1 / (2500 + index)) * 1.02),
+      low: String((1 / (2500 + index)) * 0.98),
+      volumeUSD: String(1_000_000 + index),
+      feesUSD: String(500 + index),
       pool: { id: POOL_ADDRESS },
     })),
     _meta: {
@@ -131,12 +135,24 @@ describe("request construction", () => {
     expect(body.query).not.toContain("skip");
   });
 
-  it("requests no volume or fee fields yet", async () => {
+  it("asks for what the pool actually did each day, not only its price", async () => {
     const { body } = await captureRequest();
 
-    for (const field of ["volumeUSD", "feesUSD", "volumeToken0", "open", "high", "low", "close"]) {
-      expect(body.query).not.toContain(field);
+    for (const field of ["volumeUSD", "feesUSD", "high", "low"]) {
+      expect(body.query).toContain(field);
     }
+  });
+
+  /*
+   * In the deployment this queries, `open` and `close` come back equal to each
+   * other and one day stale. The extremes bracket the day's own `token1Price` on
+   * every row inspected, so those are used and these are not selected at all.
+   */
+  it("asks for neither open nor close, which this source does not report usably", async () => {
+    const { body } = await captureRequest();
+
+    expect(body.query).not.toContain("open");
+    expect(body.query).not.toContain("close");
   });
 });
 

@@ -39,9 +39,6 @@ const snapshot = (overrides: Record<string, unknown> = {}): PoolMarketSnapshot =
     token0PriceInToken1: CURRENT_PRICE,
     token1PriceInToken0: 1 / CURRENT_PRICE,
     tvlUsd: 12_500_000,
-    volume24hUsd: null,
-    volume7dUsd: null,
-    volume30dUsd: null,
     tick: 196_256,
     liquidity: "987654321",
     source: "uniswap-v3-subgraph",
@@ -49,11 +46,22 @@ const snapshot = (overrides: Record<string, unknown> = {}): PoolMarketSnapshot =
   }) as unknown as PoolMarketSnapshot;
 
 const history = (): PoolDailyPriceHistory => {
-  const points: { timestamp: string; price: number }[] = [];
+  const points: {
+    timestamp: string;
+    price: number;
+    low: null;
+    high: null;
+    volumeUsd: null;
+    feesUsd: null;
+  }[] = [];
   let price = CURRENT_PRICE;
   for (let day = 0; day < 31; day += 1) {
     if (day > 0) price *= day % 2 === 0 ? 1.01 : 1 / 1.01;
-    points.push({ timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(), price });
+    points.push({
+      timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
+      price,
+      low: null, high: null, volumeUsd: null, feesUsd: null,
+    });
   }
   return {
     pool: POOL_REF,
@@ -157,8 +165,8 @@ describe("PoolRangeReport", () => {
       snapshot: {
         status: "partial",
         data: snapshot(),
-        missingFields: ["volume24hUsd"],
-        warnings: ["rolling-volume-unavailable"],
+        missingFields: ["sourceBlockTimestamp"],
+        warnings: ["block-time-unreported"],
       },
       history: ok(history()),
       parameters: DEFAULT_PRICE_BAND_PARAMETERS,
@@ -166,7 +174,7 @@ describe("PoolRangeReport", () => {
 
     const partialMarkup = render(result);
     expect(partialMarkup).toContain(
-      "Rolling 24h/7d/30d volume is not available from this data source yet",
+      "The data source did not report a block time",
     );
     // Singular and plural are both grammatical; a single template for both is not.
     expect(partialMarkup).toContain("One caveat applies");
@@ -179,7 +187,7 @@ describe("PoolRangeReport", () => {
       snapshot: {
         status: "partial",
         data: snapshot({ sourceBlockTimestamp: null }),
-        missingFields: ["volume24hUsd"],
+        missingFields: ["sourceBlockTimestamp"],
         warnings: ["block-time-unreported"],
       },
       history: ok(history()),
@@ -200,8 +208,9 @@ describe("PoolRangeReport", () => {
   it("shows an unreported TVL as absent rather than as zero", () => {
     const noTvl = render(analyse({ snapshot: ok(snapshot({ tvlUsd: null })) }));
 
-    expect(noTvl).not.toContain("$0");
-    expect(noTvl).toContain("—");
+    // Named rather than searched for globally: "$0.00" legitimately appears
+    // elsewhere now, where the pool really did charge nothing.
+    expect(noTvl).toContain("Total value locked</dt><dd class=\"font-mono text-sm\">—</dd>");
   });
 });
 

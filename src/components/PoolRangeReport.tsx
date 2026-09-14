@@ -51,11 +51,27 @@ function Figure({
   );
 }
 
+/** A titled panel of `Figure`s. Its children are description-list entries. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Panel title={title}>
+      <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+    </Panel>
+  );
+}
+
+/**
+ * The same panel without the description list.
+ *
+ * Extracted because two sections carry prose alongside their figures, and a
+ * paragraph is not a valid child of `<dl>` — which is what they were until the
+ * markup was read back.
+ */
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">{title}</h2>
-      <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+      {children}
     </section>
   );
 }
@@ -88,7 +104,8 @@ export function PoolRangeReport({
     );
   }
 
-  const { pool, snapshot, volatility, band, range, divergence, parameters } = result.data;
+  const { pool, snapshot, volatility, band, range, divergence, activity, parameters } =
+    result.data;
   const warnings = result.status === "partial" ? result.warnings : [];
 
   const base = pool.token0.symbol;
@@ -242,7 +259,40 @@ export function PoolRangeReport({
 
       <p className="text-sm leading-relaxed text-muted">{t.report.epilogue}</p>
 
-      <Section title={t.divergence.heading}>
+      <Panel title={t.activity.heading}>
+        <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <Figure label={t.activity.volume24h} value={formatUsd(activity.volume24hUsd, locale)} />
+          <Figure label={t.activity.volume7d} value={formatUsd(activity.volume7dUsd, locale)} />
+          <Figure label={t.activity.volume30d} value={formatUsd(activity.volume30dUsd, locale)} />
+          <Figure
+            label={t.activity.fees30d}
+            value={formatUsd(activity.fees30dUsd, locale)}
+            note={t.activity.feesNote}
+          />
+          <Figure
+            label={t.activity.fullyInside}
+            value={formatWhole(activity.occupancy.fullyInside, locale)}
+          />
+          <Figure
+            label={t.activity.fullyOutside}
+            value={formatWhole(activity.occupancy.fullyOutside, locale)}
+          />
+          <Figure
+            label={t.activity.undetermined}
+            value={formatWhole(activity.occupancy.undetermined, locale)}
+            note={t.activity.undeterminedNote}
+          />
+          <Figure
+            label={t.activity.feesWhileInside}
+            value={formatUsd(activity.feesWhileFullyInsideUsd, locale)}
+          />
+        </dl>
+
+        <p className="text-xs leading-relaxed text-muted">{t.activity.inSample}</p>
+        <p className="text-sm leading-relaxed">{t.activity.notYourEarnings}</p>
+      </Panel>
+
+      <Panel title={t.divergence.heading}>
         <p className="text-sm leading-relaxed">{t.divergence.intro}</p>
 
         <div className="flex flex-col gap-1">
@@ -260,7 +310,7 @@ export function PoolRangeReport({
 
         <p className="text-xs leading-relaxed text-muted">{t.divergence.entryRow}</p>
         <p className="text-xs leading-relaxed text-muted">{t.divergence.impermanentNote}</p>
-      </Section>
+      </Panel>
     </div>
   );
 }

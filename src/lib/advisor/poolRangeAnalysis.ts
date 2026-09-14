@@ -1,10 +1,12 @@
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
+import { calculatePoolActivity } from "../analytics/poolActivity";
 import {
   type AnalyticsFailureReason,
   type DataFailureNotice,
   type DataFailureReason,
   type DataResult,
   type DivergenceLoss,
+  type PoolActivity,
   type DataWarningNotice,
   type HistoricalVolatility,
   type PoolDailyPriceHistory,
@@ -41,7 +43,8 @@ export type PoolRangeAnalysisStep =
   | "volatility"
   | "band"
   | "range"
-  | "divergence";
+  | "divergence"
+  | "activity";
 
 /**
  * Everything the pipeline produced, each stage kept rather than summarised.
@@ -59,6 +62,8 @@ export type PoolRangeAnalysis = {
   readonly range: V3TickRange;
   /** What that range is worth against holding, at a few prices. Needs no source. */
   readonly divergence: DivergenceLoss;
+  /** What the pool did over the window, and how those days sat against the range. */
+  readonly activity: PoolActivity;
   readonly parameters: PriceBandParameters;
 };
 
@@ -206,6 +211,20 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     };
   }
 
+  /*
+   * Also costs no request: every day it reads was already fetched for the
+   * volatility figure.
+   */
+  const activity = calculatePoolActivity({ history: history.value, range: range.data });
+  if (activity.status === "unavailable") {
+    return {
+      status: "unavailable",
+      step: "activity",
+      reason: "calculation-error",
+      notice: activity.notice,
+    };
+  }
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -214,6 +233,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     band: band.data,
     range: range.data,
     divergence: divergence.data,
+    activity: activity.data,
     parameters: input.parameters,
   };
 

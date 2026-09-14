@@ -12,10 +12,25 @@ const FIRST_DAY_UNIX = WINDOW.rangeStartUnixSeconds;
 /** 12 seconds before FETCHED_AT — one block of ordinary indexer lag. */
 const BLOCK_TIMESTAMP_SECONDS = 1_787_217_288;
 
+/*
+ * The provider publishes extremes the other way up, so a row's `high` is the
+ * *low* of our direction once inverted. Written here as the provider would, with
+ * a spread wide enough to bracket the row's own price after inversion.
+ */
 const dayRow = (index: number, token1Price = String(2500 + index)) => ({
   id: `${POOL_ADDRESS}-${index}`,
   date: FIRST_DAY_UNIX + index * DAY,
   token1Price,
+  /*
+   * The provider's own direction, which is the inverse of `token1Price` — so
+   * these bracket 1/price, not price. Written the other way round at first, and
+   * the schema's cross-check caught it: the day's price fell nowhere near its
+   * own extremes once inverted.
+   */
+  high: String((1 / Number(token1Price)) * 1.02),
+  low: String((1 / Number(token1Price)) * 0.98),
+  volumeUSD: String(1_000_000 + index),
+  feesUSD: String(500 + index),
   pool: { id: POOL_ADDRESS },
 });
 
@@ -59,6 +74,11 @@ describe("a complete 31-day history", () => {
       points: Array.from({ length: 31 }, (_unused, index) => ({
         timestamp: new Date((FIRST_DAY_UNIX + index * DAY) * 1000).toISOString(),
         price: 2500 + index,
+        /* Inverted from the provider's direction, which swaps which is which. */
+        low: 1 / ((1 / (2500 + index)) * 1.02),
+        high: 1 / ((1 / (2500 + index)) * 0.98),
+        volumeUsd: 1_000_000 + index,
+        feesUsd: 500 + index,
       })),
       source: "uniswap-v3-subgraph",
     });

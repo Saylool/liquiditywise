@@ -246,6 +246,49 @@ asked for at 1.5σ would have been labelled **2σ** on the page and described to
 the model as two standard deviations, while the arithmetic behind it used 1.5.
 It now has its own formatter.
 
+## What the pool actually did
+
+Real 24h/7d/30d volume and the fees the pool charged, summed from the day data
+the history read already fetches — so it costs no extra request. Facts, not
+estimates.
+
+**None of it is what a position would earn**, and the page says so beside the
+figures. That would be these fees multiplied by a share of the liquidity active
+in the range while the swaps happened: a share this application does not read,
+for a deposit it will not size. There is no yield figure and there will not be
+one.
+
+Alongside it, how the measured days sat against the suggested range — entirely
+inside, entirely outside, or crossing an edge. Three buckets rather than a
+percentage, because the source publishes a daily high and low: a day that spent
+part of itself inside cannot be split without intraday data this does not fetch,
+and a fraction would put a precision on the answer that the measurement does not
+have.
+
+**It is in-sample and the page says that too.** The range was drawn from the
+volatility of these same days, so a band containing most of them describes how it
+was fitted rather than testing how it holds. It is also a counterfactual nobody
+could have acted on — the range is centred on *today's* price. Read as how the
+pool's recent movement sits against the range being suggested, it is worth
+knowing; read as a backtest, it is wrong.
+
+Two things the source got in the way of, both found by looking rather than
+assuming:
+
+- **The extremes arrive the other way up.** `high` and `low` are published in the
+  inverse of the direction this application stores prices in, so inverting them
+  swaps which is which. A day's own price is then required to sit between its own
+  extremes, and the schema repeats the check — a test fixture that had them the
+  wrong way round was caught by exactly that.
+- **`open` and `close` are not usable in this deployment.** They come back equal
+  to each other and one day stale, so neither is selected. The extremes bracket
+  the day's own price on every row inspected, and those are used instead.
+
+The snapshot's three rolling-volume fields are gone with this. They were always
+null — the source publishes a lifetime cumulative figure and nothing per window —
+and they put a caveat on every single analysis that said only that. A snapshot
+with a reported block time is now a plain success.
+
 ## Against simply holding
 
 The page compares the suggested range against holding the two tokens, at five

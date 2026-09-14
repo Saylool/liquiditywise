@@ -24,6 +24,21 @@ const RawPoolDayDataSchema = z.object({
   /** Provider perspective: token1 per token0. Becomes `token0PriceInToken1`. */
   token1Price: z.string(),
   /**
+   * The day's extremes, published the *other* way up — in `token0Price`, token0
+   * per token1 — while `token1Price` above is our direction. An adapter has to
+   * invert them, and inverting swaps which one is the high.
+   *
+   * `open` and `close` are deliberately not selected. In the deployment this
+   * queries they come back equal to each other and one day stale, which is not a
+   * price this application is willing to publish; the extremes bracket the day's
+   * own `token1Price` on every row inspected, so those are used instead.
+   */
+  high: z.string(),
+  low: z.string(),
+  /** `BigDecimal!`. What the whole pool traded and charged that day. */
+  volumeUSD: z.string(),
+  feesUSD: z.string(),
+  /**
    * Required, not optional. Each row states which pool it belongs to so ownership
    * can be proved per row rather than inferred from the query's filter, from the
    * row's opaque `id`, or from the separate top-level `pool` field. `Pool!` is

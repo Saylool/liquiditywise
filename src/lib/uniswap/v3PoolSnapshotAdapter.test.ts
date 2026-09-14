@@ -45,11 +45,11 @@ const normalize = (body: unknown) =>
   normalizeV3PoolSnapshot({ payload: body, poolAddress: POOL_ADDRESS, fetchedAt: FETCHED_AT });
 
 describe("normalizeV3PoolSnapshot success", () => {
-  it("produces the exact expected partial snapshot", () => {
+  it("produces the exact expected snapshot, with nothing missing", () => {
     const result = normalize(payload());
 
     expect(result).toEqual({
-      status: "partial",
+      status: "success",
       data: {
         pool: { protocolVersion: "v3", chainId: 1, id: POOL_ADDRESS },
         fetchedAt: FETCHED_AT,
@@ -58,23 +58,17 @@ describe("normalizeV3PoolSnapshot success", () => {
         token0PriceInToken1: 2500,
         token1PriceInToken0: 0.0004,
         tvlUsd: 1234.56,
-        volume24hUsd: null,
-        volume7dUsd: null,
-        volume30dUsd: null,
         tick: -12345,
         liquidity: "123456789012345678901234567890",
         source: "uniswap-v3-subgraph",
       },
-      missingFields: ["volume24hUsd", "volume7dUsd", "volume30dUsd"],
-      warnings: ["rolling-volume-unavailable"],
     });
   });
 
   it("maps subgraph token1Price to token0PriceInToken1, not the reverse", () => {
     const result = normalize(payload(rawPool({ token0Price: "0.0004", token1Price: "2500" })));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     // token1Price (token1 per token0) is the price of token0 expressed in token1.
     expect(result.data.token0PriceInToken1).toBe(2500);
     // token0Price (token0 per token1) is the price of token1 expressed in token0.
@@ -84,8 +78,7 @@ describe("normalizeV3PoolSnapshot success", () => {
   it("keeps the two price directions distinct when the pair is inverted", () => {
     const result = normalize(payload(rawPool({ token0Price: "2500", token1Price: "0.0004" })));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.token0PriceInToken1).toBe(0.0004);
     expect(result.data.token1PriceInToken0).toBe(2500);
   });
@@ -98,32 +91,28 @@ describe("normalizeV3PoolSnapshot success", () => {
       fetchedAt: FETCHED_AT,
     });
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.pool.id).toBe(POOL_ADDRESS);
   });
 
   it("carries the block number as an exact decimal string", () => {
     const result = normalize(payload(rawPool(), rawMeta({ block: { number: 21_500_001, timestamp: null } })));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.sourceBlockNumber).toBe("21500001");
   });
 
   it("converts the block timestamp to fixed-millisecond UTC", () => {
     const result = normalize(payload());
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.sourceBlockTimestamp).toBe(BLOCK_TIMESTAMP_ISO);
   });
 
   it("accepts a null tick and reports it as missing", () => {
     const result = normalize(payload(rawPool({ tick: null })));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status !== "partial") throw new Error(`expected partial, got ${result.status}`);
     expect(result.data.tick).toBeNull();
     expect(result.missingFields).toContain("tick");
   });
@@ -131,46 +120,28 @@ describe("normalizeV3PoolSnapshot success", () => {
   it("accepts a zero TVL as a reported figure", () => {
     const result = normalize(payload(rawPool({ totalValueLockedUSD: "0" })));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.tvlUsd).toBe(0);
-    expect(result.missingFields).not.toContain("tvlUsd");
+    // A reported zero is a figure, so nothing about it is missing.
+    expect(result.status).toBe("success");
   });
 });
 
-describe("rolling volume windows", () => {
-  it("leaves all three windows null", () => {
-    const result = normalize(payload());
-
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
-    expect(result.data.volume24hUsd).toBeNull();
-    expect(result.data.volume7dUsd).toBeNull();
-    expect(result.data.volume30dUsd).toBeNull();
-  });
-
-  it("never adopts a cumulative volumeUSD as a rolling window", () => {
+/*
+ * A snapshot used to carry three rolling-volume fields that were always null,
+ * because the source publishes a lifetime cumulative figure and nothing per
+ * window. They are gone: the real rolling figures are summed from day data in
+ * the analytics layer, and three permanently-absent fields were a caveat on
+ * every analysis that said nothing.
+ */
+describe("cumulative volume", () => {
+  it("never reaches the snapshot at all", () => {
     const withCumulative = rawPool({ volumeUSD: "987654321.12", untrackedVolumeUSD: "5" });
     const result = normalize(payload(withCumulative));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
-    for (const window of [
-      result.data.volume24hUsd,
-      result.data.volume7dUsd,
-      result.data.volume30dUsd,
-    ]) {
-      expect(window).toBeNull();
-      expect(window).not.toBe(987_654_321.12);
-    }
-  });
-
-  it("declares the three windows missing", () => {
-    const result = normalize(payload());
-
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
-    expect(result.missingFields).toEqual(["volume24hUsd", "volume7dUsd", "volume30dUsd"]);
+    if (result.status === "unavailable") throw new Error(result.notice);
+    expect(JSON.stringify(result.data)).not.toContain("987654321");
+    expect(Object.keys(result.data)).not.toContain("volume24hUsd");
   });
 });
 
@@ -178,16 +149,8 @@ describe("missingFields determinism", () => {
   it("lists fields in schema order, not discovery order", () => {
     const result = normalize(payload(rawPool({ tick: null }), null));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
-    expect(result.missingFields).toEqual([
-      "sourceBlockNumber",
-      "sourceBlockTimestamp",
-      "volume24hUsd",
-      "volume7dUsd",
-      "volume30dUsd",
-      "tick",
-    ]);
+    if (result.status !== "partial") throw new Error(`expected partial, got ${result.status}`);
+    expect(result.missingFields).toEqual(["sourceBlockNumber", "sourceBlockTimestamp", "tick"]);
   });
 
   it("reports a missing block timestamp without the block number", () => {
@@ -195,14 +158,8 @@ describe("missingFields determinism", () => {
       payload(rawPool(), rawMeta({ block: { number: 21_500_000, timestamp: null } })),
     );
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
-    expect(result.missingFields).toEqual([
-      "sourceBlockTimestamp",
-      "volume24hUsd",
-      "volume7dUsd",
-      "volume30dUsd",
-    ]);
+    if (result.status !== "partial") throw new Error(`expected partial, got ${result.status}`);
+    expect(result.missingFields).toEqual(["sourceBlockTimestamp"]);
   });
 
   it("returns an identical array for an identical payload", () => {
@@ -280,8 +237,7 @@ describe("failing closed", () => {
   it("still accepts a TVL spelled as zero with decimal places", () => {
     const result = normalize(payload(rawPool({ totalValueLockedUSD: "0.0000" })));
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.tvlUsd).toBe(0);
   });
 
@@ -305,11 +261,11 @@ describe("source freshness", () => {
     );
 
   it("accepts a source block well inside the lag limit", () => {
-    expect(atOffset(60).status).toBe("partial");
+    expect(atOffset(60).status).toBe("success");
   });
 
   it("accepts a source block exactly at the lag limit", () => {
-    expect(atOffset(MAX_SOURCE_LAG_MS / 1000).status).toBe("partial");
+    expect(atOffset(MAX_SOURCE_LAG_MS / 1000).status).toBe("success");
   });
 
   it("refuses a source block one second past the lag limit", () => {
@@ -324,7 +280,7 @@ describe("source freshness", () => {
   });
 
   it("tolerates a source block slightly ahead of our clock", () => {
-    expect(atOffset(-(MAX_SOURCE_CLOCK_SKEW_MS / 1000)).status).toBe("partial");
+    expect(atOffset(-(MAX_SOURCE_CLOCK_SKEW_MS / 1000)).status).toBe("success");
   });
 
   it("refuses a source block further ahead than the tolerated skew", () => {
@@ -339,8 +295,7 @@ describe("source freshness", () => {
       payload(rawPool(), rawMeta({ block: { number: 21_500_000, timestamp: null } })),
     );
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status !== "partial") throw new Error(`expected partial, got ${result.status}`);
     expect(result.data.sourceBlockTimestamp).toBeNull();
     expect(result.missingFields).toContain("sourceBlockTimestamp");
     expect(result.warnings).toContain("block-time-unreported");
@@ -351,8 +306,7 @@ describe("source freshness", () => {
       payload(rawPool(), rawMeta({ block: { number: 21_500_000, timestamp: null } })),
     );
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.sourceBlockTimestamp).not.toBe(result.data.fetchedAt);
     expect(result.data.sourceBlockTimestamp).toBeNull();
   });
@@ -363,7 +317,8 @@ describe("source freshness", () => {
       payload(rawPool(), rawMeta({ block: { number: 21_500_000, timestamp: null } })),
     );
 
-    expect(withBlockTime.status).toBe("partial");
+    // Only the second is partial now: a reported block time leaves nothing absent.
+    expect(withBlockTime.status).toBe("success");
     expect(withoutBlockTime.status).toBe("partial");
     if (withBlockTime.status !== "partial" || withoutBlockTime.status !== "partial") return;
 
@@ -374,9 +329,9 @@ describe("source freshness", () => {
     expect(withoutBlockTime.warnings[1]).toContain("block-time-unreported");
     expect(withoutBlockTime.missingFields).toEqual([
       "sourceBlockTimestamp",
-      "volume24hUsd",
-      "volume7dUsd",
-      "volume30dUsd",
+      "sourceBlockTimestamp",
+      "sourceBlockNumber",
+      "sourceBlockNumber",
     ]);
   });
 

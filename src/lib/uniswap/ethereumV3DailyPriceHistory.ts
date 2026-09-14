@@ -49,6 +49,10 @@ export const V3_DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
     id
     date
     token1Price
+    high
+    low
+    volumeUSD
+    feesUSD
     pool {
       id
     }

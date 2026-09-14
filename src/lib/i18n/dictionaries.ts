@@ -136,6 +136,32 @@ const en = {
    * likely to be read as half an answer — so the text says what it leaves out
    * before it says anything else.
    */
+  /*
+   * Facts about the pool, and the sentence that keeps them from being read as
+   * something else. The gap between "the pool collected this" and "you would
+   * have earned this" is where a reader is likeliest to fill in a number nobody
+   * gave them.
+   */
+  activity: {
+    heading: "What the pool actually did",
+    volume24h: "Volume, 24h",
+    volume7d: "Volume, 7d",
+    volume30d: "Volume, 30d",
+    fees30d: "Fees charged, 30d",
+    feesNote: "The whole pool's, shared among everyone whose liquidity was active.",
+    occupancyHeading: "How these days sat against the range",
+    fullyInside: "Days entirely inside",
+    fullyOutside: "Days entirely outside",
+    undetermined: "Days that crossed an edge",
+    undeterminedNote:
+      "The source publishes a daily high and low, so a day that spent part of itself inside cannot be split without intraday data this does not fetch.",
+    feesWhileInside: "Fees charged on the days entirely inside",
+    inSample:
+      "These are the same days the range was measured from, so this describes how the band was fitted rather than testing how it holds up. The range is also centred on today's price, which nobody could have opened a month ago. Read it as how the pool's recent movement sits against the range being suggested, not as a backtest.",
+    notYourEarnings:
+      "None of this is what a position would earn. That would be these fees multiplied by your share of the liquidity active in the range while the swaps happened — a share this application does not read, for a deposit it will not size. There is no yield figure here on purpose.",
+  },
+
   divergence: {
     heading: "Against simply holding",
     intro:
@@ -205,6 +231,7 @@ const en = {
       band: "building the price band",
       range: "aligning the band onto the pool's tick grid",
       divergence: "comparing that range against holding the two tokens",
+      activity: "reading what the pool did over the measured window",
     },
     noRangeHeading: "No range for this pool",
     stoppedWhile: (step: string) => `This stopped while ${step}.`,
@@ -379,6 +406,8 @@ const en = {
         "The tick range calculation produced a result this application cannot verify.",
       "divergence-unverifiable":
         "The comparison against holding produced a result this application cannot verify.",
+      "activity-unverifiable":
+        "The pool's recent activity produced a result this application cannot verify.",
       "explanation-key-rejected":
         "The explanation service did not accept the configured key, so no explanation is shown.",
       "explanation-model-not-permitted":
@@ -400,8 +429,6 @@ const en = {
     } satisfies Record<DataFailureNotice, string>,
 
     warning: {
-      "rolling-volume-unavailable":
-        "Rolling 24h/7d/30d volume is not available from this data source yet; those fields are absent rather than estimated.",
       "block-time-unreported":
         "The data source did not report a block time, so how current these figures are could not be verified.",
       "history-window-incomplete":
@@ -544,6 +571,26 @@ const tr: Dictionary = {
     loading: "Canlı Uniswap verisi okunuyor…",
   },
 
+  activity: {
+    heading: "Havuz gerçekte ne yaptı",
+    volume24h: "Hacim, 24s",
+    volume7d: "Hacim, 7g",
+    volume30d: "Hacim, 30g",
+    fees30d: "Alınan komisyon, 30g",
+    feesNote: "Havuzun tamamının; likiditesi aktif olan herkes arasında paylaşılır.",
+    occupancyHeading: "Bu günler aralığa göre nerede durdu",
+    fullyInside: "Tamamen içeride geçen gün",
+    fullyOutside: "Tamamen dışarıda geçen gün",
+    undetermined: "Bir kenarı geçen gün",
+    undeterminedNote:
+      "Kaynak günlük en yüksek ve en düşüğü yayımlıyor; bu yüzden bir kısmını içeride geçiren bir gün, çekmediğimiz gün içi veri olmadan bölünemez.",
+    feesWhileInside: "Tamamen içeride geçen günlerde alınan komisyon",
+    inSample:
+      "Bunlar, aralığın kendisinden ölçüldüğü günlerin ta kendisi; yani bu, bandın nasıl oturtulduğunu anlatır, ne kadar tuttuğunu sınamaz. Aralık ayrıca bugünkü fiyata göre ortalanmış — bir ay önce kimse onu açamazdı. Bir geriye dönük test olarak değil, havuzun son dönem hareketinin önerilen aralığa göre nerede durduğu olarak oku.",
+    notYourEarnings:
+      "Bunların hiçbiri bir pozisyonun kazanacağı miktar değil. O, bu komisyonların, takaslar olurken aralıkta aktif olan likiditedeki payınla çarpımı olurdu — bu uygulamanın okumadığı bir pay, ve büyüklüğünü belirlemeyeceği bir yatırım için. Burada bilerek bir getiri rakamı yok.",
+  },
+
   divergence: {
     heading: "Sadece tutmaya kıyasla",
     intro:
@@ -605,6 +652,7 @@ const tr: Dictionary = {
       band: "fiyat bandı kurulurken",
       range: "bant havuzun tick ızgarasına hizalanırken",
       divergence: "o aralık iki tokenı tutmakla karşılaştırılırken",
+      activity: "havuzun ölçüm penceresinde ne yaptığı okunurken",
     },
     noRangeHeading: "Bu havuz için aralık yok",
     stoppedWhile: (step: string) => `İşlem ${step} durdu.`,
@@ -772,6 +820,8 @@ const tr: Dictionary = {
         "Tick aralığı hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "divergence-unverifiable":
         "Tutmaya kıyaslama hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "activity-unverifiable":
+        "Havuzun son dönem hareketliliği, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "explanation-key-rejected":
         "Açıklama servisi yapılandırılmış anahtarı kabul etmedi, bu yüzden açıklama gösterilmiyor.",
       "explanation-model-not-permitted":
@@ -793,8 +843,6 @@ const tr: Dictionary = {
     } satisfies Record<DataFailureNotice, string>,
 
     warning: {
-      "rolling-volume-unavailable":
-        "Kayan 24s/7g/30g hacmi bu veri kaynağında henüz yok; o alanlar tahmin edilmek yerine boş bırakıldı.",
       "block-time-unreported":
         "Veri kaynağı bir blok zamanı bildirmedi, bu yüzden bu sayıların ne kadar güncel olduğu doğrulanamadı.",
       "history-window-incomplete":

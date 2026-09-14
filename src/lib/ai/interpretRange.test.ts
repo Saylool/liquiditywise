@@ -38,20 +38,28 @@ const snapshot = {
   token0PriceInToken1: CURRENT_PRICE,
   token1PriceInToken0: 1 / CURRENT_PRICE,
   tvlUsd: 12_500_000,
-  volume24hUsd: null,
-  volume7dUsd: null,
-  volume30dUsd: null,
   tick: 196_256,
   liquidity: "987654321",
   source: "uniswap-v3-subgraph",
 } as unknown as PoolMarketSnapshot;
 
 const history = ((): PoolDailyPriceHistory => {
-  const points: { timestamp: string; price: number }[] = [];
+  const points: {
+    timestamp: string;
+    price: number;
+    low: null;
+    high: null;
+    volumeUsd: null;
+    feesUsd: null;
+  }[] = [];
   let price = CURRENT_PRICE;
   for (let day = 0; day < 31; day += 1) {
     if (day > 0) price *= day % 2 === 0 ? 1.01 : 1 / 1.01;
-    points.push({ timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(), price });
+    points.push({
+      timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
+      price,
+      low: null, high: null, volumeUsd: null, feesUsd: null,
+    });
   }
   return {
     pool: POOL_REF,

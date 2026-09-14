@@ -142,7 +142,39 @@ export const normalizeV3DailyPriceHistory = ({
     const price = convertNonNegativeDecimal(day.token1Price, { allowZero: false });
     if (!price.ok) return unavailable("invalid-response", MALFORMED);
 
-    points.push({ timestamp, price: price.value });
+    /*
+     * The extremes arrive in the opposite direction, so inverting them swaps
+     * which is which: the highest price of token0 in token1 is the lowest price
+     * of token1 in token0. Getting that backwards produces a range that still
+     * looks like a range, which is why the day's own price is then required to
+     * sit inside it — a check the schema repeats.
+     */
+    const providerHigh = convertNonNegativeDecimal(day.high, { allowZero: false });
+    const providerLow = convertNonNegativeDecimal(day.low, { allowZero: false });
+    const extremes =
+      providerHigh.ok && providerLow.ok
+        ? { low: 1 / providerHigh.value, high: 1 / providerLow.value }
+        : null;
+    const usableExtremes =
+      extremes !== null && extremes.low <= price.value && price.value <= extremes.high
+        ? extremes
+        : null;
+
+    /*
+     * Zero is a real answer here, unlike a price: a pool can go a day without a
+     * single swap, and reporting that as unknown would lose the fact.
+     */
+    const volumeUsd = convertNonNegativeDecimal(day.volumeUSD, { allowZero: true });
+    const feesUsd = convertNonNegativeDecimal(day.feesUSD, { allowZero: true });
+
+    points.push({
+      timestamp,
+      price: price.value,
+      low: usableExtremes?.low ?? null,
+      high: usableExtremes?.high ?? null,
+      volumeUsd: volumeUsd.ok ? volumeUsd.value : null,
+      feesUsd: feesUsd.ok ? feesUsd.value : null,
+    });
   }
 
   // A single close yields no return at all, and none yields nothing to measure.

@@ -58,9 +58,6 @@ const PoolMarketSnapshotObject = z.strictObject({
   token1PriceInToken0: PositivePriceSchema.nullable(),
 
   tvlUsd: UsdAmountSchema.nullable(),
-  volume24hUsd: UsdAmountSchema.nullable(),
-  volume7dUsd: UsdAmountSchema.nullable(),
-  volume30dUsd: UsdAmountSchema.nullable(),
 
   /** The pool's current tick, i.e. where the spot price sits on the tick grid. */
   tick: TickSchema.nullable(),
@@ -143,11 +140,49 @@ export type PoolMarketSnapshot = z.infer<typeof PoolMarketSnapshotSchema>;
  * time is not an observation, and dropping it is the normalizer's job rather than
  * something downstream maths should have to filter.
  */
-export const HistoricalPricePointSchema = z.strictObject({
-  timestamp: IsoTimestampSchema,
-  /** Direction is fixed by whoever assembled the series; state it alongside. */
-  price: PositivePriceSchema,
-});
+export const HistoricalPricePointSchema = z
+  .strictObject({
+    timestamp: IsoTimestampSchema,
+    /** Direction is fixed by whoever assembled the series; state it alongside. */
+    price: PositivePriceSchema,
+    /**
+     * The day's extremes, in the same direction as `price`.
+     *
+     * Null together, when the source reported extremes its own price for that day
+     * did not sit between. The source publishes them the other way up, so an
+     * adapter has to invert them — and inverting swaps which is the high and
+     * which is the low. A day whose own price falls outside its own range is
+     * either that mistake or a source contradicting itself, and neither is worth
+     * carrying.
+     */
+    low: PositivePriceSchema.nullable(),
+    high: PositivePriceSchema.nullable(),
+    /**
+     * What the whole pool traded and charged that day, in US dollars.
+     *
+     * The pool's, not a position's. Null when the source reported neither.
+     */
+    volumeUsd: UsdAmountSchema.nullable(),
+    feesUsd: UsdAmountSchema.nullable(),
+  })
+  .refine((point) => (point.low === null) === (point.high === null), {
+    error: "A day's extremes are known together or not at all.",
+    path: ["high"],
+  })
+  .refine(
+    (point) =>
+      point.low === null ||
+      point.high === null ||
+      (point.low <= point.price && point.price <= point.high),
+    {
+      error: "A day's own price must sit between the extremes reported for that day.",
+      path: ["price"],
+    },
+  )
+  .refine((point) => point.low === null || point.high === null || point.low <= point.high, {
+    error: "A day's low must not sit above its high.",
+    path: ["low"],
+  });
 
 export type HistoricalPricePoint = z.infer<typeof HistoricalPricePointSchema>;
 

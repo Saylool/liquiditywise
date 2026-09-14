@@ -87,6 +87,7 @@ export const DataFailureNoticeSchema = z.enum([
   "range-too-narrow",
   "range-unverifiable",
   "divergence-unverifiable",
+  "activity-unverifiable",
 
   /* The written explanation. */
   "explanation-key-rejected",
@@ -111,7 +112,6 @@ export type DataFailureNotice = z.infer<typeof DataFailureNoticeSchema>;
  * successful analysis this application has ever produced.
  */
 export const DataWarningNoticeSchema = z.enum([
-  "rolling-volume-unavailable",
   "block-time-unreported",
   "history-window-incomplete",
   "volatility-window-incomplete",

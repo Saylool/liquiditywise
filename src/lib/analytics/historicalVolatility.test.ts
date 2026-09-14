@@ -14,7 +14,13 @@ const RANGE_END_EXCLUSIVE = "2026-08-20T00:00:00.000Z";
 const DAY_ZERO = Date.parse(RANGE_START);
 
 const at = (dayIndex: number) => new Date(DAY_ZERO + dayIndex * DAY_MS).toISOString();
-const point = (dayIndex: number, price: number) => ({ timestamp: at(dayIndex), price });
+/** Only the timestamp and the price matter here; the rest of a day is carried. */
+const activity = { low: null, high: null, volumeUsd: null, feesUsd: null } as const;
+const point = (dayIndex: number, price: number) => ({
+  timestamp: at(dayIndex),
+  price,
+  ...activity,
+});
 
 const POOL = { protocolVersion: "v3", chainId: 1, id: `0x${"d".repeat(40)}` };
 
@@ -308,12 +314,12 @@ describe("invalid input", () => {
   it.each([
     ["descending points", [point(2, 100), point(1, 110)]],
     ["duplicate timestamps", [point(1, 100), point(1, 110)]],
-    ["a non-midnight timestamp", [point(0, 100), { timestamp: "2026-07-21T12:00:00.000Z", price: 110 }]],
+    ["a non-midnight timestamp", [point(0, 100), { timestamp: "2026-07-21T12:00:00.000Z", price: 110, ...activity }]],
     ["a zero price", [point(0, 0), point(1, 110)]],
     ["a negative price", [point(0, -100), point(1, 110)]],
     ["a point before rangeStart", [point(-1, 100), point(0, 110)]],
     ["a point at rangeEndExclusive", [point(30, 100), point(31, 110)]],
-    ["a price that is not a number", [{ timestamp: at(0), price: "100" }, point(1, 110)]],
+    ["a price that is not a number", [{ timestamp: at(0), price: "100", ...activity }, point(1, 110)]],
   ])("rejects %s as invalid-input", (_label, points) => {
     expect(calculate(history(points))).toMatchObject({
       status: "unavailable",

@@ -41,14 +41,6 @@ const unavailable = (
 ): DataResult<PoolMarketSnapshot> => ({ status: "unavailable", reason, notice });
 
 /**
- * Rolling windows are not derivable from this query. The pool entity exposes a
- * lifetime cumulative `volumeUSD`, which is not a 24h/7d/30d figure, and treating
- * it as one would overstate recent activity by orders of magnitude. The fields
- * stay null and are declared missing instead.
- */
-const ROLLING_VOLUME_WARNING = "rolling-volume-unavailable";
-
-/**
  * Fields that may legitimately be null in a snapshot built from this source,
  * listed in the order the domain schema declares them.
  *
@@ -59,9 +51,6 @@ const ROLLING_VOLUME_WARNING = "rolling-volume-unavailable";
 const NULLABLE_SNAPSHOT_FIELDS = [
   "sourceBlockNumber",
   "sourceBlockTimestamp",
-  "volume24hUsd",
-  "volume7dUsd",
-  "volume30dUsd",
   "tick",
 ] as const satisfies readonly (keyof PoolMarketSnapshot & string)[];
 
@@ -172,9 +161,6 @@ export const normalizeV3PoolSnapshot = ({
     token0PriceInToken1: token0PriceInToken1.value,
     token1PriceInToken0: token1PriceInToken0.value,
     tvlUsd: tvlUsd.value,
-    volume24hUsd: null,
-    volume7dUsd: null,
-    volume30dUsd: null,
     tick,
     liquidity: liquidity.data,
     source: "uniswap-v3-subgraph",
@@ -206,18 +192,18 @@ export const normalizeV3PoolSnapshot = ({
 
   const missing = NULLABLE_SNAPSHOT_FIELDS.filter((field) => snapshot.data[field] === null);
   const [firstMissing, ...remainingMissing] = missing;
-  if (firstMissing === undefined) {
-    // Unreachable while the three rolling-volume fields are always null, but the
-    // contract is honoured rather than asserted away.
-    return { status: "success", data: snapshot.data };
-  }
+  /*
+   * Reached routinely now. It was unreachable while three rolling-volume fields
+   * were always null — fields this snapshot no longer carries, because the
+   * source does not report them per window and the figures that do exist are
+   * summed from day data elsewhere. A snapshot with nothing missing is a plain
+   * success, with no caveat attached to every analysis.
+   */
+  if (firstMissing === undefined) return { status: "success", data: snapshot.data };
 
   // Built in a fixed order from a fixed set, so the same response always yields
   // the same warnings in the same positions.
-  const warnings: DataWarningNotice[] =
-    blockTime === null
-      ? [ROLLING_VOLUME_WARNING, FRESHNESS_UNVERIFIED_WARNING]
-      : [ROLLING_VOLUME_WARNING];
+  const warnings: DataWarningNotice[] = blockTime === null ? [FRESHNESS_UNVERIFIED_WARNING] : [];
 
   return {
     status: "partial",

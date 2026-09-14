@@ -5,7 +5,13 @@ import { buildDailyLogReturns, MS_PER_DAY } from "./dailyLogReturns";
 const DAY_ZERO = Date.parse("2026-07-20T00:00:00.000Z");
 const at = (dayIndex: number, offsetMs = 0) =>
   new Date(DAY_ZERO + dayIndex * MS_PER_DAY + offsetMs).toISOString();
-const point = (dayIndex: number, price: number) => ({ timestamp: at(dayIndex), price });
+/** Only the timestamp and the price matter to a return; the rest is carried. */
+const activity = { low: null, high: null, volumeUsd: null, feesUsd: null } as const;
+const point = (dayIndex: number, price: number) => ({
+  timestamp: at(dayIndex),
+  price,
+  ...activity,
+});
 
 describe("buildDailyLogReturns", () => {
   it("produces no returns from fewer than two points", () => {
@@ -96,8 +102,8 @@ describe("buildDailyLogReturns", () => {
     });
 
     it("rejects a span that is not exactly one day, even by a millisecond", () => {
-      const shortByOneMs = [point(0, 100), { timestamp: at(1, -1), price: 110 }];
-      const longByOneMs = [point(0, 100), { timestamp: at(1, 1), price: 110 }];
+      const shortByOneMs = [point(0, 100), { timestamp: at(1, -1), price: 110, ...activity }];
+      const longByOneMs = [point(0, 100), { timestamp: at(1, 1), price: 110, ...activity }];
 
       expect(buildDailyLogReturns(shortByOneMs)).toEqual([]);
       expect(buildDailyLogReturns(longByOneMs)).toEqual([]);

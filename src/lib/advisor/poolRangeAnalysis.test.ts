@@ -41,9 +41,6 @@ const snapshot = (overrides: Record<string, unknown> = {}): PoolMarketSnapshot =
     token0PriceInToken1: CURRENT_PRICE,
     token1PriceInToken0: 1 / CURRENT_PRICE,
     tvlUsd: 12_500_000,
-    volume24hUsd: null,
-    volume7dUsd: null,
-    volume30dUsd: null,
     tick: CURRENT_TICK,
     liquidity: "987654321",
     source: "uniswap-v3-subgraph",
@@ -64,7 +61,14 @@ const history = (
   pointCount = 31,
   skipDays: readonly number[] = [],
 ): PoolDailyPriceHistory => {
-  const points: { timestamp: string; price: number }[] = [];
+  const points: {
+    timestamp: string;
+    price: number;
+    low: null;
+    high: null;
+    volumeUsd: null;
+    feesUsd: null;
+  }[] = [];
   let price = CURRENT_PRICE;
 
   for (let day = 0; day < pointCount; day += 1) {
@@ -73,6 +77,10 @@ const history = (
     points.push({
       timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
       price,
+      low: null,
+      high: null,
+      volumeUsd: null,
+      feesUsd: null,
     });
   }
 
@@ -251,8 +259,8 @@ describe("caveats", () => {
         snapshot: {
           status: "partial",
           data: snapshot(),
-          missingFields: ["volume24hUsd", "volume7dUsd", "volume30dUsd"],
-          warnings: ["rolling-volume-unavailable"],
+          missingFields: ["sourceBlockTimestamp", "sourceBlockNumber", "sourceBlockNumber"],
+          warnings: ["block-time-unreported"],
         },
       }),
     );
@@ -260,7 +268,7 @@ describe("caveats", () => {
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
     expect(result.data.range.lowerTick).toBeLessThan(result.data.range.upperTick);
-    expect(result.warnings).toContain("rolling-volume-unavailable");
+    expect(result.warnings).toContain("block-time-unreported");
   });
 
   it("gathers caveats from every stage in pipeline order", () => {
@@ -269,7 +277,7 @@ describe("caveats", () => {
         snapshot: {
           status: "partial",
           data: snapshot(),
-          missingFields: ["volume24hUsd"],
+          missingFields: ["sourceBlockTimestamp"],
           warnings: ["block-time-unreported"],
         },
         // Two missing days leave the volatility window incomplete.

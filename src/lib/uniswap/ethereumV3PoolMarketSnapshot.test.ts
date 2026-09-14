@@ -282,11 +282,11 @@ describe("transport failure mapping", () => {
 });
 
 describe("end to end", () => {
-  it("normalizes a successful response into a partial snapshot", async () => {
+  it("normalizes a successful response into a complete snapshot", async () => {
     const result = await run();
 
     expect(result).toEqual({
-      status: "partial",
+      status: "success",
       data: {
         pool: { protocolVersion: "v3", chainId: 1, id: POOL_ADDRESS },
         fetchedAt: "2026-08-20T09:15:00.000Z",
@@ -295,23 +295,17 @@ describe("end to end", () => {
         token0PriceInToken1: 2500,
         token1PriceInToken0: 0.0004,
         tvlUsd: 1234.56,
-        volume24hUsd: null,
-        volume7dUsd: null,
-        volume30dUsd: null,
         tick: -12345,
         liquidity: "123456789012345678901234567890",
         source: "uniswap-v3-subgraph",
       },
-      missingFields: ["volume24hUsd", "volume7dUsd", "volume30dUsd"],
-      warnings: ["rolling-volume-unavailable"],
     });
   });
 
   it("takes fetchedAt from the injected clock", async () => {
     const result = await run({ now: () => new Date("2026-08-20T09:20:00.000Z") });
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.fetchedAt).toBe("2026-08-20T09:20:00.000Z");
   });
 
@@ -328,8 +322,7 @@ describe("end to end", () => {
   ])("accepts %s and normalizes it to lowercase", async (_label, poolAddress) => {
     const result = await run({ poolAddress });
 
-    expect(result.status).toBe("partial");
-    if (result.status !== "partial") return;
+    if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.pool.id).toBe(POOL_ADDRESS);
   });
 });

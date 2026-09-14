@@ -195,6 +195,39 @@ const describeDivergence = (analysis: PoolRangeAnalysis, locale: Locale): readon
   ];
 };
 
+/**
+ * What the pool did over the window, and where those days sat.
+ *
+ * The model is given these so the explanation can say what they mean — and told,
+ * in the same breath, what they are not. A reader who takes "the pool charged
+ * this" for "you would have earned this" has misread the page, and the
+ * explanation is the only place that can head it off in a sentence.
+ */
+const describeActivity = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
+  const { activity } = analysis;
+  const usd = (value: number | null) => (value === null ? "not available" : formatUsd(value, locale));
+
+  return [
+    line("Volume over the last day", usd(activity.volume24hUsd)),
+    line("Volume over the last week", usd(activity.volume7dUsd)),
+    line("Volume over the last month", usd(activity.volume30dUsd)),
+    line("Fees the pool charged over the last month", usd(activity.fees30dUsd)),
+    line("Days measured", formatWhole(activity.daysMeasured, locale)),
+    line("Days entirely inside the range", formatWhole(activity.occupancy.fullyInside, locale)),
+    line("Days entirely outside it", formatWhole(activity.occupancy.fullyOutside, locale)),
+    line("Days that crossed an edge", formatWhole(activity.occupancy.undetermined, locale)),
+    line("Fees charged on the days entirely inside", usd(activity.feesWhileFullyInsideUsd)),
+    line(
+      "What these are not",
+      "anyone's earnings; they are the whole pool's, and the share a position would take is not known here",
+    ),
+    line(
+      "Why the day counts are weak evidence",
+      "they are the same days the range was measured from, so they describe the fit rather than test it",
+    ),
+  ];
+};
+
 const section = (title: string, lines: readonly string[]): string =>
   `${title}\n${lines.join("\n")}`;
 
@@ -244,6 +277,7 @@ export const buildRangeInterpretationPrompt = (
     section("PRICE BAND", describeBand(analysis, locale)),
     section("SUGGESTED TICK RANGE", describeRange(analysis, locale)),
     section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
+    section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
     warnings.length === 0
       ? "CAVEATS\n- none"
       : section(

@@ -23,9 +23,6 @@ const snapshot = {
   token0PriceInToken1: 2500,
   token1PriceInToken0: 1 / 2500,
   tvlUsd: 1234.56,
-  volume24hUsd: 98765.43,
-  volume7dUsd: null,
-  volume30dUsd: null,
   tick: -12345,
   liquidity: "123456789012345678901234567890",
   source: "uniswap-v3-subgraph",
@@ -43,9 +40,9 @@ const METRIC_FIELDS = [
   "token0PriceInToken1",
   "token1PriceInToken0",
   "tvlUsd",
-  "volume24hUsd",
-  "volume7dUsd",
-  "volume30dUsd",
+  "sourceBlockTimestamp",
+  "sourceBlockNumber",
+  "sourceBlockNumber",
   "tick",
   "liquidity",
 ] as const;
@@ -75,8 +72,7 @@ describe("PoolMarketSnapshotSchema metrics", () => {
   });
 
   it("keeps a genuinely reported zero as zero", () => {
-    const parsed = PoolMarketSnapshotSchema.parse({ ...snapshot, volume24hUsd: 0, tvlUsd: 0 });
-    expect(parsed.volume24hUsd).toBe(0);
+    const parsed = PoolMarketSnapshotSchema.parse({ ...snapshot, tvlUsd: 0 });
     expect(parsed.tvlUsd).toBe(0);
   });
 
@@ -280,18 +276,65 @@ describe("PoolMarketSnapshotSchema source correlation", () => {
 });
 
 describe("HistoricalPricePointSchema", () => {
+  /** A day the source reported nothing else about. */
+  const bare = { low: null, high: null, volumeUsd: null, feesUsd: null };
+
   it("accepts a well-formed observation", () => {
     expect(
-      HistoricalPricePointSchema.safeParse({ timestamp: FETCHED_AT, price: 2500 }).success,
+      HistoricalPricePointSchema.safeParse({ timestamp: FETCHED_AT, price: 2500, ...bare }).success,
     ).toBe(true);
   });
 
+  it("accepts a day the source reported extremes and activity for", () => {
+    const full = {
+      timestamp: FETCHED_AT,
+      price: 2500,
+      low: 2400,
+      high: 2600,
+      volumeUsd: 1_000_000,
+      feesUsd: 500,
+    };
+
+    expect(HistoricalPricePointSchema.safeParse(full).success).toBe(true);
+  });
+
+  it("accepts a day the pool saw no trade at all", () => {
+    // Zero volume is a fact about the day, unlike a zero price.
+    const quiet = { timestamp: FETCHED_AT, price: 2500, low: null, high: null, volumeUsd: 0, feesUsd: 0 };
+
+    expect(HistoricalPricePointSchema.safeParse(quiet).success).toBe(true);
+  });
+
   it.each([
-    ["a zero price", { timestamp: FETCHED_AT, price: 0 }],
-    ["a negative price", { timestamp: FETCHED_AT, price: -1 }],
-    ["a null price, since a point without one is not an observation", { timestamp: FETCHED_AT, price: null }],
-    ["a missing timestamp", { price: 2500 }],
-    ["a coarse timestamp", { timestamp: "2026-08-20T09:15:00Z", price: 2500 }],
+    ["a zero price", { timestamp: FETCHED_AT, price: 0, ...bare }],
+    ["a negative price", { timestamp: FETCHED_AT, price: -1, ...bare }],
+    [
+      "a null price, since a point without one is not an observation",
+      { timestamp: FETCHED_AT, price: null, ...bare },
+    ],
+    ["a missing timestamp", { price: 2500, ...bare }],
+    ["a coarse timestamp", { timestamp: "2026-08-20T09:15:00Z", price: 2500, ...bare }],
+    /*
+     * The source publishes extremes the other way up, so an adapter inverts
+     * them — and inverting swaps which is the high. These three are what that
+     * mistake looks like from here.
+     */
+    [
+      "a low above the high",
+      { timestamp: FETCHED_AT, price: 2500, low: 2600, high: 2400, volumeUsd: null, feesUsd: null },
+    ],
+    [
+      "a price above the day's own high",
+      { timestamp: FETCHED_AT, price: 2700, low: 2400, high: 2600, volumeUsd: null, feesUsd: null },
+    ],
+    [
+      "a price below the day's own low",
+      { timestamp: FETCHED_AT, price: 2300, low: 2400, high: 2600, volumeUsd: null, feesUsd: null },
+    ],
+    [
+      "one extreme without the other",
+      { timestamp: FETCHED_AT, price: 2500, low: 2400, high: null, volumeUsd: null, feesUsd: null },
+    ],
   ])("rejects %s", (_label, value) => {
     expect(HistoricalPricePointSchema.safeParse(value).success).toBe(false);
   });
@@ -305,6 +348,10 @@ describe("PoolDailyPriceHistorySchema", () => {
   const point = (dayIndex: number, price = 2500 + dayIndex) => ({
     timestamp: new Date(Date.parse(RANGE_START) + dayIndex * DAY_MS).toISOString(),
     price,
+    low: null,
+    high: null,
+    volumeUsd: null,
+    feesUsd: null,
   });
 
   const history = (overrides: Record<string, unknown> = {}) => ({
@@ -402,6 +449,10 @@ describe("PoolDailyPriceHistorySchema", () => {
     const atOffset = (dayIndex: number, offsetMs: number, price = 2500) => ({
       timestamp: new Date(Date.parse(RANGE_START) + dayIndex * DAY_MS + offsetMs).toISOString(),
       price,
+      low: null,
+      high: null,
+      volumeUsd: null,
+      feesUsd: null,
     });
 
     it("accepts midnight-aligned daily points", () => {
@@ -464,7 +515,14 @@ describe("PoolDailyPriceHistorySchema", () => {
     it("keeps HistoricalPricePointSchema itself interval-agnostic", () => {
       // Daily alignment is a property of this wrapper, not of a price point, so
       // hourly and weekly series can reuse the point schema unchanged.
-      const noon = { timestamp: "2026-07-20T12:00:00.000Z", price: 2500 };
+      const noon = {
+        timestamp: "2026-07-20T12:00:00.000Z",
+        price: 2500,
+        low: null,
+        high: null,
+        volumeUsd: null,
+        feesUsd: null,
+      };
       expect(HistoricalPricePointSchema.safeParse(noon).success).toBe(true);
     });
   });
