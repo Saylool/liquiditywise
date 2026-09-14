@@ -4,6 +4,7 @@ import { getDictionary } from "./lib/i18n/dictionaries";
 import { LOCALE_COOKIE, type Locale, resolveLocale } from "./lib/i18n/locales";
 import { spendsUpstreamQuota } from "./lib/ratelimit/chargeableRequest";
 import { clientKeyFromHeaders } from "./lib/ratelimit/clientKey";
+import { checkSharedPoolAnalysisLimit } from "./lib/ratelimit/poolAnalysisSharedLimiter";
 import {
   POOL_ANALYSIS_REQUEST_LIMIT,
   poolAnalysisRateLimiter,
@@ -23,10 +24,10 @@ import {
  *
  * Two limits worth stating plainly:
  *
- *   - The count lives in one process's memory. A platform that runs several
- *     instances multiplies the effective limit by however many are warm, so this
- *     is a deterrent against casual abuse, not a hard ceiling. A hard ceiling
- *     needs a store the instances share.
+ *   - The local count lives in one process's memory, so a platform running
+ *     several instances multiplies it by however many are warm. A shared counter
+ *     closes that when one is configured; with none, this is a deterrent against
+ *     casual abuse rather than a hard ceiling.
  *   - It identifies a caller by proxy-set headers, so it is only as trustworthy
  *     as the hop in front of it. See `clientKey.ts`.
  */
@@ -74,24 +75,48 @@ const tooManyRequestsPage = (retryAfterSeconds: number, locale: Locale): string 
 </html>
 `;
 
-export function proxy(request: NextRequest): NextResponse {
-  if (!spendsUpstreamQuota(request.nextUrl.searchParams)) return NextResponse.next();
-
-  const decision = poolAnalysisRateLimiter.check(clientKeyFromHeaders(request.headers));
-  if (decision.allowed) return NextResponse.next();
-
+const refuse = (request: NextRequest, retryAfterSeconds: number): NextResponse => {
   const locale = resolveLocale({
     cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
     acceptLanguage: request.headers.get("accept-language"),
   });
 
-  return new NextResponse(tooManyRequestsPage(decision.retryAfterSeconds, locale), {
+  return new NextResponse(tooManyRequestsPage(retryAfterSeconds, locale), {
     status: 429,
     headers: {
-      "Retry-After": String(decision.retryAfterSeconds),
+      "Retry-After": String(retryAfterSeconds),
       "Content-Type": "text/html; charset=utf-8",
       // Never let a shared cache serve one visitor's refusal to another.
       "Cache-Control": "no-store",
     },
   });
+};
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  if (!spendsUpstreamQuota(request.nextUrl.searchParams)) return NextResponse.next();
+
+  const clientKey = clientKeyFromHeaders(request.headers);
+
+  /*
+   * The local count first, and on its own when nothing shared is configured —
+   * which is the default, and costs nothing: `checkSharedPoolAnalysisLimit`
+   * decides there is no store before it awaits anything.
+   *
+   * A request refused here never reaches the store. It has already been refused,
+   * and spending a network round trip to agree is a round trip in front of a
+   * page render.
+   */
+  const local = poolAnalysisRateLimiter.check(clientKey);
+  if (!local.allowed) return refuse(request, local.retryAfterSeconds);
+
+  /*
+   * `null` from the shared counter means either that there is none or that the
+   * one there is could not answer. Both leave this request governed by the local
+   * limiter alone, which is the limit this application enforced before a shared
+   * store was possible — a degradation, not an opening.
+   */
+  const shared = await checkSharedPoolAnalysisLimit({ clientKey });
+  if (shared !== null && !shared.allowed) return refuse(request, shared.retryAfterSeconds);
+
+  return NextResponse.next();
 }

@@ -352,6 +352,43 @@ The model is given the caveats as the same sentences the page shows, in the same
 language — a model reasoning over an English caveat while writing Turkish prose
 about it is reasoning about a different page than the one being read.
 
+## The rate limit
+
+The one route that spends third-party quota is limited to ten requests a minute
+per client — an analysis and a search cost the same, because both spend a query
+and a box that takes ordinary words is the easier of the two to send in a loop.
+It is a cost control, not a product rule.
+
+It is counted twice. **In this process's memory**, always, which needs nothing
+configured and answers instantly. And **in a store every running copy shares**,
+when one is configured, which is what makes ten mean ten rather than ten per
+warm instance. A request has to satisfy both.
+
+That pairing is what makes the store's failure survivable. A refused token, an
+unreachable host, an answer that takes longer than a second, a response in a
+shape this does not recognise — every one of them comes back as "no answer", and
+a request with no answer from the shared counter is governed by the local one
+alone. That is the limit this application enforced before a shared store was
+possible: a degradation, not an opening. Nothing in that path can throw, because
+the proxy it runs in sits in front of a page render.
+
+With nothing configured the shared half costs nothing at all — not one
+millisecond — because the decision that there is no store is made before
+anything is awaited.
+
+The two windows are not the same shape. The local one starts at a client's first
+request; the shared one is aligned to the clock, which is how instances agree on
+which counter to increment without coordinating. They rarely line up, and a
+request must pass both, so the pair is at worst slightly stricter than either.
+For a cost control that is the right direction to be wrong in.
+
+`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` turn the shared half on.
+The names are Upstash's own, so attaching a database through Vercel's
+integration is the whole setup; the transport is an HTTPS POST with a bearer
+token and no dependency. One pipelined request per counted call: `INCR` to count,
+`PEXPIRE … NX` to give the key a lifetime *only if it has none* — without `NX`
+every request would push the expiry out and a busy window would never end.
+
 ## Language and theme
 
 The interface is published in **English and Turkish**, and renders in the
@@ -538,11 +575,17 @@ The v3 market-data readers need all three of:
 | `UNISWAP_V3_ETHEREUM_SUBGRAPH_ID` | The stable **Subgraph ID** from The Graph Explorer — not a deployment/IPFS id. The gateway resolves it to the latest sufficiently synced deployment. |
 | `ETHEREUM_RPC_URL` | Mainnet JSON-RPC endpoint for read-only `eth_call`. **Treat the whole URL as a secret** — most providers embed the key in the path. |
 
-One more is optional:
+Three more are optional, and the application is honest about running without
+each of them:
 
 | Variable | Purpose |
 | --- | --- |
 | `OPENAI_API_KEY` | Writes the plain-language explanation of an already-computed analysis. With it absent every figure is still computed and shown; only the prose is missing. |
+| `UPSTASH_REDIS_REST_URL` | The shared rate-limit counter, so ten a minute means ten across every running copy rather than ten per warm instance. **Treat the URL as a credential alongside the token.** |
+| `UPSTASH_REDIS_REST_TOKEN` | The bearer token for the same database. Both halves are required; either alone is read as no store at all. |
+
+With the last two absent the limit still applies, counted in each instance's own
+memory, and the shared half costs nothing — see [The rate limit](#the-rate-limit).
 
 Reads are read-only throughout: the RPC path issues `eth_call` and nothing else.
 There is no signing, no account access, and no transaction capability anywhere in
