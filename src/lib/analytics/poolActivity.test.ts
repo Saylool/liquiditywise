@@ -155,3 +155,42 @@ describe("calculatePoolActivity", () => {
     expect(activityOf([touching]).occupancy.fullyInside).toBe(1);
   });
 });
+
+/*
+ * The bug this file did not catch until production did.
+ *
+ * A history carries 31 closes because 30 daily returns need 31 of them. The
+ * occupancy was counted over all 31 while the fee total covered the last 30, so
+ * a range wide enough to contain every day reported more fees charged inside the
+ * range than the pool had charged at all — and the schema refused to publish the
+ * whole analysis. Correct refusal, unusable page.
+ */
+describe("one window, when the history carries the extra day returns need", () => {
+  const thirtyOne = Array.from({ length: 31 }, (_unused, index) => day(index, { feesUsd: 4 }));
+
+  it("measures exactly the days the rolling sums cover", () => {
+    expect(activityOf(thirtyOne).daysMeasured).toBe(30);
+  });
+
+  it("does not charge more inside the range than the pool charged at all", () => {
+    const activity = activityOf(thirtyOne);
+
+    expect(activity.occupancy.fullyInside).toBe(30);
+    expect(activity.feesWhileFullyInsideUsd).toBe(120);
+    expect(activity.fees30dUsd).toBe(120);
+  });
+
+  it("publishes an answer for a range that contains every measured day", () => {
+    // The shape that failed: wide range, every day inside.
+    const result = calculatePoolActivity({
+      history: historyOf(thirtyOne),
+      range: rangeOf(1, 10_000),
+    });
+
+    expect(result.status).toBe("success");
+  });
+
+  it("still measures a history shorter than the window", () => {
+    expect(activityOf(thirtyOne.slice(0, 5)).daysMeasured).toBe(5);
+  });
+});

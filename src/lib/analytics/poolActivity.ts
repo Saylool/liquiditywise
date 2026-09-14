@@ -64,6 +64,9 @@ const sumOverLastDays = (
   return total;
 };
 
+/** The days the rolling sums cover, named rather than repeated as literals. */
+const ROLLING_WINDOWS = { day: 1, week: 7, month: 30 } as const;
+
 export type PoolActivityResult =
   | { readonly status: "success"; readonly data: PoolActivity }
   | { readonly status: "unavailable"; readonly notice: DataFailureNotice };
@@ -73,17 +76,25 @@ export type PoolActivityInput = {
   readonly range: V3TickRange;
 };
 
-/** The days the rolling sums cover, named rather than repeated as literals. */
-const ROLLING_WINDOWS = { day: 1, week: 7, month: 30 } as const;
-
 export const calculatePoolActivity = ({
   history,
   range,
 }: PoolActivityInput): PoolActivityResult => {
-  const { points } = history;
-  if (points.length === 0) return { status: "unavailable", notice: "activity-unverifiable" };
+  /*
+   * One window for everything here: the last 30 completed days.
+   *
+   * The history carries 31 closes, because 31 closes are what 30 daily returns
+   * need — but the extra day is an input to the volatility figure, not a day
+   * this describes. Counting occupancy over 31 days while summing fees over 30
+   * put the two figures on different sets, and a range wide enough to contain
+   * every day then reported more fees charged inside it than the pool charged at
+   * all. The schema refused to publish that, which is the right failure and was
+   * still a page nobody could read.
+   */
+  const measured = history.points.slice(-ROLLING_WINDOWS.month);
+  if (measured.length === 0) return { status: "unavailable", notice: "activity-unverifiable" };
 
-  const placements = points.map((point) =>
+  const placements = measured.map((point) =>
     placeDay(point, range.lowerPrice, range.upperPrice),
   );
 
@@ -99,17 +110,17 @@ export const calculatePoolActivity = ({
    * way to say how much from a daily high and low — so it is left out rather
    * than apportioned by a guess.
    */
-  const insideFees = points.filter((_point, index) => placements[index] === "inside");
+  const insideFees = measured.filter((_point, index) => placements[index] === "inside");
   const feesWhileFullyInsideUsd = insideFees.some((point) => point.feesUsd === null)
     ? null
     : insideFees.reduce((total, point) => total + (point.feesUsd ?? 0), 0);
 
   const candidate = {
-    daysMeasured: points.length,
-    volume24hUsd: sumOverLastDays(points, ROLLING_WINDOWS.day, (point) => point.volumeUsd),
-    volume7dUsd: sumOverLastDays(points, ROLLING_WINDOWS.week, (point) => point.volumeUsd),
-    volume30dUsd: sumOverLastDays(points, ROLLING_WINDOWS.month, (point) => point.volumeUsd),
-    fees30dUsd: sumOverLastDays(points, ROLLING_WINDOWS.month, (point) => point.feesUsd),
+    daysMeasured: measured.length,
+    volume24hUsd: sumOverLastDays(measured, ROLLING_WINDOWS.day, (point) => point.volumeUsd),
+    volume7dUsd: sumOverLastDays(measured, ROLLING_WINDOWS.week, (point) => point.volumeUsd),
+    volume30dUsd: sumOverLastDays(measured, ROLLING_WINDOWS.month, (point) => point.volumeUsd),
+    fees30dUsd: sumOverLastDays(measured, ROLLING_WINDOWS.month, (point) => point.feesUsd),
     occupancy,
     feesWhileFullyInsideUsd,
   };
