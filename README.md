@@ -9,11 +9,14 @@ not guarantee returns, and cannot attest that any smart contract is safe.
 
 ## Status
 
-Early. The landing page is static, and there is no AI integration, persistence,
-authentication, wallet connection or transaction capability of any kind.
+Early, but no longer only a library. The pool page runs the whole pipeline
+against live data: find a pool by pair or address, read its verified figures, and
+read a plain-language explanation written from them by a model that is not
+allowed to state one. There is no persistence, authentication, wallet connection
+or transaction capability of any kind, and none is planned.
 
-Three read-only market-data adapters exist, all server-only readers over The
-Graph and none wired to any route or component yet:
+Four read-only market-data adapters exist, all server-only readers over The
+Graph:
 
 1. **Current pool snapshot** — one Ethereum mainnet Uniswap v3 pool, normalised
    into a `PoolMarketSnapshot`.
@@ -25,6 +28,9 @@ Graph and none wired to any route or component yet:
    prices for one such pool, normalised into a `PoolDailyPriceHistory`. 31 closes
    give 30 daily returns, which is what a 30-day volatility figure needs. The
    current, still-incomplete UTC day is always excluded.
+4. **Pool search** — the pools whose token symbols match one or two terms,
+   normalised into a `PoolSearchResults` and ordered by this application rather
+   than by the source. See [Finding a pool](#finding-a-pool).
 
 Days the source never indexed are reported as gaps, never invented. There is no
 forward-filling of a previous close and no treating a missing day as zero, so a
@@ -152,6 +158,63 @@ Two limits of that, stated rather than papered over:
   as Vercel does, and worthless anywhere a client's own headers pass through
   untouched. Running locally neither header exists and every request shares one
   bucket — the safe direction to fail.
+
+## Finding a pool
+
+Nobody carries pool addresses around, so the pool page takes either: a pair like
+`WETH/USDC`, or the address of the pool contract itself. One box decides which by
+looking at what arrived — an address is redirected to the canonical `?address=`
+URL that every result links to, so there stays exactly one URL meaning "analyse
+this pool". A plain GET form, so it works with no JavaScript and a search lands
+somewhere that can be linked, reloaded and gone back to.
+
+**Search is the first free text this application accepts.** Until it existed, the
+only thing a visitor could supply was a pool address, matched against a strict
+hex pattern before any read happened. A search box brings two kinds of text that
+were not there before:
+
+- **What the visitor typed.** It reaches the subgraph as a GraphQL variable and
+  is never spliced into query text, so a query is well-formed whatever it holds;
+  the rules on it are there because it is also *shown back* on the page. Letters
+  in any script, digits, and the three punctuation marks that turn up inside
+  tickers — one or two terms, two to sixteen characters each.
+- **Token symbols nobody went looking for.** A symbol is whatever a contract's
+  `symbol()` returns, and deploying a token that calls itself USDC costs nothing;
+  the live source returns several. Those strings are rendered beside verified
+  figures and reach the prompt the explanation is written from, so a token label
+  may not carry Unicode's "other" category: the newline that would open what
+  reads as a new line of that prompt, the zero-width characters that make two
+  different symbols render identically, the bidirectional override that displays
+  text in an order it was not written in.
+
+**The order is the only claim the list makes**, and it is not about quality.
+Pools whose token is exactly what was searched for come first; within that, the
+value the source reports as locked in each pool. There is no score, no badge, no
+"verified" mark and no list of tokens this application has decided are the real
+ones — it cannot tell which USDC is genuine, and a mark implying otherwise would
+be worse than none. What it does instead is show every token's contract address,
+in full, under every pair. A truncated address is exactly what a lookalike hides
+behind.
+
+The relevance half of that order is not decoration. The source matches on a
+substring, which is what makes a search for "weth" find "WETH" — and also what
+returns WPOWETH, MeWETH, and a pool of "ease.org" against "ez-SLP-WBTC-WETH".
+Ordered by reported liquidity alone, that last one was the top result for "weth",
+on the strength of a 1.3-billion-dollar figure the source derives and plainly got
+wrong. Both halves of the key are re-derived by the schema on the way out, so a
+merge that went wrong fails instead of publishing a plausible-looking list.
+
+**A list is the one place a single bad entry need not sink the answer.**
+Everywhere else a visitor asked about one pool and the only honest replies were
+that pool or nothing; here they asked which pools these are, and eleven verified
+answers plus one dropped is a true, shorter reply. The dropped one is not quiet
+everywhere: the count reaches the server log, where someone can act on it.
+
+**A search is charged against the same allowance as an analysis.** It spends an
+upstream query like one, and it is the cheaper of the two to send in a loop — a
+box that takes ordinary words is a larger invitation to do that than one that
+took a 40-character address. `chargeableRequest.ts` holds that rule, apart from
+the proxy that applies it, so it can be tested without a framework.
 
 ## The explanation
 
@@ -378,6 +441,7 @@ user input
 | `src/lib/format`      | Deterministic display formatting. Locale-pinned so server-rendered output cannot vary by host. |
 | `src/lib/observability` | Server-side diagnostics for failed reads. Records status codes, never URLs or headers. |
 | `src/lib/ratelimit`   | Fixed-window request counter and the client key it counts against. Pure; the clock is injected. |
+| `src/lib/search`      | What a visitor may search for, and how one raw string is taken apart. Pure. |
 | `src/lib/i18n`        | Published languages, how one is negotiated, and every interface string in each. |
 | `src/lib/theme`       | The three theme choices, the store behind the toggle, and the script that applies one before paint. |
 | `src/lib/ai`          | The prompt layer, the one model call, the provider wiring, and the check the answer has to pass. |

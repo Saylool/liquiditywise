@@ -11,4 +11,6 @@ export * from "./dataResult";
 export * from "./analytics";
 export * from "./priceBand";
 export * from "./tickRange";
+export * from "./searchTerms";
+export * from "./poolSearch";
 export * from "./interpretation";

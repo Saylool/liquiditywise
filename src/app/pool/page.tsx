@@ -1,25 +1,38 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { PoolExplanationPending } from "@/components/PoolExplanation";
+import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
+import { PoolSearchResults } from "@/components/PoolSearchResults";
 import { PreferenceBar } from "@/components/PreferenceBar";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { readPoolSearchInput } from "@/lib/search/poolSearchInput";
+import { getEthereumV3PoolSearch } from "@/lib/uniswap/getEthereumV3PoolSearch";
 import { EvmAddressSchema } from "@/schemas/primitives";
 import { PoolExplanationSection } from "./PoolExplanationSection";
 
 /*
- * The first surface that runs the whole pipeline against live data.
+ * The route that runs the whole pipeline against live data, and the way in.
  *
- * A Server Component, so the credentials the readers need never enter a browser
- * bundle. The pool address arrives as a search parameter rather than a path
- * segment specifically so the form below can be plain HTML: a GET form can fill
- * a query string with no JavaScript at all, but cannot build a path.
+ * Two things happen here, decided by which parameter arrived:
+ *
+ *   - `?address=` analyses one pool. It is the canonical form, the one every
+ *     result links to and the one worth bookmarking.
+ *   - `?q=` searches for pools by the names of their tokens, because nobody
+ *     carries pool addresses around. A `q` that turns out to *be* an address is
+ *     redirected to the canonical form rather than handled twice.
+ *
+ * Both arrive in the query string rather than a path segment or a request body,
+ * which is what lets the form below be plain HTML: a GET form can fill a query
+ * string with no JavaScript at all, and a search that lives in a URL can be
+ * linked, reloaded and gone back to.
  *
  * No pool address is hardcoded anywhere. Shipping one would mean asserting from
  * memory which contract a pair lives at, and an address this application cannot
@@ -62,41 +75,9 @@ function Shell({
   );
 }
 
-function AddressForm({ t, value }: { t: Dictionary; value?: string | undefined }) {
-  return (
-    <form
-      method="get"
-      action="/pool"
-      className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5"
-    >
-      <label htmlFor="address" className="text-sm font-medium">
-        {t.pool.addressLabel}
-      </label>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <input
-          id="address"
-          name="address"
-          type="text"
-          required
-          spellCheck={false}
-          autoComplete="off"
-          /* Mirrors EvmAddressSchema, so an obvious typo is caught before a request. */
-          pattern="0x[0-9a-fA-F]{40}"
-          placeholder="0x0000000000000000000000000000000000000000"
-          defaultValue={value ?? ""}
-          className="flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
-        />
-        <button
-          type="submit"
-          className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium"
-        >
-          {t.pool.analyse}
-        </button>
-      </div>
-      <p className="text-xs leading-relaxed text-muted">{t.pool.addressHelp}</p>
-    </form>
-  );
-}
+/** A repeated query parameter arrives as an array; only a single value is an answer. */
+const single = (value: string | string[] | undefined): string | undefined =>
+  typeof value === "string" ? value : undefined;
 
 export default async function PoolRangePage({
   searchParams,
@@ -104,43 +85,82 @@ export default async function PoolRangePage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { locale, t } = await getRequestDictionary();
-  const requested = (await searchParams).address;
-  // A repeated parameter arrives as an array; only a single value is an address.
-  const parsed = EvmAddressSchema.safeParse(typeof requested === "string" ? requested : undefined);
+  const params = await searchParams;
 
-  if (!parsed.success) {
+  const requestedAddress = params.address;
+  const address = EvmAddressSchema.safeParse(single(requestedAddress));
+
+  if (address.success) {
+    const result = await getPoolRangeAnalysis(address.data);
+
     return (
       <Shell locale={locale} t={t}>
-        <AddressForm t={t} />
-        {requested === undefined ? null : (
-          /* Deliberately does not echo what was typed: it is unvalidated input. */
-          <p className="text-sm leading-relaxed text-muted">{t.pool.invalidAddress}</p>
+        <PoolLookupForm t={t} value={address.data} />
+        <PoolRangeReport result={result} poolAddress={address.data} t={t} locale={locale} />
+        {result.status === "unavailable" ? null : (
+          /*
+           * Never awaited by this component, so the figures above are sent as soon
+           * as they exist and the explanation streams in behind them. There is
+           * nothing to explain when the analysis itself produced nothing.
+           */
+          <Suspense fallback={<PoolExplanationPending t={t} />}>
+            <PoolExplanationSection
+              analysis={result.data}
+              warnings={result.status === "partial" ? result.warnings : []}
+              locale={locale}
+              t={t}
+            />
+          </Suspense>
         )}
       </Shell>
     );
   }
 
-  const result = await getPoolRangeAnalysis(parsed.data);
+  if (requestedAddress !== undefined) {
+    return (
+      <Shell locale={locale} t={t}>
+        {/* Deliberately does not echo what was typed: it is unvalidated input. */}
+        <PoolLookupForm t={t} />
+        <p className="text-sm leading-relaxed text-muted">{t.pool.invalidAddress}</p>
+      </Shell>
+    );
+  }
+
+  const query = single(params.q);
+  if (query === undefined) {
+    return (
+      <Shell locale={locale} t={t}>
+        <PoolLookupForm t={t} />
+      </Shell>
+    );
+  }
+
+  const input = readPoolSearchInput(query);
+
+  /*
+   * An address typed into the search box is not a search. Redirecting rather
+   * than rendering the analysis here leaves exactly one URL that means "analyse
+   * this pool" — the one that gets linked, bookmarked and counted.
+   *
+   * Safe to interpolate: the value passed a strict hex pattern to become one.
+   */
+  if (input.kind === "address") redirect(`/pool?address=${input.address}`);
+
+  if (input.kind === "unusable") {
+    return (
+      <Shell locale={locale} t={t}>
+        <PoolLookupForm t={t} rejection={input.reason} />
+      </Shell>
+    );
+  }
+
+  const results = await getEthereumV3PoolSearch(input.terms);
 
   return (
     <Shell locale={locale} t={t}>
-      <AddressForm t={t} value={parsed.data} />
-      <PoolRangeReport result={result} poolAddress={parsed.data} t={t} locale={locale} />
-      {result.status === "unavailable" ? null : (
-        /*
-         * Never awaited by this component, so the figures above are sent as soon
-         * as they exist and the explanation streams in behind them. There is
-         * nothing to explain when the analysis itself produced nothing.
-         */
-        <Suspense fallback={<PoolExplanationPending t={t} />}>
-          <PoolExplanationSection
-            analysis={result.data}
-            warnings={result.status === "partial" ? result.warnings : []}
-            locale={locale}
-            t={t}
-          />
-        </Suspense>
-      )}
+      {/* The validated terms, not the raw string — which may have held a third. */}
+      <PoolLookupForm t={t} value={input.terms.join(" ")} />
+      <PoolSearchResults result={results} terms={input.terms} t={t} locale={locale} />
     </Shell>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from "../../schemas";
 import { V3PoolMetadataResponseSchema } from "./v3PoolMetadataRawResponse";
 import { convertSafeInteger } from "./v3SubgraphRawResponse";
+import { normalizeV3Token } from "./v3TokenAdapter";
 
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
@@ -20,47 +21,6 @@ const unavailable = (
   reason: "invalid-response" | "not-found",
   message: string,
 ): DataResult<V3PoolMetadata> => ({ status: "unavailable", reason, message });
-
-type RawToken = {
-  readonly id: string;
-  readonly symbol: string;
-  readonly name: string;
-  readonly decimals: string;
-};
-
-type NormalizedToken = {
-  readonly chainId: number;
-  readonly address: string;
-  readonly symbol: string;
-  readonly decimals: number;
-  readonly name?: string;
-};
-
-/**
- * Turns one raw `Token` entity into the domain shape, or `null` if it cannot be
- * trusted.
- *
- * `name` is dropped when the provider reports an empty string. The domain treats
- * a name as optional, and an empty string is not a name — carrying it through
- * would turn "this token has no name on-chain" into a token literally called "".
- * `symbol` gets no such leniency: it is required, so an empty one fails the
- * schema and the whole response with it.
- */
-const normalizeToken = (raw: RawToken): NormalizedToken | null => {
-  const decimals = convertSafeInteger(raw.decimals);
-  if (!decimals.ok) return null;
-
-  const address = EvmAddressSchema.safeParse(raw.id);
-  if (!address.success) return null;
-
-  return {
-    chainId: ETHEREUM_MAINNET_CHAIN_ID,
-    address: address.data,
-    symbol: raw.symbol,
-    decimals: decimals.value,
-    ...(raw.name === "" ? {} : { name: raw.name }),
-  };
-};
 
 export type NormalizeV3PoolMetadataInput = {
   /** The decoded JSON body, still untrusted. */
@@ -110,8 +70,8 @@ export const normalizeV3PoolMetadata = ({
   const feePpm = convertSafeInteger(data.pool.feeTier);
   if (!feePpm.ok) return unavailable("invalid-response", MALFORMED);
 
-  const token0 = normalizeToken(data.pool.token0);
-  const token1 = normalizeToken(data.pool.token1);
+  const token0 = normalizeV3Token(data.pool.token0, ETHEREUM_MAINNET_CHAIN_ID);
+  const token1 = normalizeV3Token(data.pool.token1, ETHEREUM_MAINNET_CHAIN_ID);
   if (token0 === null || token1 === null) return unavailable("invalid-response", MALFORMED);
 
   const candidate = {

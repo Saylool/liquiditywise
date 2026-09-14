@@ -86,11 +86,66 @@ export const TokenDecimalsSchema = z.int().min(0).max(255);
 
 export type TokenDecimals = z.infer<typeof TokenDecimalsSchema>;
 
+/**
+ * Long enough for every real ticker, and no longer. The longest this application
+ * has met in live data is sixteen characters.
+ */
+export const MAX_TOKEN_SYMBOL_LENGTH = 40;
+
+/**
+ * A name is prose where a symbol is a ticker, so it gets its own bound.
+ *
+ * They shared one at first, and a real pool paid for it: a fake USDC — eighteen
+ * decimals where the real one has six — was dropped from a search not for being
+ * fake but for carrying a fifty-two character name. Plenty of honest tokens have
+ * names that long, so the shared bound was refusing the wrong thing. Being fake
+ * is not something a length can catch, and the answer to it is the contract
+ * address shown beside every symbol.
+ */
+export const MAX_TOKEN_NAME_LENGTH = 128;
+
+/**
+ * Characters a token label may not contain: Unicode's "other" category, which
+ * is control characters, format characters, surrogates, private use and
+ * unassigned code points.
+ *
+ * Each of those is a way for a label to be something other than what it looks
+ * like. A newline lets a symbol open what reads as a new line of the prompt the
+ * explanation is written from. A zero-width joiner makes two different symbols
+ * render identically. A bidirectional override displays text in an order it was
+ * not written in. None of them can appear in a ticker that means what it says.
+ */
+const UNDISPLAYABLE = /\p{C}/u;
+
+/**
+ * A token's symbol or name: the only strings in these schemas that an arbitrary
+ * contract author wrote.
+ *
+ * Everything else here is either produced by this application or pinned to a
+ * format. These two are whatever `symbol()` and `name()` returned, and deploying
+ * a token costs nothing. While a pool could only be reached by pasting its
+ * address, that text arrived only for a pool someone went looking for; a search
+ * box hands it to people who did not go looking.
+ *
+ * A pool whose token breaks this is reported as unverifiable rather than
+ * rendered, which is the same fail-closed rule the rest of these schemas follow.
+ * The bound is deliberately generous: the aim is to refuse text that is not a
+ * label at all, not to sit in judgement on unusual tickers.
+ */
+const tokenLabel = (maxLength: number, error: string) =>
+  z
+    .string()
+    .min(1, { error })
+    .max(maxLength, { error: "A token label this long is not a label." })
+    .refine((label) => !UNDISPLAYABLE.test(label), {
+      error: "A token label may not carry control, format or unassigned characters.",
+    });
+
 const tokenShape = {
   chainId: ChainIdSchema,
-  symbol: z.string().min(1, { error: "Token symbol must not be empty." }),
+  symbol: tokenLabel(MAX_TOKEN_SYMBOL_LENGTH, "Token symbol must not be empty."),
   decimals: TokenDecimalsSchema,
-  name: z.string().min(1).optional(),
+  name: tokenLabel(MAX_TOKEN_NAME_LENGTH, "A token name must not be empty.").optional(),
 } as const;
 
 /**

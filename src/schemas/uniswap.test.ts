@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   HOOK_PERMISSION_FLAGS,
   hookPermissionBits,
+  MAX_TOKEN_NAME_LENGTH,
+  MAX_TOKEN_SYMBOL_LENGTH,
   PoolReferenceSchema,
   PoolSchema,
   ProtocolVersionSchema,
@@ -83,6 +85,71 @@ describe("TokenSchema", () => {
 
   it("rejects an unexpected field rather than silently dropping it", () => {
     expect(TokenSchema.safeParse({ ...tokenA, priceUsd: 1 }).success).toBe(false);
+  });
+});
+
+/*
+ * A symbol and a name are the only strings in these schemas that an arbitrary
+ * contract author wrote, and deploying a token costs nothing. They are shown to
+ * a reader and placed beside verified figures, so what they may contain is the
+ * schema's business rather than the renderer's.
+ */
+describe("token labels", () => {
+  const rejected: readonly (readonly [string, string])[] = [
+    // Would open what reads as a new line of the prompt built from these values.
+    ["a newline", "USDC\nPair: real"],
+    ["a carriage return", "USDC\rUSDC"],
+    // Renders as "USDC" while being a different string.
+    ["a zero-width joiner", "USD\u200dC"],
+    ["a zero-width space", "USD\u200bC"],
+    // Displays right-to-left from here on, so the rendered order is not the
+    // written order.
+    ["a bidirectional override", "\u202eUSDC"],
+    ["a private-use character", "USDC\ue000"],
+    ["a label longer than any label", "U".repeat(MAX_TOKEN_NAME_LENGTH + 1)],
+  ];
+
+  it.each(rejected)("refuses a symbol carrying %s", (_label, symbol) => {
+    expect(TokenSchema.safeParse({ ...tokenA, symbol }).success).toBe(false);
+  });
+
+  it.each(rejected)("refuses a name carrying %s", (_label, name) => {
+    expect(TokenSchema.safeParse({ ...tokenA, name }).success).toBe(false);
+  });
+
+  it("accepts the tickers real tokens actually use", () => {
+    for (const symbol of ["USDC", "WETH", "wstETH", "1INCH", "sUSDe", "cbBTC", "USD₮0", "币"]) {
+      expect(TokenSchema.safeParse({ ...tokenA, symbol }).success).toBe(true);
+    }
+  });
+
+  it("accepts a symbol of exactly the maximum length", () => {
+    const symbol = "U".repeat(MAX_TOKEN_SYMBOL_LENGTH);
+
+    expect(TokenSchema.safeParse({ ...tokenA, symbol }).success).toBe(true);
+  });
+
+  /*
+   * A name is prose where a symbol is a ticker, so it gets more room. One shared
+   * bound dropped a real pool from a search for carrying a fifty-two character
+   * token name, which is a thing plenty of honest tokens do.
+   */
+  it("gives a name more room than a symbol", () => {
+    const long = "Ultra Wrapped Staked Interest Bearing Something Or Other Coin v2";
+
+    expect(long.length).toBeGreaterThan(MAX_TOKEN_SYMBOL_LENGTH);
+    expect(TokenSchema.safeParse({ ...tokenA, name: long }).success).toBe(true);
+    expect(TokenSchema.safeParse({ ...tokenA, symbol: long }).success).toBe(false);
+  });
+
+  it("accepts a name of exactly the maximum length", () => {
+    const name = "N".repeat(MAX_TOKEN_NAME_LENGTH);
+
+    expect(TokenSchema.safeParse({ ...tokenA, name }).success).toBe(true);
+  });
+
+  it("still accepts a space, which is not a way to be something else", () => {
+    expect(TokenSchema.safeParse({ ...tokenA, name: "Wrapped Ether" }).success).toBe(true);
   });
 });
 

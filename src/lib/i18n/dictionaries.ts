@@ -119,13 +119,48 @@ const en = {
 
   pool: {
     back: "← Uniswap Strategy Advisor",
-    addressLabel: "Ethereum mainnet Uniswap v3 pool address",
-    analyse: "Analyse",
-    addressHelp:
-      "The address of the pool contract itself, not a token. Read-only: this application never connects a wallet and never sends a transaction.",
     invalidAddress:
       "That is not an Ethereum address. An address is 0x followed by exactly 40 hexadecimal characters.",
     loading: "Reading pool data…",
+  },
+
+  search: {
+    label: "A pair, or a pool address",
+    placeholder: "WETH/USDC",
+    help: "Type a pair like WETH/USDC, or paste the address of the pool contract itself. Read-only: this application never connects a wallet and never sends a transaction.",
+    submit: "Find pools",
+
+    heading: "Matching pools",
+    resultsFor: (terms: string) => `Pools whose tokens match ${terms}.`,
+    empty: (terms: string) =>
+      `No Ethereum mainnet Uniswap v3 pool has a token matching ${terms}.`,
+    emptyHint: "Check the spelling, or paste the pool's address if you have it.",
+
+    /*
+     * The ordering is the one claim a list makes, so it is stated rather than
+     * left to be inferred from the order itself.
+     */
+    ordering:
+      "Pools named exactly what you searched for come first. After that the order follows the value the data source reports as locked in each pool — the source's own dollar figure, not one this application computed or checked.",
+    /*
+     * The sentence that does the real work on this page. Search is what lets
+     * someone reach a pool they did not go looking for.
+     */
+    symbolWarning:
+      "A symbol comes from the token's own contract, and deploying a token that calls itself USDC costs nothing. The contract addresses under each pair are what tell two tokens apart.",
+
+    feeTier: "Fee tier",
+    reportedLiquidity: "Reported liquidity",
+    analyse: "Analyse this pool",
+
+    unavailableHeading: "The search could not be run",
+    rejected: {
+      empty: "Type a pair like WETH/USDC, or a pool address.",
+      length: (min: number, max: number) =>
+        `A search term is between ${min} and ${max} characters.`,
+      unsupportedCharacters:
+        "A search term can hold letters, digits, and the marks that appear inside tickers — nothing else.",
+    },
   },
 
   report: {
@@ -339,13 +374,40 @@ const tr: Dictionary = {
 
   pool: {
     back: "← Uniswap Strateji Danışmanı",
-    addressLabel: "Ethereum mainnet Uniswap v3 havuz adresi",
-    analyse: "Analiz et",
-    addressHelp:
-      "Token adresi değil, havuz sözleşmesinin kendi adresi. Salt okunur: bu uygulama asla cüzdan bağlamaz ve işlem göndermez.",
     invalidAddress:
       "Bu bir Ethereum adresi değil. Adres, 0x ile başlayıp tam olarak 40 onaltılık karakterle devam eder.",
     loading: "Havuz verisi okunuyor…",
+  },
+
+  search: {
+    label: "Bir parite ya da havuz adresi",
+    placeholder: "WETH/USDC",
+    help: "WETH/USDC gibi bir parite yaz, ya da havuz sözleşmesinin kendi adresini yapıştır. Salt okunur: bu uygulama asla cüzdan bağlamaz ve işlem göndermez.",
+    submit: "Havuz bul",
+
+    heading: "Eşleşen havuzlar",
+    resultsFor: (terms: string) => `Tokenları ${terms} ile eşleşen havuzlar.`,
+    empty: (terms: string) =>
+      `Ethereum mainnet üzerinde ${terms} ile eşleşen tokenı olan bir Uniswap v3 havuzu bulunamadı.`,
+    emptyHint: "Yazımı kontrol et, ya da havuzun adresi elindeyse onu yapıştır.",
+
+    ordering:
+      "Tam olarak arattığın adı taşıyan havuzlar önce gelir. Sonrası, veri kaynağının her havuzda kilitli olduğunu bildirdiği değere göre sıralanır — kaynağın kendi dolar rakamı, bu uygulamanın hesapladığı ya da doğruladığı bir şey değil.",
+    symbolWarning:
+      "Sembol, tokenın kendi sözleşmesinden gelir; kendine USDC diyen bir token çıkarmanın hiçbir maliyeti yoktur. İki tokenı birbirinden ayıran şey, her paritenin altındaki sözleşme adresleridir.",
+
+    feeTier: "Komisyon kademesi",
+    reportedLiquidity: "Bildirilen likidite",
+    analyse: "Bu havuzu analiz et",
+
+    unavailableHeading: "Arama yapılamadı",
+    rejected: {
+      empty: "WETH/USDC gibi bir parite ya da bir havuz adresi yaz.",
+      length: (min: number, max: number) =>
+        `Arama terimi ${min} ile ${max} karakter arasında olmalı.`,
+      unsupportedCharacters:
+        "Arama terimi harf, rakam ve tickerlarda geçen işaretleri içerebilir — başka bir şey değil.",
+    },
   },
 
   report: {

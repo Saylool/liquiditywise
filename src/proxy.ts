@@ -2,12 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getDictionary } from "./lib/i18n/dictionaries";
 import { LOCALE_COOKIE, type Locale, resolveLocale } from "./lib/i18n/locales";
+import { spendsUpstreamQuota } from "./lib/ratelimit/chargeableRequest";
 import { clientKeyFromHeaders } from "./lib/ratelimit/clientKey";
 import {
   POOL_ANALYSIS_REQUEST_LIMIT,
   poolAnalysisRateLimiter,
 } from "./lib/ratelimit/poolAnalysisRateLimiter";
-import { EvmAddressSchema } from "./schemas/primitives";
 
 /*
  * Rate limits the one route that spends third-party API quota.
@@ -17,9 +17,9 @@ import { EvmAddressSchema } from "./schemas/primitives";
  * a real `429` and a `Retry-After` header, which a Server Component has no way
  * to set.
  *
- * Imports reach past the schema barrel on purpose. The barrel pulls in every
- * domain contract, and this file runs on every matched request; only the address
- * format is needed here.
+ * Which requests are charged is next door in `chargeableRequest.ts`, which has
+ * no framework in it and can be tested on its own. What is left here is the
+ * plumbing: read the count, and answer.
  *
  * Two limits worth stating plainly:
  *
@@ -75,16 +75,7 @@ const tooManyRequestsPage = (retryAfterSeconds: number, locale: Locale): string 
 `;
 
 export function proxy(request: NextRequest): NextResponse {
-  /*
-   * Only a request that will actually reach the subgraphs is counted. A missing
-   * or malformed address is answered by the page itself without a single
-   * upstream call, so charging it against someone's allowance would mean a typo
-   * costs them an analysis.
-   */
-  const requested = request.nextUrl.searchParams.get("address");
-  if (requested === null || !EvmAddressSchema.safeParse(requested).success) {
-    return NextResponse.next();
-  }
+  if (!spendsUpstreamQuota(request.nextUrl.searchParams)) return NextResponse.next();
 
   const decision = poolAnalysisRateLimiter.check(clientKeyFromHeaders(request.headers));
   if (decision.allowed) return NextResponse.next();
