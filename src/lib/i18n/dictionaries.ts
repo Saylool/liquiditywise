@@ -45,41 +45,41 @@ const en = {
   home: {
     badge: "Early foundation",
     title: "Uniswap Strategy Advisor",
-    introBeforeV3: "An AI-powered advisor for Uniswap ",
-    introBetween: " and ",
+    introBeforeV3: "An educational advisor for Uniswap ",
+    introBetween: ", growing towards ",
     introAfterV4:
-      ". Describe what you are trying to do in ordinary language, and get an explanation of the features and parameters involved — without needing to know the low-level mechanics first.",
+      ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "The deterministic half of the pipeline runs end to end: a pool's verified configuration and current market state, its last 30 completed days of closing prices, historical volatility, a log-symmetric price band, and the Uniswap tick range that band aligns onto. No AI is involved in any of those figures, and none of them is estimated to fill a gap.",
-    analysePool: "Analyse a pool →",
-    methodHeading: "How it will work",
+      "Search for a pool by its pair, or paste the pool's address. Read its verified configuration and current market state, its last 30 completed days of closing prices, historical volatility, a log-symmetric price band, and the Uniswap tick range that band aligns onto — then read a plain-language explanation of all of it, in English or Turkish. No AI touches any of those figures, none of them is estimated to fill a gap, and the model that writes the prose has nowhere to put a number of its own.",
+    analysePool: "Find a pool →",
+    methodHeading: "How it works",
     methodSteps: [
       {
         step: "Verified data",
         detail:
-          "Pool statistics are fetched from Uniswap subgraphs and public registries, never assumed.",
+          "Pool facts are fetched from Uniswap subgraphs and read on-chain, never assumed. The price is cross-checked against the tick the pool reports for itself.",
       },
       {
         step: "Deterministic maths",
         detail:
-          "Volatility, ranges and liquidity metrics are computed in plain TypeScript, so the numbers are reproducible.",
+          "Volatility, the price band and the tick range are computed in plain TypeScript, so the same pool always yields the same numbers.",
       },
       {
         step: "AI interpretation",
         detail:
-          "The model explains what those figures mean for your goal. It is not allowed to invent them.",
+          "A model explains what those figures mean. It is handed them already checked, and the contract it answers under has nowhere to put a number.",
       },
     ],
-    coverageHeading: "Planned coverage",
+    coverageHeading: "Not built yet",
     coverage: [
       {
         version: "Uniswap v3",
         features: [
           {
-            name: "Concentrated liquidity",
+            name: "Fees and impermanent loss",
             summary:
-              "Choosing a price range that matches how much of the time you want your capital earning fees.",
+              "What a position would earn, and what it would give up by holding through a move. The explanation says plainly that it models neither — which is honest, and is also the question most people arrive with.",
           },
           {
             name: "Fee tier selection",
@@ -115,7 +115,7 @@ const en = {
       },
     ],
     footer:
-      "The planned coverage above is not built yet: there is no AI interpretation, no persistence and no wallet connection. What works today is the verified-data and deterministic-maths half, which the advisor is built on so that nothing further up can invent a figure. The advisor produces recommendations only — it will never sign or send a transaction on your behalf.",
+      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. There is no persistence, no account and no wallet connection anywhere in the codebase — this advisor explains and suggests, and can never sign or send a transaction on your behalf.",
   },
 
   pool: {
@@ -430,40 +430,40 @@ const tr: Dictionary = {
     badge: "Erken aşama",
     title: "Uniswap Strateji Danışmanı",
     introBeforeV3: "Uniswap ",
-    introBetween: " ve ",
+    introBetween: " için, ",
     introAfterV4:
-      " için yapay zekâ destekli bir danışman. Ne yapmak istediğini gündelik dille anlat, ilgili özelliklerin ve parametrelerin açıklamasını al — düşük seviyeli mekanikleri önceden bilmen gerekmeden.",
+      "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Boru hattının deterministik yarısı uçtan uca çalışıyor: havuzun doğrulanmış yapılandırması ve güncel piyasa durumu, tamamlanmış son 30 günün kapanış fiyatları, tarihsel volatilite, log-simetrik bir fiyat bandı ve o bandın hizalandığı Uniswap tick aralığı. Bu sayıların hiçbirinde yapay zekâ yok ve hiçbiri bir boşluğu doldurmak için tahmin edilmiyor.",
-    analysePool: "Bir havuzu analiz et →",
-    methodHeading: "Nasıl çalışacak",
+      "Havuzu paritesinden ara, ya da havuzun adresini yapıştır. Doğrulanmış yapılandırmasını ve güncel piyasa durumunu, tamamlanmış son 30 günün kapanış fiyatlarını, tarihsel volatiliteyi, log-simetrik bir fiyat bandını ve o bandın hizalandığı Uniswap tick aralığını gör — sonra hepsinin gündelik dille açıklamasını oku, Türkçe ya da İngilizce. Bu sayıların hiçbirine yapay zekâ dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metni yazan modelin kendi başına bir sayı koyacağı yer yok.",
+    analysePool: "Havuz bul →",
+    methodHeading: "Nasıl çalışıyor",
     methodSteps: [
       {
         step: "Doğrulanmış veri",
         detail:
-          "Havuz istatistikleri Uniswap subgraph'larından ve açık kayıtlardan çekilir, asla varsayılmaz.",
+          "Havuz bilgileri Uniswap subgraph'larından çekilir ve zincirden okunur, asla varsayılmaz. Fiyat, havuzun kendisi için bildirdiği tick'e karşı çapraz doğrulanır.",
       },
       {
         step: "Deterministik hesap",
         detail:
-          "Volatilite, aralık ve likidite metrikleri düz TypeScript ile hesaplanır; böylece sayılar yeniden üretilebilir.",
+          "Volatilite, fiyat bandı ve tick aralığı düz TypeScript ile hesaplanır; aynı havuz her zaman aynı sayıları verir.",
       },
       {
         step: "Yapay zekâ yorumu",
         detail:
-          "Model bu sayıların senin hedefin için ne anlama geldiğini açıklar. Onları uydurmasına izin verilmez.",
+          "Bir model bu sayıların ne anlama geldiğini açıklar. Sayılar ona doğrulanmış hâlde verilir ve cevap verdiği sözleşmede bir sayı koyacağı yer yoktur.",
       },
     ],
-    coverageHeading: "Planlanan kapsam",
+    coverageHeading: "Henüz kurulmadı",
     coverage: [
       {
         version: "Uniswap v3",
         features: [
           {
-            name: "Yoğunlaştırılmış likidite",
+            name: "Komisyon ve geçici kayıp",
             summary:
-              "Sermayenin ne kadar süre komisyon kazanmasını istediğine uygun bir fiyat aralığı seçmek.",
+              "Bir pozisyonun ne kazanacağı, ve bir hareketi baştan sona tutmanın neyi feda ettiği. Açıklama ikisini de modellemediğini açıkça söylüyor — bu dürüst, ama çoğu insanın buraya gelirken sorduğu soru da tam bu.",
           },
           {
             name: "Komisyon kademesi seçimi",
@@ -499,7 +499,7 @@ const tr: Dictionary = {
       },
     ],
     footer:
-      "Yukarıdaki planlanan kapsam henüz kurulmadı: yapay zekâ yorumu, kalıcı depolama ve cüzdan bağlantısı yok. Bugün çalışan kısım, doğrulanmış veri ve deterministik hesap yarısı — danışman bunun üzerine kuruluyor ki üst katmanlardaki hiçbir şey bir sayı uyduramasın. Danışman yalnızca öneri üretir; senin adına asla bir işlem imzalamaz veya göndermez.",
+      "Yukarıdakilerin hiçbiri henüz yok. Olan şey, bu sayfada daha yukarıda anlatılanların tamamı: adıyla bulunan bir havuz, hesaplanıp çapraz doğrulanmış sayılar, ve gösterilmeden önce doğrulanan bir metin. Kod tabanının hiçbir yerinde kalıcı depolama, hesap ya da cüzdan bağlantısı yok — bu danışman açıklar ve önerir; senin adına asla bir işlem imzalayamaz veya gönderemez.",
   },
 
   pool: {

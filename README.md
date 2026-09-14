@@ -126,11 +126,12 @@ exactly one tick by requiring both that it covers the band and that the next tic
 inward does not. A validator that re-ran the calculator's own expression would
 reproduce its bugs and agree with itself.
 
-All of it is now wired into one page. `/pool` takes a pool address, runs the three
-reads concurrently, and works them through volatility, band and range to a pair of
-ticks. It is a Server Component, so the credentials the readers need never enter a
-browser bundle, and the address arrives as a search parameter rather than a path
-segment so the form that submits it can be plain HTML with no client JavaScript.
+All of it is wired into one page. `/pool` takes a pair to search for or a pool
+address to analyse, runs the three reads concurrently, and works them through
+volatility, band and range to a pair of ticks. It is a Server Component, so the
+credentials the readers need never enter a browser bundle, and what was asked for
+arrives as a search parameter rather than a path segment so the form that submits
+it can be plain HTML with no client JavaScript.
 
 The pipeline reports **which stage** stopped when one does, so a pool with two days
 of history, a pool behind an unreachable subgraph, and a missing API key are three
@@ -141,18 +142,16 @@ memory which contract a pair lives at, and an address this application cannot
 verify has no place in its UI.
 
 `/pool` is rate limited, because every analysed pool costs four upstream calls —
-three subgraph queries and one `eth_call` — and the page is public. `src/proxy.ts`
-allows **10 analyses per minute per client** and answers the rest with a real
-`429` and a `Retry-After`, before rendering begins. Only a request carrying a
-well-formed address is counted: a missing or malformed one is answered without a
-single upstream call, so a typo never costs an analysis.
+three subgraph queries and one `eth_call` — a search costs one, and the page is
+public. `src/proxy.ts` allows **10 a minute per client** and answers the rest with
+a real `429` and a `Retry-After`, before rendering begins. Only a request that
+will actually reach a source is counted: a missing or malformed address, and a
+search term the page refuses, are answered without a single upstream call, so a
+typo never costs an analysis. See [The rate limit](#the-rate-limit) for the
+counter every instance shares.
 
-Two limits of that, stated rather than papered over:
+One limit of that, stated rather than papered over:
 
-- **The count lives in one process's memory.** A platform running several
-  instances multiplies the effective limit by however many are warm. This is a
-  deterrent against casual abuse, not a hard ceiling; a hard ceiling needs a store
-  the instances share.
 - **A caller is identified by proxy-set headers** (`x-real-ip`, then the leftmost
   `x-forwarded-for`). That is trustworthy behind a proxy that writes them itself,
   as Vercel does, and worthless anywhere a client's own headers pass through
