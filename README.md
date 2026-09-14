@@ -246,6 +246,48 @@ asked for at 1.5σ would have been labelled **2σ** on the page and described to
 the model as two standard deviations, while the arithmetic behind it used 1.5.
 It now has its own formatter.
 
+## Against simply holding
+
+The page compares the suggested range against holding the two tokens, at five
+log-spaced prices across it. It is the one figure here that owes nothing to a
+data source: two range bounds and two prices determine it exactly, by the
+arithmetic of the curve a pool trades on. No window, no sample, no estimate, and
+nothing to forecast.
+
+**It is half of the question, and the page says which half.** It counts price
+movement and nothing else. The fees a provider earns are precisely what they are
+paid for that difference, and this does not model them — see below for why not.
+
+It is size-independent. Liquidity cancels out of a ratio of two portfolios, so
+this can be reported without ever sizing a deposit, which this project does not
+do.
+
+The usual name for it is wrong and the page corrects it: nothing is *impermanent*
+about a position closed at a price other than the one it opened at. "Divergence"
+is what it measures, so that is what the code calls it.
+
+**The schema re-derives every ratio in the other numéraire.** A portfolio
+compared against another portfolio cannot depend on which of the two tokens they
+are priced in, so an arrangement that agrees in both got the algebra right —
+where re-running the calculator's own expression would agree with itself whatever
+it did. Scaling the calculator's arithmetic by one part in ten thousand makes the
+schema refuse the whole figure rather than publish it.
+
+### What is not here, and why
+
+**Fee income is not modelled, and not estimated.** What a position earns is its
+share of the liquidity active in its range, multiplied by the volume that trades
+while price is inside it. The first needs the tick-level liquidity distribution,
+which this application does not read, *and* a deposit size, which it will not
+invent. The second, for any period that has not happened yet, is a forecast.
+Stacking an estimate on a forecast on data we do not have is exactly the figure
+this project exists not to produce, so there is no APR here and there will not
+be one.
+
+What can honestly be said about fees is what the pool actually did — its real
+volume and the fees it generated, per day, which the source does publish — and
+that is the next thing to build.
+
 ## The explanation
 
 `getRangeInterpretation` hands one finished analysis to a model and gets back four

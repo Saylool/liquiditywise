@@ -86,6 +86,7 @@ export const DataFailureNoticeSchema = z.enum([
   "range-tick-disagreement",
   "range-too-narrow",
   "range-unverifiable",
+  "divergence-unverifiable",
 
   /* The written explanation. */
   "explanation-key-rejected",

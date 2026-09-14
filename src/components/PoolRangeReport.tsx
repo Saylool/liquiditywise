@@ -88,7 +88,7 @@ export function PoolRangeReport({
     );
   }
 
-  const { pool, snapshot, volatility, band, range, parameters } = result.data;
+  const { pool, snapshot, volatility, band, range, divergence, parameters } = result.data;
   const warnings = result.status === "partial" ? result.warnings : [];
 
   const base = pool.token0.symbol;
@@ -241,6 +241,26 @@ export function PoolRangeReport({
       </Section>
 
       <p className="text-sm leading-relaxed text-muted">{t.report.epilogue}</p>
+
+      <Section title={t.divergence.heading}>
+        <p className="text-sm leading-relaxed">{t.divergence.intro}</p>
+
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between gap-4 text-xs uppercase tracking-widest text-muted">
+            <span>{t.divergence.price}</span>
+            <span>{t.divergence.loss}</span>
+          </div>
+          {divergence.points.map((point) => (
+            <div key={point.price} className="flex justify-between gap-4 font-mono text-sm">
+              <span>{formatPrice(point.price, locale)}</span>
+              <span>{formatPercent(point.lossRatio, locale)}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs leading-relaxed text-muted">{t.divergence.entryRow}</p>
+        <p className="text-xs leading-relaxed text-muted">{t.divergence.impermanentNote}</p>
+      </Section>
     </div>
   );
 }

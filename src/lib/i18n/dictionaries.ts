@@ -131,6 +131,22 @@ const en = {
    * labelled with a few lines above, so a reader changing one can see which
    * number they are changing.
    */
+  /*
+   * The one figure here that owes nothing to a data source, and the one most
+   * likely to be read as half an answer — so the text says what it leaves out
+   * before it says anything else.
+   */
+  divergence: {
+    heading: "Against simply holding",
+    intro:
+      "What a position in this range would be worth compared with holding the two tokens, at each price. Exact arithmetic rather than an estimate — but it counts price movement and nothing else. It says nothing about the fees a position would earn, and fees are precisely what a liquidity provider is paid for this difference.",
+    price: "Price",
+    loss: "Versus holding",
+    entryRow: "The price this is measured from — the pool's current price.",
+    impermanentNote:
+      "This is what is usually called impermanent loss. It is only impermanent if price comes back: a position closed at a price other than the one it opened at has realised it.",
+  },
+
   parameters: {
     heading: "Change the range",
     apply: "Recalculate",
@@ -188,6 +204,7 @@ const en = {
       volatility: "measuring historical volatility",
       band: "building the price band",
       range: "aligning the band onto the pool's tick grid",
+      divergence: "comparing that range against holding the two tokens",
     },
     noRangeHeading: "No range for this pool",
     stoppedWhile: (step: string) => `This stopped while ${step}.`,
@@ -360,6 +377,8 @@ const en = {
         "The price band is narrower than one tick spacing on this pool, so it does not describe two distinct position boundaries.",
       "range-unverifiable":
         "The tick range calculation produced a result this application cannot verify.",
+      "divergence-unverifiable":
+        "The comparison against holding produced a result this application cannot verify.",
       "explanation-key-rejected":
         "The explanation service did not accept the configured key, so no explanation is shown.",
       "explanation-model-not-permitted":
@@ -525,6 +544,17 @@ const tr: Dictionary = {
     loading: "Canlı Uniswap verisi okunuyor…",
   },
 
+  divergence: {
+    heading: "Sadece tutmaya kıyasla",
+    intro:
+      "Bu aralıktaki bir pozisyonun, iki tokenı sadece tutmaya kıyasla her fiyatta ne edeceği. Tahmin değil, kesin aritmetik — ama yalnızca fiyat hareketini sayar. Pozisyonun kazanacağı komisyon hakkında hiçbir şey söylemez; oysa likidite sağlayıcıya bu farkın karşılığında ödenen şey tam olarak komisyondur.",
+    price: "Fiyat",
+    loss: "Tutmaya kıyasla",
+    entryRow: "Bunun ölçüldüğü fiyat — havuzun güncel fiyatı.",
+    impermanentNote:
+      "Buna genelde geçici kayıp denir. Yalnızca fiyat geri gelirse geçicidir: açıldığı fiyattan farklı bir fiyatta kapatılan bir pozisyon onu gerçekleştirmiş olur.",
+  },
+
   parameters: {
     heading: "Aralığı değiştir",
     apply: "Yeniden hesapla",
@@ -574,6 +604,7 @@ const tr: Dictionary = {
       volatility: "tarihsel volatilite ölçülürken",
       band: "fiyat bandı kurulurken",
       range: "bant havuzun tick ızgarasına hizalanırken",
+      divergence: "o aralık iki tokenı tutmakla karşılaştırılırken",
     },
     noRangeHeading: "Bu havuz için aralık yok",
     stoppedWhile: (step: string) => `İşlem ${step} durdu.`,
@@ -739,6 +770,8 @@ const tr: Dictionary = {
         "Fiyat bandı bu havuzun bir tick adımından dar, bu yüzden iki ayrı pozisyon sınırı tanımlamıyor.",
       "range-unverifiable":
         "Tick aralığı hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "divergence-unverifiable":
+        "Tutmaya kıyaslama hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "explanation-key-rejected":
         "Açıklama servisi yapılandırılmış anahtarı kabul etmedi, bu yüzden açıklama gösterilmiyor.",
       "explanation-model-not-permitted":

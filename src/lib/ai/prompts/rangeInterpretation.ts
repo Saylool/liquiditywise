@@ -173,6 +173,28 @@ const describeRange = (analysis: PoolRangeAnalysis, locale: Locale): readonly st
   ];
 };
 
+/**
+ * What the range is worth against holding, at the prices it was measured at.
+ *
+ * Given to the model because the explanation is the only place a reader is told
+ * what the table means — and because the instruction's account of what this
+ * application cannot do would otherwise be out of date the moment it read one.
+ */
+const describeDivergence = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
+  const { divergence } = analysis;
+
+  return [
+    line("Measured from", formatPrice(divergence.entryPrice, locale)),
+    ...divergence.points.map((point) =>
+      line(
+        `Against holding, at ${formatPrice(point.price, locale)}`,
+        formatPercent(point.lossRatio, locale),
+      ),
+    ),
+    line("What it counts", "price movement only, exactly; no fees, no gas"),
+  ];
+};
+
 const section = (title: string, lines: readonly string[]): string =>
   `${title}\n${lines.join("\n")}`;
 
@@ -221,6 +243,7 @@ export const buildRangeInterpretationPrompt = (
     section("HISTORICAL VOLATILITY", describeVolatility(analysis, locale)),
     section("PRICE BAND", describeBand(analysis, locale)),
     section("SUGGESTED TICK RANGE", describeRange(analysis, locale)),
+    section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
     warnings.length === 0
       ? "CAVEATS\n- none"
       : section(

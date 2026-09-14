@@ -293,3 +293,50 @@ describe("PoolRangeReport when there is nothing to show", () => {
     expect(failed).not.toContain("Historical volatility");
   });
 });
+
+/*
+ * The one figure on this page that owes nothing to a data source — and the one
+ * most likely to be read as half an answer, so what it leaves out is asserted
+ * as carefully as what it says.
+ */
+describe("PoolRangeReport against simply holding", () => {
+  const markup = render(analyse());
+
+  it("shows a row for each price the comparison was made at", () => {
+    expect(markup).toContain("Against simply holding");
+    expect(markup).toContain("Versus holding");
+  });
+
+  it("reports no divergence at the price it was measured from", () => {
+    // The entry row is the pool's current price, where holding and the position
+    // are worth exactly the same.
+    expect(markup).toContain("0.00%");
+  });
+
+  it("says the comparison counts price movement and not fees", () => {
+    expect(markup).toContain("says nothing about the fees a position would earn");
+  });
+
+  /*
+   * The name everyone uses is wrong in a way worth correcting: nothing is
+   * impermanent about a position closed at a different price.
+   */
+  it("says why the usual name for it is misleading", () => {
+    expect(markup).toContain("only impermanent if price comes back");
+  });
+
+  it("never claims a position beats holding on price movement", () => {
+    const losses = [...markup.matchAll(/>([\-−]?\d+\.\d+%)</g)].map((m) => m[1] ?? "");
+
+    expect(losses.some((value) => value.startsWith("-") || value === "0.00%")).toBe(true);
+  });
+
+  it("translates", () => {
+    const turkish = render(analyse(), "tr");
+
+    expect(turkish).toContain("Sadece tutmaya kıyasla");
+    expect(turkish).toContain("Tutmaya kıyasla");
+    expect(turkish).toContain("geçici kayıp");
+    expect(turkish).not.toContain("Against simply holding");
+  });
+});

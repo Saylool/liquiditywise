@@ -1,8 +1,10 @@
+import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
 import {
   type AnalyticsFailureReason,
   type DataFailureNotice,
   type DataFailureReason,
   type DataResult,
+  type DivergenceLoss,
   type DataWarningNotice,
   type HistoricalVolatility,
   type PoolDailyPriceHistory,
@@ -38,7 +40,8 @@ export type PoolRangeAnalysisStep =
   | "history"
   | "volatility"
   | "band"
-  | "range";
+  | "range"
+  | "divergence";
 
 /**
  * Everything the pipeline produced, each stage kept rather than summarised.
@@ -54,6 +57,8 @@ export type PoolRangeAnalysis = {
   readonly volatility: HistoricalVolatility;
   readonly band: VolatilityPriceBand;
   readonly range: V3TickRange;
+  /** What that range is worth against holding, at a few prices. Needs no source. */
+  readonly divergence: DivergenceLoss;
   readonly parameters: PriceBandParameters;
 };
 
@@ -185,6 +190,22 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
   }
   if (range.status === "partial") warnings.push(...range.warnings);
 
+  /*
+   * Last, and unlike every stage before it this one reads nothing. It compares
+   * the range that came out of the pipeline against simply holding the two
+   * tokens, which is arithmetic the protocol fixes — no window, no sample, no
+   * source to be unavailable.
+   */
+  const divergence = calculateDivergenceLoss(range.data);
+  if (divergence.status === "unavailable") {
+    return {
+      status: "unavailable",
+      step: "divergence",
+      reason: "calculation-error",
+      notice: divergence.notice,
+    };
+  }
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -192,6 +213,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     volatility: volatility.data,
     band: band.data,
     range: range.data,
+    divergence: divergence.data,
     parameters: input.parameters,
   };
 
