@@ -230,3 +230,87 @@ describe("buildRangeInterpretationPrompt", () => {
     expect(user).toContain("Upper edge: placed where the band asked");
   });
 });
+
+/*
+ * Read across four live pools, the explanation got direction wrong about half
+ * the time: it called a price quoted in WETH per USDC "WETH başına USDC" —
+ * Turkish for the exact opposite — and named the wrong token at each edge of the
+ * range for one pool while naming the right one for the next. Both facts are
+ * fixed by the protocol and by the pool's own token order, so both are stated in
+ * the prompt now instead of being left for a model to work out.
+ */
+describe("directional facts the model is not asked to derive", () => {
+  it("says what a price figure means in a sentence, not a per-pair", () => {
+    const { user } = build();
+
+    expect(user).toContain(
+      "- What every price figure on the page means: how much WETH one USDC is worth",
+    );
+    // The short form is the one that inverts under translation.
+    expect(user).not.toContain("WETH per USDC");
+  });
+
+  it("names the token a position holds at each edge, and they differ", () => {
+    const { user } = build();
+
+    expect(user).toContain("- If price falls below the range, a position holds only: USDC");
+    expect(user).toContain("- If price rises above the range, a position holds only: WETH");
+  });
+
+  it("follows the pool's token order rather than a fixed pair of names", () => {
+    /*
+     * Only the symbols are swapped. Decimals drive the tick maths and the
+     * chain cross-check, so a fixture that swapped those would fail to analyse
+     * for reasons that have nothing to do with what this test is about.
+     */
+    const { user } = buildRangeInterpretationPrompt({
+      analysis: {
+        ...analysis,
+        pool: {
+          ...analysis.pool,
+          token0: { ...analysis.pool.token0, symbol: "WETH" },
+          token1: { ...analysis.pool.token1, symbol: "USDC" },
+        },
+      },
+      locale: "en",
+      warnings: [],
+    });
+
+    expect(user).toContain("- If price falls below the range, a position holds only: WETH");
+    expect(user).toContain("- If price rises above the range, a position holds only: USDC");
+    expect(user).toContain(
+      "- What every price figure on the page means: how much USDC one WETH is worth",
+    );
+  });
+
+  it("carries the rules that put those facts beyond debate", () => {
+    const { system } = build();
+
+    expect(system).toContain("DIRECTION IS GIVEN, NOT DERIVED");
+    expect(system).toContain("SAY WHAT THE FIGURES SHOW");
+  });
+});
+
+/*
+ * One deployment called gas both "gas" and "gaz", impermanent loss both "geçici
+ * kayıp" and "impermanent loss", and wrote "yıllıklaştırılmış" in a paragraph
+ * sitting directly under a label reading "Yıllıklandırılmış".
+ */
+describe("terminology", () => {
+  it("pins the words Turkish prose should use", () => {
+    const { user } = build("tr");
+
+    expect(user).toContain("WORDS TO USE");
+    expect(user).toContain('impermanent loss: "geçici kayıp"');
+    expect(user).toContain('gas: "gas", never "gaz"');
+    // Written as "volatility" in Turkish prose until the list said otherwise.
+    expect(user).toContain('volatility: "volatilite"');
+    // The two the interface itself had to stop conflating.
+    expect(user).toContain('tick spacing: "tick adımı"');
+    expect(user).toContain('the suggested tick range: "tick aralığı"');
+  });
+
+  it("leaves English alone, where the interface already uses the model's words", () => {
+    expect(build("en").user).not.toContain("WORDS TO USE");
+  });
+});

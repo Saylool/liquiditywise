@@ -29,11 +29,44 @@ import { BASE_INSTRUCTION } from "./base";
  * reader's language. The model is told not to repeat them, but it will refer to
  * them, and a model reasoning over "%70,50" while the page shows "70.50%" is
  * reasoning about a different-looking page than the one being read.
+ *
+ * Anything directional is stated here as a finished sentence rather than left
+ * for the model to work out. See {@link describeRange}.
  */
 
 const LANGUAGE_NAMES: Record<Locale, string> = {
   en: "English",
   tr: "Turkish",
+};
+
+/**
+ * Words the interface itself uses, for languages where the model would
+ * otherwise reach for a different one each time.
+ *
+ * Read across four pools in Turkish, one deployment wrote both "gas" and "gaz",
+ * both "geçici kayıp" and "impermanent loss", and both "yıllıklandırılmış" and
+ * "yıllıklaştırılmış" — the last of them in prose sitting directly below a label
+ * that read "Yıllıklandırılmış". Each choice is defensible alone; together they
+ * make one site look like several, and leave a reader comparing two pools to
+ * work out for themselves that two words mean one thing.
+ *
+ * English needs no list: the interface already uses the terms the model does.
+ */
+const TERMINOLOGY: Record<Locale, readonly string[]> = {
+  en: [],
+  tr: [
+    'the pool: "havuz"',
+    'token, plural: "tokenlar"',
+    'volatility: "volatilite"',
+    'annualised: "yıllıklandırılmış"',
+    'a fee, and fees a position earns: "komisyon"',
+    'swap: "takas"',
+    'gas: "gas", never "gaz"',
+    'impermanent loss: "geçici kayıp"',
+    'tick spacing: "tick adımı" — the step between usable ticks',
+    'the suggested tick range: "tick aralığı", or just "aralık"',
+    'the price band it was derived from: "bant"',
+  ],
 };
 
 /** One labelled figure. A list of these is easier for a model to hold than JSON. */
@@ -46,7 +79,17 @@ const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly str
     line("Pair", `${pool.token0.symbol} / ${pool.token1.symbol}`),
     line("Fee tier", formatFeePpm(pool.feePpm, locale)),
     line("Tick spacing", formatWhole(pool.tickSpacing, locale)),
-    line("Price direction", `${pool.token1.symbol} per ${pool.token0.symbol}`),
+    /*
+     * Spelled out rather than given as "token1 per token0". The short form is
+     * the one that inverts: a model handed "WETH per USDC" wrote "WETH başına
+     * USDC" — which is Turkish for USDC per WETH — and every price on that page
+     * then read backwards. A sentence with a subject and a verb survives the
+     * translation the two-word form does not.
+     */
+    line(
+      "What every price figure on the page means",
+      `how much ${pool.token1.symbol} one ${pool.token0.symbol} is worth`,
+    ),
   ];
 };
 
@@ -102,6 +145,16 @@ const describeRange = (analysis: PoolRangeAnalysis, locale: Locale): readonly st
     line("Price at the upper tick", formatPrice(range.upperPrice, locale)),
     line("Width in tick spacings", formatWhole(spacings, locale)),
     line("Current price inside the range", range.containsCurrentPrice ? "yes" : "no"),
+    /*
+     * Which token a position is left holding at each edge is fixed by the
+     * protocol — below the range it is all token0, above it all token1 — so it
+     * is stated here rather than re-derived per request. Asked to work it out,
+     * a model got it right for one pool and backwards for the next, in the one
+     * paragraph whose whole subject is what happens at the edges. Something
+     * this deterministic has no business being inferred.
+     */
+    line("If price falls below the range, a position holds only", pool.token0.symbol),
+    line("If price rises above the range, a position holds only", pool.token1.symbol),
     line(
       "Lower edge",
       range.lowerBoundTruncated
@@ -144,9 +197,16 @@ export const buildRangeInterpretationPrompt = (
   input: RangeInterpretationPromptInput,
 ): RangeInterpretationPrompt => {
   const { analysis, locale, warnings } = input;
+  const terminology = TERMINOLOGY[locale];
 
-  const blocks = [
+  const blocks: readonly (string | null)[] = [
     `Write in ${LANGUAGE_NAMES[locale]}.`,
+    terminology.length === 0
+      ? null
+      : section(
+          "WORDS TO USE, SO THE TEXT AND THE INTERFACE AGREE",
+          terminology.map((term) => `- ${term}`),
+        ),
     section("POOL", describePool(analysis, locale)),
     section("CURRENT STATE", describeMarket(analysis, locale)),
     section("HISTORICAL VOLATILITY", describeVolatility(analysis, locale)),
@@ -161,5 +221,8 @@ export const buildRangeInterpretationPrompt = (
     `Explain these figures in four parts: what the suggested range means, what happens if price leaves it, what the volatility figure is saying, and what this analysis does not cover. Remember that you may not write any number.`,
   ];
 
-  return { system: BASE_INSTRUCTION, user: blocks.join("\n\n") };
+  return {
+    system: BASE_INSTRUCTION,
+    user: blocks.filter((block): block is string => block !== null).join("\n\n"),
+  };
 };

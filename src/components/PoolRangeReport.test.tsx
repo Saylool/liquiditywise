@@ -215,6 +215,18 @@ describe("PoolRangeReport in Turkish", () => {
     expect(markup).not.toContain("Current state");
   });
 
+  /*
+   * "tick aralığı" is the heading over the suggested range. It used to name the
+   * spacing as well, one line above it, which left the page calling two
+   * different things by one name — visible in prose written about it: "the
+   * pool's fine tick aralığı, a few tick aralığı wide".
+   */
+  it("does not call the spacing and the range the same thing", () => {
+    expect(markup).toContain("tick adımı");
+    expect(markup).toContain("Önerilen tick aralığı");
+    expect(markup).not.toContain("tick aralığı 60");
+  });
+
   it("writes the numbers the way Turkish writes them", () => {
     // Half a translation would keep "0.30%" and "0.000333333" here.
     expect(markup).toContain("%0,30"); // the fixture pool's 3000 ppm fee tier

@@ -359,8 +359,14 @@ const tr: Dictionary = {
     },
     noRangeHeading: "Bu havuz için aralık yok",
     stoppedWhile: (step: string) => `İşlem ${step} durdu.`,
+    /*
+     * "adım", not "aralık". The suggested range is headed "Önerilen tick
+     * aralığı" a few lines below, and one page calling two different things by
+     * one name is a page that cannot be read carefully — a model writing about
+     * it produced "the pool's fine tick aralığı, a few tick aralığı wide".
+     */
     poolSummary: (feeTier: string, tickSpacing: string) =>
-      `Ethereum mainnet üzerinde Uniswap v3 · ${feeTier} komisyon kademesi · tick aralığı ${tickSpacing}`,
+      `Ethereum mainnet üzerinde Uniswap v3 · ${feeTier} komisyon kademesi · tick adımı ${tickSpacing}`,
     caveatsHeading: (count: number) =>
       count === 1
         ? "Bu sayılar için bir çekince geçerli."
@@ -375,7 +381,7 @@ const tr: Dictionary = {
     width: "Genişlik",
     widthValue: (ticks: string) => `${ticks} tick`,
     widthNote: (spacings: string, tickSpacing: string) =>
-      `${tickSpacing}'lik ${spacings} aralık`,
+      `${tickSpacing}'lik ${spacings} adım`,
     inRange: "Şu an aralık içinde",
     yes: "Evet",
     no: "Hayır",

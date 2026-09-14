@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Output of scripts/readLiveExplanations.spec.ts
+/explanations.json

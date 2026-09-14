@@ -191,6 +191,33 @@ An explanation that fails any of this is dropped. The figures were verified
 without it and stand on their own — the page shows the analysis and reports that
 no explanation is available.
 
+**Anything directional is computed, not left to the model.** Which token the
+price figures are quoted in, and which token a position is left holding at each
+edge of the range, follow from the pool's token order and from the protocol.
+Both are stated in the prompt as finished sentences. Asked to work them out
+instead, the model got them right for one pool and backwards for the next: it
+rendered a price quoted in WETH per USDC as "WETH başına USDC" — Turkish for the
+opposite — and named the wrong token at both edges of a WETH/USDT range while
+naming the right one for USDC/USDT. Three of the first four pools read carried a
+reversed direction somewhere. This is the figures rule again: the deterministic
+layer computes, the model interprets, and a fact this fixed has no business
+being inferred.
+
+**The prose has to say something about this pool.** Not writing a number is not
+the same as saying nothing about it, and the first instruction was read as
+though it were — four paragraphs that would have sat equally well under any
+other pool. It now asks for the figures in words: whether the band is narrow or
+wide, whether the current price sits nearer one edge, whether the pair has
+barely moved.
+
+**In Turkish the prose uses the interface's own words.** One deployment wrote
+both "gas" and "gaz", both "geçici kayıp" and "impermanent loss", and
+"yıllıklaştırılmış" in a paragraph sitting directly beneath a label reading
+"Yıllıklandırılmış". The prompt now carries a short glossary for Turkish, which
+in turn exposed a collision in the interface itself: "tick aralığı" named both
+the tick spacing and the suggested range, one line apart. The spacing is now
+"tick adımı".
+
 **An explanation is reused when nothing it could legitimately say has changed.**
 The key follows from the no-figures rule: because the model cannot quote a price,
 a tick or a percentage, its prose does not depend on them — it refers to "the
@@ -305,6 +332,19 @@ proxy.
 | `npm run lint`      | ESLint                                             |
 | `npm run typecheck` | Generate route types, then `tsc --noEmit`          |
 
+`scripts/readLiveExplanations.spec.ts` runs real pools through the real prompt
+and writes each explanation beside the facts it has to agree with — the quote
+direction, the token held at each edge, how far price sits from each bound.
+Everything else about the explanation is checkable without a network; whether
+the sentences are any good is not. It skips unless pools are named, so `npm
+test` stays hermetic:
+
+```bash
+NODE_USE_ENV_PROXY=1 TONE_POOLS=0x…,0x… TONE_LOCALES=tr,en \
+  node --env-file=.env.local ./node_modules/vitest/vitest.mjs run \
+  scripts/readLiveExplanations.spec.ts
+```
+
 `typecheck` runs `next typegen` first because the App Router type helpers
 (`PageProps`, `LayoutProps`, `RouteContext`) are generated, not hand-written.
 It also checks the persistent compile-time assertions in
@@ -340,11 +380,11 @@ user input
 | `src/lib/ratelimit`   | Fixed-window request counter and the client key it counts against. Pure; the clock is injected. |
 | `src/lib/i18n`        | Published languages, how one is negotiated, and every interface string in each. |
 | `src/lib/theme`       | The three theme choices, the store behind the toggle, and the script that applies one before paint. |
-| `src/lib/ai`          | The prompt layer, the one model call, and the check the answer has to pass. |
-| `src/lib/ai`          | OpenAI client wiring and response handling.                                 |
+| `src/lib/ai`          | The prompt layer, the one model call, the provider wiring, and the check the answer has to pass. |
 | `src/lib/ai/prompts`  | One module per feature, composed on top of a shared base instruction module. |
 | `src/schemas`         | The normalized domain contracts: Zod schemas plus the types inferred from them. |
 | `src/types`           | Internal types with no runtime shape to validate, e.g. UI view models.      |
+| `scripts`             | Developer tools that are not part of the application and not part of the suite. |
 
 ### Boundary rules
 
