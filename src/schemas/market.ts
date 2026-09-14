@@ -169,6 +169,14 @@ export const HistoricalPricePointSchema = z
     error: "A day's extremes are known together or not at all.",
     path: ["high"],
   })
+  /*
+   * A day's price sitting between its own extremes is the whole check. There was
+   * a second refinement below it requiring the low not to sit above the high,
+   * and mutation testing found it unreachable: if the low is above the high then
+   * no price is between them, so this one has already rejected the point. It was
+   * removed rather than given a test that could only have passed for the wrong
+   * reason.
+   */
   .refine(
     (point) =>
       point.low === null ||
@@ -178,11 +186,7 @@ export const HistoricalPricePointSchema = z
       error: "A day's own price must sit between the extremes reported for that day.",
       path: ["price"],
     },
-  )
-  .refine((point) => point.low === null || point.high === null || point.low <= point.high, {
-    error: "A day's low must not sit above its high.",
-    path: ["low"],
-  });
+  );
 
 export type HistoricalPricePoint = z.infer<typeof HistoricalPricePointSchema>;
 

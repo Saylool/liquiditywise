@@ -320,6 +320,8 @@ describe("HistoricalPricePointSchema", () => {
      * mistake looks like from here.
      */
     [
+      // Rejected because no price can sit between an inverted pair, which is the
+      // same check and the reason a separate low-above-high rule is unreachable.
       "a low above the high",
       { timestamp: FETCHED_AT, price: 2500, low: 2600, high: 2400, volumeUsd: null, feesUsd: null },
     ],

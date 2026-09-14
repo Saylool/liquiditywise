@@ -457,3 +457,71 @@ describe("per-row pool ownership", () => {
     });
   });
 });
+
+/*
+ * The source publishes a day's extremes in the inverse of the direction this
+ * series stores prices in, so inverting them swaps which one is the high. Until
+ * these existed the direction was held up by two deep-equality assertions that
+ * happened to include the fields — the sort of cover that disappears the next
+ * time someone updates an expectation.
+ */
+describe("the day's extremes, which arrive the other way up", () => {
+  /** Deliberately lopsided, so a swap cannot hide behind symmetry. */
+  const lopsided = (price: number) => ({
+    ...dayRow(0, String(price)),
+    high: String((1 / price) * 1.1),
+    low: String((1 / price) * 0.95),
+  });
+
+  /* A second, ordinary day: one point alone is too short a series to normalize. */
+  const firstPoint = (row: unknown) => {
+    const result = normalize(payload([row, dayRow(1)], rawMeta()));
+    if (result.status === "unavailable") throw new Error(result.notice);
+    const point = result.data.points[0];
+    if (point === undefined) throw new Error("expected a point");
+    return point;
+  };
+
+  it("inverts the provider's high into our low, and its low into our high", () => {
+    const point = firstPoint(lopsided(2500));
+
+    expect(point.low).toBeCloseTo(2500 / 1.1, 10);
+    expect(point.high).toBeCloseTo(2500 / 0.95, 10);
+  });
+
+  it("puts the low below the high, which a swap would not", () => {
+    const point = firstPoint(lopsided(2500));
+
+    expect(point.low).toBeLessThan(point.high ?? 0);
+  });
+
+  it("brackets the day's own price", () => {
+    const point = firstPoint(lopsided(2500));
+
+    expect(point.low).toBeLessThanOrEqual(point.price);
+    expect(point.price).toBeLessThanOrEqual(point.high ?? 0);
+  });
+
+  /*
+   * The check that makes the swap detectable at all: a day whose own price falls
+   * outside its own range is either that mistake or a source contradicting
+   * itself, and the extremes are dropped rather than carried.
+   */
+  it("drops extremes the day's own price does not sit between", () => {
+    const contradictory = { ...dayRow(0, "2500"), high: "0.01", low: "0.005" };
+    const point = firstPoint(contradictory);
+
+    expect(point.low).toBeNull();
+    expect(point.high).toBeNull();
+    // The day itself survives; only what could not be trusted is absent.
+    expect(point.price).toBe(2500);
+  });
+
+  it("keeps the day's volume and fees when its extremes are dropped", () => {
+    const contradictory = { ...dayRow(0, "2500"), high: "0.01", low: "0.005" };
+    const point = firstPoint(contradictory);
+
+    expect(point.volumeUsd).not.toBeNull();
+    expect(point.feesUsd).not.toBeNull();
+  });
+});
