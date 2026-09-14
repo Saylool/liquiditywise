@@ -3,9 +3,15 @@ import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 /**
  * Shown while the page's reads are in flight.
  *
- * The analysis needs three concurrent subgraph reads and one `eth_call`, so the
- * page is genuinely blocked for a moment. Without this the browser shows the
- * previous screen with no sign that anything is happening.
+ * The route serves both of the things this page does — a search and an analysis
+ * — and cannot tell which is running, so it says what is true of both: live
+ * Uniswap data is being read. It said "pool data" until a search sat under it
+ * for three seconds saying something that was not quite the case.
+ *
+ * An analysis needs three concurrent subgraph reads and one `eth_call`, and a
+ * search one query, so the page is genuinely blocked for a moment either way.
+ * Without this the browser shows the previous screen with no sign that anything
+ * is happening.
  */
 export default async function Loading() {
   const { t } = await getRequestDictionary();

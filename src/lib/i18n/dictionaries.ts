@@ -121,7 +121,7 @@ const en = {
     back: "← Uniswap Strategy Advisor",
     invalidAddress:
       "That is not an Ethereum address. An address is 0x followed by exactly 40 hexadecimal characters.",
-    loading: "Reading pool data…",
+    loading: "Reading live Uniswap data…",
   },
 
   search: {
@@ -376,7 +376,7 @@ const tr: Dictionary = {
     back: "← Uniswap Strateji Danışmanı",
     invalidAddress:
       "Bu bir Ethereum adresi değil. Adres, 0x ile başlayıp tam olarak 40 onaltılık karakterle devam eder.",
-    loading: "Havuz verisi okunuyor…",
+    loading: "Canlı Uniswap verisi okunuyor…",
   },
 
   search: {
