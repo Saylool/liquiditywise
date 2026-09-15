@@ -58,8 +58,24 @@ export const resolveInterpretationModel = (configured: string | undefined): Inte
   isInterpretationModel(configured) ? configured : DEFAULT_INTERPRETATION_MODEL;
 
 /**
- * Four sections capped at 700 characters each is well under a thousand tokens.
- * The ceiling is generous enough that a normal answer never reaches it, so
- * hitting it means something went wrong rather than that the limit was tight.
+ * The output budget, sized for what the answer actually spends rather than for
+ * what it prints.
+ *
+ * It was 2048, on the reasoning that four sections of a few hundred characters
+ * are well under a thousand tokens. The prose is — but the prose is not what
+ * fills this budget. These models think before they answer, and reasoning
+ * tokens are charged to `max_output_tokens` alongside the text.
+ *
+ * Measured on one pool against gpt-5.6-luna: English spent 1466 output tokens,
+ * 1034 of them reasoning; Turkish spent 1120, 516 of them reasoning. So the
+ * visible answer was four to six hundred tokens either way, and the thinking was
+ * one to two times that again — varying by a factor of two for the very same
+ * task. At 2048 the headroom over the larger of those was under half, which is
+ * not headroom at all when the variable part swings that far. Answers were
+ * being cut off mid-sentence and refused, and the reader was shown nothing.
+ *
+ * Hitting this ceiling should mean something went wrong, not that the limit was
+ * tight. At 4096 it is roughly three times the largest spend observed, and the
+ * worst case costs a fraction of a cent at the prices above.
  */
-export const INTERPRETATION_MAX_TOKENS = 2048;
+export const INTERPRETATION_MAX_TOKENS = 4096;
