@@ -11,8 +11,11 @@ import type { FetchLike } from "./v3SubgraphTransport";
  * treated as a secret in its own right and never appears in a message, a warning
  * or a thrown error.
  *
- * Read-only by construction: this module can issue `eth_call` and nothing else.
- * There is no signing, no `eth_sendTransaction`, no account access.
+ * Read-only by construction: this module can issue `eth_call` and
+ * `eth_getBalance` and nothing else. There is no signing, no
+ * `eth_sendTransaction`, no account access. The second method exists for one
+ * reason — a v4 pool may hold the chain's own ether, and no token contract can
+ * be asked how much of that an address has.
  */
 
 export const DEFAULT_RPC_TIMEOUT_MS = 10_000;
@@ -89,6 +92,67 @@ export const postEthCall = async ({
         id: 1,
         method: "eth_call",
         params: [{ to, data }, "latest"],
+      }),
+      signal: controller.signal,
+    });
+
+    const statusFailure = classifyStatus(response.status);
+    if (statusFailure !== null) return statusFailure;
+
+    try {
+      return { ok: true, payload: await response.json() };
+    } catch {
+      return controller.signal.aborted
+        ? failure("timeout", TIMED_OUT)
+        : failure("invalid-response", UNREADABLE);
+    }
+  } catch {
+    return controller.signal.aborted
+      ? failure("timeout", TIMED_OUT)
+      : failure("network-error", UNREACHABLE);
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+export type EthGetBalanceRequest = {
+  /** Full provider endpoint. Treated as a credential; never logged or returned. */
+  readonly rpcUrl: string;
+  /** The account whose ether balance is asked for. */
+  readonly address: string;
+  readonly fetchImpl: FetchLike;
+  readonly timeoutMs: number;
+};
+
+/**
+ * Performs one `eth_getBalance` against the latest block.
+ *
+ * Its own function rather than a parameter on `postEthCall`, because the two
+ * are different questions with different answers: a call returns ABI-encoded
+ * return data, a balance query returns a bare quantity. Reading either is the
+ * adapter's job; this layer knows transport only.
+ */
+export const postEthGetBalance = async ({
+  rpcUrl,
+  address,
+  fetchImpl,
+  timeoutMs,
+}: EthGetBalanceRequest): Promise<RpcTransportResult> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const response = await fetchImpl(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getBalance",
+        params: [address, "latest"],
       }),
       signal: controller.signal,
     });

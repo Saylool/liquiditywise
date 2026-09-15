@@ -141,3 +141,19 @@ export const poolAnalysisHref = (
 
   return `/pool?${query.toString()}`;
 };
+
+/**
+ * The same link for a v4 pool, which has its own page and is named by a
+ * 32-byte id under a different parameter. The band travels with it for the
+ * same reason as above: two pools compared under two different bands look
+ * comparable and are not.
+ */
+export const v4PoolAnalysisHref = (poolId: string, parameters: PriceBandParameters): string => {
+  const query = new URLSearchParams({
+    id: poolId,
+    [HORIZON_PARAMETER]: String(parameters.horizonDays),
+    [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
+  });
+
+  return `/v4?${query.toString()}`;
+};

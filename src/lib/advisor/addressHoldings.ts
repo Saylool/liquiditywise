@@ -6,22 +6,25 @@ import {
   type DataResult,
   type HeldSides,
   type HoldingPool,
+  type HoldingsSource,
   type PoolCandidateList,
+  type Token,
   type TokenHolding,
-  type V3Token,
+  type V4PoolCandidateList,
 } from "../../schemas";
-import type { Erc20Balances } from "../uniswap/ethereumErc20Balances";
+import type { AddressBalances } from "../uniswap/ethereumBalances";
 
 /*
- * Two reads in, one answer out: which of the candidate tokens an address holds,
- * and which of the candidate pools it can therefore put something into.
+ * Three reads in, one answer out: which of the candidate currencies an address
+ * holds, and which of the candidate pools — of either protocol — it can
+ * therefore put something into.
  *
  * Pure — no clock, no network, no environment — so the whole thing is testable
  * without credentials, like every other composition here.
  *
- * The two reads cannot run side by side, unlike the three behind a range
- * analysis. The tokens to ask about come out of the pool list, so the pool list
- * has to arrive first. That is a property of the question, not a missed
+ * The balance read cannot run beside the two lists, unlike the three behind a
+ * range analysis. The currencies to ask about come out of the lists, so the
+ * lists have to arrive first. That is a property of the question, not a missed
  * optimisation: nothing can enumerate an address's tokens, so the candidates
  * have to be chosen before they can be checked.
  */
@@ -30,8 +33,14 @@ const HOLDINGS_UNVERIFIABLE = "holdings-unverifiable";
 
 export type AddressHoldingsInput = {
   readonly address: string;
-  readonly candidates: DataResult<PoolCandidateList>;
-  readonly balances: DataResult<Erc20Balances>;
+  readonly v3Candidates: DataResult<PoolCandidateList>;
+  /**
+   * The v4 net. Allowed to be missing where the v3 one is not: a deployment
+   * with no v4 subgraph configured still has an answer, and the page says the
+   * v4 net was not cast rather than implying no v4 pool takes what is held.
+   */
+  readonly v4Candidates: DataResult<V4PoolCandidateList>;
+  readonly balances: DataResult<AddressBalances>;
   readonly fetchedAt: string;
 };
 
@@ -64,55 +73,60 @@ const sidesHeld = (
 };
 
 /**
- * Builds the answer from a pool list and a set of balances.
+ * Builds the answer from the pool lists and a set of balances.
  *
- * Both reads must have succeeded. Unlike a range analysis, where a snapshot
- * missing one field still carries the price the band needs, there is no partial
- * version of this: an address whose balances could not be read is not an address
- * that holds nothing, and saying so would be the worst available answer.
+ * The balances must have been read: an address whose balances could not be
+ * read is not an address that holds nothing, and saying so would be the worst
+ * available answer. At least one list must have been read too — with neither
+ * there was nothing to ask about — and a list that was not is recorded as a
+ * net that was not cast, which the page states.
  */
 export const composeAddressHoldings = (
   input: AddressHoldingsInput,
 ): DataResult<AddressHoldings> => {
-  const { candidates, balances } = input;
-  if (candidates.status === "unavailable") {
-    return unavailable(candidates.reason, candidates.notice);
+  const { v3Candidates, v4Candidates, balances } = input;
+  if (v3Candidates.status === "unavailable" && v4Candidates.status === "unavailable") {
+    return unavailable(v3Candidates.reason, v3Candidates.notice);
   }
   if (balances.status === "unavailable") {
     return unavailable(balances.reason, balances.notice);
   }
 
+  const v3Pools = v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools;
+  const v4Pools = v4Candidates.status === "unavailable" ? [] : v4Candidates.data.pools;
+
   /*
-   * Token identities come from the pool list rather than from the chain. Every
-   * one there has already been through the same verification a searched pool's
-   * tokens go through — the symbol rules, the decimals, the non-zero address —
-   * and a balance read answers with a number and no identity at all.
+   * Currency identities come from the pool lists rather than from the chain.
+   * Every one there has already been through the same verification a searched
+   * pool's currencies go through, and a balance read answers with a number and
+   * no identity at all. The v4 list is what can name the chain's own ether.
    */
-  const tokensByAddress = new Map<string, V3Token>();
-  for (const pool of candidates.data.pools) {
-    tokensByAddress.set(pool.token0.address, pool.token0);
-    tokensByAddress.set(pool.token1.address, pool.token1);
+  const tokensByAddress = new Map<string, Token>();
+  for (const pool of [...v3Pools, ...v4Pools]) {
+    if (!tokensByAddress.has(pool.token0.address)) tokensByAddress.set(pool.token0.address, pool.token0);
+    if (!tokensByAddress.has(pool.token1.address)) tokensByAddress.set(pool.token1.address, pool.token1);
   }
 
   const holdings: TokenHolding[] = [];
   const heldAddresses = new Set<string>();
   for (const balance of balances.data.held) {
     const token = tokensByAddress.get(balance.address);
-    // A balance for a token that is not in the list is a balance for a token
-    // nobody asked about, and there is no verified identity to show it under.
+    // A balance for a currency that is in neither list is a balance nobody asked
+    // about, and there is no verified identity to show it under.
     if (token === undefined || heldAddresses.has(balance.address)) continue;
     heldAddresses.add(balance.address);
     holdings.push({ token, amount: balance.amount });
   }
 
   /*
-   * Pools with both sides held first, and the source's own order within each
-   * group. The grouping is a statement about the reader — a pool you already
-   * hold both sides of is one you can enter without swapping first — and not
-   * about which pool is better.
+   * Pools with both sides held first, and each source's own order within each
+   * group — v3's list, then v4's. The grouping is a statement about the reader:
+   * a pool you already hold both sides of is one you can enter without swapping
+   * first. It says nothing about which pool is better, and neither does the
+   * order of the two protocols inside a group.
    */
   const entries: HoldingPool[] = [];
-  for (const pool of candidates.data.pools) {
+  for (const pool of [...v3Pools, ...v4Pools]) {
     const heldSides = sidesHeld(pool, heldAddresses);
     if (heldSides !== null) entries.push({ pool, heldSides });
   }
@@ -121,13 +135,23 @@ export const composeAddressHoldings = (
     ...entries.filter((entry) => entry.heldSides !== "both"),
   ];
 
+  const sources: HoldingsSource[] = [
+    ...(v3Candidates.status === "unavailable" ? [] : (["uniswap-v3-subgraph"] as const)),
+    ...(v4Candidates.status === "unavailable" ? [] : (["uniswap-v4-subgraph"] as const)),
+    "ethereum-rpc",
+  ];
+
   const verified = AddressHoldingsSchema.safeParse({
     address: input.address,
     tokensChecked: balances.data.checked,
     holdings,
     pools,
+    poolsSearched: {
+      v3: v3Candidates.status === "unavailable" ? null : v3Pools.length,
+      v4: v4Candidates.status === "unavailable" ? null : v4Pools.length,
+    },
     fetchedAt: input.fetchedAt,
-    sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
+    sources,
   });
   if (!verified.success) return unavailable("invalid-response", HOLDINGS_UNVERIFIABLE);
 

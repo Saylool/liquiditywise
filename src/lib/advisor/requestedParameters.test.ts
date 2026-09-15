@@ -9,6 +9,7 @@ import {
   MULTIPLIER_PARAMETER,
   poolAnalysisHref,
   readRequestedParameters,
+  v4PoolAnalysisHref,
 } from "./requestedParameters";
 
 const read = (horizon?: string | string[], multiplier?: string | string[]) =>
@@ -160,5 +161,15 @@ describe("poolAnalysisHref", () => {
 
     expect(read.parameters).toEqual(parameters);
     expect(read.fellBack).toBe(false);
+  });
+});
+
+describe("v4PoolAnalysisHref", () => {
+  it("links to the v4 page by id, carrying the chosen band", () => {
+    const id = `0x${"e5".repeat(32)}`;
+
+    expect(v4PoolAnalysisHref(id, { horizonDays: 90, standardDeviationMultiplier: 1.5 })).toBe(
+      `/v4?id=${id}&days=90&sigma=1.5`,
+    );
   });
 });

@@ -6,7 +6,7 @@ import {
   nonZeroEvmAddress,
   UnsignedIntegerStringSchema,
 } from "./primitives";
-import { V3PoolMetadataSchema, V3TokenSchema } from "./uniswap";
+import { TokenSchema, V3PoolMetadataSchema, V4PoolSchema } from "./uniswap";
 
 /*
  * What one address holds, and which pools those tokens can go into.
@@ -51,11 +51,38 @@ export const PoolCandidateListSchema = z
 
 export type PoolCandidateList = z.infer<typeof PoolCandidateListSchema>;
 
-/** The only sources that can answer this: the pool list, then the chain itself. */
+/**
+ * The v4 pools the same lookup draws its candidate currencies from.
+ *
+ * Its own list rather than a second protocol inside the first, because a v4
+ * candidate is a whole pool — hook and fee mode included — where a v3 one is
+ * metadata, and because one of these can be missing while the other is not:
+ * a deployment with no v4 subgraph configured still answers from the v3 net,
+ * and the page says which nets were cast.
+ */
+export const V4PoolCandidateListSchema = z
+  .strictObject({
+    pools: z.array(V4PoolSchema).min(1, {
+      error: "A candidate list with no pools in it can answer nothing.",
+    }),
+    fetchedAt: IsoTimestampSchema,
+    source: DataSourceSchema.extract(["uniswap-v4-subgraph"]),
+  })
+  .refine(
+    (list) => new Set(list.pools.map((pool) => pool.id)).size === list.pools.length,
+    { error: "The same pool appears twice in one candidate list.", path: ["pools"] },
+  );
+
+export type V4PoolCandidateList = z.infer<typeof V4PoolCandidateListSchema>;
+
+/** The only sources that can answer this: a pool list or two, then the chain itself. */
 export const HoldingsSourceSchema = DataSourceSchema.extract([
   "uniswap-v3-subgraph",
+  "uniswap-v4-subgraph",
   "ethereum-rpc",
 ]);
+
+export type HoldingsSource = z.infer<typeof HoldingsSourceSchema>;
 
 /**
  * How much of one token an address holds.
@@ -66,7 +93,12 @@ export const HoldingsSourceSchema = DataSourceSchema.extract([
  * there would be nothing left to round back.
  */
 export const TokenHoldingSchema = z.strictObject({
-  token: V3TokenSchema,
+  /**
+   * The v3 token rules or the v4 ones — the difference is the zero address,
+   * which v4 uses for the chain's own ether. An address's ether is a holding
+   * like any other here, asked of the chain rather than of a contract.
+   */
+  token: TokenSchema,
   amount: UnsignedIntegerStringSchema.refine((amount) => amount !== "0", {
     error: "A zero balance is not a holding; leave it out instead.",
   }),
@@ -80,7 +112,8 @@ export const HeldSidesSchema = z.enum(["both", "token0", "token1"]);
 export type HeldSides = z.infer<typeof HeldSidesSchema>;
 
 export const HoldingPoolSchema = z.strictObject({
-  pool: V3PoolMetadataSchema,
+  /** Either protocol's pool; the page links each to its own analysis. */
+  pool: z.union([V3PoolMetadataSchema, V4PoolSchema]),
   /**
    * Carried rather than left to the page to work out, and re-derived below from
    * the holdings themselves. It is the only claim this list makes, and a pool
@@ -96,7 +129,30 @@ type HoldingsShape = {
   readonly holdings: readonly TokenHolding[];
   readonly pools: readonly HoldingPool[];
   readonly tokensChecked: number;
+  readonly poolsSearched: { readonly v3: number | null; readonly v4: number | null };
+  readonly sources: readonly string[];
 };
+
+/**
+ * A net that was not cast cannot have caught anything.
+ *
+ * A v4 pool on the page while the v4 list was reported unread — or the other
+ * way round — means the answer was assembled from a list it says it did not
+ * have, and the sentence about how the search was made would be describing a
+ * different search.
+ */
+const poolsComeFromSearchedNets = (check: HoldingsShape): boolean =>
+  check.pools.every((entry) =>
+    entry.pool.protocolVersion === "v3"
+      ? check.poolsSearched.v3 !== null
+      : check.poolsSearched.v4 !== null,
+  );
+
+/** The sources named are exactly the nets cast, plus the chain that was asked. */
+const sourcesMatchSearch = (check: HoldingsShape): boolean =>
+  check.sources.includes("ethereum-rpc") &&
+  check.sources.includes("uniswap-v3-subgraph") === (check.poolsSearched.v3 !== null) &&
+  check.sources.includes("uniswap-v4-subgraph") === (check.poolsSearched.v4 !== null);
 
 const heldAddresses = (check: HoldingsShape): ReadonlySet<string> =>
   new Set(check.holdings.map((holding) => holding.token.address));
@@ -165,6 +221,20 @@ export const AddressHoldingsSchema = z
     tokensChecked: z.int().min(1),
     holdings: z.array(TokenHoldingSchema),
     pools: z.array(HoldingPoolSchema),
+    /**
+     * How many pools each net was drawn from, or `null` for a net that could
+     * not be cast — a deployment without a v4 subgraph, or a list that would
+     * not read. Carried so the page can say which, rather than letting "no v4
+     * pool takes what you hold" stand in for "v4 was not looked at".
+     */
+    poolsSearched: z
+      .strictObject({
+        v3: z.int().min(1).nullable(),
+        v4: z.int().min(1).nullable(),
+      })
+      .refine((searched) => searched.v3 !== null || searched.v4 !== null, {
+        error: "At least one net must have been cast for there to be an answer.",
+      }),
     /** When this application asked. A balance is a reading, not a fact. */
     fetchedAt: IsoTimestampSchema,
     sources: z.array(HoldingsSourceSchema).min(1),
@@ -188,6 +258,14 @@ export const AddressHoldingsSchema = z
   .refine(bothSidesComeFirst, {
     error: "Pools with both sides held must come before the rest.",
     path: ["pools"],
+  })
+  .refine(poolsComeFromSearchedNets, {
+    error: "A pool is listed from a net that was not cast.",
+    path: ["pools"],
+  })
+  .refine(sourcesMatchSearch, {
+    error: "The sources named must be exactly the nets cast, plus the chain.",
+    path: ["sources"],
   });
 
 export type AddressHoldings = z.infer<typeof AddressHoldingsSchema>;

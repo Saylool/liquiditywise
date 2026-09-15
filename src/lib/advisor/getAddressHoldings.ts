@@ -2,8 +2,9 @@ import "server-only";
 
 import type { AddressHoldings, DataResult } from "../../schemas";
 import { logUnavailable } from "../observability/serverDiagnostics";
-import { fetchEthereumErc20Balances } from "../uniswap/ethereumErc20Balances";
+import { fetchEthereumBalances } from "../uniswap/ethereumBalances";
 import { getEthereumV3TradedPools } from "../uniswap/getEthereumV3TradedPools";
+import { getEthereumV4TradedPools } from "../uniswap/getEthereumV4TradedPools";
 import { composeAddressHoldings } from "./addressHoldings";
 
 /** Identifies this reader in server-side diagnostics. */
@@ -22,28 +23,38 @@ const LABEL = "address-holdings";
  */
 
 /**
- * Finds which of the most-traded pools' tokens one address holds.
+ * Finds which of the most-traded pools' currencies one address holds, across
+ * both protocols.
  *
- * The two reads are sequential and have to be: the tokens worth asking about
- * come out of the pool list. Nothing anywhere can enumerate an address's tokens,
- * so the candidates must be chosen before they can be checked.
+ * The lists are read together and the sweep after them, and that order is
+ * forced: the currencies worth asking about come out of the lists. Nothing
+ * anywhere can enumerate an address's tokens, so the candidates must be chosen
+ * before they can be checked.
  */
 export const getAddressHoldings = async (
   address: string,
 ): Promise<DataResult<AddressHoldings>> => {
   /*
-   * Behind a cache, because this query takes no input: every visitor asks the
-   * same question and it cost 3.7 seconds cold. See the wrapper for why reusing
-   * it is safe in a way that reusing a figure would not be.
+   * Both behind a cache, because neither query takes input: every visitor asks
+   * the same two questions, and the v3 one cost 3.7 seconds cold. See either
+   * wrapper for why reusing a net is safe in a way that reusing a figure would
+   * not be.
    */
-  const candidates = await getEthereumV3TradedPools();
+  const [v3Candidates, v4Candidates] = await Promise.all([
+    getEthereumV3TradedPools(),
+    getEthereumV4TradedPools(),
+  ]);
 
-  const tokenAddresses =
-    candidates.status === "unavailable"
-      ? []
-      : candidates.data.pools.flatMap((pool) => [pool.token0.address, pool.token1.address]);
+  /*
+   * Both nets' currencies, together. The v4 list is what brings in the chain's
+   * own ether, under the zero address, which the sweep asks about directly.
+   */
+  const tokenAddresses = [
+    ...(v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools),
+    ...(v4Candidates.status === "unavailable" ? [] : v4Candidates.data.pools),
+  ].flatMap((pool) => [pool.token0.address, pool.token1.address]);
 
-  const balances = await fetchEthereumErc20Balances({
+  const balances = await fetchEthereumBalances({
     holder: address,
     tokenAddresses,
     rpcUrl: process.env.ETHEREUM_RPC_URL,
@@ -59,7 +70,8 @@ export const getAddressHoldings = async (
     LABEL,
     composeAddressHoldings({
       address,
-      candidates,
+      v3Candidates,
+      v4Candidates,
       balances,
       fetchedAt: new Date().toISOString(),
     }),

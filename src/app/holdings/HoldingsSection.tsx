@@ -2,7 +2,6 @@ import { AddressHoldings } from "@/components/AddressHoldings";
 import { getAddressHoldings } from "@/lib/advisor/getAddressHoldings";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
-import { TRADED_POOL_LIMIT } from "@/lib/uniswap/ethereumV3TradedPools";
 import type { EvmAddress, PriceBandParameters } from "@/schemas";
 
 /**
@@ -30,7 +29,6 @@ export async function HoldingsSection({
   return (
     <AddressHoldings
       result={result}
-      poolsSearched={TRADED_POOL_LIMIT}
       parameters={parameters}
       t={t}
       locale={locale}

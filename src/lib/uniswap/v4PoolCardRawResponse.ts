@@ -90,3 +90,19 @@ export const V4PoolSearchResponseSchema = z.object({
 });
 
 export type V4PoolSearchResponse = z.infer<typeof V4PoolSearchResponseSchema>;
+
+/**
+ * The untrusted edge of a query that answers with a plain list of v4 pools —
+ * the traded pools a holdings lookup draws its candidates from. One selection
+ * is the whole answer, as with the v3 list.
+ */
+export const V4PoolListResponseSchema = z.object({
+  data: z
+    .object({
+      pools: z.array(RawV4PoolCardSchema),
+      _meta: RawMetaSchema.nullable(),
+    })
+    .nullish(),
+  /** Read only for presence; provider error text is never inspected or forwarded. */
+  errors: z.array(z.unknown()).nullish(),
+});

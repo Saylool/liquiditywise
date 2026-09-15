@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ETH_CALL_BATCH_PAUSE_MS, postEthCallBatch } from "./ethereumRpcTransport";
+import { ETH_CALL_BATCH_PAUSE_MS, postEthCallBatch, postEthGetBalance } from "./ethereumRpcTransport";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 const RPC_URL = "https://rpc.test.invalid/key-that-must-never-leak";
@@ -64,5 +64,37 @@ describe("postEthCallBatch pacing", () => {
 
     expect(first.ok && first.results[0]?.ok && first.results[0].result).toBe(`0x${"1".padStart(64, "0")}`);
     expect(second.ok && second.results[0]?.ok && second.results[0].result).toBe(`0x${"2".padStart(64, "0")}`);
+  });
+});
+
+describe("postEthGetBalance", () => {
+  const ADDRESS = `0x${"b".repeat(40)}`;
+
+  it("asks for the account's balance at the latest block", async () => {
+    const fetchImpl = vi.fn<FetchLike>(async () =>
+      new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x1a" })),
+    );
+    const result = await postEthGetBalance({ rpcUrl: RPC_URL, address: ADDRESS, fetchImpl, timeoutMs: 1_000 });
+
+    expect(result.ok && result.payload).toEqual({ jsonrpc: "2.0", id: 1, result: "0x1a" });
+    const body = JSON.parse(String(vi.mocked(fetchImpl).mock.calls[0]?.[1].body)) as {
+      method: string;
+      params: unknown[];
+    };
+    expect(body.method).toBe("eth_getBalance");
+    expect(body.params).toEqual([ADDRESS, "latest"]);
+  });
+
+  /* The endpoint URL is the credential on most providers; it must not travel out. */
+  it("keeps the endpoint out of a failure", async () => {
+    const result = await postEthGetBalance({
+      rpcUrl: RPC_URL,
+      address: ADDRESS,
+      fetchImpl: vi.fn(async () => new Response("nope", { status: 500 })),
+      timeoutMs: 1_000,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).not.toContain(RPC_URL);
   });
 });

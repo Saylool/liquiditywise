@@ -40,8 +40,9 @@ const holdings = (overrides: Partial<Holdings> = {}): DataResult<Holdings> => ({
       { pool: pool(`0x${"5".repeat(40)}`, 500), heldSides: "both" },
       { pool: pool(`0x${"3".repeat(40)}`, 3000), heldSides: "token0" },
     ],
+    poolsSearched: { v3: 250, v4: 250 },
     fetchedAt: "2026-09-15T12:00:00.000Z",
-    sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
+    sources: ["uniswap-v3-subgraph", "uniswap-v4-subgraph", "ethereum-rpc"],
     ...overrides,
   } as Holdings,
 });
@@ -50,12 +51,27 @@ const render = (result: DataResult<Holdings>, locale: Locale = "en") =>
   renderToStaticMarkup(
     <AddressHoldings
       result={result}
-      poolsSearched={250}
       parameters={DEFAULT_PRICE_BAND_PARAMETERS}
       t={getDictionary(locale)}
       locale={locale}
     />,
   );
+
+/** v4's native ether: the zero address, which is a currency and not a missing field. */
+const NATIVE = `0x${"0".repeat(40)}`;
+const ETH = token(NATIVE, "ETH", 18);
+const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+
+const v4Pool = (id: string, hookAddress: string | null = null) => ({
+  protocolVersion: "v4" as const,
+  chainId: 1,
+  id,
+  token0: ETH,
+  token1: USDC,
+  tickSpacing: 10,
+  fee: { kind: "static" as const, feePpm: 625 },
+  hookAddress,
+});
 
 describe("AddressHoldings", () => {
   it("shows each balance in the token's own units", () => {
@@ -86,7 +102,7 @@ describe("AddressHoldings", () => {
     const markup = render(holdings());
 
     expect(markup).toContain("This asked 175 of them");
-    expect(markup).toContain("250 most-traded pools");
+    expect(markup).toContain("250 most-traded Uniswap v3 pools");
   });
 
   it("says an empty result is an empty search, not an empty wallet", () => {
@@ -127,5 +143,102 @@ describe("AddressHoldings", () => {
 
     expect(markup).toContain("İki tarafı da tutuyorsun");
     expect(markup).toContain("76.083.329,8553");
+  });
+});
+
+/*
+ * The v4 half of the page: pools of the other protocol in the same two groups,
+ * each linked to its own page, and the chain's own ether as a holding.
+ */
+describe("AddressHoldings with v4 pools", () => {
+  const V4_ID = `0x${"e5".repeat(32)}`;
+
+  it("links a v4 pool to the v4 page by id, carrying the band", () => {
+    const markup = render(
+      holdings({
+        holdings: [{ token: ETH, amount: "1000000000000000000" }, { token: USDC, amount: "5000000" }],
+        pools: [{ pool: v4Pool(V4_ID), heldSides: "both" }],
+      }),
+    );
+
+    expect(markup).toContain(`href="/v4?id=${V4_ID}&amp;days=30&amp;sigma=1"`);
+    expect(markup).toContain("ETH / USDC");
+  });
+
+  it("names the protocol on every row", () => {
+    const markup = render(
+      holdings({
+        holdings: [{ token: ETH, amount: "1" }, { token: USDC, amount: "1" }],
+        pools: [
+          { pool: pool(`0x${"5".repeat(40)}`, 500), heldSides: "token0" },
+          { pool: v4Pool(V4_ID), heldSides: "both" },
+        ],
+      }),
+    );
+
+    expect(markup).toContain("v3 · 0.05%");
+    expect(markup).toContain("v4 · 0.0625%");
+  });
+
+  it("marks a hooked pool on the row", () => {
+    const markup = render(
+      holdings({
+        holdings: [{ token: ETH, amount: "1" }],
+        pools: [{ pool: v4Pool(V4_ID, SWAP_HOOK), heldSides: "token0" }],
+      }),
+    );
+
+    expect(markup).toContain("v4 · 0.0625% · hook");
+  });
+
+  it("does not mark a pool with no hook", () => {
+    const markup = render(
+      holdings({
+        holdings: [{ token: ETH, amount: "1" }],
+        pools: [{ pool: v4Pool(V4_ID), heldSides: "token0" }],
+      }),
+    );
+
+    expect(markup).not.toContain("· hook");
+  });
+
+  it("lists the chain's own ether among the holdings", () => {
+    const markup = render(holdings({ holdings: [{ token: ETH, amount: "2500000000000000000" }], pools: [] }));
+
+    expect(markup).toContain("ETH");
+    expect(markup).toContain("2.5");
+  });
+
+  it("says both nets were cast, ether among the currencies", () => {
+    const markup = render(holdings());
+
+    expect(markup).toContain("250 most-traded Uniswap v3 pools");
+    expect(markup).toContain("250 most-traded v4 pools");
+    expect(markup).not.toContain("were not searched");
+  });
+
+  /* A v3-only list must not read as "no v4 pool takes what you hold". */
+  it("says out loud when the v4 net was not cast", () => {
+    const markup = render(
+      holdings({
+        poolsSearched: { v3: 250, v4: null },
+        sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
+      }),
+    );
+
+    expect(markup).toContain("Uniswap v4 pools were not searched");
+    expect(markup).not.toContain("most-traded v4 pools");
+  });
+
+  it("says so in Turkish too", () => {
+    const markup = render(
+      holdings({
+        poolsSearched: { v3: 250, v4: null },
+        sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
+      }),
+      "tr",
+    );
+
+    expect(markup).toContain("Uniswap v4 havuzları aranmadı");
   });
 });

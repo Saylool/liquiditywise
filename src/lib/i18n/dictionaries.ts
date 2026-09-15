@@ -287,8 +287,17 @@ const en = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, pools: string) =>
-      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${pools} most-traded pools on Ethereum mainnet. Something held outside that set is not missing from this page because the address does not hold it.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
+      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${v3Pools} most-traded Uniswap v3 pools on Ethereum mainnet${v4Pools === null ? "" : `, and every currency in the ${v4Pools} most-traded v4 pools, the chain's own ether among them`}. Something held outside that set is not missing from this page because the address does not hold it.`,
+    /*
+     * Said out loud when the v4 net could not be cast, because a page that
+     * listed only v3 pools and said nothing would read as "no v4 pool takes
+     * what you hold", which nobody checked.
+     */
+    v4NotSearched:
+      "Uniswap v4 pools were not searched: their list could not be read. Ether and the currencies of v4 pools are absent from this page for that reason and no other.",
+    /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
+    hookTag: "hook",
     holdingsHeading: "Tokens found",
     nothingFound:
       "None of the tokens checked were found at this address. That is not the same as an empty wallet — see how the search was made, above.",
@@ -926,8 +935,11 @@ const tr: Dictionary = {
     intro:
       "Bu adreste bulunan tokenlar ve girebilecekleri havuzlar. Burada hiçbir şey saklanmıyor ve adres zaten herkese açık bilgi — aynı liste, bakan herkese görünür.",
     forAddress: "Adres",
-    howItLooked: (tokens: string, pools: string) =>
-      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: Ethereum mainnet'te en çok işlem gören ${pools} havuzda geçen tokenların tamamı. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
+      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: Ethereum mainnet'te en çok işlem gören ${v3Pools} Uniswap v3 havuzunda geçen tokenların tamamı${v4Pools === null ? "" : ` ve en çok işlem gören ${v4Pools} v4 havuzundaki para birimlerinin tamamı — zincirin kendi ether'i dahil`}. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
+    v4NotSearched:
+      "Uniswap v4 havuzları aranmadı: listeleri okunamadı. Ether ve v4 havuzlarının para birimleri bu sayfada bu yüzden yok, başka bir sebepten değil.",
+    hookTag: "hook",
     holdingsHeading: "Bulunan tokenlar",
     nothingFound:
       "Kontrol edilen tokenların hiçbiri bu adreste bulunamadı. Bu, cüzdanın boş olduğu anlamına gelmez — aramanın nasıl yapıldığı yukarıda yazıyor.",

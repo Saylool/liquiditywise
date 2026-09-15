@@ -1,22 +1,33 @@
-import { type DataResult, EvmAddressSchema, nonZeroEvmAddress } from "../../schemas";
+import {
+  type DataResult,
+  EvmAddressSchema,
+  nonZeroEvmAddress,
+  ZERO_ADDRESS,
+} from "../../schemas";
 import { balanceOfCalldata, readBalanceWord } from "./erc20BalanceAdapter";
 import {
   DEFAULT_RPC_TIMEOUT_MS,
   ETH_CALL_BATCH_SIZE,
   postEthCallBatch,
+  postEthGetBalance,
 } from "./ethereumRpcTransport";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 /*
- * What one address holds, of a list of tokens it was asked about.
+ * What one address holds, of a list of currencies it was asked about.
  *
  * There is no way to enumerate an address's tokens: an ERC-20 balance lives in
  * the token's own contract, so finding one means already knowing which contract
  * to ask. Every "wallet contents" anywhere is a list of guesses that were
  * checked, and this one says how many it checked.
  *
+ * One currency has no contract to ask: the chain's own ether, which a v4 pool
+ * may hold under the zero address. It is asked of the chain directly, counts as
+ * one of the currencies checked, and comes back under that same address so a
+ * v4 pool's side and an address's holding meet on one key.
+ *
  * Read-only by construction. The transport underneath can issue `eth_call` and
- * nothing else, so no code path from here can move anything.
+ * `eth_getBalance` and nothing else, so no code path from here can move anything.
  */
 
 const INVALID_ADDRESS = "invalid-pool-address";
@@ -46,7 +57,7 @@ export type TokenBalance = {
   readonly amount: string;
 };
 
-export type Erc20Balances = {
+export type AddressBalances = {
   /** Only the non-zero ones. A zero balance is an answer, not a holding. */
   readonly held: readonly TokenBalance[];
   /** How many token contracts were actually asked, for the page to report. */
@@ -61,9 +72,12 @@ export type Erc20Balances = {
   readonly unreadable: number;
 };
 
-export type EthereumErc20BalancesRequest = {
+export type EthereumBalancesRequest = {
   readonly holder: string;
-  /** Token contracts to ask. Deduplicated here; order is not significant. */
+  /**
+   * Currencies to ask about: token contracts, and the zero address for the
+   * chain's own ether. Deduplicated here; order is not significant.
+   */
   readonly tokenAddresses: readonly string[];
   /** Raw environment value; validated here so the wrapper stays free of logic. */
   readonly rpcUrl: string | undefined;
@@ -81,9 +95,9 @@ const HolderSchema = nonZeroEvmAddress(INVALID_ADDRESS);
  * 200 milliseconds together, where in sequence they would have taken most of a
  * minute.
  */
-export const fetchEthereumErc20Balances = async (
-  request: EthereumErc20BalancesRequest,
-): Promise<DataResult<Erc20Balances>> => {
+export const fetchEthereumBalances = async (
+  request: EthereumBalancesRequest,
+): Promise<DataResult<AddressBalances>> => {
   const holder = HolderSchema.safeParse(request.holder);
   if (!holder.success) {
     return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
@@ -99,15 +113,16 @@ export const fetchEthereumErc20Balances = async (
    * assembled from pool data, and one token appearing in twenty pools must not
    * become twenty identical requests.
    */
-  const tokens = [
-    ...new Set(
-      request.tokenAddresses
-        .map((address) => EvmAddressSchema.safeParse(address))
-        .filter((parsed) => parsed.success)
-        .map((parsed) => parsed.data),
-    ),
-  ];
-  if (tokens.length === 0) {
+  const requested = new Set(
+    request.tokenAddresses
+      .map((address) => EvmAddressSchema.safeParse(address))
+      .filter((parsed) => parsed.success)
+      .map((parsed) => parsed.data),
+  );
+  /* The zero address is not a contract and gets its own question, below. */
+  const wantsEther = requested.delete(ZERO_ADDRESS);
+  const tokens = [...requested];
+  if (tokens.length === 0 && !wantsEther) {
     return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
   }
 
@@ -160,15 +175,50 @@ export const fetchEthereumErc20Balances = async (
   }
 
   /*
+   * Ether, asked once and directly. It is one currency of the sweep and is
+   * counted as one: an answer the chain would not give is one unreadable
+   * currency, not a failed lookup.
+   */
+  const checked = tokens.length + (wantsEther ? 1 : 0);
+  if (wantsEther) {
+    const ether = await postEthGetBalance({
+      rpcUrl,
+      address: holder.data,
+      fetchImpl: request.fetchImpl,
+      timeoutMs: request.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
+    });
+    const amount = ether.ok ? readQuantity(ether.payload) : null;
+    if (amount === null) unreadable += 1;
+    else if (amount !== "0") held.push({ address: ZERO_ADDRESS, amount });
+  }
+
+  /*
    * The same rule as a lost chunk, applied to losses spread thinly enough to
    * pass the check above one batch at a time.
    */
-  if (unreadable > tokens.length * MAX_UNREADABLE_SHARE) {
+  if (unreadable > checked * MAX_UNREADABLE_SHARE) {
     return { status: "unavailable", reason: "invalid-response", notice: UNREADABLE };
   }
 
   return {
     status: "success",
-    data: { held, checked: tokens.length, unreadable },
+    data: { held, checked, unreadable },
   };
+};
+
+/** A JSON-RPC quantity: `0x` and hex digits with no leading zeros, `0x0` for zero. */
+const QUANTITY = /^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/;
+
+/**
+ * Reads a balance out of an `eth_getBalance` response.
+ *
+ * A quantity, not an ABI word: no padding, and the spec forbids leading zeros,
+ * so a padded answer is a provider doing something other than what was asked
+ * and is refused rather than read. Stays a decimal string for the reason every
+ * balance here does — wei is eighteen decimals past what a double holds.
+ */
+const readQuantity = (payload: unknown): string | null => {
+  const result = (payload as { result?: unknown })?.result;
+
+  return typeof result === "string" && QUANTITY.test(result) ? BigInt(result).toString() : null;
 };

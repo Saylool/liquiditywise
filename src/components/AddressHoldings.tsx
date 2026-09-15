@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { poolAnalysisHref } from "../lib/advisor/requestedParameters";
+import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatFeePpm, formatTokenAmount, formatWhole } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -39,6 +39,14 @@ import type {
  */
 const ONE_SIDED_SHOWN = 12;
 
+/**
+ * One pool, of either protocol, linked to its own analysis.
+ *
+ * The protocol is on the row because the two are not interchangeable for a
+ * holder: a v3 pool wants wrapped ether where a v4 one may take the chain's
+ * own, and a v4 pool may carry a hook. The row says "hook" when one is there
+ * and leaves the rest to the pool's page, which prints what it may do.
+ */
 const TierRow = ({
   entry,
   parameters,
@@ -49,24 +57,40 @@ const TierRow = ({
   parameters: PriceBandParameters;
   t: Dictionary;
   locale: Locale;
-}) => (
-  <li>
-    <Link
-      href={poolAnalysisHref(entry.pool.id, parameters)}
-      className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <span className="text-base font-medium">
-          {entry.pool.token0.symbol} / {entry.pool.token1.symbol}
-        </span>
-        <span className="font-mono text-xs text-muted">
-          {formatFeePpm(entry.pool.feePpm, locale)}
-        </span>
-      </div>
-      <p className="text-xs text-accent">{t.holdings.analyse}</p>
-    </Link>
-  </li>
-);
+}) => {
+  const { pool } = entry;
+  const href =
+    pool.protocolVersion === "v3"
+      ? poolAnalysisHref(pool.id, parameters)
+      : v4PoolAnalysisHref(pool.id, parameters);
+  const fee =
+    pool.protocolVersion === "v3"
+      ? formatFeePpm(pool.feePpm, locale)
+      : pool.fee.kind === "static"
+        ? formatFeePpm(pool.fee.feePpm, locale)
+        : t.v4.dynamicFee;
+  const hooked = pool.protocolVersion === "v4" && pool.hookAddress !== null;
+
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <span className="text-base font-medium">
+            {pool.token0.symbol} / {pool.token1.symbol}
+          </span>
+          <span className="font-mono text-xs text-muted">
+            {pool.protocolVersion} · {fee}
+            {hooked ? ` · ${t.holdings.hookTag}` : ""}
+          </span>
+        </div>
+        <p className="text-xs text-accent">{t.holdings.analyse}</p>
+      </Link>
+    </li>
+  );
+};
 
 const PoolGroup = ({
   entries,
@@ -117,14 +141,11 @@ const PoolGroup = ({
 
 export function AddressHoldings({
   result,
-  poolsSearched,
   parameters,
   t,
   locale,
 }: {
   result: DataResult<Holdings>;
-  /** How many pools the candidate tokens were drawn from, for the honest note. */
-  poolsSearched: number;
   parameters: PriceBandParameters;
   t: Dictionary;
   locale: Locale;
@@ -141,7 +162,7 @@ export function AddressHoldings({
     );
   }
 
-  const { holdings, pools, tokensChecked } = result.data;
+  const { holdings, pools, tokensChecked, poolsSearched } = result.data;
   const both = pools.filter((entry) => entry.heldSides === "both");
   const one = pools.filter((entry) => entry.heldSides !== "both");
 
@@ -179,9 +200,14 @@ export function AddressHoldings({
         <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
           {t.holdings.howItLooked(
             formatWhole(tokensChecked, locale),
-            formatWhole(poolsSearched, locale),
+            formatWhole(poolsSearched.v3 ?? 0, locale),
+            poolsSearched.v4 === null ? null : formatWhole(poolsSearched.v4, locale),
           )}
         </p>
+        {/* Said out loud, so a v3-only list cannot read as "no v4 pool takes this". */}
+        {poolsSearched.v4 === null ? (
+          <p className="text-xs leading-relaxed text-muted">{t.holdings.v4NotSearched}</p>
+        ) : null}
       </section>
 
       {pools.length === 0 ? null : (
