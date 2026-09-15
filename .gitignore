@@ -47,3 +47,4 @@ next-env.d.ts
 
 # Output of scripts/readLiveExplanations.spec.ts
 /explanations.json
+/explanations.report.txt

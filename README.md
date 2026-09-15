@@ -759,18 +759,45 @@ proxy.
 | `npm run lint`      | ESLint                                             |
 | `npm run typecheck` | Generate route types, then `tsc --noEmit`          |
 
-`scripts/readLiveExplanations.spec.ts` runs real pools through the real prompt
-and writes each explanation beside the facts it has to agree with — the quote
-direction, the token held at each edge, how far price sits from each bound.
-Everything else about the explanation is checkable without a network; whether
-the sentences are any good is not. It skips unless pools are named, so `npm
-test` stays hermetic:
+`scripts/readLiveExplanations.spec.ts` runs real pools through the real prompt.
+It writes each explanation beside the facts it has to agree with — the quote
+direction, the token held at each edge, how far price sits from each bound,
+whether the page carries an out-of-sample check the prose must not deny — and it
+measures what the answer had left to spare. It skips unless pools are named, so
+`npm test` stays hermetic:
 
 ```bash
 NODE_USE_ENV_PROXY=1 TONE_POOLS=0x…,0x… TONE_LOCALES=tr,en \
   node --env-file=.env.local ./node_modules/vitest/vitest.mjs run \
   scripts/readLiveExplanations.spec.ts
 ```
+
+The prose lands in `explanations.json` and a summary in
+`explanations.report.txt`, which reads:
+
+```
+model in use: gpt-5.6-luna
+default if unset: gpt-5.6-luna — reachable
+
+0x88e6a0… tr  ok       sections 722/545/629/542 (worst 66% of bound)  tokens 2383 (58% of budget, 1699 reasoning)
+0xcbcdf9… tr  ok       sections 488/510/810/429 (worst 74% of bound)  tokens 1587 (39% of budget, 958 reasoning)
+
+worst section margin: 0xcbcdf9… tr whatTheVolatilitySays at 810 of 1100
+worst token margin:   0x88e6a0… tr at 2383 of 4096
+```
+
+**Every explanation outage this project has had was invisible to the suite and
+visible in one run of this.** A section bound of 700 characters, comfortable in
+English and not in Turkish. An output budget of 2048 tokens, justified by the
+length of the prose, which ignored that these models spend one to two thousand
+more tokens thinking before they write. A default model the deployment's key is
+refused, which nothing ever called because the configured one worked.
+
+So it reports margins rather than only prose, and fails when one is gone. The two
+lines above are the evidence: at the old bounds that same run would have failed
+twice over, on a section of 810 characters and a spend of 2383 tokens. It writes
+the prose either way — especially when the answer was refused, which is exactly
+when you want to read it.
 
 `typecheck` runs `next typegen` first because the App Router type helpers
 (`PageProps`, `LayoutProps`, `RouteContext`) are generated, not hand-written.

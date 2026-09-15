@@ -63,7 +63,7 @@ const containsFigure = (prose: string): boolean => /\d/.test(prose.replace(PROTO
  * that has stopped cooperating, and a bound that also rejects a cooperative
  * answer in one of two published languages is a bug in the bound.
  */
-const MAX_SECTION_CHARACTERS = 1100;
+export const MAX_SECTION_CHARACTERS = 1100;
 
 /**
  * One section of the explanation.
