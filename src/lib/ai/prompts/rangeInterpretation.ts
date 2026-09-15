@@ -13,7 +13,11 @@ import {
 import { getDictionary } from "../../i18n/dictionaries";
 import type { Locale } from "../../i18n/locales";
 import type { PoolRangeAnalysis } from "../../advisor/poolRangeAnalysis";
-import type { DataWarningNotice } from "../../../schemas";
+import {
+  alterSwapEconomics,
+  type DataWarningNotice,
+  hookPermissionsOf,
+} from "../../../schemas";
 import { BASE_INSTRUCTION } from "./base";
 
 /*
@@ -106,6 +110,42 @@ const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly str
     line(
       "What every price figure on the page means",
       `how much ${pool.token1.symbol} one ${pool.token0.symbol} is worth`,
+    ),
+  ];
+};
+
+/**
+ * The hook, for a v4 pool, in the only terms that need trusting nobody.
+ *
+ * What a hook is *permitted* to do is fixed in its address — v4 stores a hook's
+ * permissions nowhere else — so that is what the model is told, as the page
+ * prints it. What the hook *does* is not knowable from here and is not said.
+ * Nothing about the hook's identity travels either: no address, no name. The
+ * permission names are the protocol's own fixed vocabulary, and the model is
+ * asked to describe the effect rather than repeat them.
+ *
+ * A v3 pool gets no section at all. Telling the model "hook: none" about a
+ * protocol that has no hooks would invite a sentence explaining an absence
+ * the reader never had reason to expect.
+ */
+const describeHook = (analysis: PoolRangeAnalysis): readonly string[] | null => {
+  const { pool } = analysis;
+  if (pool.protocolVersion !== "v4") return null;
+
+  if (pool.hookAddress === null) {
+    return [line("Hook", "none; the pool behaves the way a v3 pool does")];
+  }
+
+  return [
+    line("Hook", "present: a contract the protocol calls around this pool's swaps and deposits"),
+    line("What it is permitted to do", hookPermissionsOf(pool.hookAddress).join(", ")),
+    line(
+      "May change what a swap costs or pays",
+      alterSwapEconomics(pool.hookAddress) ? "yes" : "no",
+    ),
+    line(
+      "Say",
+      "in one or two sentences, that a hook is attached and what it may change, in plain words rather than the names above; never what it does, whether it is safe, or who wrote it",
     ),
   ];
 };
@@ -373,6 +413,7 @@ export const buildRangeInterpretationPrompt = (
 ): RangeInterpretationPrompt => {
   const { analysis, locale, warnings } = input;
   const terminology = TERMINOLOGY[locale];
+  const hookLines = describeHook(analysis);
 
   const blocks: readonly (string | null)[] = [
     `Write in ${LANGUAGE_NAMES[locale]}.`,
@@ -383,6 +424,7 @@ export const buildRangeInterpretationPrompt = (
           terminology.map((term) => `- ${term}`),
         ),
     section("POOL", describePool(analysis, locale)),
+    hookLines === null ? null : section("HOOK", hookLines),
     section("CURRENT STATE", describeMarket(analysis, locale)),
     section("HISTORICAL VOLATILITY", describeVolatility(analysis, locale)),
     section("PRICE BAND", describeBand(analysis, locale)),

@@ -6,6 +6,7 @@ import type {
   PoolDailyPriceHistory,
   PoolMarketSnapshot,
   V3Pool,
+  V4Pool,
 } from "../../../schemas";
 import {
   analysePoolRange,
@@ -135,6 +136,38 @@ const checkedAnalysis = ((): PoolRangeAnalysis => {
 
 const buildChecked = (locale: "en" | "tr" = "en") =>
   buildRangeInterpretationPrompt({ analysis: checkedAnalysis, locale, warnings: [] });
+
+/*
+ * A v4 pool, hooked or not, through the same pipeline. The hook address carries
+ * its permissions in its last fourteen bits, as v4 mines them: this one may run
+ * before and after a swap and take a share of it.
+ */
+const V4_ID = `0x${"d".repeat(64)}`;
+const V4_REF = { protocolVersion: "v4", chainId: 1, id: V4_ID } as const;
+const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+const LIQUIDITY_HOOK = `0x${"1".repeat(36)}0800`;
+
+const v4Analysis = (hookAddress: string | null): PoolRangeAnalysis => {
+  const v4Pool = {
+    ...V4_REF,
+    token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+    token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+    tickSpacing: 60,
+    fee: { kind: "static", feePpm: 250 },
+    hookAddress,
+  } as unknown as V4Pool;
+  const result = analysePoolRange({
+    pool: ok(v4Pool),
+    snapshot: ok({ ...snapshot, pool: V4_REF, source: "uniswap-v4-subgraph" } as PoolMarketSnapshot),
+    history: ok({ ...history(), pool: V4_REF, source: "uniswap-v4-subgraph" } as PoolDailyPriceHistory),
+    parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+  });
+  if (result.status === "unavailable") throw new Error(`v4 fixture should analyse: ${result.notice}`);
+  return result.data;
+};
+
+const buildV4 = (hookAddress: string | null, locale: "en" | "tr" = "en") =>
+  buildRangeInterpretationPrompt({ analysis: v4Analysis(hookAddress), locale, warnings: [] });
 
 describe("buildRangeInterpretationPrompt", () => {
   it("is deterministic", () => {
@@ -475,5 +508,60 @@ describe("the out-of-sample check, as the model is told about it", () => {
     expect(BASE_INSTRUCTION).toContain(
       "Do not write that the analysis has no out-of-sample check when the request says it has one",
     );
+  });
+});
+
+/*
+ * The hook is the one fact about a v4 pool the model must be told and must not
+ * embellish. It is told what the protocol permits the hook to do — read from
+ * the address, the page prints the same list — and nothing about what the hook
+ * does, who wrote it, or where it lives.
+ */
+describe("buildRangeInterpretationPrompt and the hook", () => {
+  it("names the protocol", () => {
+    expect(buildV4(null).user).toContain("Protocol: Uniswap v4");
+    expect(build().user).toContain("Protocol: Uniswap v3");
+  });
+
+  it("gives a v3 pool no hook section at all", () => {
+    expect(build().user).not.toContain("HOOK");
+    expect(build().user).not.toContain("Hook:");
+  });
+
+  it("says a hookless v4 pool behaves as a v3 pool does", () => {
+    const user = buildV4(null).user;
+
+    expect(user).toContain("HOOK\n- Hook: none; the pool behaves the way a v3 pool does");
+    expect(user).not.toContain("permitted");
+  });
+
+  it("lists what a hook is permitted to do, from its address", () => {
+    const user = buildV4(SWAP_HOOK).user;
+
+    expect(user).toContain("Hook: present");
+    expect(user).toContain("What it is permitted to do: beforeSwap, afterSwap, afterSwapReturnsDelta");
+    expect(user).toContain("May change what a swap costs or pays: yes");
+  });
+
+  it("says no when the hook cannot touch a swap", () => {
+    const user = buildV4(LIQUIDITY_HOOK).user;
+
+    expect(user).toContain("What it is permitted to do: beforeAddLiquidity");
+    expect(user).toContain("May change what a swap costs or pays: no");
+  });
+
+  /* Identity is not the model's business, and an address is the one thing it could echo. */
+  it("never hands the model the hook's address", () => {
+    expect(buildV4(SWAP_HOOK).user).not.toContain(SWAP_HOOK);
+  });
+
+  it("tells the model what it may and may not say about the hook", () => {
+    const user = buildV4(SWAP_HOOK).user;
+
+    expect(user).toContain("never what it does, whether it is safe, or who wrote it");
+  });
+
+  it("keeps the system instruction identical for v3 and v4", () => {
+    expect(buildV4(SWAP_HOOK).system).toBe(build().system);
   });
 });

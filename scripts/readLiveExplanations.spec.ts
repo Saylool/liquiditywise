@@ -54,6 +54,7 @@ import { LOCALES, type Locale } from "../src/lib/i18n/locales";
 import { MAX_SECTION_CHARACTERS } from "../src/schemas";
 import { fetchEthereumDailyPriceHistory } from "../src/lib/uniswap/ethereumDailyPriceHistory";
 import { fetchEthereumV3Pool } from "../src/lib/uniswap/ethereumV3Pool";
+import { fetchEthereumV4Pool } from "../src/lib/uniswap/ethereumV4Pool";
 import { fetchEthereumPoolMarketSnapshot } from "../src/lib/uniswap/ethereumPoolMarketSnapshot";
 
 const POOL_ADDRESSES = (process.env.TONE_POOLS ?? "").split(",").filter(Boolean);
@@ -74,19 +75,29 @@ const REPORT_PATH = process.env.TONE_REPORT ?? `${OUTPUT_PATH.replace(/\.json$/,
 /** One minute per call is generous; four pools in two languages is not fast. */
 const TIME_LIMIT_MS = 600_000;
 
-const analyse = async (poolAddress: string) => {
+/**
+ * A v4 pool id is 66 characters and a v3 address is 42, so the list can carry
+ * both and each is read through its own protocol's pool reader.
+ */
+const analyse = async (poolId: string) => {
+  const protocolVersion = poolId.length === 66 ? ("v4" as const) : ("v3" as const);
   const graph = {
     apiKey: process.env.THE_GRAPH_API_KEY,
-    subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
+    subgraphId:
+      protocolVersion === "v4"
+        ? process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID
+        : process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
     fetchImpl: fetch,
   };
   /** The two shared readers take a protocol and spell the id to match it. */
-  const v3 = { ...graph, protocolVersion: "v3" as const, poolId: poolAddress };
+  const shared = { ...graph, protocolVersion, poolId, now: () => new Date() };
 
   const [pool, snapshot, history] = await Promise.all([
-    fetchEthereumV3Pool({ ...graph, poolAddress, rpcUrl: process.env.ETHEREUM_RPC_URL }),
-    fetchEthereumPoolMarketSnapshot({ ...v3, now: () => new Date() }),
-    fetchEthereumDailyPriceHistory({ ...v3, now: () => new Date() }),
+    protocolVersion === "v4"
+      ? fetchEthereumV4Pool({ ...graph, poolId })
+      : fetchEthereumV3Pool({ ...graph, poolAddress: poolId, rpcUrl: process.env.ETHEREUM_RPC_URL }),
+    fetchEthereumPoolMarketSnapshot(shared),
+    fetchEthereumDailyPriceHistory(shared),
   ]);
 
   return analysePoolRange({ pool, snapshot, history, parameters: DEFAULT_PRICE_BAND_PARAMETERS });

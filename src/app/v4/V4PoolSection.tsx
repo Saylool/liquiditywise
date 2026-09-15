@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 
+import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { V4PoolIdentity } from "@/components/V4PoolIdentity";
+import { PoolExplanationSection } from "@/app/pool/PoolExplanationSection";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import type { PoolRangeAnalysisResult } from "@/lib/advisor/poolRangeAnalysis";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -69,7 +71,29 @@ async function V4RangeReport({
   t: Dictionary;
   locale: Locale;
 }) {
-  return <PoolRangeReport result={await analysis} poolId={poolId} t={t} locale={locale} />;
+  const result = await analysis;
+
+  return (
+    <>
+      <PoolRangeReport result={result} poolId={poolId} t={t} locale={locale} />
+      {/*
+       * The same explanation the v3 page streams in behind its figures, and
+       * not awaited here either: the numbers are sent the moment they exist,
+       * and the prose follows. The prompt it is written from names the hook
+       * and what the protocol permits it to do, and nothing more about it.
+       */}
+      {result.status === "unavailable" ? null : (
+        <Suspense fallback={<PoolExplanationPending t={t} />}>
+          <PoolExplanationSection
+            analysis={result.data}
+            warnings={result.status === "partial" ? result.warnings : []}
+            locale={locale}
+            t={t}
+          />
+        </Suspense>
+      )}
+    </>
+  );
 }
 
 /** The page's shape while the pool read is still in flight. */
