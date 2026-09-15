@@ -135,3 +135,36 @@ describe("readPoolSearchInput", () => {
     });
   });
 });
+
+/*
+ * A v4 pool id is 32 bytes, and a visitor who has one should be able to paste
+ * it into the same box as an address. Before this it was refused as a term too
+ * long to be a ticker — true, and no help at all.
+ */
+describe("readPoolSearchInput with a v4 pool id", () => {
+  const POOL_ID = `0x${"e5".repeat(32)}`;
+
+  it("recognises a v4 pool id, which needs no search at all", () => {
+    expect(readPoolSearchInput(POOL_ID)).toEqual({ kind: "v4-pool-id", poolId: POOL_ID });
+  });
+
+  it("lower-cases it the way the v4 page stores one", () => {
+    expect(readPoolSearchInput(`0x${"E5".repeat(32)}`)).toEqual({
+      kind: "v4-pool-id",
+      poolId: POOL_ID,
+    });
+  });
+
+  it("takes surrounding whitespace off", () => {
+    expect(readPoolSearchInput(`  ${POOL_ID}\n`)).toEqual({ kind: "v4-pool-id", poolId: POOL_ID });
+  });
+
+  it("still reads an address as an address", () => {
+    expect(readPoolSearchInput(`0x${"a".repeat(40)}`).kind).toBe("address");
+  });
+
+  /* One character short is not an id, and it is not a ticker either. */
+  it("treats a truncated id as a search term, and refuses it for its length", () => {
+    expect(readPoolSearchInput(POOL_ID.slice(0, -1))).toEqual({ kind: "unusable", reason: "length" });
+  });
+});

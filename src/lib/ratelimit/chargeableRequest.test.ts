@@ -89,3 +89,13 @@ describe("a v4 pool id", () => {
     ).toBe(false);
   });
 });
+
+/*
+ * A v4 id typed into the search box is answered with a redirect to `/v4?id=`,
+ * and that request is counted when it lands — the same rule as an address.
+ */
+describe("a v4 pool id in the search box", () => {
+  it("is not counted, because the redirect it earns is", () => {
+    expect(spendsUpstreamQuota(new URLSearchParams({ q: `0x${"e5".repeat(32)}` }))).toBe(false);
+  });
+});

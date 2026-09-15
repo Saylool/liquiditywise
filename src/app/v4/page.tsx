@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { BandParametersForm } from "@/components/BandParametersForm";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
+import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { PreferenceBar } from "@/components/PreferenceBar";
 import {
   HORIZON_PARAMETER,
@@ -85,6 +86,7 @@ export default async function V4PoolPage({
     return (
       <Shell locale={locale} t={t}>
         {/* Deliberately does not echo what arrived: it is unvalidated input. */}
+        <PoolLookupForm t={t} />
         <p className="text-sm leading-relaxed text-muted">
           {requested === undefined ? t.v4.noId : t.v4.invalidId}
         </p>
@@ -94,6 +96,8 @@ export default async function V4PoolPage({
 
   return (
     <Shell locale={locale} t={t}>
+      {/* The one box, as on the pool page: a v4 id goes back in it and reads as one. */}
+      <PoolLookupForm t={t} value={poolId.data} />
       <Suspense fallback={<V4PoolPending t={t} />}>
         <V4PoolSection
           poolId={poolId.data}

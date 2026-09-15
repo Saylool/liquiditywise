@@ -1,4 +1,5 @@
 import {
+  Bytes32HexSchema,
   type DataFailureNotice,
   type DataResult,
   type V4FeeConfiguration,
@@ -8,7 +9,7 @@ import {
 } from "../../schemas";
 import { normalizeV3Token } from "./v3TokenAdapter";
 import { convertSafeInteger } from "./v3SubgraphRawResponse";
-import { V4PoolResponseSchema } from "./v4PoolRawResponse";
+import { type RawV4Pool, V4PoolResponseSchema } from "./v4PoolRawResponse";
 
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
@@ -49,7 +50,13 @@ const readFeeConfiguration = (feeTier: string): V4FeeConfiguration | null => {
 };
 
 /**
- * Turns one raw v4 pool payload into the domain type, or an explicit failure.
+ * Turns one raw `Pool` entity into a verified v4 pool, or `null` if it cannot be
+ * trusted.
+ *
+ * Shared by the single-pool read and every list a v4 pool can appear in, so a
+ * pool is admitted on the same terms whichever way it was found. Two copies of
+ * this would be two chances for one of them to stop checking that a dynamic
+ * fee has a hook to set it.
  *
  * Pure: no clock, no network, no environment.
  *
@@ -58,6 +65,55 @@ const readFeeConfiguration = (feeTier: string): V4FeeConfiguration | null => {
  * rather than needing a contract call. And a currency may be the zero address,
  * which in v4 means the chain's native ether rather than a dropped field — which
  * is why these tokens go through `TokenSchema` and not the v3 one.
+ */
+export const normalizeV4PoolEntity = (raw: RawV4Pool): V4Pool | null => {
+  const id = Bytes32HexSchema.safeParse(raw.id);
+  if (!id.success) return null;
+
+  const fee = readFeeConfiguration(raw.feeTier);
+  if (fee === null) return null;
+
+  const tickSpacing = convertSafeInteger(raw.tickSpacing);
+  if (!tickSpacing.ok) return null;
+
+  const token0 = normalizeV3Token(raw.token0, ETHEREUM_MAINNET_CHAIN_ID);
+  const token1 = normalizeV3Token(raw.token1, ETHEREUM_MAINNET_CHAIN_ID);
+  if (token0 === null || token1 === null) return null;
+
+  /*
+   * The zero address means "no hook" on the wire and `null` in the domain, so
+   * the two can never be confused. The schema refuses the zero address as a hook
+   * for exactly that reason.
+   */
+  const hookAddress = raw.hooks.toLowerCase() === ZERO_ADDRESS ? null : raw.hooks;
+
+  /*
+   * The domain schema is the final authority, and for a v4 pool it carries two
+   * rules the protocol enforces on chain: a hook must exist exactly when the fee
+   * is dynamic, and a returns-delta permission must have the callback it
+   * modifies. A pool failing either is not one this application can describe.
+   */
+  const pool = V4PoolSchema.safeParse({
+    protocolVersion: "v4",
+    chainId: ETHEREUM_MAINNET_CHAIN_ID,
+    id: id.data,
+    token0,
+    token1,
+    tickSpacing: tickSpacing.value,
+    fee,
+    hookAddress,
+  });
+
+  return pool.success ? pool.data : null;
+};
+
+/**
+ * Turns one raw v4 pool payload into the domain type, or an explicit failure.
+ *
+ * The provider echoes the id of the pool it matched, and that echo is compared
+ * against the id that was asked for rather than trusted. A response describing
+ * a different pool would otherwise be republished under the requested id — the
+ * same guard every other single-pool read here keeps.
  */
 export const normalizeV4Pool = ({
   payload,
@@ -77,41 +133,8 @@ export const normalizeV4Pool = ({
   }
   if (data.pool === null) return unavailable("not-found", NOT_FOUND);
 
-  const raw = data.pool;
-  const fee = readFeeConfiguration(raw.feeTier);
-  if (fee === null) return unavailable("invalid-response", MALFORMED);
+  const pool = normalizeV4PoolEntity(data.pool);
+  if (pool === null || pool.id !== poolId) return unavailable("invalid-response", MALFORMED);
 
-  const tickSpacing = convertSafeInteger(raw.tickSpacing);
-  if (!tickSpacing.ok) return unavailable("invalid-response", MALFORMED);
-
-  const token0 = normalizeV3Token(raw.token0, ETHEREUM_MAINNET_CHAIN_ID);
-  const token1 = normalizeV3Token(raw.token1, ETHEREUM_MAINNET_CHAIN_ID);
-  if (token0 === null || token1 === null) return unavailable("invalid-response", MALFORMED);
-
-  /*
-   * The zero address means "no hook" on the wire and `null` in the domain, so
-   * the two can never be confused. The schema refuses the zero address as a hook
-   * for exactly that reason.
-   */
-  const hookAddress = raw.hooks.toLowerCase() === ZERO_ADDRESS ? null : raw.hooks;
-
-  /*
-   * The domain schema is the final authority, and for a v4 pool it carries two
-   * rules the protocol enforces on chain: a hook must exist exactly when the fee
-   * is dynamic, and a returns-delta permission must have the callback it
-   * modifies. A pool failing either is not one this application can describe.
-   */
-  const pool = V4PoolSchema.safeParse({
-    protocolVersion: "v4",
-    chainId: ETHEREUM_MAINNET_CHAIN_ID,
-    id: poolId,
-    token0,
-    token1,
-    tickSpacing: tickSpacing.value,
-    fee,
-    hookAddress,
-  });
-  if (!pool.success) return unavailable("invalid-response", MALFORMED);
-
-  return { status: "success", data: pool.data };
+  return { status: "success", data: pool };
 };

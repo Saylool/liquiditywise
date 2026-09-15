@@ -381,16 +381,36 @@ const en = {
   },
 
   search: {
-    label: "A pair, or a pool address",
+    label: "A pair, a v3 pool address, or a v4 pool id",
     placeholder: "WETH/USDC",
-    help: "Type a pair like WETH/USDC, or paste the address of the pool contract itself. Read-only: this application never signs anything and never sends a transaction.",
+    help: "Type a pair like WETH/USDC, paste the address of a v3 pool contract, or paste a v4 pool id — the 32-byte hash a v4 pool is named by. Read-only: this application never signs anything and never sends a transaction.",
     submit: "Find pools",
 
-    heading: "Matching pools",
+    heading: "Matching Uniswap v3 pools",
     resultsFor: (terms: string) => `Pools whose tokens match ${terms}.`,
     empty: (terms: string) =>
       `No Ethereum mainnet Uniswap v3 pool has a token matching ${terms}.`,
     emptyHint: "Check the spelling, or paste the pool's address if you have it.",
+
+    /*
+     * The v4 list, beneath the v3 one. Two lists rather than one merged list,
+     * because they are ordered by different numbers — what a pool holds, and
+     * what its active liquidity is worth — and one order over both would be
+     * comparing them.
+     */
+    v4Heading: "Matching Uniswap v4 pools",
+    v4Empty: (terms: string) =>
+      `No Ethereum mainnet Uniswap v4 pool has a currency matching ${terms}.`,
+    v4Depth: "Depth at the current price",
+    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthNote:
+      "What the pool's active liquidity is worth right now, read from the PoolManager's own storage — not what the pool holds, which no v4 pool reports on its own.",
+    v4StateUnread: "The pool's liquidity could not be read from the chain.",
+    v4Hook: "Hook",
+    v4NoHook: "none",
+    v4HookAltersSwaps: "may change what a swap costs",
+    v4Ordering:
+      "Pools named exactly what you searched for come first. After that the order follows each pool's depth at its current price — its active liquidity and price, read from the PoolManager's storage and put on one scale using the prices the data source derives. Not what the pool holds: every v4 pool's tokens sit in the one PoolManager together, and nothing on chain reports them per pool. The indexer's own liquidity figure was checked against the chain and was fifteen percent off on one of the busiest pools, which is why it is not used.",
 
     /*
      * The ordering is the one claim a list makes, so it is stated rather than
@@ -985,16 +1005,30 @@ const tr: Dictionary = {
   },
 
   search: {
-    label: "Bir parite ya da havuz adresi",
+    label: "Bir parite, bir v3 havuz adresi ya da bir v4 havuz kimliği",
     placeholder: "WETH/USDC",
-    help: "WETH/USDC gibi bir parite yaz, ya da havuz sözleşmesinin kendi adresini yapıştır. Salt okunur: bu uygulama hiçbir şey imzalamaz ve asla işlem göndermez.",
+    help: "WETH/USDC gibi bir parite yaz, bir v3 havuz sözleşmesinin adresini yapıştır, ya da bir v4 havuz kimliği yapıştır — v4 havuzunun adlandırıldığı 32 baytlık özet. Salt okunur: bu uygulama hiçbir şey imzalamaz ve asla işlem göndermez.",
     submit: "Havuz bul",
 
-    heading: "Eşleşen havuzlar",
+    heading: "Eşleşen Uniswap v3 havuzları",
     resultsFor: (terms: string) => `Tokenları ${terms} ile eşleşen havuzlar.`,
     empty: (terms: string) =>
       `Ethereum mainnet üzerinde ${terms} ile eşleşen tokenı olan bir Uniswap v3 havuzu bulunamadı.`,
     emptyHint: "Yazımı kontrol et, ya da havuzun adresi elindeyse onu yapıştır.",
+
+    v4Heading: "Eşleşen Uniswap v4 havuzları",
+    v4Empty: (terms: string) =>
+      `Ethereum mainnet üzerinde ${terms} ile eşleşen para birimi olan bir Uniswap v4 havuzu bulunamadı.`,
+    v4Depth: "Güncel fiyattaki derinlik",
+    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthNote:
+      "Havuzun aktif likiditesinin şu an ettiği değer; PoolManager'ın kendi depolamasından okundu — havuzun tuttuğu şey değil, çünkü hiçbir v4 havuzu onu kendi başına bildirmez.",
+    v4StateUnread: "Havuzun likiditesi zincirden okunamadı.",
+    v4Hook: "Hook",
+    v4NoHook: "yok",
+    v4HookAltersSwaps: "bir takasın neye mal olduğunu değiştirebilir",
+    v4Ordering:
+      "Tam olarak arattığın adı taşıyan havuzlar önce gelir. Sonrası, her havuzun güncel fiyattaki derinliğine göre sıralanır — aktif likiditesi ve fiyatı PoolManager'ın depolamasından okunur ve veri kaynağının türettiği fiyatlarla tek bir ölçeğe konur. Havuzun tuttuğu şey değil: her v4 havuzunun tokenları tek bir PoolManager'da hep birlikte durur ve zincirde onları havuz havuz bildiren hiçbir şey yoktur. İndeksleyicinin kendi likidite rakamı zincirle karşılaştırıldı ve en yoğun havuzlardan birinde yüzde on beş sapıyordu; bu yüzden kullanılmıyor.",
 
     ordering:
       "Tam olarak arattığın adı taşıyan havuzlar önce gelir. Sonrası, her havuzun gerçekte ne tuttuğuna göre sıralanır — token sözleşmelerinin kendisinden okunur ve veri kaynağının türettiği fiyatlarla tek bir ölçeğe konur. Eskiden kaynağın bildirdiği kilitli değere göre sıralanıyordu; o rakam bu listeyi yeniden dizecek kadar yanlıştı: bir havuz burada dokuz milyon dolarlık bildirilen likiditeyle yayımlanırken sözleşmeleri dokuz bin dolar tutuyordu.",

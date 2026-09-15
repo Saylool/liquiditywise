@@ -3,20 +3,21 @@ import type { PoolSearchRejection } from "../lib/search/poolSearchInput";
 import { MAX_SEARCH_TERM_LENGTH, MIN_SEARCH_TERM_LENGTH } from "../schemas";
 
 /**
- * The one box: a pair to search for, or a pool address to go straight to.
+ * The one box: a pair to search for, or a pool's own id to go straight to.
  *
- * One field rather than two because a visitor has one thing in mind, and asking
- * them to first classify it — "is what I have an address or a name?" — is asking
- * them to do work this application can do by looking. What they typed decides
- * which of the two happened, and `readPoolSearchInput` is where that is decided.
+ * One field rather than three because a visitor has one thing in mind, and
+ * asking them to first classify it — "is what I have an address, a v4 id, or a
+ * name?" — is asking them to do work this application can do by looking. What
+ * they typed decides which happened, and `readPoolSearchInput` is where that is
+ * decided.
  *
  * A plain GET form, so it works with no JavaScript at all. That is also why the
  * page takes its query in the URL rather than in a request body: a search is a
  * place, and a place can be linked to, reloaded and gone back to.
  */
 
-/** An address is 42 characters and a two-term search is shorter. */
-const MAX_LOOKUP_LENGTH = 64;
+/** A v4 pool id is 66 characters; an address and a two-term search are shorter. */
+const MAX_LOOKUP_LENGTH = 66;
 
 const rejectionMessage = (reason: PoolSearchRejection, t: Dictionary): string => {
   switch (reason) {

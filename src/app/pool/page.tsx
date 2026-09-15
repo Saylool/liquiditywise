@@ -11,6 +11,7 @@ import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { PoolSearchPending } from "@/components/PoolSearchResults";
 import { PreferenceBar } from "@/components/PreferenceBar";
+import { V4PoolSearchPending } from "@/components/V4PoolSearchResults";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import {
   HORIZON_PARAMETER,
@@ -25,6 +26,7 @@ import { EvmAddressSchema } from "@/schemas/primitives";
 import { PoolExplanationSection } from "./PoolExplanationSection";
 import { PoolFeeTiersSection } from "./PoolFeeTiersSection";
 import { PoolSearchSection } from "./PoolSearchSection";
+import { V4PoolSearchSection } from "./V4PoolSearchSection";
 
 /*
  * The route that runs the whole pipeline against live data, and the way in.
@@ -200,6 +202,8 @@ export default async function PoolRangePage({
    * Safe to interpolate: the value passed a strict hex pattern to become one.
    */
   if (input.kind === "address") redirect(`/pool?address=${input.address}`);
+  /* Likewise a v4 id, which has its own page. Same pattern guard, same reason. */
+  if (input.kind === "v4-pool-id") redirect(`/v4?id=${input.poolId}`);
 
   if (input.kind === "unusable") {
     return (
@@ -220,6 +224,15 @@ export default async function PoolRangePage({
        */}
       <Suspense fallback={<PoolSearchPending t={t} />}>
         <PoolSearchSection terms={input.terms} locale={locale} t={t} />
+      </Suspense>
+      {/*
+       * The same terms against the v4 subgraph, in a boundary of its own. Two
+       * lists rather than one, because they are ordered by different numbers —
+       * what a pool holds, and what its active liquidity is worth — and a single
+       * order over both would be comparing them.
+       */}
+      <Suspense fallback={<V4PoolSearchPending t={t} />}>
+        <V4PoolSearchSection terms={input.terms} locale={locale} t={t} />
       </Suspense>
     </Shell>
   );

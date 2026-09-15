@@ -153,3 +153,24 @@ describe("normalizeV4Pool", () => {
     expect(normalize(body).status).toBe("unavailable");
   });
 });
+
+/*
+ * The echo check. The single-pool query asks for one id, and the provider
+ * answers with the pool it matched; the two are compared rather than the
+ * requested id being stamped onto whatever came back.
+ */
+describe("normalizeV4Pool's echo check", () => {
+  it("refuses a response describing a different pool", () => {
+    const other = `0x${"7a".repeat(32)}`;
+    const result = normalizeV4Pool({ payload: payload({ id: other }), poolId: POOL_ID });
+
+    expect(result.status).toBe("unavailable");
+  });
+
+  it("accepts an echo that differs only in case", () => {
+    const shouted = `0x${"E5".repeat(32)}`;
+    const result = normalizeV4Pool({ payload: payload({ id: shouted }), poolId: POOL_ID });
+
+    expect(result.status).toBe("success");
+  });
+});

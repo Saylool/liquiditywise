@@ -145,6 +145,16 @@ export const formatMultiplier = (value: number, locale: Locale = DEFAULT_FORMAT_
   Number.isFinite(value) ? multiplierNumber[locale].format(value) : ABSENT;
 
 /**
+ * An amount of ether, such as a pool's depth valued in it.
+ *
+ * The same rendering as a price — six significant figures, scientific outside
+ * the legible range — under its own name, because an amount is not a price and
+ * a reader scanning the markup should be able to tell which a figure is.
+ */
+export const formatEtherAmount = (value: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string =>
+  formatPrice(value, locale);
+
+/**
  * A tick index. Identical to {@link formatWhole} today, but named separately
  * because a tick is a coordinate rather than a quantity, and a reader scanning
  * the markup should be able to tell which one a figure is.

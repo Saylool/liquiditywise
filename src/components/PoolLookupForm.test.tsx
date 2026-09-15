@@ -28,7 +28,7 @@ describe("PoolLookupForm", () => {
   it("asks for either of the two things a visitor might have", () => {
     const markup = render();
 
-    expect(markup).toContain("A pair, or a pool address");
+    expect(markup).toContain("A pair, a v3 pool address, or a v4 pool id");
     expect(markup).toContain("WETH/USDC");
   });
 
@@ -82,7 +82,7 @@ describe("PoolLookupForm", () => {
   it("translates", () => {
     const markup = render({ rejection: "length" }, "tr");
 
-    expect(markup).toContain("Bir parite ya da havuz adresi");
+    expect(markup).toContain("Bir parite, bir v3 havuz adresi ya da bir v4 havuz kimliği");
     expect(markup).toContain("Havuz bul");
     expect(markup).toContain(
       `Arama terimi ${MIN_SEARCH_TERM_LENGTH} ile ${MAX_SEARCH_TERM_LENGTH} karakter arasında olmalı.`,

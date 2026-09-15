@@ -133,6 +133,38 @@ export const ETH_CALL_BATCH_SIZE = 25;
  */
 export const ETH_CALL_BATCH_PAUSE_MS = 250;
 
+/*
+ * The pause is applied here, to every batch this process sends, rather than by
+ * each sweep to its own batches — because the budget it protects is the
+ * endpoint's, not the sweep's. Two sweeps that each paced themselves perfectly
+ * and ran at the same time were a burst from the endpoint's point of view, and
+ * that was measured the day a search began reading two protocols' pools at
+ * once: one sweep of four batches answered 100 of 100 back to back, while the
+ * two sweeps together lost 23 of 200 and then drew a response that was not JSON
+ * at all — which the caller reads as a lost batch, and the page as a list it
+ * cannot order.
+ *
+ * So batches queue. Each waits for the one before it to finish and for the
+ * pause after it, whichever sweep sent either. Per process, like every limit in
+ * this application: a deployment running several instances paces each on its
+ * own, and the endpoint's budget is shared between them regardless.
+ */
+let previousBatchSettled: Promise<void> = Promise.resolve();
+
+const pause = (): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ETH_CALL_BATCH_PAUSE_MS);
+  });
+
+/** Runs `send` once every batch before it has finished and rested. */
+const paced = <T,>(send: () => Promise<T>): Promise<T> => {
+  const turn = previousBatchSettled.then(send);
+  // Whatever happened to this batch, the next one waits out the pause.
+  previousBatchSettled = turn.then(pause, pause);
+
+  return turn;
+};
+
 export type EthCallBatchRequest = {
   readonly rpcUrl: string;
   /** One `{ to, data }` per call, answered in the same order. */
@@ -176,24 +208,33 @@ export const postEthCallBatch = async ({
   if (calls.length === 0) return { ok: true, results: [] };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, timeoutMs);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
 
   try {
-    const response = await fetchImpl(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      body: JSON.stringify(
-        calls.map((call, index) => ({
-          jsonrpc: "2.0",
-          id: index,
-          method: "eth_call",
-          params: [{ to: call.to, data: call.data }, "latest"],
-        })),
-      ),
-      signal: controller.signal,
+    /*
+     * The clock starts when the request is actually sent, not when it joins the
+     * queue. A batch that waited behind three others would otherwise arrive at
+     * the endpoint with most of its time already spent.
+     */
+    const response = await paced(() => {
+      timeout = setTimeout(() => {
+        controller.abort();
+      }, timeoutMs);
+
+      return fetchImpl(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(
+          calls.map((call, index) => ({
+            jsonrpc: "2.0",
+            id: index,
+            method: "eth_call",
+            params: [{ to: call.to, data: call.data }, "latest"],
+          })),
+        ),
+        signal: controller.signal,
+      });
     });
 
     // `classifyStatus` answers `null` for 200 and a failure otherwise, so the

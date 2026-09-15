@@ -166,10 +166,10 @@ describe("PoolSearchResults", () => {
     const markup = render(found([match(REAL_POOL, REAL_USDC, 415_947_071)]), "tr");
 
     it("translates the labels", () => {
-      expect(markup).toContain("Eşleşen havuzlar");
+      expect(markup).toContain("Eşleşen Uniswap v3 havuzları");
       expect(markup).toContain("Komisyon kademesi");
       expect(markup).toContain("Tuttuğu");
-      expect(markup).not.toContain("Matching pools");
+      expect(markup).not.toContain("Matching Uniswap v3 pools");
     });
 
     it("writes the numbers the way Turkish writes them", () => {

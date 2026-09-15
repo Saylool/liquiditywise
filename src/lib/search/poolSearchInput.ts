@@ -1,4 +1,9 @@
-import { EvmAddressSchema, type EvmAddress } from "../../schemas/primitives";
+import {
+  type Bytes32Hex,
+  Bytes32HexSchema,
+  type EvmAddress,
+  EvmAddressSchema,
+} from "../../schemas/primitives";
 import {
   MAX_SEARCH_TERMS,
   PoolSearchTermSchema,
@@ -34,8 +39,15 @@ const SEPARATORS = /[\s/,&|-]+/u;
 export type PoolSearchRejection = "empty" | "length" | "unsupported-characters";
 
 export type PoolSearchInput =
-  /** A pool address. There is nothing to search for: that pool can be analysed. */
+  /** A v3 pool address. There is nothing to search for: that pool can be analysed. */
   | { readonly kind: "address"; readonly address: EvmAddress }
+  /**
+   * A v4 pool id: 32 bytes, not an address, because a v4 pool is an entry in one
+   * contract rather than a contract of its own. The same box takes both, since a
+   * visitor pasting an id should not first have to know which protocol spells
+   * one that way.
+   */
+  | { readonly kind: "v4-pool-id"; readonly poolId: Bytes32Hex }
   | { readonly kind: "terms"; readonly terms: PoolSearchTerms }
   | { readonly kind: "unusable"; readonly reason: PoolSearchRejection };
 
@@ -75,6 +87,10 @@ export const readPoolSearchInput = (raw: string): PoolSearchInput => {
 
   const address = EvmAddressSchema.safeParse(trimmed);
   if (address.success) return { kind: "address", address: address.data };
+
+  /* 66 characters against 42: the two cannot be confused, so the order is free. */
+  const poolId = Bytes32HexSchema.safeParse(trimmed);
+  if (poolId.success) return { kind: "v4-pool-id", poolId: poolId.data };
 
   const pieces = trimmed.split(SEPARATORS).filter((piece) => piece !== "");
   const [first, second] = pieces.slice(0, MAX_SEARCH_TERMS);

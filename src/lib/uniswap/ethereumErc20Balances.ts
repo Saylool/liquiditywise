@@ -2,7 +2,6 @@ import { type DataResult, EvmAddressSchema, nonZeroEvmAddress } from "../../sche
 import { balanceOfCalldata, readBalanceWord } from "./erc20BalanceAdapter";
 import {
   DEFAULT_RPC_TIMEOUT_MS,
-  ETH_CALL_BATCH_PAUSE_MS,
   ETH_CALL_BATCH_SIZE,
   postEthCallBatch,
 } from "./ethereumRpcTransport";
@@ -114,7 +113,8 @@ export const fetchEthereumErc20Balances = async (
 
   /*
    * One HTTP request per chunk rather than one per token, and a pause between
-   * chunks.
+   * chunks — the pause is the transport's now, applied to every batch this
+   * process sends, so it is not repeated here.
    *
    * Both are measured. All 175 tokens at once cost 175 connections and the
    * endpoint refused most of them; the same 175 as seven spaced batches were
@@ -127,7 +127,6 @@ export const fetchEthereumErc20Balances = async (
 
   for (let at = 0; at < tokens.length; at += ETH_CALL_BATCH_SIZE) {
     const chunk = tokens.slice(at, at + ETH_CALL_BATCH_SIZE);
-    if (at > 0) await new Promise((resolve) => setTimeout(resolve, ETH_CALL_BATCH_PAUSE_MS));
 
     const batch = await postEthCallBatch({
       rpcUrl,
