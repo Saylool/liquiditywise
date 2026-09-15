@@ -20,6 +20,23 @@ describe("resolveInterpretationModel", () => {
   });
 
   /*
+   * Pinned to a name rather than compared against itself, which every other
+   * assertion here does — and which is why this one is worth having.
+   *
+   * The fallback only does its job if it lands somewhere callable. The default
+   * was `gpt-5.6-terra`, and this project's key is refused it with a 403: an
+   * OpenAI project can be scoped to an explicit list of models, and this one
+   * holds a single entry. A blank or mistyped setting would have produced the
+   * outage the fallback exists to prevent, and nothing in this file would have
+   * noticed, because every check here was written against the constant itself.
+   *
+   * Change this line only alongside a measurement that the new default answers.
+   */
+  it("defaults to a model this deployment has been measured to reach", () => {
+    expect(DEFAULT_INTERPRETATION_MODEL).toBe("gpt-5.6-luna");
+  });
+
+  /*
    * A typo must not take the explanation away. It is the one part of the page
    * allowed to be missing, and the fallback is visible anyway — the page names
    * the model that wrote the text.
