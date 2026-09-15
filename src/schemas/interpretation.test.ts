@@ -67,6 +67,26 @@ describe("RangeInterpretationSchema", () => {
     ).toBe(false);
   });
 
+  /*
+   * The bound is sized for the longest language the interface publishes, and
+   * this is the case that proves it. Measured against the live model on one
+   * pool, the same four sections came back at 392/333/479/518 characters in
+   * English and 471/297/710/653 in Turkish. At the old bound of 700 the Turkish
+   * answer was rejected whole for one section being ten characters over, and the
+   * reader was shown "no explanation" instead of a good one.
+   *
+   * A bound only one of two published languages can meet is a bug in the bound.
+   */
+  it("accepts a section as long as the longest published language has produced", () => {
+    const asLongAsTurkishRuns = `A section of ordinary prose. ${"Turkish runs longer. ".repeat(33)}`;
+
+    expect(asLongAsTurkishRuns.length).toBeGreaterThan(700);
+    expect(
+      RangeInterpretationSchema.safeParse({ ...valid, whatTheVolatilitySays: asLongAsTurkishRuns })
+        .success,
+    ).toBe(true);
+  });
+
   it("requires every section", () => {
     const missing: Record<string, unknown> = { ...valid };
     delete missing["whatTheVolatilitySays"];

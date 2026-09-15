@@ -39,6 +39,24 @@ const PROTOCOL_VERSION = /\bv[34]\b/gi;
 const containsFigure = (prose: string): boolean => /\d/.test(prose.replace(PROTOCOL_VERSION, ""));
 
 /**
+ * The most characters one section may run to.
+ *
+ * Sized for the longest language the interface publishes, not for English.
+ *
+ * It was 700, which is comfortable in English and is not in Turkish. Measured
+ * against the live model on one pool, the same four sections came back at
+ * 392/333/479/518 characters in English and 471/297/710/653 in Turkish — the
+ * same content running twenty to fifty per cent longer. The Turkish answer was
+ * rejected whole for one section being ten characters over, and the reader was
+ * shown "no explanation" instead of a good one.
+ *
+ * That is the bound doing the opposite of its job. It exists to catch a model
+ * that has stopped cooperating, not to style-edit a cooperative one, and a
+ * bound only one of two published languages can meet is a bug in the bound.
+ */
+const MAX_SECTION_CHARACTERS = 900;
+
+/**
  * One section of the explanation.
  *
  * The lower bound rejects a one-line answer that says nothing; the upper bound
@@ -49,7 +67,7 @@ const ProseSchema = z
   .string()
   .trim()
   .min(60, { error: "A section this short does not explain anything." })
-  .max(700, { error: "A section this long belongs in several." })
+  .max(MAX_SECTION_CHARACTERS, { error: "A section this long belongs in several." })
   .refine((prose) => !containsFigure(prose), {
     error:
       "The explanation must not state figures. Refer to the values shown alongside it instead.",
