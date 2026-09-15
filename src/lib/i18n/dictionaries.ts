@@ -115,7 +115,7 @@ const en = {
       },
     ],
     footer:
-      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. There is no persistence, no account and no wallet connection anywhere in the codebase — this advisor explains and suggests, and can never sign or send a transaction on your behalf.",
+      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. A wallet can be connected, and all that is asked of it is its address — there is no persistence and no account anywhere in the codebase, and nothing here can sign or send a transaction on your behalf.",
   },
 
   pool: {
@@ -231,10 +231,36 @@ const en = {
       "Part of what was asked for could not be read, so the default was used where that happened. The horizon and multiplier actually used are shown above.",
   },
 
+  wallet: {
+    heading: "Connect a wallet",
+    intro:
+      "Connect a wallet and this page can see which tokens the address holds, and show you the pools those tokens can go into. It reads the address; that is all a wallet is asked for here.",
+    connect: "Connect wallet",
+    connecting: "Waiting for the wallet…",
+    connectedAs: "Connected as",
+    forget: "Forget this address",
+    /*
+     * The sentence that replaced "never connects a wallet". The half that is
+     * still true is the half worth keeping, and it is the half that matters.
+     */
+    readOnly:
+      "Read-only. This application asks a wallet for its address and never for a signature: there is no code here that can sign a message or send a transaction, and nothing is stored between visits.",
+    notices: {
+      "wallet-not-found":
+        "No wallet was found in this browser. A browser wallet extension puts one there; without it, nothing on this page changes.",
+      "wallet-request-declined":
+        "The request was declined in the wallet. Nothing was read and nothing was sent.",
+      "wallet-request-failed":
+        "The wallet could not be asked for an address. Nothing was read and nothing was sent.",
+      "wallet-no-account":
+        "The wallet answered without an address, which usually means it is locked or has no account selected.",
+    },
+  },
+
   search: {
     label: "A pair, or a pool address",
     placeholder: "WETH/USDC",
-    help: "Type a pair like WETH/USDC, or paste the address of the pool contract itself. Read-only: this application never connects a wallet and never sends a transaction.",
+    help: "Type a pair like WETH/USDC, or paste the address of the pool contract itself. Read-only: this application never signs anything and never sends a transaction.",
     submit: "Find pools",
 
     heading: "Matching pools",
@@ -613,7 +639,7 @@ const tr: Dictionary = {
       },
     ],
     footer:
-      "Yukarıdakilerin hiçbiri henüz yok. Olan şey, bu sayfada daha yukarıda anlatılanların tamamı: adıyla bulunan bir havuz, hesaplanıp çapraz doğrulanmış sayılar, ve gösterilmeden önce doğrulanan bir metin. Kod tabanının hiçbir yerinde kalıcı depolama, hesap ya da cüzdan bağlantısı yok — bu danışman açıklar ve önerir; senin adına asla bir işlem imzalayamaz veya gönderemez.",
+      "Yukarıdakilerin hiçbiri henüz yok. Olan şey, bu sayfada daha yukarıda anlatılanların tamamı: adıyla bulunan bir havuz, hesaplanıp çapraz doğrulanmış sayılar, ve gösterilmeden önce doğrulanan bir metin. Cüzdan bağlanabilir ve ondan istenen tek şey adresidir — kod tabanının hiçbir yerinde kalıcı depolama ya da hesap yok, ve buradaki hiçbir şey senin adına bir işlem imzalayamaz veya gönderemez.",
   },
 
   pool: {
@@ -704,10 +730,32 @@ const tr: Dictionary = {
       "İstenenlerin bir kısmı okunamadı, o alanda varsayılan kullanıldı. Gerçekten kullanılan ufuk ve çarpan yukarıda yazıyor.",
   },
 
+  wallet: {
+    heading: "Cüzdan bağla",
+    intro:
+      "Bir cüzdan bağladığında bu sayfa, adresin hangi tokenları tuttuğunu görebilir ve o tokenların girebileceği havuzları gösterebilir. Yaptığı şey adresi okumaktır; bir cüzdandan burada istenen tek şey budur.",
+    connect: "Cüzdanı bağla",
+    connecting: "Cüzdan bekleniyor…",
+    connectedAs: "Bağlı adres",
+    forget: "Bu adresi unut",
+    readOnly:
+      "Salt okunur. Bu uygulama cüzdandan adresini ister, imza istemez: burada bir mesajı imzalayabilecek ya da işlem gönderebilecek hiçbir kod yok, ve ziyaretler arasında hiçbir şey saklanmıyor.",
+    notices: {
+      "wallet-not-found":
+        "Bu tarayıcıda cüzdan bulunamadı. Bir tarayıcı cüzdan eklentisi bunu sağlar; o olmadan bu sayfada hiçbir şey değişmez.",
+      "wallet-request-declined":
+        "İstek cüzdanda reddedildi. Hiçbir şey okunmadı, hiçbir şey gönderilmedi.",
+      "wallet-request-failed":
+        "Cüzdandan adres istenemedi. Hiçbir şey okunmadı, hiçbir şey gönderilmedi.",
+      "wallet-no-account":
+        "Cüzdan adres vermeden cevap verdi; bu genellikle kilitli olduğu ya da seçili bir hesabı olmadığı anlamına gelir.",
+    },
+  },
+
   search: {
     label: "Bir parite ya da havuz adresi",
     placeholder: "WETH/USDC",
-    help: "WETH/USDC gibi bir parite yaz, ya da havuz sözleşmesinin kendi adresini yapıştır. Salt okunur: bu uygulama asla cüzdan bağlamaz ve işlem göndermez.",
+    help: "WETH/USDC gibi bir parite yaz, ya da havuz sözleşmesinin kendi adresini yapıştır. Salt okunur: bu uygulama hiçbir şey imzalamaz ve asla işlem göndermez.",
     submit: "Havuz bul",
 
     heading: "Eşleşen havuzlar",

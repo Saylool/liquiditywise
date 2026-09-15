@@ -32,8 +32,25 @@ describe("PoolLookupForm", () => {
     expect(markup).toContain("WETH/USDC");
   });
 
+  /*
+   * This used to read "never connects a wallet and never sends a transaction".
+   * A wallet can now be connected, and all that is asked of it is its address —
+   * so half of that sentence stopped being true and had to go, while the half
+   * that matters stayed. A page promising something the code no longer does is
+   * worse than a page promising less.
+   */
   it("says the application never signs anything", () => {
-    expect(render()).toContain("never connects a wallet and never sends a transaction");
+    const markup = render();
+
+    expect(markup).toContain("never signs anything and never sends a transaction");
+    expect(markup).not.toContain("never connects a wallet");
+  });
+
+  it("says it in Turkish too, where the same sentence had to change", () => {
+    const markup = render({}, "tr");
+
+    expect(markup).toContain("hiçbir şey imzalamaz ve asla işlem göndermez");
+    expect(markup).not.toContain("asla cüzdan bağlamaz");
   });
 
   it("puts a validated value back in the box", () => {

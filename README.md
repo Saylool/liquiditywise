@@ -12,8 +12,10 @@ not guarantee returns, and cannot attest that any smart contract is safe.
 Early, but no longer only a library. The pool page runs the whole pipeline
 against live data: find a pool by pair or address, read its verified figures, and
 read a plain-language explanation written from them by a model that is not
-allowed to state one. There is no persistence, authentication, wallet connection
-or transaction capability of any kind, and none is planned.
+allowed to state one. A wallet can be connected, and the only thing asked of it
+is its address — see [Connecting a wallet](#connecting-a-wallet). There is no
+persistence, no authentication and no transaction capability of any kind, and
+none of the last is planned.
 
 Five read-only market-data adapters exist, all server-only readers over The
 Graph:
@@ -476,6 +478,49 @@ The pool the reader is *on* is not special-cased in that loop — the schema
 requires it, so dropping it takes the panel down rather than quietly showing
 someone every tier except their own.
 
+## Connecting a wallet
+
+A visitor can connect a browser wallet, and the page then knows one thing it did
+not before: which address it is speaking about. That is the whole purpose — an
+address is what makes it possible to say which pools the tokens someone already
+holds can go into, instead of asking them to know.
+
+**The page asks a wallet for its address and never for a signature.** One method
+is issued, `eth_requestAccounts`, and there is no code in this repository that
+can sign a message or build a transaction — no wallet library, no signer, no
+contract-write path. A test asserts the method list, and a live check confirmed
+it: driving the button against a stubbed provider, the only call recorded was
+`eth_requestAccounts`.
+
+**The promise on the page changed with it, because half of it stopped being
+true.** It used to read "never connects a wallet and never sends a transaction".
+It now reads "never signs anything and never sends a transaction", in both
+languages, and a test asserts the old sentence is gone. A page promising
+something the code no longer does is worse than a page promising less.
+
+What comes back from a wallet is untrusted input, exactly like a subgraph
+payload. An injected provider is whatever extension got there first, and nothing
+in the browser obliges it to answer `eth_requestAccounts` with what the standard
+says — so the response is parsed through the same address schema every other
+address here passes, which also lowercases it. An array of something else, an
+empty array, a bare string, a forty-character value that is not hex: all of them
+mean no account, and none of them reaches the page.
+
+A refusal is kept apart from a failure. EIP-1193 gives a user's rejection its own
+code, and someone who changed their mind should not be shown an error.
+
+Two implementation notes, both learned the hard way:
+
+- **A Client Component cannot be handed the dictionary.** `Dictionary` holds
+  functions, functions cannot cross from a Server Component to a Client one, and
+  passing `t` renders the whole page as a server error naming no property. The
+  control takes `t.wallet`, which is strings all the way down, and a test checks
+  that it stays that way.
+- **Whether a wallet exists is looked up on click, not held in state.** Reading
+  it into state from an effect is both a lint error under React's current rules
+  and worse behaviour: someone without a wallet is told so when they ask, rather
+  than greeted with it.
+
 ## The explanation
 
 `getRangeInterpretation` hands one finished analysis to a model and gets back four
@@ -713,14 +758,15 @@ Reading a cookie and a header makes a route dynamic, so the landing page is no
 longer statically prerendered. That is the price of being correct on the first
 paint, and it costs no upstream calls.
 
-Still absent: no recommendation policy, no risk categories, no AI, no persistence
-and no wallet connection.
+Still absent from that layer: no recommendation policy, no risk categories, no
+AI and no persistence.
 
 Shared limits of both adapters:
 
 - Ethereum mainnet (`chainId` 1) and Uniswap v3 only.
 - One pool per call, by address.
-- No wallet, transaction, signing or approval capability of any kind.
+- No transaction, signing or approval capability of any kind. A wallet is asked
+  for its address and never reaches these adapters.
 - Rolling 24h/7d/30d volume is **not** available in this phase. The pool entity
   exposes a lifetime cumulative total, which is not a rolling window, so those
   fields stay `null` and the call returns a `partial` result naming them. No

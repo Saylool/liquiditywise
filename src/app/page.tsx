@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { PreferenceBar } from "@/components/PreferenceBar";
+import { WalletConnect } from "@/components/WalletConnect";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 
 export default async function Home() {
@@ -39,6 +40,8 @@ export default async function Home() {
           {t.home.analysePool}
         </Link>
       </section>
+
+      <WalletConnect strings={t.wallet} />
 
       <section className="flex flex-col gap-6">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
