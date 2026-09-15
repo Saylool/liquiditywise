@@ -2,13 +2,13 @@ import type { DataFailureNotice, DataWarningNotice } from "../../schemas";
 import {
   type AnalyticsResult,
   MAX_TICK_DISAGREEMENT,
+  type Pool,
   type PoolMarketSnapshot,
   PoolMarketSnapshotSchema,
-  V3_TICK_RANGE_METHOD,
-  type V3Pool,
-  V3PoolSchema,
-  type V3TickRange,
-  V3TickRangeSchema,
+  PoolSchema,
+  TICK_RANGE_METHOD,
+  type TickRange,
+  TickRangeSchema,
   type VolatilityPriceBand,
   VolatilityPriceBandSchema,
 } from "../../schemas";
@@ -20,7 +20,7 @@ import {
   tickAtOrBelowPrice,
 } from "../uniswap/v3TickMath";
 
-export type V3TickRangeResult = AnalyticsResult<V3TickRange>;
+export type TickRangeResult = AnalyticsResult<TickRange>;
 
 const INVALID_INPUT = "range-invalid-input";
 const CURRENT_PRICE_UNREPRESENTABLE = "range-price-unrepresentable";
@@ -37,10 +37,10 @@ const OUT_OF_RANGE_WARNING = "range-excludes-current-price";
 const unavailable = (
   reason: "invalid-input" | "insufficient-data" | "calculation-error",
   notice: DataFailureNotice,
-): V3TickRangeResult => ({ status: "unavailable", reason, notice });
+): TickRangeResult => ({ status: "unavailable", reason, notice });
 
-export type V3TickRangeInput = {
-  readonly pool: V3Pool;
+export type TickRangeInput = {
+  readonly pool: Pool;
   readonly band: VolatilityPriceBand;
   /**
    * The snapshot the band's current price came from.
@@ -69,8 +69,8 @@ export type V3TickRangeInput = {
  * arrive typed, because this is a public boundary where a cast or a JSON payload
  * can deliver a shape the arithmetic's invariants do not hold for.
  */
-export const calculateV3TickRange = (input: V3TickRangeInput): V3TickRangeResult => {
-  const pool = V3PoolSchema.safeParse(input.pool);
+export const calculateTickRange = (input: TickRangeInput): TickRangeResult => {
+  const pool = PoolSchema.safeParse(input.pool);
   if (!pool.success) return unavailable("invalid-input", INVALID_INPUT);
 
   const band = VolatilityPriceBandSchema.safeParse(input.band);
@@ -154,7 +154,7 @@ export const calculateV3TickRange = (input: V3TickRangeInput): V3TickRangeResult
   const lowerTick = alignTickDown({ tick: lowerIdeal.tick, tickSpacing });
   const upperTick = alignTickUp({ tick: upperIdeal.tick, tickSpacing });
 
-  // Unreachable for the same reason as above: the spacing came from `V3Pool`.
+  // Unreachable for the same reason as above: the spacing came from a parsed pool.
   if (lowerTick === null || upperTick === null) {
     return unavailable("calculation-error", CALCULATION_ERROR);
   }
@@ -189,7 +189,7 @@ export const calculateV3TickRange = (input: V3TickRangeInput): V3TickRangeResult
   const candidate = {
     pool: pool.data,
     band: band.data,
-    method: V3_TICK_RANGE_METHOD,
+    method: TICK_RANGE_METHOD,
 
     lowerTick,
     upperTick,
@@ -206,7 +206,7 @@ export const calculateV3TickRange = (input: V3TickRangeInput): V3TickRangeResult
 
   // The schema is the final authority: it re-derives every price from its tick
   // by a different route, and pins each boundary to exactly one tick.
-  const range = V3TickRangeSchema.safeParse(candidate);
+  const range = TickRangeSchema.safeParse(candidate);
   if (!range.success) return unavailable("calculation-error", CALCULATION_ERROR);
 
   const warnings: DataWarningNotice[] = [];

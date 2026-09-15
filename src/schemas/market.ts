@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { type DataSource, DataSourceSchema } from "./dataSource";
+import {
+  type DataSource,
+  DataSourceSchema,
+  SUBGRAPH_SOURCE_BY_PROTOCOL,
+  SubgraphSourceSchema,
+} from "./dataSource";
 import {
   IsoTimestampSchema,
   PositivePriceSchema,
@@ -282,7 +287,13 @@ export const PoolDailyPriceHistorySchema = z
 
     points: z.array(HistoricalPricePointSchema).max(DAILY_PRICE_HISTORY_MAX_POINTS),
 
-    source: z.literal("uniswap-v3-subgraph"),
+    /*
+     * Narrower than a snapshot's source, which also admits `derived-analytics`:
+     * a price history is always read from a source, never computed from one. A
+     * series stamped as derived would be a series somebody assembled, and there
+     * is no honest way to check the days in it.
+     */
+    source: SubgraphSourceSchema,
   })
   .refine((history) => asInstant(history.rangeStart) < asInstant(history.rangeEndExclusive), {
     error: "rangeStart must be earlier than rangeEndExclusive.",
@@ -290,11 +301,18 @@ export const PoolDailyPriceHistorySchema = z
   })
   .refine(
     (history) =>
-      history.pool.chainId === HISTORY_CHAIN_ID && history.pool.protocolVersion === "v3",
+      history.pool.chainId === HISTORY_CHAIN_ID &&
+      history.source === SUBGRAPH_SOURCE_BY_PROTOCOL[history.pool.protocolVersion],
     {
-      // The only producer is the Uniswap v3 mainnet subgraph, so a pool reference
-      // from anywhere else means the series was assembled from mismatched sources.
-      error: "A Uniswap v3 subgraph history can only describe an Ethereum mainnet v3 pool.",
+      /*
+       * The producers are the two Uniswap mainnet subgraphs, one per protocol,
+       * and each can only describe its own pools. A v3 series carrying a v4 pool
+       * reference — or either carrying the other's source — means the series was
+       * assembled from mismatched reads, which nothing downstream could detect:
+       * the days would all be well-formed and would belong to a different pool.
+       */
+      error:
+        "A history must come from its own protocol's Ethereum mainnet subgraph, and describe a pool on it.",
       path: ["pool"],
     },
   )

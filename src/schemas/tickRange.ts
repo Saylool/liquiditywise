@@ -2,16 +2,22 @@ import { z } from "zod";
 
 import { VolatilityPriceBandSchema } from "./priceBand";
 import { PositivePriceSchema } from "./primitives";
-import { TickSchema, V3PoolSchema } from "./uniswap";
+import { PoolSchema, TickSchema } from "./uniswap";
 
 /*
- * Contract for a deployable Uniswap v3 tick range.
+ * Contract for a deployable Uniswap tick range.
  *
  * This is the first model in the project that describes an actual position
  * boundary rather than a continuous price. A {@link VolatilityPriceBand} says how
  * far price has moved historically; a range says which two ticks a pool would
  * accept to express that, which needs three pool facts the band does not carry:
  * token ordering, token decimals and tick spacing.
+ *
+ * All three mean the same thing in v3 and in v4 — the tick grid is the same grid,
+ * `TickMath` is the same library, and a v4 pool carries its spacing in its
+ * PoolKey — so the pool here is either protocol's. What differs between them is
+ * not the geometry; it is who is allowed to charge what while price sits inside
+ * it, and that is not this model's subject.
  *
  * It is still not advice and still not a transaction. Nothing here sizes a
  * position, quotes an amount of either token, or claims the range is a good one.
@@ -22,7 +28,7 @@ import { TickSchema, V3PoolSchema } from "./uniswap";
  */
 
 /** Names the alignment model, so two ranges built differently are never compared. */
-export const V3_TICK_RANGE_METHOD = "tick-spacing-aligned-volatility-price-band";
+export const TICK_RANGE_METHOD = "tick-spacing-aligned-volatility-price-band";
 
 /**
  * How far this application's own tick may sit from the tick the source reported
@@ -74,12 +80,12 @@ const recomputePriceAtTick = (
   token1Decimals: number,
 ): number => 1.0001 ** tick * 10 ** (token0Decimals - token1Decimals);
 
-const V3TickRangeObject = z.strictObject({
+const TickRangeObject = z.strictObject({
   /** The pool the range is for, carrying the decimals and spacing it was built with. */
-  pool: V3PoolSchema,
+  pool: PoolSchema,
   /** The continuous band this range aligns, embedded whole. */
   band: VolatilityPriceBandSchema,
-  method: z.literal(V3_TICK_RANGE_METHOD),
+  method: z.literal(TICK_RANGE_METHOD),
 
   /** The position's boundaries. Both are multiples of the pool's tick spacing. */
   lowerTick: TickSchema,
@@ -115,7 +121,7 @@ const V3TickRangeObject = z.strictObject({
   containsCurrentPrice: z.boolean(),
 });
 
-export const V3TickRangeSchema = V3TickRangeObject
+export const TickRangeSchema = TickRangeObject
   .refine(
     (range) =>
       range.pool.protocolVersion === range.band.pool.protocolVersion &&
@@ -290,4 +296,4 @@ export const V3TickRangeSchema = V3TickRangeObject
     },
   );
 
-export type V3TickRange = z.infer<typeof V3TickRangeSchema>;
+export type TickRange = z.infer<typeof TickRangeSchema>;

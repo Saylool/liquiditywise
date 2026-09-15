@@ -263,3 +263,105 @@ export const formatTokenAmount = (
 
   return shown === "" ? formattedWhole : `${formattedWhole}${decimalSeparator[locale]}${shown}`;
 };
+
+/*
+ * A *measured* fee rate, which is not the same kind of number as a declared one.
+ *
+ * {@link formatFeePpm} takes an on-chain integer and shows it to between two and
+ * four decimal places of a percent, which is exactly right for a fee tier: every
+ * tier that exists lands on a short decimal, and 3000 ppm reads as "0.30%". A
+ * rate divided back out of a day's fees and volume lands anywhere. That fixed
+ * width renders a real 0.4 ppm rate as "0.00%", which reads as free; a fixed
+ * wide one would render an ordinary rate as "0.01737332%", which reads as
+ * noise.
+ *
+ * So the width is chosen per value: enough decimals to carry three significant
+ * figures, and never fewer than the two a fee tier is padded to. That second
+ * half is what makes the panel legible. Its whole question is whether the
+ * declared rate and the charged rate are the same number, and "0.30%" printed
+ * beside "0.3%" reads as two different answers to it.
+ */
+
+/** Significant figures a measured rate is shown to. Beyond this is rounding noise. */
+const MEASURED_FEE_SIGNIFICANT_DIGITS = 3;
+
+/** The floor a fee tier is padded to, matched so equal figures print equally. */
+const MEASURED_FEE_MIN_FRACTION_DIGITS = 2;
+
+/**
+ * Decimal places needed to carry {@link MEASURED_FEE_SIGNIFICANT_DIGITS} of a
+ * percentage, never fewer than the padded minimum.
+ *
+ * `Intl` trims trailing zeros down to the minimum, so asking for more places
+ * than a short value needs costs nothing: 0.3% asks for three and prints two.
+ */
+const fractionDigitsFor = (percent: number): number => {
+  if (percent === 0) return MEASURED_FEE_MIN_FRACTION_DIGITS;
+
+  const leadingDigitPlace = Math.floor(Math.log10(Math.abs(percent)));
+
+  return Math.max(
+    MEASURED_FEE_MIN_FRACTION_DIGITS,
+    MEASURED_FEE_SIGNIFICANT_DIGITS - 1 - leadingDigitPlace,
+  );
+};
+
+/**
+ * Formatters keyed by language and width, built once each on first use.
+ *
+ * Unlike every formatter above, the width here depends on the value, so these
+ * cannot all be made at module load. They are cached instead — a page shows a
+ * handful of rates and they share two or three widths between them.
+ */
+const measuredFeeFormatters = new Map<string, Intl.NumberFormat>();
+
+const measuredFeeFormatter = (locale: Locale, fractionDigits: number): Intl.NumberFormat => {
+  const key = `${locale}:${fractionDigits}`;
+  const existing = measuredFeeFormatters.get(key);
+  if (existing !== undefined) return existing;
+
+  const built = new Intl.NumberFormat(locale === "tr" ? "tr-TR" : "en-US", {
+    style: "percent",
+    minimumFractionDigits: MEASURED_FEE_MIN_FRACTION_DIGITS,
+    maximumFractionDigits: fractionDigits,
+  });
+  measuredFeeFormatters.set(key, built);
+
+  return built;
+};
+
+const scientificFeePercent = byLocale(
+  (tag) =>
+    new Intl.NumberFormat(tag, {
+      style: "percent",
+      notation: "scientific",
+      maximumSignificantDigits: MEASURED_FEE_SIGNIFICANT_DIGITS,
+    }),
+);
+
+/**
+ * Below this a percentage is more leading zeros than figure, and `Intl` caps
+ * fraction digits at 100 anyway. A hundredth of a part-per-million, as a ratio.
+ */
+const MEASURED_FEE_STANDARD_MIN = 1e-8;
+
+/**
+ * A fee rate measured in parts-per-million, shown as a percentage.
+ *
+ * Zero is formatted as zero rather than as absent: a pool that charged nothing
+ * on a day it traded is a real, measured answer, unlike a rate nobody could
+ * divide out — which never reaches this function.
+ */
+export const formatMeasuredFeePpm = (
+  feePpm: number,
+  locale: Locale = DEFAULT_FORMAT_LOCALE,
+): string => {
+  if (!Number.isFinite(feePpm)) return ABSENT;
+
+  const ratio = feePpm / 1_000_000;
+  if (ratio !== 0 && Math.abs(ratio) < MEASURED_FEE_STANDARD_MIN) {
+    return scientificFeePercent[locale].format(ratio);
+  }
+
+  return measuredFeeFormatter(locale, fractionDigitsFor(ratio * 100)).format(ratio);
+};

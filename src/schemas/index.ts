@@ -15,6 +15,7 @@ export * from "./priceBand";
 export * from "./tickRange";
 export * from "./divergence";
 export * from "./poolActivity";
+export * from "./realizedFee";
 export * from "./searchTerms";
 export * from "./poolSearch";
 export * from "./pairFeeTiers";

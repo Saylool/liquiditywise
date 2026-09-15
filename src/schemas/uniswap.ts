@@ -453,3 +453,28 @@ export const PoolSchema = withPoolInvariants(
 );
 
 export type Pool = z.infer<typeof PoolSchema>;
+
+/**
+ * The fee a pool itself declares, in parts-per-million, or `null` when it
+ * declares none.
+ *
+ * One accessor rather than a `protocolVersion` check at every call site, because
+ * the three cases are easy to get subtly wrong and the failure is silent:
+ *
+ *   - A v3 pool's tier is fixed at deployment and is the whole truth.
+ *   - A v4 pool with a static fee declares that fee, and its hook may still
+ *     rewrite what a swap actually costs. The declaration is real; it is just
+ *     not a guarantee.
+ *   - A v4 pool with a dynamic fee declares nothing at all. Its PoolKey carries
+ *     a sentinel where the number would be, and the hook decides per swap.
+ *
+ * `currentFeePpm` is deliberately not returned for the dynamic case even when it
+ * has been observed. It is one moment's reading, not a declaration, and handing
+ * it back here would let a caller compare a month of charged fees against a
+ * single instant and report the difference as a disagreement.
+ */
+export const declaredFeePpm = (pool: Pool): number | null => {
+  if (pool.protocolVersion === "v3") return pool.feePpm;
+
+  return pool.fee.kind === "static" ? pool.fee.feePpm : null;
+};

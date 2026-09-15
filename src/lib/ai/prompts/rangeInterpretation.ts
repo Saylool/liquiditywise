@@ -1,5 +1,7 @@
+import { feeDisclosureFor } from "../../advisor/feeDisclosure";
 import {
   formatFeePpm,
+  formatMeasuredFeePpm,
   formatMultiplier,
   formatPercent,
   formatPrice,
@@ -77,10 +79,22 @@ const line = (label: string, value: string): string => `- ${label}: ${value}`;
 
 const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
   const { pool } = analysis;
+  const { declaredPpm } = feeDisclosureFor(pool);
 
   return [
     line("Pair", `${pool.token0.symbol} / ${pool.token1.symbol}`),
-    line("Fee tier", formatFeePpm(pool.feePpm, locale)),
+    line("Protocol", `Uniswap ${pool.protocolVersion}`),
+    /*
+     * "Declared", not "fee tier". A v4 pool's tier is what it was created with,
+     * and a hook may charge something else on every swap — so the label has to
+     * stop the word standing for the rate, and the measured rate follows below.
+     */
+    line(
+      "Declared fee",
+      declaredPpm === null
+        ? "none; this pool's hook sets the fee on each swap"
+        : formatFeePpm(declaredPpm, locale),
+    ),
     line("Tick spacing", formatWhole(pool.tickSpacing, locale)),
     /*
      * Spelled out rather than given as "token1 per token0". The short form is
@@ -216,7 +230,12 @@ const describeActivity = (analysis: PoolRangeAnalysis, locale: Locale): readonly
     line("Days entirely inside the range", formatWhole(activity.occupancy.fullyInside, locale)),
     line("Days entirely outside it", formatWhole(activity.occupancy.fullyOutside, locale)),
     line("Days that crossed an edge", formatWhole(activity.occupancy.undetermined, locale)),
-    line("Fees charged on the days entirely inside", usd(activity.feesWhileFullyInsideUsd)),
+    line(
+      "Fees charged on the days entirely inside",
+      feeDisclosureFor(analysis.pool).mayAttributeFeesToRange
+        ? usd(activity.feesWhileFullyInsideUsd)
+        : "withheld; this pool's hook may take a share of a swap and the source does not separate it",
+    ),
     line(
       "What these are not",
       "anyone's earnings; they are the whole pool's, and the share a position would take is not known here",
@@ -224,6 +243,43 @@ const describeActivity = (analysis: PoolRangeAnalysis, locale: Locale): readonly
     line(
       "Why these day counts do not test the range",
       "they are the same days the range was measured from, so they describe how it was fitted",
+    ),
+  ];
+};
+
+/**
+ * What the pool actually charged, in three lines.
+ *
+ * Deliberately short, for the reason the out-of-sample block below spells out:
+ * the page prints its own caveats in its own deterministic sentences, and every
+ * caveat handed across here comes back as prose that has to fit inside a section
+ * bound. So this gives the model the figures and the one fact it cannot derive —
+ * whether the declared rate and the charged rate are the same number.
+ */
+const describeRealizedFee = (
+  analysis: PoolRangeAnalysis,
+  locale: Locale,
+): readonly string[] => {
+  const { realizedFee } = analysis;
+  if (realizedFee.status === "unavailable") {
+    return [line("Measured rate", "not measurable; this pool traded nothing in the window")];
+  }
+
+  const { rate, verdict } = realizedFee;
+
+  return [
+    line("Rate actually charged, median day", formatMeasuredFeePpm(rate.medianPpm, locale)),
+    line(
+      "Cheapest to dearest day",
+      `${formatMeasuredFeePpm(rate.lowestPpm, locale)} to ${formatMeasuredFeePpm(rate.highestPpm, locale)}`,
+    ),
+    line(
+      "Against the declared rate",
+      verdict.kind === "matches"
+        ? "the same on every measured day"
+        : verdict.kind === "none-declared"
+          ? "nothing to compare; this pool declares no rate"
+          : `different on ${formatWhole(verdict.daysDiffering, locale)} of ${formatWhole(rate.daysMeasured, locale)} measured days`,
     ),
   ];
 };
@@ -333,6 +389,7 @@ export const buildRangeInterpretationPrompt = (
     section("SUGGESTED TICK RANGE", describeRange(analysis, locale)),
     section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
     section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
+    section("WHAT IT ACTUALLY CHARGED", describeRealizedFee(analysis, locale)),
     section("THE SAME METHOD, ON DAYS IT NEVER SAW", describeOutOfSample(analysis, locale)),
     warnings.length === 0
       ? "CAVEATS\n- none"

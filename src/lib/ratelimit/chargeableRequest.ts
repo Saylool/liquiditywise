@@ -1,4 +1,4 @@
-import { EvmAddressSchema } from "../../schemas/primitives";
+import { Bytes32HexSchema, EvmAddressSchema } from "../../schemas/primitives";
 import { readPoolSearchInput } from "../search/poolSearchInput";
 
 /*
@@ -24,9 +24,10 @@ import { readPoolSearchInput } from "../search/poolSearchInput";
  * cheaper of the two to send in a loop: a box that takes ordinary words is a
  * larger invitation to do that than one that took a 40-character address.
  *
- * The same rule serves both guarded routes. A pool analysis and a holdings
+ * The same rule serves every guarded route. A v3 pool analysis and a holdings
  * lookup are each addressed by a valid `address`, and each spends upstream when
- * it has one — the holdings sweep considerably more.
+ * it has one — the holdings sweep considerably more. A v4 analysis is addressed
+ * by `id`, and spends the same three queries the v3 one does.
  *
  * An address typed into the search box is not counted here. It is answered with
  * a redirect to the canonical `?address=` form, and that request is counted when
@@ -35,6 +36,9 @@ import { readPoolSearchInput } from "../search/poolSearchInput";
 export const spendsUpstreamQuota = (parameters: URLSearchParams): boolean => {
   const address = parameters.get("address");
   if (address !== null) return EvmAddressSchema.safeParse(address).success;
+
+  const poolId = parameters.get("id");
+  if (poolId !== null) return Bytes32HexSchema.safeParse(poolId).success;
 
   const query = parameters.get("q");
   if (query === null) return false;

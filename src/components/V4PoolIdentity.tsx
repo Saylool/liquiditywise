@@ -147,7 +147,7 @@ export function V4PoolIdentity({
         )}
       </section>
 
-      <p className="text-sm leading-relaxed text-muted">{t.v4.notAnalysed}</p>
+      <p className="text-sm leading-relaxed text-muted">{t.v4.analysisScope}</p>
     </div>
   );
 }

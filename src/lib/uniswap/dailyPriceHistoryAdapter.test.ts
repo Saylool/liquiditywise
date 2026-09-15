@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { DAILY_HISTORY_DAYS, resolveDailyHistoryWindow } from "./v3DailyHistoryWindow";
-import { normalizeV3DailyPriceHistory } from "./v3DailyPriceHistoryAdapter";
+import { normalizeDailyPriceHistory } from "./dailyPriceHistoryAdapter";
+import { v3PoolIdentity, v4PoolIdentity } from "./subgraphPoolIdentity";
 
 const POOL_ADDRESS = "0xabcdef0123456789abcdef0123456789abcdef01";
 const FETCHED_AT = "2026-08-20T09:15:00.000Z";
@@ -49,10 +50,13 @@ const payload = (
   pool: unknown = { id: POOL_ADDRESS },
 ) => ({ data: { pool, poolDayDatas, _meta: meta } });
 
+/** Non-null by construction: the fixture address is a valid v3 pool address. */
+const V3_IDENTITY = v3PoolIdentity(POOL_ADDRESS)!;
+
 const normalize = (body: unknown) =>
-  normalizeV3DailyPriceHistory({
+  normalizeDailyPriceHistory({
     payload: body,
-    poolAddress: POOL_ADDRESS,
+    identity: V3_IDENTITY,
     fetchedAt: FETCHED_AT,
     window: WINDOW,
   });
@@ -534,5 +538,63 @@ describe("the day's extremes, which arrive the other way up", () => {
 
     expect(point.volumeUsd).not.toBeNull();
     expect(point.feesUsd).not.toBeNull();
+  });
+});
+
+/*
+ * The same adapter, reading the v4 subgraph, which publishes `PoolDayData` under
+ * the same names. What has to change is the identity on the result and the shape
+ * the per-row ownership proof compares against.
+ */
+describe("normalizeDailyPriceHistory for a v4 pool", () => {
+  const POOL_ID = `0x${"ab".repeat(32)}`;
+  const V4_IDENTITY = v4PoolIdentity(POOL_ID)!;
+
+  const v4Row = (index: number) => ({ ...dayRow(index), pool: { id: POOL_ID } });
+  const v4Days = () => Array.from({ length: DAILY_HISTORY_DAYS }, (_u, i) => v4Row(i));
+
+  const normalizeV4 = (body: unknown) =>
+    normalizeDailyPriceHistory({
+      payload: body,
+      identity: V4_IDENTITY,
+      fetchedAt: FETCHED_AT,
+      window: WINDOW,
+    });
+
+  it("stamps the pool and the source as v4", () => {
+    const result = normalizeV4(payload(v4Days(), rawMeta(), { id: POOL_ID }));
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.pool).toEqual({ protocolVersion: "v4", chainId: 1, id: POOL_ID });
+    expect(result.data.source).toBe("uniswap-v4-subgraph");
+  });
+
+  /*
+   * The row-level proof is the one that matters most here: a filter is a request,
+   * not evidence of what came back, and a mixed-in row would otherwise be
+   * republished under the requested pool's identity.
+   */
+  it("refuses a response with one row belonging to another v4 pool", () => {
+    const rows = v4Days();
+    const intruder = { ...v4Row(3), pool: { id: `0x${"cd".repeat(32)}` } };
+
+    expect(
+      normalizeV4(payload([...rows.slice(0, 3), intruder, ...rows.slice(4)], rawMeta(), {
+        id: POOL_ID,
+      })).status,
+    ).toBe("unavailable");
+  });
+
+  it("refuses a row whose pool id is an address rather than a PoolId", () => {
+    const rows = v4Days();
+
+    expect(
+      normalizeV4(
+        payload([{ ...v4Row(0), pool: { id: POOL_ADDRESS } }, ...rows.slice(1)], rawMeta(), {
+          id: POOL_ID,
+        }),
+      ).status,
+    ).toBe("unavailable");
   });
 });

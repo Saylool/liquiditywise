@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  fetchEthereumV3DailyPriceHistory,
-  V3_DAILY_PRICE_HISTORY_QUERY,
-} from "./ethereumV3DailyPriceHistory";
+  fetchEthereumDailyPriceHistory,
+  DAILY_PRICE_HISTORY_QUERY,
+} from "./ethereumDailyPriceHistory";
 import { DAILY_HISTORY_DAYS, resolveDailyHistoryWindow } from "./v3DailyHistoryWindow";
 import type { FetchLike } from "./v3SubgraphTransport";
 
@@ -44,10 +44,11 @@ const jsonResponse = (body: unknown, status = 200) =>
 const respondWith = (response: Response) => vi.fn<FetchLike>(async () => response);
 
 const run = (
-  overrides: Partial<Parameters<typeof fetchEthereumV3DailyPriceHistory>[0]> = {},
+  overrides: Partial<Parameters<typeof fetchEthereumDailyPriceHistory>[0]> = {},
 ) =>
-  fetchEthereumV3DailyPriceHistory({
-    poolAddress: POOL_ADDRESS,
+  fetchEthereumDailyPriceHistory({
+    protocolVersion: "v3",
+    poolId: POOL_ADDRESS,
     apiKey: API_KEY,
     subgraphId: SUBGRAPH_ID,
     fetchImpl: respondWith(jsonResponse(successBody)),
@@ -56,7 +57,7 @@ const run = (
   });
 
 const captureRequest = async (
-  overrides: Partial<Parameters<typeof fetchEthereumV3DailyPriceHistory>[0]> = {},
+  overrides: Partial<Parameters<typeof fetchEthereumDailyPriceHistory>[0]> = {},
 ) => {
   const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
   const result = await run({ fetchImpl, ...overrides });
@@ -93,7 +94,7 @@ describe("request construction", () => {
   });
 
   it("passes the pool address through variables for both scalar positions", async () => {
-    const { body } = await captureRequest({ poolAddress: MIXED_CASE_ADDRESS });
+    const { body } = await captureRequest({ poolId: MIXED_CASE_ADDRESS });
 
     // The singular lookup takes ID!, the reference filter takes String!, so the
     // same validated address is supplied twice rather than spliced into the text.
@@ -110,9 +111,9 @@ describe("request construction", () => {
   });
 
   it("never interpolates the pool address into the query string", async () => {
-    const { body } = await captureRequest({ poolAddress: MIXED_CASE_ADDRESS });
+    const { body } = await captureRequest({ poolId: MIXED_CASE_ADDRESS });
 
-    expect(body.query).toBe(V3_DAILY_PRICE_HISTORY_QUERY);
+    expect(body.query).toBe(DAILY_PRICE_HISTORY_QUERY);
     expect(body.query.toLowerCase()).not.toContain(POOL_ADDRESS.toLowerCase());
     expect(body.query).toContain("$poolId");
     expect(body.query).toContain("$poolRef");
@@ -212,9 +213,9 @@ describe("guards that must not reach the network", () => {
     ["a non-hex address", `0x${"z".repeat(40)}`],
     ["an empty string", ""],
     ["the zero address", ZERO_POOL_ADDRESS],
-  ])("reports %s as invalid input without fetching", async (_label, poolAddress) => {
+  ])("reports %s as invalid input without fetching", async (_label, poolId) => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
-    const result = await run({ fetchImpl, poolAddress });
+    const result = await run({ fetchImpl, poolId });
 
     expect(result).toMatchObject({ status: "unavailable", reason: "invalid-input" });
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -224,7 +225,7 @@ describe("guards that must not reach the network", () => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
     const result = await run({
       fetchImpl,
-      poolAddress: ZERO_POOL_ADDRESS,
+      poolId: ZERO_POOL_ADDRESS,
       apiKey: undefined,
       subgraphId: undefined,
     });
@@ -321,8 +322,8 @@ describe("end to end", () => {
     ["an already-lowercase address", POOL_ADDRESS],
     ["a mixed-case address", MIXED_CASE_ADDRESS],
     ["an upper-case address", UPPER_CASE_ADDRESS],
-  ])("accepts %s and normalizes it to lowercase", async (_label, poolAddress) => {
-    const result = await run({ poolAddress });
+  ])("accepts %s and normalizes it to lowercase", async (_label, poolId) => {
+    const result = await run({ poolId });
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;

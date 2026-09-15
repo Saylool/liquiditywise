@@ -121,8 +121,16 @@ export const VolatilityPriceBandSchema = z
     downsideDistanceRatio: z.number().min(0),
     upsideDistanceRatio: z.number().min(0),
   })
-  .refine((band) => band.pool.chainId === 1 && band.pool.protocolVersion === "v3", {
-    error: "A price band can only describe an Ethereum mainnet v3 pool.",
+  /*
+   * Chain only. The protocol used to be pinned to v3 here as well, and that was
+   * right while v3 was the only thing read — but a band carries no source of its
+   * own, so it has nothing to check a protocol against. The two inputs it is
+   * built from do: the volatility figure and the snapshot each name the subgraph
+   * they came from, and each refuses a pool from the other protocol. Repeating
+   * the claim here without the evidence would be a rule that looks like a check.
+   */
+  .refine((band) => band.pool.chainId === 1, {
+    error: "A price band can only describe an Ethereum mainnet pool.",
     path: ["pool"],
   })
   .refine(

@@ -1,4 +1,4 @@
-import type { DataFailureNotice, DivergenceLoss, DivergenceLossPoint, V3TickRange } from "../../schemas";
+import type { DataFailureNotice, DivergenceLoss, DivergenceLossPoint, TickRange } from "../../schemas";
 import { DivergenceLossSchema } from "../../schemas";
 
 /*
@@ -83,7 +83,7 @@ export type DivergenceLossResult =
  * current price — the only entry this application can speak about, since it does
  * not know when anyone opened anything.
  */
-export const calculateDivergenceLoss = (range: V3TickRange): DivergenceLossResult => {
+export const calculateDivergenceLoss = (range: TickRange): DivergenceLossResult => {
   const entryPrice = range.band.currentPrice;
   const lowerRoot = Math.sqrt(range.lowerPrice);
   const upperRoot = Math.sqrt(range.upperPrice);

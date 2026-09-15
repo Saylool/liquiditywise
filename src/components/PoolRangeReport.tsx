@@ -1,10 +1,13 @@
+import { feeDisclosureFor } from "../lib/advisor/feeDisclosure";
 import type {
   PoolRangeAnalysisResult,
   PoolRangeAnalysisStep,
 } from "../lib/advisor/poolRangeAnalysis";
+import type { RealizedFeeRateResult } from "../lib/analytics/realizedFeeRate";
 import {
   ABSENT,
   formatFeePpm,
+  formatMeasuredFeePpm,
   formatMultiplier,
   formatPercent,
   formatPrice,
@@ -76,14 +79,113 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+/**
+ * What the pool actually charged, beside what it says it charges.
+ *
+ * In v3 the two are the same number and this panel says so, which is worth a
+ * line: it is the one place the source's own arithmetic is checked rather than
+ * repeated. In v4 they can differ by a factor of nine inside a month, and then
+ * this is the only place the real rate appears.
+ *
+ * The verdict sentence is chosen by the calculator, not by a threshold applied
+ * here — a component deciding what counts as agreement would be a second policy
+ * in a second place, and the day the two disagreed nothing would say which.
+ */
+function RealizedFeePanel({
+  result,
+  hookMayAlterSwaps,
+  t,
+  locale,
+}: {
+  result: RealizedFeeRateResult;
+  hookMayAlterSwaps: boolean;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  if (result.status === "unavailable") {
+    return (
+      <Panel title={t.realizedFee.heading}>
+        <p className="text-sm leading-relaxed">{t.realizedFee.unavailableHeading}</p>
+        <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
+      </Panel>
+    );
+  }
+
+  const { rate, verdict } = result;
+
+  return (
+    <Panel title={t.realizedFee.heading}>
+      <p className="text-sm leading-relaxed text-muted">{t.realizedFee.intro}</p>
+
+      <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Figure
+          label={t.realizedFee.declared}
+          value={
+            verdict.kind === "none-declared"
+              ? t.realizedFee.noDeclared
+              : formatFeePpm(verdict.declaredPpm, locale)
+          }
+          {...(verdict.kind === "none-declared"
+            ? { note: t.realizedFee.noDeclaredNote }
+            : {})}
+        />
+        <Figure
+          label={t.realizedFee.median}
+          value={formatMeasuredFeePpm(rate.medianPpm, locale)}
+        />
+        <Figure
+          label={t.realizedFee.spread}
+          value={t.realizedFee.spreadValue(
+            formatMeasuredFeePpm(rate.lowestPpm, locale),
+            formatMeasuredFeePpm(rate.highestPpm, locale),
+          )}
+        />
+        <Figure
+          label={t.realizedFee.aggregate}
+          value={formatMeasuredFeePpm(rate.aggregatePpm, locale)}
+          note={t.realizedFee.aggregateNote}
+        />
+        <Figure
+          label={t.realizedFee.daysMeasured}
+          value={formatWhole(rate.daysMeasured, locale)}
+          {...(rate.daysUnmeasurable === 0
+            ? {}
+            : {
+                note: t.realizedFee.daysMeasuredNote(
+                  formatWhole(rate.daysUnmeasurable, locale),
+                ),
+              })}
+        />
+      </dl>
+
+      <p className="text-sm leading-relaxed">
+        {verdict.kind === "matches"
+          ? t.realizedFee.verdictMatches
+          : verdict.kind === "none-declared"
+            ? t.realizedFee.verdictNoneDeclared
+            : t.realizedFee.verdictDiffers(
+                formatWhole(verdict.daysDiffering, locale),
+                formatWhole(rate.daysMeasured, locale),
+              )}
+      </p>
+
+      {/* Only where it is true. A pool with no such hook is not owed the caveat. */}
+      {hookMayAlterSwaps ? (
+        <p className="text-sm leading-relaxed">{t.realizedFee.notLpShare}</p>
+      ) : null}
+    </Panel>
+  );
+}
+
 export function PoolRangeReport({
   result,
-  poolAddress,
+  poolId,
   t,
   locale,
 }: {
   result: PoolRangeAnalysisResult;
-  poolAddress: string;
+  /** A v3 pool address or a v4 PoolId; shown only when there is no analysis. */
+  poolId: string;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -98,14 +200,25 @@ export function PoolRangeReport({
         <p className="text-sm leading-relaxed">{t.report.stoppedWhile(t.report.steps[step])}</p>
         <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
         <p className="font-mono text-xs text-muted">
-          {poolAddress} · {result.reason}
+          {poolId} · {result.reason}
         </p>
       </section>
     );
   }
 
-  const { pool, snapshot, volatility, band, range, divergence, activity, outOfSample, parameters } =
-    result.data;
+  const {
+    pool,
+    snapshot,
+    volatility,
+    band,
+    range,
+    divergence,
+    activity,
+    outOfSample,
+    realizedFee,
+    parameters,
+  } = result.data;
+  const disclosure = feeDisclosureFor(pool);
   const warnings = result.status === "partial" ? result.warnings : [];
 
   const base = pool.token0.symbol;
@@ -120,7 +233,10 @@ export function PoolRangeReport({
         <p className="font-mono text-xs text-muted">{pool.id}</p>
         <p className="text-sm leading-relaxed text-muted">
           {t.report.poolSummary(
-            formatFeePpm(pool.feePpm, locale),
+            pool.protocolVersion,
+            disclosure.declaredPpm === null
+              ? t.report.noDeclaredFee
+              : formatFeePpm(disclosure.declaredPpm, locale),
             formatWhole(pool.tickSpacing, locale),
           )}
         </p>
@@ -282,15 +398,41 @@ export function PoolRangeReport({
             value={formatWhole(activity.occupancy.undetermined, locale)}
             note={t.activity.undeterminedNote}
           />
+          {/*
+           * Withheld rather than shown when the pool's hook may take a share of
+           * a swap. The fees above it are what the pool charged and stay; this
+           * one ties a portion of them to the range, which is the step a reader
+           * turns into an expectation — and the source does not separate the
+           * hook's share from the providers'.
+           */}
           <Figure
             label={t.activity.feesWhileInside}
-            value={formatUsd(activity.feesWhileFullyInsideUsd, locale)}
+            value={
+              disclosure.mayAttributeFeesToRange
+                ? formatUsd(activity.feesWhileFullyInsideUsd, locale)
+                : t.activity.feesWithheld
+            }
+            {...(disclosure.mayAttributeFeesToRange
+              ? {}
+              : { note: t.activity.feesWithheldNote })}
           />
         </dl>
 
         <p className="text-xs leading-relaxed text-muted">{t.activity.inSample}</p>
         <p className="text-sm leading-relaxed">{t.activity.notYourEarnings}</p>
       </Panel>
+
+      {/*
+       * Directly under the fees it explains. In v3 this panel confirms what the
+       * tier already said; in v4 it is often the only place the real rate
+       * appears, because the tier and the rate stopped being the same number.
+       */}
+      <RealizedFeePanel
+        result={realizedFee}
+        hookMayAlterSwaps={disclosure.hookMayAlterSwaps}
+        t={t}
+        locale={locale}
+      />
 
       {/*
        * Directly under the in-sample figures, because the contrast is the whole

@@ -213,8 +213,21 @@ describe("VolatilityPriceBandSchema", () => {
       expect(parse(band(overrides)).success).toBe(false);
     });
 
+    /*
+     * A v4 pool is accepted now, and was not before. A band carries no source of
+     * its own, so it has nothing to check a protocol against — the volatility
+     * figure and the snapshot it is built from each name their subgraph and each
+     * refuse a pool from the other protocol, which is where the claim belongs.
+     * The chain is still pinned, because every reader in this application reads
+     * mainnet.
+     */
+    it("accepts a v4 pool, whose protocol its inputs vouch for", () => {
+      const v4 = { protocolVersion: "v4", chainId: 1, id: `0x${"c".repeat(64)}` };
+
+      expect(parse(band({ pool: v4 })).success).toBe(true);
+    });
+
     it.each([
-      ["a v4 pool", { pool: { protocolVersion: "v4", chainId: 1, id: `0x${"c".repeat(64)}` } }],
       ["another chain", { pool: { protocolVersion: "v3", chainId: 8453, id: `0x${"d".repeat(40)}` } }],
       ["the opposite price direction", { priceDirection: "token1PriceInToken0" }],
       ["a different method label", { method: "garch-volatility-band" }],

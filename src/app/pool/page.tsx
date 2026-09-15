@@ -107,19 +107,21 @@ export default async function PoolRangePage({
       params[HORIZON_PARAMETER],
       params[MULTIPLIER_PARAMETER],
     );
-    const result = await getPoolRangeAnalysis(address.data, requested.parameters);
+    const result = await getPoolRangeAnalysis("v3", address.data, requested.parameters);
 
     return (
       <Shell locale={locale} t={t}>
         <PoolLookupForm t={t} value={address.data} />
-        <PoolRangeReport result={result} poolAddress={address.data} t={t} locale={locale} />
+        <PoolRangeReport result={result} poolId={address.data} t={t} locale={locale} />
         {/*
          * Below the figures it changes, so the horizon and multiplier the
          * analysis actually used are on screen above the control that sets them
          * — which is what the fallback message points at.
          */}
         <BandParametersForm
-          poolAddress={address.data}
+          action="/pool"
+          poolParameter="address"
+          poolId={address.data}
           parameters={requested.parameters}
           fellBack={requested.fellBack}
           t={t}
@@ -137,14 +139,23 @@ export default async function PoolRangePage({
            * and because they arrive in a fraction of the time the model takes.
            */
           <>
-            <Suspense fallback={<PoolFeeTiersPending t={t} />}>
-              <PoolFeeTiersSection
-                pool={result.data.pool}
-                parameters={result.data.parameters}
-                locale={locale}
-                t={t}
-              />
-            </Suspense>
+            {/*
+             * v3 only, and narrowed rather than cast: the sibling tiers come
+             * from the v3 subgraph's `pools(token0, token1)`, which has no v4
+             * counterpart this application reads. This page only ever asks for
+             * v3, so the branch is not reachable today — it is what will keep
+             * the panel honest when a v4 pool arrives here.
+             */}
+            {result.data.pool.protocolVersion !== "v3" ? null : (
+              <Suspense fallback={<PoolFeeTiersPending t={t} />}>
+                <PoolFeeTiersSection
+                  pool={result.data.pool}
+                  parameters={result.data.parameters}
+                  locale={locale}
+                  t={t}
+                />
+              </Suspense>
+            )}
 
             <Suspense fallback={<PoolExplanationPending t={t} />}>
               <PoolExplanationSection

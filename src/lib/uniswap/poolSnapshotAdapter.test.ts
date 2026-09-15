@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_SOURCE_CLOCK_SKEW_MS,
   MAX_SOURCE_LAG_MS,
-  normalizeV3PoolSnapshot,
-} from "./v3PoolSnapshotAdapter";
+  normalizePoolSnapshot,
+} from "./poolSnapshotAdapter";
+import { v3PoolIdentity, v4PoolIdentity } from "./subgraphPoolIdentity";
 
 const POOL_ADDRESS = "0xabcdef0123456789abcdef0123456789abcdef01";
 const FETCHED_AT = "2026-08-20T09:15:00.000Z";
@@ -41,10 +42,13 @@ const payload = (pool: unknown = rawPool(), meta: unknown = rawMeta()) => ({
   data: { pool, _meta: meta },
 });
 
-const normalize = (body: unknown) =>
-  normalizeV3PoolSnapshot({ payload: body, poolAddress: POOL_ADDRESS, fetchedAt: FETCHED_AT });
+/** Non-null by construction: the fixture address is a valid v3 pool address. */
+const V3_IDENTITY = v3PoolIdentity(POOL_ADDRESS)!;
 
-describe("normalizeV3PoolSnapshot success", () => {
+const normalize = (body: unknown) =>
+  normalizePoolSnapshot({ payload: body, identity: V3_IDENTITY, fetchedAt: FETCHED_AT });
+
+describe("normalizePoolSnapshot success", () => {
   it("produces the exact expected snapshot, with nothing missing", () => {
     const result = normalize(payload());
 
@@ -85,9 +89,9 @@ describe("normalizeV3PoolSnapshot success", () => {
 
   it("normalizes an upper-case pool address to lowercase", () => {
     const upper = POOL_ADDRESS.toUpperCase().replace("0X", "0x");
-    const result = normalizeV3PoolSnapshot({
+    const result = normalizePoolSnapshot({
       payload: payload(rawPool({ id: upper })),
-      poolAddress: POOL_ADDRESS,
+      identity: V3_IDENTITY,
       fetchedAt: FETCHED_AT,
     });
 
@@ -362,5 +366,56 @@ describe("source freshness", () => {
     ]) {
       expect(result.notice).not.toContain(forbidden);
     }
+  });
+});
+
+/*
+ * The same adapter, reading the v4 subgraph.
+ *
+ * Its answer for this entity has the same field names and the same shapes —
+ * verified by introspecting the deployed schema, not assumed — so what a v4 read
+ * must change is the identity stamped on the result and nothing else. These
+ * check exactly that, because a v4 pool carrying `protocolVersion: "v3"` would
+ * be refused by the domain schema's source rule, while one carrying the wrong
+ * *source* would sail through every other check on the page.
+ */
+describe("normalizePoolSnapshot for a v4 pool", () => {
+  const POOL_ID = `0x${"ab".repeat(32)}`;
+  const V4_IDENTITY = v4PoolIdentity(POOL_ID)!;
+
+  const normalizeV4 = (body: unknown) =>
+    normalizePoolSnapshot({ payload: body, identity: V4_IDENTITY, fetchedAt: FETCHED_AT });
+
+  it("stamps the pool and the source as v4", () => {
+    const result = normalizeV4(payload(rawPool({ id: POOL_ID })));
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.pool).toEqual({ protocolVersion: "v4", chainId: 1, id: POOL_ID });
+    expect(result.data.source).toBe("uniswap-v4-subgraph");
+  });
+
+  /*
+   * A PoolId is not an address, so the echo check has to validate it as a
+   * bytes32 before comparing. A v3 address echoed back for a v4 request is a
+   * different pool in a different protocol, and it must not pass for one.
+   */
+  it("refuses a response echoing an id of the wrong shape", () => {
+    const result = normalizeV4(payload(rawPool({ id: POOL_ADDRESS })));
+
+    expect(result.status).toBe("unavailable");
+  });
+
+  it("refuses a response echoing a different v4 pool", () => {
+    const result = normalizeV4(payload(rawPool({ id: `0x${"cd".repeat(32)}` })));
+
+    expect(result.status).toBe("unavailable");
+  });
+
+  /** The gateway lower-cases nothing; a differently cased echo is the same pool. */
+  it("accepts an echo that differs only in case", () => {
+    const result = normalizeV4(payload(rawPool({ id: POOL_ID.toUpperCase().replace("0X", "0x") })));
+
+    expect(result.status).toBe("success");
   });
 });

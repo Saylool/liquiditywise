@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { DataFailureNotice, DataWarningNotice } from "./notices";
 
 import { IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
+import { SUBGRAPH_SOURCE_BY_PROTOCOL, SubgraphSourceSchema } from "./dataSource";
 import { PoolReferenceSchema } from "./uniswap";
 
 /*
@@ -147,7 +148,8 @@ export const HistoricalVolatilitySchema = z
     rangeStart: IsoTimestampSchema,
     rangeEndExclusive: IsoTimestampSchema,
     priceDirection: z.literal("token0PriceInToken1"),
-    source: z.literal("uniswap-v3-subgraph"),
+    /** Copied from the history this was measured over, never chosen here. */
+    source: SubgraphSourceSchema,
 
     /** Stated so a figure is never compared against one computed differently. */
     method: z.literal(VOLATILITY_METHOD),
@@ -233,12 +235,15 @@ export const HistoricalVolatilitySchema = z
     path: ["rangeStart"],
   })
   .refine(
-    (analytics) => analytics.pool.chainId === 1 && analytics.pool.protocolVersion === "v3",
+    (analytics) =>
+      analytics.pool.chainId === 1 &&
+      analytics.source === SUBGRAPH_SOURCE_BY_PROTOCOL[analytics.pool.protocolVersion],
     {
-      // The `source` literal says these figures came from the Uniswap v3 mainnet
-      // subgraph, so a pool reference from anywhere else means the provenance was
-      // assembled from mismatched inputs rather than copied from one history.
-      error: "A Uniswap v3 subgraph analytic can only describe an Ethereum mainnet v3 pool.",
+      // `source` says which subgraph these figures came from, so a pool reference
+      // belonging to the other protocol means the provenance was assembled from
+      // mismatched inputs rather than copied from one history.
+      error:
+        "An analytic must name the subgraph that can describe its pool, on Ethereum mainnet.",
       path: ["pool"],
     },
   )

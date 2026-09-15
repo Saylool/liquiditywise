@@ -11,11 +11,19 @@ const POOL = `0x${"a".repeat(40)}`;
 
 const render = (
   parameters: PriceBandParameters = { horizonDays: 30, standardDeviationMultiplier: 1 },
-  { fellBack = false, locale = "en" as Locale } = {},
+  {
+    fellBack = false,
+    locale = "en" as Locale,
+    action = "/pool",
+    poolParameter = "address",
+    poolId = POOL,
+  } = {},
 ) =>
   renderToStaticMarkup(
     <BandParametersForm
-      poolAddress={POOL}
+      action={action}
+      poolParameter={poolParameter}
+      poolId={poolId}
       parameters={parameters}
       fellBack={fellBack}
       t={getDictionary(locale)}
@@ -112,5 +120,25 @@ describe("BandParametersForm", () => {
     expect(markup).toContain("30 gün");
     expect(markup).toContain("okunamadı");
     expect(markup).not.toContain("Recalculate");
+  });
+});
+
+/*
+ * The same form serves the v4 page, which addresses a pool by a 32-byte PoolId
+ * under a different parameter name. A second copy would be a second place for
+ * the horizon and the multiplier to drift apart.
+ */
+describe("BandParametersForm, pointed at the v4 page", () => {
+  const POOL_ID = `0x${"b".repeat(64)}`;
+
+  it("submits to the route it was given, carrying the id under its own name", () => {
+    const markup = render(
+      { horizonDays: 30, standardDeviationMultiplier: 1 },
+      { action: "/v4", poolParameter: "id", poolId: POOL_ID },
+    );
+
+    expect(markup).toContain('action="/v4"');
+    expect(markup).toContain(`name="id" value="${POOL_ID}"`);
+    expect(markup).not.toContain('name="address"');
   });
 });

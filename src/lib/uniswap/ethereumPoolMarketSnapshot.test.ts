@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  fetchEthereumV3PoolMarketSnapshot,
-  V3_POOL_SNAPSHOT_QUERY,
-} from "./ethereumV3PoolMarketSnapshot";
+  fetchEthereumPoolMarketSnapshot,
+  POOL_SNAPSHOT_QUERY,
+} from "./ethereumPoolMarketSnapshot";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 const POOL_ADDRESS = "0xabcdef0123456789abcdef0123456789abcdef01";
@@ -38,9 +38,10 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 const respondWith = (response: Response) => vi.fn<FetchLike>(async () => response);
 
-const run = (overrides: Partial<Parameters<typeof fetchEthereumV3PoolMarketSnapshot>[0]> = {}) =>
-  fetchEthereumV3PoolMarketSnapshot({
-    poolAddress: POOL_ADDRESS,
+const run = (overrides: Partial<Parameters<typeof fetchEthereumPoolMarketSnapshot>[0]> = {}) =>
+  fetchEthereumPoolMarketSnapshot({
+    protocolVersion: "v3",
+    poolId: POOL_ADDRESS,
     apiKey: API_KEY,
     subgraphId: SUBGRAPH_ID,
     fetchImpl: respondWith(jsonResponse(successBody)),
@@ -50,7 +51,7 @@ const run = (overrides: Partial<Parameters<typeof fetchEthereumV3PoolMarketSnaps
 
 /** Reads what the code actually put on the wire. */
 const captureRequest = async (
-  overrides: Partial<Parameters<typeof fetchEthereumV3PoolMarketSnapshot>[0]> = {},
+  overrides: Partial<Parameters<typeof fetchEthereumPoolMarketSnapshot>[0]> = {},
 ) => {
   const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
   const result = await run({ fetchImpl, ...overrides });
@@ -107,15 +108,15 @@ describe("request construction", () => {
   });
 
   it("passes the pool address as a GraphQL variable", async () => {
-    const { body } = await captureRequest({ poolAddress: MIXED_CASE_ADDRESS });
+    const { body } = await captureRequest({ poolId: MIXED_CASE_ADDRESS });
 
     expect(body.variables).toEqual({ poolId: POOL_ADDRESS });
   });
 
   it("never interpolates the pool address into the query string", async () => {
-    const { body } = await captureRequest({ poolAddress: MIXED_CASE_ADDRESS });
+    const { body } = await captureRequest({ poolId: MIXED_CASE_ADDRESS });
 
-    expect(body.query).toBe(V3_POOL_SNAPSHOT_QUERY);
+    expect(body.query).toBe(POOL_SNAPSHOT_QUERY);
     expect(body.query.toLowerCase()).not.toContain(POOL_ADDRESS.toLowerCase());
     expect(body.query).toContain("$poolId");
   });
@@ -183,9 +184,9 @@ describe("guards that must not reach the network", () => {
     ["a non-hex address", `0x${"z".repeat(40)}`],
     ["an address without a prefix", "a".repeat(40)],
     ["an empty string", ""],
-  ])("reports %s as invalid input without fetching", async (_label, poolAddress) => {
+  ])("reports %s as invalid input without fetching", async (_label, poolId) => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
-    const result = await run({ fetchImpl, poolAddress });
+    const result = await run({ fetchImpl, poolId });
 
     expect(result).toMatchObject({ status: "unavailable", reason: "invalid-input" });
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -193,7 +194,7 @@ describe("guards that must not reach the network", () => {
 
   it("reports the zero address as invalid input without fetching", async () => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
-    const result = await run({ fetchImpl, poolAddress: ZERO_POOL_ADDRESS });
+    const result = await run({ fetchImpl, poolId: ZERO_POOL_ADDRESS });
 
     expect(result).toMatchObject({ status: "unavailable", reason: "invalid-input" });
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -203,7 +204,7 @@ describe("guards that must not reach the network", () => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
     const result = await run({
       fetchImpl,
-      poolAddress: ZERO_POOL_ADDRESS,
+      poolId: ZERO_POOL_ADDRESS,
       apiKey: undefined,
       subgraphId: undefined,
     });
@@ -214,7 +215,7 @@ describe("guards that must not reach the network", () => {
 
   it("treats invalid caller input as the caller's fault even when unconfigured", async () => {
     const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
-    const result = await run({ fetchImpl, poolAddress: "0x1234", apiKey: undefined });
+    const result = await run({ fetchImpl, poolId: "0x1234", apiKey: undefined });
 
     expect(result).toMatchObject({ status: "unavailable", reason: "invalid-input" });
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -319,8 +320,8 @@ describe("end to end", () => {
     ["an already-lowercase address", POOL_ADDRESS],
     ["a mixed-case address", MIXED_CASE_ADDRESS],
     ["an upper-case address", UPPER_CASE_ADDRESS],
-  ])("accepts %s and normalizes it to lowercase", async (_label, poolAddress) => {
-    const result = await run({ poolAddress });
+  ])("accepts %s and normalizes it to lowercase", async (_label, poolId) => {
+    const result = await run({ poolId });
 
     if (result.status === "unavailable") throw new Error(result.notice);
     expect(result.data.pool.id).toBe(POOL_ADDRESS);

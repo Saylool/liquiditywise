@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PoolDailyPriceHistory, V3TickRange } from "../../schemas";
+import type { PoolDailyPriceHistory, TickRange } from "../../schemas";
 import { calculatePoolActivity } from "./poolActivity";
 
 const DAY_MS = 86_400_000;
@@ -27,7 +27,7 @@ const historyOf = (points: readonly unknown[]) => ({ points }) as unknown as Poo
 
 /** Only the two prices matter; the rest of a range is irrelevant to occupancy. */
 const rangeOf = (lowerPrice: number, upperPrice: number) =>
-  ({ lowerPrice, upperPrice }) as unknown as V3TickRange;
+  ({ lowerPrice, upperPrice }) as unknown as TickRange;
 
 const succeeded = (result: ReturnType<typeof calculatePoolActivity>) => {
   if (result.status !== "success") throw new Error(`expected success, got ${result.notice}`);

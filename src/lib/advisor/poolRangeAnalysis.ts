@@ -1,5 +1,5 @@
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
-import { calculatePoolActivity } from "../analytics/poolActivity";
+import { ACTIVITY_WINDOW_DAYS, calculatePoolActivity } from "../analytics/poolActivity";
 import {
   type AnalyticsFailureReason,
   type DataFailureNotice,
@@ -8,12 +8,15 @@ import {
   type DivergenceLoss,
   type PoolActivity,
   type DataWarningNotice,
+  declaredFeePpm,
   type HistoricalVolatility,
+  type Pool,
+  type V3Pool,
+  type V4Pool,
   type PoolDailyPriceHistory,
   type PoolMarketSnapshot,
   type PriceBandParameters,
-  type V3Pool,
-  type V3TickRange,
+  type TickRange,
   VOLATILITY_WINDOW_DAYS,
   type VolatilityPriceBand,
 } from "../../schemas";
@@ -23,7 +26,11 @@ import {
   type OutOfSampleCheckResult,
 } from "../analytics/outOfSampleCheck";
 import { calculateHistoricalVolatility } from "../analytics/historicalVolatility";
-import { calculateV3TickRange } from "../analytics/v3TickRange";
+import {
+  calculateRealizedFeeRate,
+  type RealizedFeeRateResult,
+} from "../analytics/realizedFeeRate";
+import { calculateTickRange } from "../analytics/tickRange";
 import { calculateVolatilityPriceBand } from "../analytics/volatilityPriceBand";
 
 /*
@@ -60,12 +67,12 @@ export type PoolRangeAnalysisStep =
  * band that produced them, with all of their provenance intact.
  */
 export type PoolRangeAnalysis = {
-  readonly pool: V3Pool;
+  readonly pool: Pool;
   readonly snapshot: PoolMarketSnapshot;
   readonly history: PoolDailyPriceHistory;
   readonly volatility: HistoricalVolatility;
   readonly band: VolatilityPriceBand;
-  readonly range: V3TickRange;
+  readonly range: TickRange;
   /** What that range is worth against holding, at a few prices. Needs no source. */
   readonly divergence: DivergenceLoss;
   /** What the pool did over the window, and how those days sat against the range. */
@@ -78,6 +85,19 @@ export type PoolRangeAnalysis = {
    * this page, so failing to check costs the reader a panel and nothing else.
    */
   readonly outOfSample: OutOfSampleCheckResult;
+  /**
+   * What the pool actually charged over the same days, and whether that is what
+   * it says it charges.
+   *
+   * Carried as a *result* like the check above it, for the same reason: a pool
+   * that traded nothing this month has every other figure on the page, and the
+   * honest answer to "what rate does it charge" is then that nobody paid one.
+   *
+   * It exists because v4 severed the link between the two. A v3 tier is the rate;
+   * a v4 pool's hook may rewrite it on every swap, and this is the only way to
+   * find out what it did without trusting the hook's author.
+   */
+  readonly realizedFee: RealizedFeeRateResult;
   readonly parameters: PriceBandParameters;
 };
 
@@ -99,7 +119,15 @@ export type PoolRangeAnalysisResult =
     };
 
 export type PoolRangeAnalysisInput = {
-  readonly pool: DataResult<V3Pool>;
+  /**
+   * Either protocol's pool, as its own reader returned it.
+   *
+   * A union of two results rather than one result of a union, because
+   * `DataResult` names the fields a partial read is missing — and the fields a
+   * `Pool` has in common are the ones both protocols share, which is not the set
+   * either reader can report. Widening here would make `feePpm` unnameable.
+   */
+  readonly pool: DataResult<V3Pool> | DataResult<V4Pool>;
   readonly snapshot: DataResult<PoolMarketSnapshot>;
   readonly history: DataResult<PoolDailyPriceHistory>;
   readonly parameters: PriceBandParameters;
@@ -118,6 +146,27 @@ export const DEFAULT_PRICE_BAND_PARAMETERS: PriceBandParameters = {
 };
 
 /**
+ * The part of a `DataResult` this composition reads.
+ *
+ * Narrower than `DataResult<T>` on purpose: that type also names which fields a
+ * partial read is missing, and those names differ per pool protocol. Depending on
+ * them here would stop one helper from accepting both readers' results, for a
+ * field this module never looks at.
+ */
+type UnwrappableResult<T> =
+  | { readonly status: "success"; readonly data: T }
+  | {
+      readonly status: "partial";
+      readonly data: T;
+      readonly warnings: readonly DataWarningNotice[];
+    }
+  | {
+      readonly status: "unavailable";
+      readonly reason: DataFailureReason;
+      readonly notice: DataFailureNotice;
+    };
+
+/**
  * Unwraps a fetched result, collecting the caveats a partial one carries.
  *
  * A `partial` fetch is used, not refused: a snapshot that is missing rolling
@@ -127,7 +176,7 @@ export const DEFAULT_PRICE_BAND_PARAMETERS: PriceBandParameters = {
  * contract, so nothing from the wire can be copied into them here.
  */
 const unwrap = <T,>(
-  result: DataResult<T>,
+  result: UnwrappableResult<T>,
   warnings: DataWarningNotice[],
 ):
   | { readonly ok: true; readonly value: T }
@@ -152,7 +201,8 @@ const unwrap = <T,>(
 export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalysisResult => {
   const warnings: DataWarningNotice[] = [];
 
-  const pool = unwrap(input.pool, warnings);
+  /* Annotated, because inference from a union of results picks its first member. */
+  const pool = unwrap<Pool>(input.pool, warnings);
   if (!pool.ok) {
     return { status: "unavailable", step: "pool", reason: pool.reason, notice: pool.notice };
   }
@@ -217,7 +267,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
   }
   if (band.status === "partial") warnings.push(...band.warnings);
 
-  const range = calculateV3TickRange({
+  const range = calculateTickRange({
     pool: pool.value,
     band: band.data,
     snapshot: snapshot.value,
@@ -268,6 +318,20 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     parameters: input.parameters,
   });
 
+  /*
+   * Measured over exactly the days the activity figures cover, because the two
+   * are read together: the rate here is the one that produced the fees there,
+   * and a spread measured over a different window would quietly be a spread of
+   * something else.
+   *
+   * Like the check above, it cannot stop the pipeline. A pool with no volume has
+   * no rate to measure and every other figure on this page is unaffected.
+   */
+  const realizedFee = calculateRealizedFeeRate({
+    points: history.value.points.slice(-ACTIVITY_WINDOW_DAYS),
+    declaredPpm: declaredFeePpm(pool.value),
+  });
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -278,6 +342,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     divergence: divergence.data,
     activity: activity.data,
     outOfSample,
+    realizedFee,
     parameters: input.parameters,
   };
 

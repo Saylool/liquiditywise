@@ -1,11 +1,9 @@
 import "server-only";
 
-import type { DataResult, PoolMarketSnapshot } from "../../schemas";
+import type { DataResult, PoolMarketSnapshot, ProtocolVersion } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
-import { fetchEthereumV3PoolMarketSnapshot } from "./ethereumV3PoolMarketSnapshot";
-
-/** Identifies this reader in server-side diagnostics. */
-const LABEL = "v3-snapshot";
+import { fetchEthereumPoolMarketSnapshot } from "./ethereumPoolMarketSnapshot";
+import { ethereumSubgraphId } from "./ethereumSubgraphs";
 
 /*
  * The server-only boundary.
@@ -24,22 +22,31 @@ const LABEL = "v3-snapshot";
  */
 
 /**
- * Fetches a verified market snapshot for one Ethereum mainnet Uniswap v3 pool.
+ * Fetches a verified market snapshot for one Ethereum mainnet Uniswap pool.
  *
  * Environment variables are read per call rather than captured at module load, so
  * configuration changes take effect without a restart and no stale credential is
  * held in a closure.
+ *
+ * The diagnostics label carries the protocol, so a v3 read and a v4 read of the
+ * same entity are distinguishable in a log rather than appearing as one reader
+ * behaving inconsistently.
  */
-export const getEthereumV3PoolMarketSnapshot = async (
-  poolAddress: string,
-): Promise<DataResult<PoolMarketSnapshot>> =>
-  logUnavailable(
-    LABEL,
-    await fetchEthereumV3PoolMarketSnapshot({
-      poolAddress,
+export const getEthereumPoolMarketSnapshot = async (
+  protocolVersion: ProtocolVersion,
+  poolId: string,
+): Promise<DataResult<PoolMarketSnapshot>> => {
+  const label = `${protocolVersion}-snapshot`;
+
+  return logUnavailable(
+    label,
+    await fetchEthereumPoolMarketSnapshot({
+      protocolVersion,
+      poolId,
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
-      fetchImpl: loggingFetch(LABEL),
+      subgraphId: ethereumSubgraphId(protocolVersion),
+      fetchImpl: loggingFetch(label),
       now: () => new Date(),
     }),
   );
+};

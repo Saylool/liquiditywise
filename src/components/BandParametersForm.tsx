@@ -7,7 +7,7 @@ import {
 import { formatMultiplier, formatWhole } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
-import type { EvmAddress, PriceBandParameters } from "../schemas";
+import type { PriceBandParameters } from "../schemas";
 
 /**
  * The two knobs behind the price band.
@@ -66,13 +66,25 @@ const Choice = ({
 );
 
 export function BandParametersForm({
-  poolAddress,
+  action,
+  poolParameter,
+  poolId,
   parameters,
   fellBack,
   t,
   locale,
 }: {
-  poolAddress: EvmAddress;
+  /**
+   * Where the form submits, and under what name the pool travels.
+   *
+   * Both are props rather than constants because the two analysis pages address
+   * a pool differently — `/pool?address=` takes a contract, `/v4?id=` takes a
+   * 32-byte PoolId — and a second copy of this form would be a second place for
+   * the horizon and the multiplier to drift apart.
+   */
+  action: string;
+  poolParameter: string;
+  poolId: string;
   parameters: PriceBandParameters;
   /** True when something was asked for and could not be used. */
   fellBack: boolean;
@@ -82,7 +94,7 @@ export function BandParametersForm({
   return (
     <form
       method="get"
-      action="/pool"
+      action={action}
       className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5"
     >
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
@@ -90,7 +102,7 @@ export function BandParametersForm({
       </h2>
 
       {/* The pool is not being changed here, so it travels hidden. */}
-      <input type="hidden" name="address" value={poolAddress} />
+      <input type="hidden" name={poolParameter} value={poolId} />
 
       <div className="flex flex-wrap items-end gap-4">
         <Choice

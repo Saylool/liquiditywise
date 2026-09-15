@@ -2,8 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { BandParametersForm } from "@/components/BandParametersForm";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { PreferenceBar } from "@/components/PreferenceBar";
+import {
+  HORIZON_PARAMETER,
+  MULTIPLIER_PARAMETER,
+  readRequestedParameters,
+} from "@/lib/advisor/requestedParameters";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -19,6 +25,11 @@ import { V4PoolPending, V4PoolSection } from "./V4PoolSection";
  *
  * Not indexed, like the other reading pages: every render spends a query and the
  * answer is only true for the moment it was read.
+ *
+ * The analysis below the identity is the same pipeline the v3 page runs, because
+ * the geometry is the same geometry: one tick grid, one `TickMath`, and a v4
+ * pool carries its spacing in its own key. What is not the same is the fee, and
+ * that is measured rather than declared — see the panel that says so.
  */
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -65,6 +76,10 @@ export default async function V4PoolPage({
   const params = await searchParams;
   const requested = params.id;
   const poolId = Bytes32HexSchema.safeParse(single(requested));
+  const band = readRequestedParameters(
+    params[HORIZON_PARAMETER],
+    params[MULTIPLIER_PARAMETER],
+  );
 
   if (!poolId.success) {
     return (
@@ -80,8 +95,27 @@ export default async function V4PoolPage({
   return (
     <Shell locale={locale} t={t}>
       <Suspense fallback={<V4PoolPending t={t} />}>
-        <V4PoolSection poolId={poolId.data} locale={locale} t={t} />
+        <V4PoolSection
+          poolId={poolId.data}
+          parameters={band.parameters}
+          locale={locale}
+          t={t}
+        />
       </Suspense>
+      {/*
+       * Below the figures it changes, as on the v3 page: the horizon and the
+       * multiplier the analysis actually used are on screen above the control
+       * that sets them.
+       */}
+      <BandParametersForm
+        action="/v4"
+        poolParameter="id"
+        poolId={poolId.data}
+        parameters={band.parameters}
+        fellBack={band.fellBack}
+        t={t}
+        locale={locale}
+      />
     </Shell>
   );
 }

@@ -88,6 +88,7 @@ export const DataFailureNoticeSchema = z.enum([
   "range-unverifiable",
   "divergence-unverifiable",
   "activity-unverifiable",
+  "fee-rate-unmeasurable",
   "out-of-sample-insufficient-history",
   "out-of-sample-unverifiable",
   "holdings-unverifiable",

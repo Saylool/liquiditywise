@@ -57,3 +57,35 @@ describe("spendsUpstreamQuota", () => {
     expect(spendsUpstreamQuota(query(`address=${POOL_ADDRESS}&q=weth+usdc`))).toBe(true);
   });
 });
+
+/*
+ * The v4 analysis page, which addresses a pool by a 32-byte PoolId rather than
+ * by a contract address, and spends the same three upstream queries.
+ */
+describe("a v4 pool id", () => {
+  const POOL_ID = `0x${"ab".repeat(32)}`;
+
+  it("is counted", () => {
+    expect(spendsUpstreamQuota(new URLSearchParams({ id: POOL_ID }))).toBe(true);
+  });
+
+  it("is counted whatever its case, since the page lower-cases it", () => {
+    expect(
+      spendsUpstreamQuota(new URLSearchParams({ id: `0x${"AB".repeat(32)}` })),
+    ).toBe(true);
+  });
+
+  /* A malformed id is answered without a single upstream call. */
+  it("is not counted when it is not a pool id", () => {
+    for (const id of ["", "0x", POOL_ID.slice(0, -1), `${POOL_ID}00`, "not-an-id"]) {
+      expect(spendsUpstreamQuota(new URLSearchParams({ id }))).toBe(false);
+    }
+  });
+
+  /* An address is not a PoolId, and the v4 page refuses it before reading. */
+  it("is not counted when an address arrives under the v4 parameter", () => {
+    expect(
+      spendsUpstreamQuota(new URLSearchParams({ id: `0x${"a".repeat(40)}` })),
+    ).toBe(false);
+  });
+});

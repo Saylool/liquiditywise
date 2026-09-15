@@ -1,13 +1,10 @@
-import {
-  type DataResult,
-  nonZeroEvmAddress,
-  type PoolDailyPriceHistory,
-} from "../../schemas";
+import type { DataResult, PoolDailyPriceHistory, ProtocolVersion } from "../../schemas";
 import {
   DAILY_HISTORY_DAYS,
   resolveDailyHistoryWindow,
 } from "./v3DailyHistoryWindow";
-import { normalizeV3DailyPriceHistory } from "./v3DailyPriceHistoryAdapter";
+import { normalizeDailyPriceHistory } from "./dailyPriceHistoryAdapter";
+import { poolIdentityFor } from "./subgraphPoolIdentity";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
@@ -15,11 +12,11 @@ import {
 } from "./v3SubgraphTransport";
 
 /**
- * The pool address is passed twice, as two variables, because the generated
+ * The pool id is passed twice, as two variables, because the generated
  * Subgraph API wants two different scalars for the same value: a singular entity
  * lookup always takes `id: ID!`, while a filter on an entity-reference field takes
  * the referenced entity's id scalar, which graph-node renders as `String` for both
- * `String` and `Bytes` ids. Splicing the address into the query text would avoid
+ * `String` and `Bytes` ids. Splicing the id into the query text would avoid
  * the duplication and reintroduce an injection surface, so it stays a variable.
  *
  * `date` is `Int!` on `PoolDayData`, hence `Int!` bounds.
@@ -29,8 +26,12 @@ import {
  * its ownership can be verified individually: a filter is a request, not proof of
  * what came back. `first` caps the result at the window size, which is why no
  * `skip` pagination is needed.
+ *
+ * One query serves both protocols, for the same reason the snapshot query does:
+ * the v4 subgraph publishes `PoolDayData` under the same names, with the same
+ * inverted extremes, verified by introspection against the deployed schema.
  */
-export const V3_DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
+export const DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
   $poolId: ID!
   $poolRef: String!
   $rangeStart: Int!
@@ -66,14 +67,14 @@ export const V3_DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
   }
 }`;
 
-const INVALID_ADDRESS = "invalid-pool-address";
+const INVALID_POOL_ID = "invalid-pool-address";
 const NOT_CONFIGURED = "market-data-not-configured";
 
-/** Shared with the snapshot reader: no v3 pool is ever deployed at address zero. */
-const PoolAddressSchema = nonZeroEvmAddress(INVALID_ADDRESS);
-
-export type EthereumV3DailyPriceHistoryRequest = {
-  readonly poolAddress: string;
+export type EthereumDailyPriceHistoryRequest = {
+  /** Which protocol's subgraph is being read, and therefore how `poolId` is spelled. */
+  readonly protocolVersion: ProtocolVersion;
+  /** A v3 pool address or a v4 PoolId, validated here against its protocol. */
+  readonly poolId: string;
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
@@ -85,7 +86,7 @@ export type EthereumV3DailyPriceHistoryRequest = {
 
 /**
  * Reads the previous 31 completed UTC days of closing prices for one Ethereum
- * mainnet Uniswap v3 pool.
+ * mainnet Uniswap pool.
  *
  * Validation order matches the snapshot reader: caller input first, then server
  * configuration, and neither reaches the network.
@@ -96,12 +97,12 @@ export type EthereumV3DailyPriceHistoryRequest = {
  * versus when the answer landed — and collapsing them into one reading is what
  * would let a slow request disguise stale data.
  */
-export const fetchEthereumV3DailyPriceHistory = async (
-  request: EthereumV3DailyPriceHistoryRequest,
+export const fetchEthereumDailyPriceHistory = async (
+  request: EthereumDailyPriceHistoryRequest,
 ): Promise<DataResult<PoolDailyPriceHistory>> => {
-  const address = PoolAddressSchema.safeParse(request.poolAddress);
-  if (!address.success) {
-    return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
+  const identity = poolIdentityFor(request.protocolVersion, request.poolId);
+  if (identity === null) {
+    return { status: "unavailable", reason: "invalid-input", notice: INVALID_POOL_ID };
   }
 
   const apiKey = request.apiKey?.trim();
@@ -117,10 +118,10 @@ export const fetchEthereumV3DailyPriceHistory = async (
   const transport = await postV3SubgraphQuery({
     apiKey,
     subgraphId,
-    query: V3_DAILY_PRICE_HISTORY_QUERY,
+    query: DAILY_PRICE_HISTORY_QUERY,
     variables: {
-      poolId: address.data,
-      poolRef: address.data,
+      poolId: identity.id,
+      poolRef: identity.id,
       rangeStart: window.rangeStartUnixSeconds,
       rangeEndExclusive: window.rangeEndExclusiveUnixSeconds,
       dayLimit: DAILY_HISTORY_DAYS,
@@ -144,9 +145,9 @@ export const fetchEthereumV3DailyPriceHistory = async (
    */
   const receivedAt = request.now();
 
-  return normalizeV3DailyPriceHistory({
+  return normalizeDailyPriceHistory({
     payload: transport.payload,
-    poolAddress: address.data,
+    identity,
     fetchedAt: receivedAt.toISOString(),
     window,
   });

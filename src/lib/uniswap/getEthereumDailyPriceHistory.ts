@@ -1,14 +1,12 @@
 import "server-only";
 
-import type { DataResult, PoolDailyPriceHistory } from "../../schemas";
+import type { DataResult, PoolDailyPriceHistory, ProtocolVersion } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
-import { fetchEthereumV3DailyPriceHistory } from "./ethereumV3DailyPriceHistory";
+import { fetchEthereumDailyPriceHistory } from "./ethereumDailyPriceHistory";
+import { ethereumSubgraphId } from "./ethereumSubgraphs";
 
 /** See the note where it is used: the cold path for 121 days is seconds long. */
 const DAILY_HISTORY_TIMEOUT_MS = 25_000;
-
-/** Identifies this reader in server-side diagnostics. */
-const LABEL = "v3-daily-history";
 
 /*
  * The server-only boundary for daily price history.
@@ -27,22 +25,26 @@ const LABEL = "v3-daily-history";
 
 /**
  * Fetches the previous 31 completed UTC days of closing prices for one Ethereum
- * mainnet Uniswap v3 pool.
+ * mainnet Uniswap pool.
  *
  * Environment variables are read per call rather than captured at module load, so
  * configuration changes take effect without a restart and no stale credential is
  * held in a closure.
  */
-export const getEthereumV3DailyPriceHistory = async (
-  poolAddress: string,
-): Promise<DataResult<PoolDailyPriceHistory>> =>
-  logUnavailable(
-    LABEL,
-    await fetchEthereumV3DailyPriceHistory({
-      poolAddress,
+export const getEthereumDailyPriceHistory = async (
+  protocolVersion: ProtocolVersion,
+  poolId: string,
+): Promise<DataResult<PoolDailyPriceHistory>> => {
+  const label = `${protocolVersion}-daily-history`;
+
+  return logUnavailable(
+    label,
+    await fetchEthereumDailyPriceHistory({
+      protocolVersion,
+      poolId,
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
-      fetchImpl: loggingFetch(LABEL),
+      subgraphId: ethereumSubgraphId(protocolVersion),
+      fetchImpl: loggingFetch(label),
       /*
        * Longer than the shared default, because this is the largest query the
        * application sends and the gateway's cold path for it is slow. Measured
@@ -55,3 +57,4 @@ export const getEthereumV3DailyPriceHistory = async (
       now: () => new Date(),
     }),
   );
+};

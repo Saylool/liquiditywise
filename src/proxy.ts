@@ -42,7 +42,7 @@ import {
  * the cheaper page the guarded one.
  */
 export const config = {
-  matcher: ["/pool", "/holdings"],
+  matcher: ["/pool", "/holdings", "/v4"],
 };
 
 /**

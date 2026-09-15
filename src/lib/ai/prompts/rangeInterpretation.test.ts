@@ -158,7 +158,12 @@ describe("buildRangeInterpretationPrompt", () => {
 
     for (const label of [
       "Pair",
-      "Fee tier",
+      /*
+       * "Declared fee", not "fee tier". A v4 pool's tier is what it was created
+       * with and its hook may charge something else on every swap, so the label
+       * has to stop the word standing for the rate.
+       */
+      "Declared fee",
       "Tick spacing",
       "Current price",
       "Current tick",
@@ -174,6 +179,31 @@ describe("buildRangeInterpretationPrompt", () => {
       expect(user).toContain(label);
     }
     expect(user).toContain("USDC / WETH");
+  });
+
+  /*
+   * The section that exists because v4 severed the link between what a pool
+   * declares and what it charges. On a fixture charging exactly its declared
+   * rate the model is told so in one line; the page prints the rest.
+   */
+  it("carries what the pool actually charged, measured", () => {
+    const user = buildChecked("en").user;
+
+    expect(user).toContain("WHAT IT ACTUALLY CHARGED");
+    expect(user).toContain("Rate actually charged, median day: 0.05%");
+    expect(user).toContain("Against the declared rate: different on");
+  });
+
+  /*
+   * The short fixture reports no volume at all, so no rate can be divided out of
+   * it. The model must be told that plainly rather than handed a zero, which
+   * would read as a pool that charges nothing.
+   */
+  it("says a rate was not measurable rather than reporting it as zero", () => {
+    const user = build("en").user;
+
+    expect(user).toContain("not measurable");
+    expect(user).not.toContain("Rate actually charged, median day: 0%");
   });
 
   it("shows the model the same strings the reader sees", () => {

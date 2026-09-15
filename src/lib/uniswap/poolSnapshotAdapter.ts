@@ -2,13 +2,12 @@ import {
   type DataFailureNotice,
   type DataResult,
   type DataWarningNotice,
-  type EvmAddress,
-  EvmAddressSchema,
   type PoolMarketSnapshot,
   PoolMarketSnapshotSchema,
   TickSchema,
   Uint128StringSchema,
 } from "../../schemas";
+import type { SubgraphPoolIdentity } from "./subgraphPoolIdentity";
 import {
   evaluateSourceFreshness,
   FRESHNESS_UNVERIFIED_WARNING,
@@ -54,11 +53,11 @@ const NULLABLE_SNAPSHOT_FIELDS = [
   "tick",
 ] as const satisfies readonly (keyof PoolMarketSnapshot & string)[];
 
-export type NormalizeV3PoolSnapshotInput = {
+export type NormalizePoolSnapshotInput = {
   /** The decoded JSON body, still untrusted. */
   readonly payload: unknown;
-  /** The caller's pool address, already validated and lower-cased. */
-  readonly poolAddress: EvmAddress;
+  /** Which pool was asked about, and which protocol's subgraph answered. */
+  readonly identity: SubgraphPoolIdentity;
   /** When the response arrived, from an injected clock. */
   readonly fetchedAt: string;
 };
@@ -67,12 +66,17 @@ export type NormalizeV3PoolSnapshotInput = {
  * Turns one raw subgraph payload into a domain snapshot, or into an explicit
  * failure. Pure: no clock, no network, no environment — the same input always
  * produces the same result.
+ *
+ * Shared by v3 and v4, which publish this entity identically. Everything that
+ * differs between them arrives in `identity`; everything below this line — the
+ * price-direction mapping, the reciprocal check, the freshness gate — is the
+ * same reasoning for both and exists once.
  */
-export const normalizeV3PoolSnapshot = ({
+export const normalizePoolSnapshot = ({
   payload,
-  poolAddress,
+  identity,
   fetchedAt,
-}: NormalizeV3PoolSnapshotInput): DataResult<PoolMarketSnapshot> => {
+}: NormalizePoolSnapshotInput): DataResult<PoolMarketSnapshot> => {
   const parsed = V3PoolQueryResponseSchema.safeParse(payload);
   if (!parsed.success) return unavailable("invalid-response", MALFORMED);
 
@@ -97,8 +101,7 @@ export const normalizeV3PoolSnapshot = ({
 
   // The provider echoes the pool id it matched. A mismatch means the response
   // describes a different pool than the one asked about.
-  const returnedId = EvmAddressSchema.safeParse(pool.id);
-  if (!returnedId.success || returnedId.data !== poolAddress) {
+  if (!identity.matches(pool.id)) {
     return unavailable("invalid-response", MALFORMED);
   }
 
@@ -149,9 +152,9 @@ export const normalizeV3PoolSnapshot = ({
 
   const candidate = {
     pool: {
-      protocolVersion: "v3",
+      protocolVersion: identity.protocolVersion,
       chainId: ETHEREUM_MAINNET_CHAIN_ID,
-      id: poolAddress,
+      id: identity.id,
     },
     fetchedAt,
     // Block numbers are exact on-chain integers, so they are carried as canonical
@@ -163,7 +166,7 @@ export const normalizeV3PoolSnapshot = ({
     tvlUsd: tvlUsd.value,
     tick,
     liquidity: liquidity.data,
-    source: "uniswap-v3-subgraph",
+    source: identity.source,
   };
 
   // The domain schema is the final authority. If normalization produced anything

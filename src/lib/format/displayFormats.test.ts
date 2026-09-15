@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ABSENT,
   formatFeePpm,
+  formatMeasuredFeePpm,
   formatMultiplier,
   formatPercent,
   formatPrice,
@@ -210,5 +211,59 @@ describe("formatMultiplier", () => {
 
   it("reports a figure it cannot format as absent rather than as a number", () => {
     expect(formatMultiplier(Number.NaN)).toBe(formatWhole(Number.NaN));
+  });
+});
+
+/*
+ * A measured rate is a quotient rather than an on-chain integer, so it lands
+ * anywhere — and it is printed beside the rate the pool declares, for a panel
+ * whose whole question is whether the two are the same number.
+ */
+describe("formatMeasuredFeePpm", () => {
+  /*
+   * The reason this formatter exists at all. `formatFeePpm` stops at four
+   * decimal places, which is every fee tier and not every measured rate.
+   */
+  it("does not render a real sub-ppm rate as zero", () => {
+    expect(formatMeasuredFeePpm(0.4)).toBe("0.00004%");
+    expect(formatFeePpm(0.4)).toBe("0.00%");
+  });
+
+  /*
+   * The other reason. "0.30%" printed beside "0.3%" reads as two different
+   * answers to "do these agree", so a measured rate matching a declared one has
+   * to print identically to it.
+   */
+  it.each([3000, 500, 625, 250, 12, 1, 1_000_000])(
+    "prints %i ppm exactly as the declared formatter does",
+    (ppm) => {
+      expect(formatMeasuredFeePpm(ppm)).toBe(formatFeePpm(ppm));
+      expect(formatMeasuredFeePpm(ppm, "tr")).toBe(formatFeePpm(ppm, "tr"));
+    },
+  );
+
+  /** Three significant figures, so an ordinary rate is not a wall of digits. */
+  it("stops at three significant figures", () => {
+    expect(formatMeasuredFeePpm(17.37332)).toBe("0.00174%");
+    expect(formatMeasuredFeePpm(230.4)).toBe("0.023%");
+  });
+
+  it("writes the number the way the reader's language writes it", () => {
+    expect(formatMeasuredFeePpm(174, "tr")).toBe("%0,0174");
+    expect(formatMeasuredFeePpm(174, "en")).toBe("0.0174%");
+  });
+
+  /* A day with volume and no fees charged is a real, measured zero. */
+  it("shows a measured zero as zero", () => {
+    expect(formatMeasuredFeePpm(0)).toBe("0.00%");
+  });
+
+  it("falls back to scientific below a hundredth of a part-per-million", () => {
+    expect(formatMeasuredFeePpm(0.004)).toBe("4E-7%");
+  });
+
+  it("reports a figure that is not a number as absent", () => {
+    expect(formatMeasuredFeePpm(Number.NaN)).toBe(ABSENT);
+    expect(formatMeasuredFeePpm(Number.POSITIVE_INFINITY)).toBe(ABSENT);
   });
 });

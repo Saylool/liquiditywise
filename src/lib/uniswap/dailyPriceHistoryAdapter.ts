@@ -2,12 +2,11 @@ import {
   type DataFailureNotice,
   type DataResult,
   type DataWarningNotice,
-  type EvmAddress,
-  EvmAddressSchema,
   type HistoricalPricePoint,
   type PoolDailyPriceHistory,
   PoolDailyPriceHistorySchema,
 } from "../../schemas";
+import type { SubgraphPoolIdentity } from "./subgraphPoolIdentity";
 import { DAILY_HISTORY_DAYS, type DailyHistoryWindow } from "./v3DailyHistoryWindow";
 import { V3DailyPriceHistoryResponseSchema } from "./v3DailyPriceHistoryRawResponse";
 import {
@@ -49,11 +48,11 @@ const REPORTABLE_MISSING_FIELDS = [
   "points",
 ] as const satisfies readonly (keyof PoolDailyPriceHistory & string)[];
 
-export type NormalizeV3DailyPriceHistoryInput = {
+export type NormalizeDailyPriceHistoryInput = {
   /** The decoded JSON body, still untrusted. */
   readonly payload: unknown;
-  /** The caller's pool address, already validated and lower-cased. */
-  readonly poolAddress: EvmAddress;
+  /** Which pool was asked about, and which protocol's subgraph answered. */
+  readonly identity: SubgraphPoolIdentity;
   /** When the response arrived, from an injected clock. */
   readonly fetchedAt: string;
   /** The window the query asked for, from the same clock. */
@@ -63,13 +62,17 @@ export type NormalizeV3DailyPriceHistoryInput = {
 /**
  * Turns one raw `poolDayDatas` payload into a domain price series, or into an
  * explicit failure. Pure: no clock, no network, no environment.
+ *
+ * Shared by v3 and v4, which publish this entity identically — the same field
+ * names, the same inverted extremes, the same per-row `pool { id }`. Only the
+ * identity differs, and it arrives as an argument.
  */
-export const normalizeV3DailyPriceHistory = ({
+export const normalizeDailyPriceHistory = ({
   payload,
-  poolAddress,
+  identity,
   fetchedAt,
   window,
-}: NormalizeV3DailyPriceHistoryInput): DataResult<PoolDailyPriceHistory> => {
+}: NormalizeDailyPriceHistoryInput): DataResult<PoolDailyPriceHistory> => {
   const parsed = V3DailyPriceHistoryResponseSchema.safeParse(payload);
   if (!parsed.success) return unavailable("invalid-response", MALFORMED);
 
@@ -86,10 +89,7 @@ export const normalizeV3DailyPriceHistory = ({
   // pool whose history is too short, which is reported as insufficient-data below.
   if (data.pool === null) return unavailable("not-found", NOT_FOUND);
 
-  const returnedId = EvmAddressSchema.safeParse(data.pool.id);
-  if (!returnedId.success || returnedId.data !== poolAddress) {
-    return unavailable("invalid-response", MALFORMED);
-  }
+  if (!identity.matches(data.pool.id)) return unavailable("invalid-response", MALFORMED);
 
   const meta = data._meta;
   let sourceBlockTimestamp: string | null = null;
@@ -128,10 +128,7 @@ export const normalizeV3DailyPriceHistory = ({
      * the right-looking pool: exactly the kind of error nothing downstream could
      * detect. Array position and the row's opaque `id` are not evidence either.
      */
-    const rowPoolId = EvmAddressSchema.safeParse(day.pool.id);
-    if (!rowPoolId.success || rowPoolId.data !== poolAddress) {
-      return unavailable("invalid-response", MALFORMED);
-    }
+    if (!identity.matches(day.pool.id)) return unavailable("invalid-response", MALFORMED);
 
     const timestamp = unixSecondsToIso(day.date);
     if (timestamp === null || !expectedTimestamps.has(timestamp)) {
@@ -189,9 +186,9 @@ export const normalizeV3DailyPriceHistory = ({
 
   const candidate = {
     pool: {
-      protocolVersion: "v3",
+      protocolVersion: identity.protocolVersion,
       chainId: ETHEREUM_MAINNET_CHAIN_ID,
-      id: poolAddress,
+      id: identity.id,
     },
     fetchedAt,
     sourceBlockNumber: meta == null ? null : String(meta.block.number),
@@ -201,7 +198,7 @@ export const normalizeV3DailyPriceHistory = ({
     interval: "1d",
     priceDirection: "token0PriceInToken1",
     points,
-    source: "uniswap-v3-subgraph",
+    source: identity.source,
   };
 
   // The domain schema is the final authority: ordering, uniqueness, range and

@@ -92,7 +92,7 @@ const render = (result: ReturnType<typeof analysePoolRange>, locale: "en" | "tr"
   renderToStaticMarkup(
     <PoolRangeReport
       result={result}
-      poolAddress={POOL_ID}
+      poolId={POOL_ID}
       t={getDictionary(locale)}
       locale={locale}
     />,
@@ -347,5 +347,126 @@ describe("PoolRangeReport against simply holding", () => {
     expect(turkish).toContain("Tutmaya kıyasla");
     expect(turkish).toContain("geçici kayıp");
     expect(turkish).not.toContain("Against simply holding");
+  });
+});
+
+/*
+ * The panel that exists because v4 severed the link between the fee a pool
+ * declares and the fee it charges.
+ *
+ * These fixtures go through the real pipeline like the ones above, and the v4
+ * ones use real hook addresses — a v4 hook is deployed to a mined address whose
+ * last fourteen bits are its permission list, so the address in a fixture has to
+ * carry the bits the test is about.
+ */
+describe("what the pool actually charged", () => {
+  const V4_ID = `0x${"d".repeat(64)}`;
+  const V4_REF = { protocolVersion: "v4", chainId: 1, id: V4_ID } as const;
+
+  /** `beforeSwap`, `afterSwap` and `afterSwapReturnsDelta` — a real shape. */
+  const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+  /** `beforeAddLiquidity` alone: it never runs on a swap. */
+  const LIQUIDITY_HOOK = `0x${"1".repeat(36)}0800`;
+
+  const traded = (feesPerMillion: number) => {
+    const base = history() as unknown as { points: Record<string, unknown>[] };
+
+    return {
+      ...(base as unknown as Record<string, unknown>),
+      points: base.points.map((point) => ({
+        ...point,
+        volumeUsd: 1_000_000,
+        feesUsd: feesPerMillion,
+      })),
+    } as unknown as PoolDailyPriceHistory;
+  };
+
+  const v4Pool = (hookAddress: string | null, feePpm = 3000) =>
+    ({
+      ...V4_REF,
+      token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+      token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+      tickSpacing: 60,
+      fee: { kind: "static", feePpm },
+      hookAddress,
+    }) as unknown as V3Pool;
+
+  const v4Parts = (hookAddress: string | null, feesPerMillion: number, feePpm = 3000) => ({
+    pool: ok(v4Pool(hookAddress, feePpm)),
+    snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
+    history: ok({
+      ...(traded(feesPerMillion) as unknown as Record<string, unknown>),
+      pool: V4_REF,
+      source: "uniswap-v4-subgraph",
+    } as unknown as PoolDailyPriceHistory),
+  });
+
+  it("confirms a v3 pool that charged exactly its tier", () => {
+    const markup = render(analyse({ history: ok(traded(3000)) }));
+
+    expect(markup).toContain("What it actually charged");
+    expect(markup).toContain("The declared rate is the rate that was charged");
+  });
+
+  /*
+   * The case the panel is for. The busiest hooked pool on mainnet declares 250
+   * ppm and charged between 25 and 230 over a month; this fixture is the same
+   * shape, a pool charging a fifth of what it says.
+   */
+  it("says so when a hooked v4 pool charged something else", () => {
+    const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));
+
+    expect(markup).toContain("These do not agree");
+    expect(markup).toContain("0.06%");
+  });
+
+  it("names the rate as not reaching a provider when the hook may take a share", () => {
+    const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));
+
+    expect(markup).toContain("None of this is what reaches a liquidity provider");
+  });
+
+  /*
+   * A hook that only runs on deposits cannot touch a swap, so it is owed no
+   * caveat at all — and the fees inside the range stay a figure.
+   */
+  it("says nothing extra for a hook that never runs on a swap", () => {
+    const markup = render(analyse(v4Parts(LIQUIDITY_HOOK, 3000)));
+
+    expect(markup).not.toContain("None of this is what reaches a liquidity provider");
+    expect(markup).not.toContain("Not shown for this pool");
+  });
+
+  it("withholds the fees attributed to the range when the hook may take a share", () => {
+    const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));
+
+    expect(markup).toContain("Not shown for this pool");
+    // React escapes the apostrophe, so the assertion sits either side of it.
+    expect(markup).toContain("nothing in the source separates the hook");
+    expect(markup).toContain("from the liquidity providers");
+  });
+
+  /* The fees the pool charged are a fact, and they stay. Only attribution goes. */
+  it("still shows the fees the pool charged over the month", () => {
+    const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));
+
+    expect(markup).toContain("Fees charged, 30d");
+  });
+
+  it("reports a rate rather than zero when no day could be measured", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain("What this pool charges could not be measured");
+    expect(markup).toContain("traded nothing on any indexed day");
+  });
+
+  describe("in Turkish", () => {
+    it("translates the panel and writes the rate the Turkish way", () => {
+      const markup = render(analyse(v4Parts(SWAP_HOOK, 600)), "tr");
+
+      expect(markup).toContain("Gerçekte ne kadar aldı");
+      expect(markup).toContain("%0,06");
+      expect(markup).toContain("Birbirini tutmuyor");
+    });
   });
 });

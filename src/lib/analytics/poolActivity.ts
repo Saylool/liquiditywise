@@ -3,7 +3,7 @@ import type {
   HistoricalPricePoint,
   PoolActivity,
   PoolDailyPriceHistory,
-  V3TickRange,
+  TickRange,
 } from "../../schemas";
 import { PoolActivitySchema } from "../../schemas";
 import { countOccupancy } from "./rangeOccupancy";
@@ -48,8 +48,18 @@ const sumOverLastDays = (
   return total;
 };
 
+/**
+ * The window everything here describes: the last 30 completed UTC days.
+ *
+ * Exported because the realized fee rate is measured over the same days. The two
+ * are read together — the rate is what produced the fees below it — and two
+ * copies of "thirty" would eventually become a spread of one span sitting beside
+ * a total of another, with nothing on the page to show which.
+ */
+export const ACTIVITY_WINDOW_DAYS = 30;
+
 /** The days the rolling sums cover, named rather than repeated as literals. */
-const ROLLING_WINDOWS = { day: 1, week: 7, month: 30 } as const;
+const ROLLING_WINDOWS = { day: 1, week: 7, month: ACTIVITY_WINDOW_DAYS } as const;
 
 export type PoolActivityResult =
   | { readonly status: "success"; readonly data: PoolActivity }
@@ -57,7 +67,7 @@ export type PoolActivityResult =
 
 export type PoolActivityInput = {
   readonly history: PoolDailyPriceHistory;
-  readonly range: V3TickRange;
+  readonly range: TickRange;
 };
 
 export const calculatePoolActivity = ({

@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import type { V3TickRange } from "../../schemas";
+import type { TickRange } from "../../schemas";
 import { calculateDivergenceLoss } from "./divergenceLoss";
 
 /**
  * A range is described here by the three numbers this calculation actually uses.
- * Everything else on a `V3TickRange` — ticks, truncation flags, the pool it
+ * Everything else on a `TickRange` — ticks, truncation flags, the pool it
  * belongs to — is irrelevant to arithmetic that only knows about prices.
  */
 const rangeOf = (lowerPrice: number, upperPrice: number, currentPrice: number) =>
-  ({ lowerPrice, upperPrice, band: { currentPrice } }) as unknown as V3TickRange;
+  ({ lowerPrice, upperPrice, band: { currentPrice } }) as unknown as TickRange;
 
 const succeeded = (result: ReturnType<typeof calculateDivergenceLoss>) => {
   if (result.status !== "success") throw new Error(`expected success, got ${result.notice}`);
   return result.data;
 };
 
-const at = (range: V3TickRange, price: number): number => {
+const at = (range: TickRange, price: number): number => {
   const point = succeeded(calculateDivergenceLoss(range)).points.find((p) => p.price === price);
   if (point === undefined) throw new Error(`no point at ${price}`);
   return point.lossRatio;

@@ -52,9 +52,9 @@ import {
 } from "../src/lib/ai/interpretationModel";
 import { LOCALES, type Locale } from "../src/lib/i18n/locales";
 import { MAX_SECTION_CHARACTERS } from "../src/schemas";
-import { fetchEthereumV3DailyPriceHistory } from "../src/lib/uniswap/ethereumV3DailyPriceHistory";
+import { fetchEthereumDailyPriceHistory } from "../src/lib/uniswap/ethereumDailyPriceHistory";
 import { fetchEthereumV3Pool } from "../src/lib/uniswap/ethereumV3Pool";
-import { fetchEthereumV3PoolMarketSnapshot } from "../src/lib/uniswap/ethereumV3PoolMarketSnapshot";
+import { fetchEthereumPoolMarketSnapshot } from "../src/lib/uniswap/ethereumPoolMarketSnapshot";
 
 const POOL_ADDRESSES = (process.env.TONE_POOLS ?? "").split(",").filter(Boolean);
 
@@ -76,16 +76,17 @@ const TIME_LIMIT_MS = 600_000;
 
 const analyse = async (poolAddress: string) => {
   const graph = {
-    poolAddress,
     apiKey: process.env.THE_GRAPH_API_KEY,
     subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
     fetchImpl: fetch,
   };
+  /** The two shared readers take a protocol and spell the id to match it. */
+  const v3 = { ...graph, protocolVersion: "v3" as const, poolId: poolAddress };
 
   const [pool, snapshot, history] = await Promise.all([
-    fetchEthereumV3Pool({ ...graph, rpcUrl: process.env.ETHEREUM_RPC_URL }),
-    fetchEthereumV3PoolMarketSnapshot({ ...graph, now: () => new Date() }),
-    fetchEthereumV3DailyPriceHistory({ ...graph, now: () => new Date() }),
+    fetchEthereumV3Pool({ ...graph, poolAddress, rpcUrl: process.env.ETHEREUM_RPC_URL }),
+    fetchEthereumPoolMarketSnapshot({ ...v3, now: () => new Date() }),
+    fetchEthereumDailyPriceHistory({ ...v3, now: () => new Date() }),
   ]);
 
   return analysePoolRange({ pool, snapshot, history, parameters: DEFAULT_PRICE_BAND_PARAMETERS });

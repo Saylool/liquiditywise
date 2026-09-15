@@ -4,11 +4,11 @@ import {
   ANNUALIZATION_DAYS,
   MAX_TICK_DISAGREEMENT,
   PRICE_BAND_METHOD,
-  V3_TICK_RANGE_METHOD,
-  V3TickRangeSchema,
+  TICK_RANGE_METHOD,
+  TickRangeSchema,
 } from "../../schemas";
 import { priceAtTick } from "../uniswap/v3TickMath";
-import { calculateV3TickRange, type V3TickRangeInput } from "./v3TickRange";
+import { calculateTickRange, type TickRangeInput } from "./tickRange";
 
 /*
  * Fixtures are shaped after two pools whose live ticks are publicly checkable, so
@@ -107,23 +107,23 @@ const bandWith = (currentPrice: number, annualizedVolatility: number) => {
   };
 };
 
-const input = (overrides: Record<string, unknown> = {}): V3TickRangeInput =>
+const input = (overrides: Record<string, unknown> = {}): TickRangeInput =>
   ({
     pool: USDC_WETH_POOL,
     band: bandWith(CURRENT_PRICE, 0.2),
     snapshot: snapshotWith(CURRENT_PRICE, CURRENT_TICK),
     ...overrides,
-  }) as unknown as V3TickRangeInput;
+  }) as unknown as TickRangeInput;
 
 const succeed = (overrides: Record<string, unknown> = {}) => {
-  const result = calculateV3TickRange(input(overrides));
+  const result = calculateTickRange(input(overrides));
   if (result.status === "unavailable") {
     throw new Error(`expected data, got ${result.reason}: ${result.notice}`);
   }
   return result;
 };
 
-describe("calculateV3TickRange", () => {
+describe("calculateTickRange", () => {
   it("aligns a USDC/WETH band onto the pool's 60-tick grid", () => {
     const result = succeed();
 
@@ -176,14 +176,14 @@ describe("calculateV3TickRange", () => {
   it("labels the model and carries its inputs verbatim", () => {
     const { data } = succeed();
 
-    expect(data.method).toBe(V3_TICK_RANGE_METHOD);
+    expect(data.method).toBe(TICK_RANGE_METHOD);
     expect(data.pool).toEqual(USDC_WETH_POOL);
     expect(data.band.currentPrice).toBe(CURRENT_PRICE);
     expect(data.band.annualizedVolatility).toBe(0.2);
   });
 
   it("is deterministic", () => {
-    expect(calculateV3TickRange(input())).toEqual(calculateV3TickRange(input()));
+    expect(calculateTickRange(input())).toEqual(calculateTickRange(input()));
   });
 
   it("aligns a DAI/USDC-shaped pool, whose ticks are negative and spacing is 1", () => {
@@ -205,7 +205,7 @@ describe("calculateV3TickRange", () => {
 describe("the source's own tick as a cross-check", () => {
   it("accepts a reported tick that differs by the rounding allowance", () => {
     for (const offset of [-MAX_TICK_DISAGREEMENT, 0, MAX_TICK_DISAGREEMENT]) {
-      const result = calculateV3TickRange(
+      const result = calculateTickRange(
         input({ snapshot: snapshotWith(CURRENT_PRICE, CURRENT_TICK + offset) }),
       );
       expect(result.status).not.toBe("unavailable");
@@ -213,7 +213,7 @@ describe("the source's own tick as a cross-check", () => {
   });
 
   it("refuses a reported tick that disagrees with its own price", () => {
-    const result = calculateV3TickRange(
+    const result = calculateTickRange(
       input({ snapshot: snapshotWith(CURRENT_PRICE, CURRENT_TICK + 6) }),
     );
 
@@ -230,7 +230,7 @@ describe("the source's own tick as a cross-check", () => {
    * converts to it.
    */
   it("catches token decimals that do not belong to this pool", () => {
-    const result = calculateV3TickRange(
+    const result = calculateTickRange(
       input({ pool: poolWith(18, 6, 60) }), // 6/18 swapped; the snapshot is unchanged.
     );
 
@@ -242,7 +242,7 @@ describe("the source's own tick as a cross-check", () => {
   });
 
   it("proceeds with a warning when the source reported no tick", () => {
-    const result = calculateV3TickRange(input({ snapshot: snapshotWith(CURRENT_PRICE, null) }));
+    const result = calculateTickRange(input({ snapshot: snapshotWith(CURRENT_PRICE, null) }));
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
@@ -257,7 +257,7 @@ describe("edges the pool cannot express", () => {
   it("truncates only the upper edge when only it runs past TickMath", () => {
     // A log distance of 80 reaches tick 996297 upward — past MAX_TICK — while
     // -603784 downward is still representable.
-    const result = calculateV3TickRange(input({ band: bandWith(CURRENT_PRICE, 80) }));
+    const result = calculateTickRange(input({ band: bandWith(CURRENT_PRICE, 80) }));
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
@@ -271,7 +271,7 @@ describe("edges the pool cannot express", () => {
   });
 
   it("truncates both edges and warns about each, lower first", () => {
-    const result = calculateV3TickRange(input({ band: bandWith(CURRENT_PRICE, 120) }));
+    const result = calculateTickRange(input({ band: bandWith(CURRENT_PRICE, 120) }));
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
@@ -288,11 +288,11 @@ describe("edges the pool cannot express", () => {
     // A pool trading at tick 887250 sits above the highest usable tick for a
     // spacing of 60, so the upper edge cannot be placed beyond it.
     const currentPrice = Math.exp(887_250 * Math.log1p(1e-4));
-    const result = calculateV3TickRange({
+    const result = calculateTickRange({
       pool: poolWith(18, 18, 60),
       band: bandWith(currentPrice, 0.2),
       snapshot: snapshotWith(currentPrice, 887_250),
-    } as unknown as V3TickRangeInput);
+    } as unknown as TickRangeInput);
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
@@ -308,7 +308,7 @@ describe("states with no range to report", () => {
     // A 255-decimal gap puts par at tick ~5.87 million, far past MAX_TICK. No
     // on-chain pool can trade at a price it cannot encode, so this is a
     // contradiction between the price and the decimals, not a truncated edge.
-    const result = calculateV3TickRange(
+    const result = calculateTickRange(
       input({
         pool: poolWith(0, 255, 60),
         snapshot: snapshotWith(CURRENT_PRICE, 887_272),
@@ -326,7 +326,7 @@ describe("states with no range to report", () => {
     // exactly the price of tick 196260, which is itself a multiple of 60, so both
     // edges align onto the same tick.
     const currentPrice = 0.0003334550946122299;
-    const result = calculateV3TickRange(
+    const result = calculateTickRange(
       input({
         band: bandWith(currentPrice, 0),
         snapshot: snapshotWith(currentPrice, 196_260),
@@ -373,7 +373,7 @@ describe("inputs that do not belong together", () => {
       { snapshot: { ...snapshotWith(CURRENT_PRICE, CURRENT_TICK), sourceBlockTimestamp: null } },
     ],
   ])("refuses %s", (_label, overrides) => {
-    const result = calculateV3TickRange(input(overrides));
+    const result = calculateTickRange(input(overrides));
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
@@ -386,7 +386,7 @@ describe("inputs that do not belong together", () => {
     ["a band with an inconsistent upper bound", { band: { ...bandWith(CURRENT_PRICE, 0.2), upperPrice: 1 } }],
     ["a snapshot with contradictory reciprocal prices", { snapshot: { ...snapshotWith(CURRENT_PRICE, CURRENT_TICK), token1PriceInToken0: 1 } }],
   ])("refuses %s", (_label, overrides) => {
-    const result = calculateV3TickRange(input(overrides));
+    const result = calculateTickRange(input(overrides));
 
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
@@ -394,7 +394,7 @@ describe("inputs that do not belong together", () => {
   });
 
   it("refuses a snapshot with no price at all", () => {
-    const result = calculateV3TickRange(
+    const result = calculateTickRange(
       input({
         snapshot: { ...snapshotWith(CURRENT_PRICE, CURRENT_TICK), token0PriceInToken1: null },
       }),
@@ -404,7 +404,7 @@ describe("inputs that do not belong together", () => {
   });
 });
 
-describe("V3TickRangeSchema", () => {
+describe("TickRangeSchema", () => {
   const valid = succeed().data;
 
   const priceOf = (tick: number) =>
@@ -420,7 +420,7 @@ describe("V3TickRangeSchema", () => {
   };
 
   it("accepts the calculator's own output", () => {
-    expect(V3TickRangeSchema.safeParse(valid).success).toBe(true);
+    expect(TickRangeSchema.safeParse(valid).success).toBe(true);
   });
 
   it.each([
@@ -444,7 +444,7 @@ describe("V3TickRangeSchema", () => {
     ["a truncation flag set on an edge that reached", { lowerBoundTruncated: true }],
     ["another model's label", { method: "nearest-usable-tick" }],
   ])("rejects %s", (_label, overrides) => {
-    expect(V3TickRangeSchema.safeParse({ ...valid, ...overrides }).success).toBe(false);
+    expect(TickRangeSchema.safeParse({ ...valid, ...overrides }).success).toBe(false);
   });
 
   it("rejects a zero-width range that is otherwise entirely consistent", () => {
@@ -455,7 +455,7 @@ describe("V3TickRangeSchema", () => {
     const degenerate = {
       pool: USDC_WETH_POOL,
       band: bandWith(price, 0),
-      method: V3_TICK_RANGE_METHOD,
+      method: TICK_RANGE_METHOD,
       lowerTick: 196_260,
       upperTick: 196_260,
       lowerPrice: price,
@@ -467,7 +467,7 @@ describe("V3TickRangeSchema", () => {
       containsCurrentPrice: false,
     };
 
-    expect(V3TickRangeSchema.safeParse(degenerate).success).toBe(false);
+    expect(TickRangeSchema.safeParse(degenerate).success).toBe(false);
   });
 
   it("rejects an in-range flag set on a current tick sitting on the upper edge", () => {
@@ -485,7 +485,7 @@ describe("V3TickRangeSchema", () => {
     expect(edgeCase.upperTick).toBe(887_220);
     expect(edgeCase.containsCurrentPrice).toBe(false);
     expect(
-      V3TickRangeSchema.safeParse({ ...edgeCase, containsCurrentPrice: true }).success,
+      TickRangeSchema.safeParse({ ...edgeCase, containsCurrentPrice: true }).success,
     ).toBe(false);
   });
 
@@ -495,12 +495,12 @@ describe("V3TickRangeSchema", () => {
       pool: { ...valid.pool, id: `0x${"e".repeat(40)}` },
     };
 
-    expect(V3TickRangeSchema.safeParse(swapped).success).toBe(false);
+    expect(TickRangeSchema.safeParse(swapped).success).toBe(false);
   });
 
   it("rejects an unexpected field", () => {
     expect(
-      V3TickRangeSchema.safeParse({ ...valid, liquidityToDeposit: "1000" }).success,
+      TickRangeSchema.safeParse({ ...valid, liquidityToDeposit: "1000" }).success,
     ).toBe(false);
   });
 });

@@ -162,10 +162,50 @@ const en = {
     undeterminedNote:
       "The source publishes a daily high and low, so a day that spent part of itself inside cannot be split without intraday data this does not fetch.",
     feesWhileInside: "Fees charged on the days entirely inside",
+    /*
+     * Shown instead of that figure when the pool's hook may take a share of a
+     * swap. The fees are still real; what cannot be stated is their relationship
+     * to a position, which is the only reason anyone reads the figure.
+     */
+    feesWithheld: "Not shown for this pool",
+    feesWithheldNote:
+      "This pool's hook is permitted to take a share of a swap, and nothing in the source separates the hook's share from the liquidity providers'. The fees above are what the pool charged, which is a fact; tying a portion of them to this range would be a claim about a position nobody can check.",
     inSample:
       "These are the same days the range was measured from, so this describes how the band was fitted rather than testing how it holds up. The range is also centred on today's price, which nobody could have opened a month ago. Read it as how the pool's recent movement sits against the range being suggested, not as a backtest.",
     notYourEarnings:
       "None of this is what a position would earn. That would be these fees multiplied by your share of the liquidity active in the range while the swaps happened — a share this application does not read, for a deposit it will not size. There is no yield figure here on purpose.",
+  },
+
+  realizedFee: {
+    heading: "What it actually charged",
+    intro:
+      "The rate above is what the pool declares. This is what swappers paid, divided back out of the same days the figures above are measured over: a day's fees over that day's volume. It costs no extra request and needs to know nothing about the hook.",
+    declared: "Declared rate",
+    noDeclared: "None",
+    noDeclaredNote: "This pool's key carries no fee. Its hook sets one per swap.",
+    median: "Median day",
+    spread: "Cheapest to dearest day",
+    spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
+    aggregate: "Over the whole window",
+    aggregateNote:
+      "The window's fees over the window's volume, so a day that traded a hundred times as much has a hundred times the say.",
+    daysMeasured: "Days measured",
+    daysMeasuredNote: (skipped: string) =>
+      `${skipped} more day(s) in the window traded nothing, or were missing a figure, so no rate could be divided out of them.`,
+    /*
+     * The three verdicts. They exist as separate sentences rather than one with
+     * a number in it because they are three different things to know, and the
+     * one that matters most is the one a single wording would blur.
+     */
+    verdictMatches:
+      "These agree on every measured day. The declared rate is the rate that was charged.",
+    verdictDiffers: (differing: string, measured: string) =>
+      `These do not agree. On ${differing} of ${measured} measured days the pool charged something other than its declared rate, so the tier above describes what the pool was created with rather than what a swap costs.`,
+    verdictNoneDeclared:
+      "There is nothing to compare against: this pool declares no rate at all. The figures here are what its hook actually set.",
+    notLpShare:
+      "None of this is what reaches a liquidity provider. This pool's hook is permitted to take a share of a swap, and the source does not separate the hook's share from the providers'. What these figures say is what a swap cost, not who received it.",
+    unavailableHeading: "What this pool charges could not be measured",
   },
 
   outOfSample: {
@@ -299,8 +339,14 @@ const en = {
       "These are read out of the hook's own address. v4 stores a hook's permissions nowhere: a hook is deployed to an address whose last fourteen bits spell out which callbacks the PoolManager will invoke, and the PoolManager checks those bits rather than asking the contract. So this says what the hook may do, never what it does — one permitted to rewrite the fee on every swap may always return the same fee, and that is not knowable from here.",
     alterSwapWarning:
       "This hook is permitted to change what a swap costs or pays. Any figure drawn from price history — a suggested range, a fee tier, a comparison against simply holding — assumes the pool charges what it says and pays what the curve says. Neither assumption is safe here, and none of it is visible in a price series.",
-    notAnalysed:
-      "There is no range analysis for v4 pools yet. What this page shows is identity: what the pool is, and what its hook is allowed to do.",
+    /*
+     * Replaced the line saying there was no analysis, on the day there was one.
+     * What it has to do now is harder: say why a band drawn from price history
+     * is as true here as anywhere, without letting that cover the fees, which
+     * are the part a hook can move.
+     */
+    analysisScope:
+      "Below is the range analysis. The band and the ticks come from prices that already happened, so they hold here exactly as they do for a pool with no hook — a hook cannot retroactively change where price went. What a hook can change is what a swap costs, so the rate this pool charged is measured from what it collected rather than taken from the fee above.",
     unavailableHeading: "This pool could not be read",
     invalidId:
       "That is not a v4 pool id. A v4 pool is named by a 32-byte hash — 0x followed by 64 hexadecimal characters — not by a contract address.",
@@ -391,8 +437,10 @@ const en = {
     },
     noRangeHeading: "No range for this pool",
     stoppedWhile: (step: string) => `This stopped while ${step}.`,
-    poolSummary: (feeTier: string, tickSpacing: string) =>
-      `Uniswap v3 on Ethereum mainnet · ${feeTier} fee tier · tick spacing ${tickSpacing}`,
+    poolSummary: (protocol: string, feeTier: string, tickSpacing: string) =>
+      `Uniswap ${protocol} on Ethereum mainnet · ${feeTier} fee tier · tick spacing ${tickSpacing}`,
+    /** Stands where a fee tier would, for a v4 pool whose hook sets one per swap. */
+    noDeclaredFee: "no fixed",
     caveatsHeading: (count: number) =>
       count === 1 ? "One caveat applies to these figures." : `${count} caveats apply to these figures.`,
     caveatsAriaLabel: "Caveats",
@@ -564,6 +612,8 @@ const en = {
         "The comparison against holding produced a result this application cannot verify.",
       "activity-unverifiable":
         "The pool's recent activity produced a result this application cannot verify.",
+      "fee-rate-unmeasurable":
+        "This pool traded nothing on any indexed day of the window, so the rate it charges cannot be divided out of what it collected.",
       "out-of-sample-insufficient-history":
         "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
       "out-of-sample-unverifiable":
@@ -753,10 +803,40 @@ const tr: Dictionary = {
     undeterminedNote:
       "Kaynak günlük en yüksek ve en düşüğü yayımlıyor; bu yüzden bir kısmını içeride geçiren bir gün, çekmediğimiz gün içi veri olmadan bölünemez.",
     feesWhileInside: "Tamamen içeride geçen günlerde alınan komisyon",
+    feesWithheld: "Bu havuz için gösterilmiyor",
+    feesWithheldNote:
+      "Bu havuzun hook'u takastan pay almaya izinli ve kaynak, hook'un payını likidite sağlayıcılarınkinden ayırmıyor. Yukarıdaki komisyonlar havuzun aldığı tutar — bu bir olgu; ama onun bir kısmını bu aralığa bağlamak, kimsenin doğrulayamayacağı bir pozisyon iddiası olurdu.",
     inSample:
       "Bunlar, aralığın kendisinden ölçüldüğü günlerin ta kendisi; yani bu, bandın nasıl oturtulduğunu anlatır, ne kadar tuttuğunu sınamaz. Aralık ayrıca bugünkü fiyata göre ortalanmış — bir ay önce kimse onu açamazdı. Bir geriye dönük test olarak değil, havuzun son dönem hareketinin önerilen aralığa göre nerede durduğu olarak oku.",
     notYourEarnings:
       "Bunların hiçbiri bir pozisyonun kazanacağı miktar değil. O, bu komisyonların, takaslar olurken aralıkta aktif olan likiditedeki payınla çarpımı olurdu — bu uygulamanın okumadığı bir pay, ve büyüklüğünü belirlemeyeceği bir yatırım için. Burada bilerek bir getiri rakamı yok.",
+  },
+
+  realizedFee: {
+    heading: "Gerçekte ne kadar aldı",
+    intro:
+      "Yukarıdaki oran, havuzun beyan ettiği oran. Buradaki ise takas yapanların ödediği oran: yukarıdaki sayıların ölçüldüğü aynı günlerden geri bölünerek çıkarıldı — bir günün komisyonu, o günün hacmine. Fazladan hiçbir istek götürmüyor ve hook hakkında hiçbir şey bilmesi gerekmiyor.",
+    declared: "Beyan edilen oran",
+    noDeclared: "Yok",
+    noDeclaredNote: "Bu havuzun anahtarında komisyon yok. Oranı hook'u her takasta belirliyor.",
+    median: "Ortanca gün",
+    spread: "En ucuz ve en pahalı gün",
+    spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
+    aggregate: "Pencerenin tamamında",
+    aggregateNote:
+      "Pencerenin komisyonu, pencerenin hacmine bölündü; yani yüz kat fazla işlem gören bir günün yüz kat sözü var.",
+    daysMeasured: "Ölçülen gün",
+    daysMeasuredNote: (skipped: string) =>
+      `Pencerede ${skipped} gün daha var ama hiç işlem görmemiş ya da bir sayısı eksik; bu yüzden onlardan bir oran bölünüp çıkarılamadı.`,
+    verdictMatches:
+      "Ölçülen her günde birbirini tutuyor. Beyan edilen oran, alınan oranın kendisi.",
+    verdictDiffers: (differing: string, measured: string) =>
+      `Birbirini tutmuyor. Ölçülen ${measured} günün ${differing} tanesinde havuz, beyan ettiğinden başka bir oran aldı; yani yukarıdaki kademe, havuzun neyle kurulduğunu anlatıyor, bir takasın neye mal olduğunu değil.`,
+    verdictNoneDeclared:
+      "Kıyaslanacak bir şey yok: bu havuz hiçbir oran beyan etmiyor. Buradaki sayılar, hook'unun fiilen belirlediği oranlar.",
+    notLpShare:
+      "Bunların hiçbiri likidite sağlayıcısına ulaşan tutar değil. Bu havuzun hook'u takastan pay almaya izinli ve kaynak, hook'un payını sağlayıcılarınkinden ayırmıyor. Bu sayıların söylediği şey, bir takasın neye mal olduğu; kime gittiği değil.",
+    unavailableHeading: "Bu havuzun ne kadar aldığı ölçülemedi",
   },
 
   outOfSample: {
@@ -873,8 +953,8 @@ const tr: Dictionary = {
       "Bunlar hook'un kendi adresinden okundu. v4 bir hook'un izinlerini hiçbir yerde saklamaz: hook, son on dört biti PoolManager'ın hangi geri çağrıları tetikleyeceğini yazan bir adrese kurulur, ve PoolManager sözleşmeye sormak yerine o bitlere bakar. Yani burada yazan, hook'un ne *yapabileceği*; ne yaptığı değil — her takasta komisyonu yeniden yazmaya izinli bir hook hep aynı komisyonu döndürüyor olabilir, ve bu buradan bilinemez.",
     alterSwapWarning:
       "Bu hook, bir takasın ne tutacağını ya da ne ödeyeceğini değiştirmeye izinli. Fiyat geçmişinden türeyen her rakam — önerilen aralık, komisyon kademesi, sadece tutmaya kıyaslama — havuzun söylediği komisyonu aldığını ve eğrinin söylediğini ödediğini varsayar. Burada iki varsayım da güvenli değil, ve bunların hiçbiri bir fiyat serisinde görünmez.",
-    notAnalysed:
-      "v4 havuzları için henüz aralık analizi yok. Bu sayfanın gösterdiği şey kimlik: havuzun ne olduğu ve hook'unun neye izinli olduğu.",
+    analysisScope:
+      "Aşağıda aralık analizi var. Bant ve tick'ler, zaten gerçekleşmiş fiyatlardan çıkıyor; bu yüzden burada, hook'u olmayan bir havuzdaki kadar geçerliler — bir hook, fiyatın geçmişte nereye gittiğini geriye dönük değiştiremez. Hook'un değiştirebildiği şey, bir takasın neye mal olduğu; bu yüzden bu havuzun aldığı oran, yukarıdaki komisyondan alınmıyor, topladığı tutardan ölçülüyor.",
     unavailableHeading: "Bu havuz okunamadı",
     invalidId:
       "Bu bir v4 havuz kimliği değil. Bir v4 havuzu 32 baytlık bir özetle adlandırılır — 0x ve ardından 64 onaltılık karakter — bir sözleşme adresiyle değil.",
@@ -959,8 +1039,9 @@ const tr: Dictionary = {
      * one name is a page that cannot be read carefully — a model writing about
      * it produced "the pool's fine tick aralığı, a few tick aralığı wide".
      */
-    poolSummary: (feeTier: string, tickSpacing: string) =>
-      `Ethereum mainnet üzerinde Uniswap v3 · ${feeTier} komisyon kademesi · tick adımı ${tickSpacing}`,
+    poolSummary: (protocol: string, feeTier: string, tickSpacing: string) =>
+      `Ethereum mainnet üzerinde Uniswap ${protocol} · ${feeTier} komisyon kademesi · tick adımı ${tickSpacing}`,
+    noDeclaredFee: "sabit olmayan",
     caveatsHeading: (count: number) =>
       count === 1
         ? "Bu sayılar için bir çekince geçerli."
@@ -1119,6 +1200,8 @@ const tr: Dictionary = {
         "Tutmaya kıyaslama hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "activity-unverifiable":
         "Havuzun son dönem hareketliliği, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "fee-rate-unmeasurable":
+        "Bu havuz, pencerenin indekslenmiş hiçbir gününde işlem görmemiş; bu yüzden aldığı komisyon oranı, topladığı tutardan bölünerek çıkarılamıyor.",
       "out-of-sample-insufficient-history":
         "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
       "out-of-sample-unverifiable":
