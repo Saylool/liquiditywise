@@ -21,10 +21,16 @@ const token = (hex: string, symbol: string, decimals: number) => ({
   decimals,
 });
 
-/** token0 sorts before token1, as Uniswap orders them and the schema requires. */
+/**
+ * token0 sorts before token1, as Uniswap orders them and the schema requires.
+ *
+ * `heldToken1` is whole units of the eighteen-decimal side, priced at one ether
+ * each, so it *is* the pool's holding in ether — which is what the order is
+ * checked against. A `null` stands for a pool whose balances could not be read.
+ */
 const match = (
   poolHex: string,
-  tvlUsd: number,
+  heldToken1: number | null,
   exactSymbolMatches = 2,
   symbols: readonly [string, string] = ["USDC", "WETH"],
 ): PoolSearchMatch => ({
@@ -36,7 +42,11 @@ const match = (
     token1: token("b", symbols[1], 18),
     feePpm: 3000,
   },
-  tvlUsd,
+  reserves:
+    heldToken1 === null
+      ? null
+      : { token0: "0", token1: `${BigInt(heldToken1) * 10n ** 18n}` },
+  ethPrice: heldToken1 === null ? null : { token0: 0.0004, token1: 1 },
   exactSymbolMatches,
 });
 

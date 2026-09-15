@@ -1,5 +1,6 @@
 import {
   countExactSymbolMatches,
+  heldInEth,
   type DataFailureNotice,
   type DataResult,
   POOL_SEARCH_RESULT_LIMIT,
@@ -7,7 +8,9 @@ import {
   type PoolSearchResults,
   PoolSearchResultsSchema,
   type PoolSearchTerms,
+  type V3PoolMetadata,
 } from "../../schemas";
+import type { PoolReserves } from "./ethereumV3PoolReserves";
 import { normalizePoolCard } from "./v3PoolCardAdapter";
 import type { RawPoolCard } from "./v3PoolCardRawResponse";
 import { V3PoolSearchResponseSchema } from "./v3PoolSearchRawResponse";
@@ -36,12 +39,18 @@ export type PoolSearchDiagnostic = (detail: string) => void;
  * taking the page down with it, and the reader never learns that a token tried
  * to write a line of its own.
  */
-const normalizeMatch = (raw: RawPoolCard, terms: PoolSearchTerms): PoolSearchMatch | null => {
+const normalizeMatch = (
+  raw: RawPoolCard,
+  terms: PoolSearchTerms,
+  reserves: ReadonlyMap<string, PoolReserves>,
+): PoolSearchMatch | null => {
   const card = normalizePoolCard(raw);
   if (card === null) return null;
 
   return {
-    ...card,
+    pool: card.pool,
+    ethPrice: card.ethPrice,
+    reserves: reserves.get(card.pool.id) ?? null,
     exactSymbolMatches: countExactSymbolMatches(terms, [
       card.pool.token0.symbol,
       card.pool.token1.symbol,
@@ -50,22 +59,67 @@ const normalizeMatch = (raw: RawPoolCard, terms: PoolSearchTerms): PoolSearchMat
 };
 
 /**
+ * The verified pools in a search payload, for asking the chain what they hold.
+ *
+ * The same card normaliser runs here and again below, so a pool the reserves
+ * were read for is exactly a pool that can appear in the results.
+ */
+export const readSearchPoolsForReserves = (payload: unknown): readonly V3PoolMetadata[] => {
+  const parsed = V3PoolSearchResponseSchema.safeParse(payload);
+  if (!parsed.success || parsed.data.data == null) return [];
+
+  const pools = new Map<string, V3PoolMetadata>();
+  for (const raw of [...parsed.data.data.forward, ...parsed.data.data.reverse]) {
+    const card = normalizePoolCard(raw);
+    if (card !== null) pools.set(card.pool.id, card.pool);
+  }
+
+  return [...pools.values()];
+};
+
+/**
  * Puts the merged matches in the order the results are published in.
  *
- * Exact symbol matches first, then the liquidity the source reports, then the
+ * Exact symbol matches first, then what each pool actually holds, then the
  * pool's own address. The last of those decides nothing a reader cares about and
  * is there so that two pools the first two cannot separate still come back in
  * the same order every time — a list that reshuffles between two identical
  * searches is a list nobody can point at.
+ *
+ * The middle key used to be the liquidity the source reports, and that was
+ * wrong by up to three orders of magnitude: a WETH/LOOKS pool was published at
+ * nine million dollars while its contracts held nine thousand. It is now the
+ * pool's own balances, priced in ether, which puts two different pairs on one
+ * scale without inventing a dollar figure. A pool whose balances could not be
+ * read has no place in a size order and goes last.
  */
-const byRelevanceThenLiquidity = (left: PoolSearchMatch, right: PoolSearchMatch): number =>
-  right.exactSymbolMatches - left.exactSymbolMatches ||
-  right.tvlUsd - left.tvlUsd ||
-  left.pool.id.localeCompare(right.pool.id);
+const byRelevanceThenHoldings = (left: PoolSearchMatch, right: PoolSearchMatch): number => {
+  if (left.exactSymbolMatches !== right.exactSymbolMatches) {
+    return right.exactSymbolMatches - left.exactSymbolMatches;
+  }
+
+  const leftHeld = heldInEth(left);
+  const rightHeld = heldInEth(right);
+  if (leftHeld !== rightHeld) {
+    if (leftHeld === null) return 1;
+    if (rightHeld === null) return -1;
+    return rightHeld - leftHeld;
+  }
+
+  return left.pool.id.localeCompare(right.pool.id);
+};
 
 export type NormalizeV3PoolSearchInput = {
   /** The decoded JSON body, still untrusted. */
   readonly payload: unknown;
+  /**
+   * What each pool actually holds, read from the chain, keyed by pool address.
+   *
+   * Passed in rather than patched on afterwards so both sources go through the
+   * domain schema together — and this one decides the order, which is the claim
+   * the schema exists to check.
+   */
+  readonly reserves: ReadonlyMap<string, PoolReserves>;
   /** The terms this search was run with, already validated. */
   readonly terms: PoolSearchTerms;
   /** When the request was made, from the reader's injected clock. */
@@ -87,6 +141,7 @@ export type NormalizeV3PoolSearchInput = {
  */
 export const normalizeV3PoolSearch = ({
   payload,
+  reserves,
   terms,
   fetchedAt,
   onDiagnostic,
@@ -106,7 +161,7 @@ export const normalizeV3PoolSearch = ({
   let dropped = 0;
 
   for (const raw of [...data.forward, ...data.reverse]) {
-    const match = normalizeMatch(raw, terms);
+    const match = normalizeMatch(raw, terms, reserves);
     if (match === null) {
       dropped += 1;
       continue;
@@ -125,7 +180,7 @@ export const normalizeV3PoolSearch = ({
     fetchedAt,
     source: "uniswap-v3-subgraph",
     matches: [...byPoolId.values()]
-      .sort(byRelevanceThenLiquidity)
+      .sort(byRelevanceThenHoldings)
       .slice(0, POOL_SEARCH_RESULT_LIMIT),
   };
 

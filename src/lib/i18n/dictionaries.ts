@@ -310,7 +310,9 @@ const en = {
      * left to be inferred from the order itself.
      */
     ordering:
-      "Pools named exactly what you searched for come first. After that the order follows the value the data source reports as locked in each pool — the source's own dollar figure, not one this application computed or checked.",
+      "Pools named exactly what you searched for come first. After that the order follows what each pool actually holds, read from the token contracts themselves and put on one scale using the prices the data source derives. It used to follow the value the source reports as locked in each pool, and that figure was wrong enough to reorder this list: one pool was published here at nine million dollars of reported liquidity while its contracts held nine thousand.",
+    windowing:
+      "This list is drawn from the pools the data source reports as the most traded for your terms, and a pool quiet enough to fall outside that set never reaches the ordering above. That is the honest limit of ranking within what a source chose to return: a pool holding a great deal but trading rarely can be missing from this page.",
     /*
      * The sentence that does the real work on this page. Search is what lets
      * someone reach a pool they did not go looking for.
@@ -319,7 +321,8 @@ const en = {
       "A symbol comes from the token's own contract, and deploying a token that calls itself USDC costs nothing. The contract addresses under each pair are what tell two tokens apart.",
 
     feeTier: "Fee tier",
-    reportedLiquidity: "Reported liquidity",
+    holds: "Holds",
+    reservesUnread: "What this pool holds could not be read from the chain.",
     moreNotShown: (count: string) =>
       `${count} more are not shown. The ones above are the most traded of them, in the order the data source reports — which is a claim about how busy a pool is and about nothing else.`,
     analyse: "Analyse this pool",
@@ -837,12 +840,15 @@ const tr: Dictionary = {
     emptyHint: "Yazımı kontrol et, ya da havuzun adresi elindeyse onu yapıştır.",
 
     ordering:
-      "Tam olarak arattığın adı taşıyan havuzlar önce gelir. Sonrası, veri kaynağının her havuzda kilitli olduğunu bildirdiği değere göre sıralanır — kaynağın kendi dolar rakamı, bu uygulamanın hesapladığı ya da doğruladığı bir şey değil.",
+      "Tam olarak arattığın adı taşıyan havuzlar önce gelir. Sonrası, her havuzun gerçekte ne tuttuğuna göre sıralanır — token sözleşmelerinin kendisinden okunur ve veri kaynağının türettiği fiyatlarla tek bir ölçeğe konur. Eskiden kaynağın bildirdiği kilitli değere göre sıralanıyordu; o rakam bu listeyi yeniden dizecek kadar yanlıştı: bir havuz burada dokuz milyon dolarlık bildirilen likiditeyle yayımlanırken sözleşmeleri dokuz bin dolar tutuyordu.",
+    windowing:
+      "Bu liste, veri kaynağının senin terimlerin için en çok işlem gördüğünü bildirdiği havuzlardan çıkarılır; o kümenin dışında kalacak kadar sessiz bir havuz yukarıdaki sıralamaya hiç ulaşmaz. Bir kaynağın döndürmeyi seçtiği şeyin içinde sıralama yapmanın dürüst sınırı budur: çok şey tutan ama nadiren işlem gören bir havuz bu sayfada olmayabilir.",
     symbolWarning:
       "Sembol, tokenın kendi sözleşmesinden gelir; kendine USDC diyen bir token çıkarmanın hiçbir maliyeti yoktur. İki tokenı birbirinden ayıran şey, her paritenin altındaki sözleşme adresleridir.",
 
     feeTier: "Komisyon kademesi",
-    reportedLiquidity: "Bildirilen likidite",
+    holds: "Tuttuğu",
+    reservesUnread: "Bu havuzun ne tuttuğu zincirden okunamadı.",
     moreNotShown: (count: string) =>
       `${count} tanesi daha gösterilmiyor. Yukarıdakiler bunların en çok işlem görenleri, veri kaynağının bildirdiği sırayla — bu, bir havuzun ne kadar yoğun olduğuna dair bir iddiadır ve başka hiçbir şeye dair değildir.`,
     analyse: "Bu havuzu analiz et",

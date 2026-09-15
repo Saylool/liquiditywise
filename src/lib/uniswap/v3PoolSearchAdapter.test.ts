@@ -7,11 +7,18 @@ const FETCHED_AT = "2026-09-14T11:34:00.000Z";
 
 const address = (hex: string) => `0x${hex.repeat(40)}`;
 
-const rawToken = (hex: string, symbol: string, decimals = "18", name = symbol) => ({
+const rawToken = (
+  hex: string,
+  symbol: string,
+  decimals = "18",
+  name = symbol,
+  derivedETH = "1",
+) => ({
   id: address(hex),
   symbol,
   name,
   decimals,
+  derivedETH,
 });
 
 /**
@@ -43,11 +50,34 @@ const payload = (forward: readonly unknown[], reverse: readonly unknown[] = []) 
   data: { forward, reverse, _meta: { hasIndexingErrors: false } },
 });
 
+/**
+ * Reserves for every pool in a payload, so ordering by holdings has something to
+ * order by. `held` gives one pool a different balance from the rest.
+ */
+const reservesFor = (
+  ids: readonly string[],
+  held: Record<string, string> = {},
+): ReadonlyMap<string, { token0: string; token1: string }> =>
+  new Map(
+    ids.map((id) => [
+      address(id),
+      { token0: held[id] ?? "1000000", token1: held[id] ?? "1000000" },
+    ]),
+  );
+
 const normalize = (
   body: unknown,
   terms: PoolSearchTerms = ["usdc", "weth"],
   onDiagnostic?: (detail: string) => void,
-) => normalizeV3PoolSearch({ payload: body, terms, fetchedAt: FETCHED_AT, onDiagnostic });
+  reserves: ReadonlyMap<string, { token0: string; token1: string }> = new Map(),
+) =>
+  normalizeV3PoolSearch({
+    payload: body,
+    reserves,
+    terms,
+    fetchedAt: FETCHED_AT,
+    onDiagnostic,
+  });
 
 const succeeded = (result: ReturnType<typeof normalize>) => {
   if (result.status !== "success") throw new Error(`expected success, got ${result.status}`);
@@ -66,7 +96,9 @@ describe("normalizeV3PoolSearch", () => {
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]?.pool.token0.symbol).toBe("USDC");
     expect(results.matches[0]?.pool.feePpm).toBe(3000);
-    expect(results.matches[0]?.tvlUsd).toBeCloseTo(415_764_684.5);
+    expect(results.matches[0]?.ethPrice).toEqual({ token0: 1, token1: 1 });
+    // No reserves were supplied, so the pool is unread rather than empty.
+    expect(results.matches[0]?.reserves).toBeNull();
     expect(results.matches[0]?.exactSymbolMatches).toBe(2);
   });
 
@@ -88,10 +120,13 @@ describe("normalizeV3PoolSearch", () => {
           [rawPool({ id: "a", symbols: ["USDC", "WETH"], tvl: "10" })],
           [rawPool({ id: "b", symbols: ["USDC", "WETH"], tvl: "900" })],
         ),
+        ["usdc", "weth"],
+        undefined,
+        reservesFor(["a", "b"], { a: "10", b: "900" }),
       ),
     );
 
-    expect(results.matches.map((match) => match.tvlUsd)).toEqual([900, 10]);
+    expect(results.matches.map((match) => match.pool.id)).toEqual([address("b"), address("a")]);
   });
 
   it("lists a pool that matched both ways round only once", () => {
@@ -125,7 +160,7 @@ describe("normalizeV3PoolSearch", () => {
     expect(results.matches.map((match) => match.exactSymbolMatches)).toEqual([1, 0]);
   });
 
-  it("orders by reported liquidity among pools of equal relevance", () => {
+  it("orders by what each pool holds among pools of equal relevance", () => {
     const results = succeeded(
       normalize(
         payload([
@@ -133,10 +168,17 @@ describe("normalizeV3PoolSearch", () => {
           rawPool({ id: "b", symbols: ["USDC", "WETH"], tvl: "500" }),
           rawPool({ id: "c", symbols: ["USDC", "WETH"], tvl: "30" }),
         ]),
+        ["usdc", "weth"],
+        undefined,
+        reservesFor(["a", "b", "c"], { a: "1", b: "500", c: "30" }),
       ),
     );
 
-    expect(results.matches.map((match) => match.tvlUsd)).toEqual([500, 30, 1]);
+    expect(results.matches.map((match) => match.pool.id)).toEqual([
+      address("b"),
+      address("c"),
+      address("a"),
+    ]);
   });
 
   it("orders two pools nothing else separates the same way every time", () => {
@@ -154,15 +196,22 @@ describe("normalizeV3PoolSearch", () => {
     expect(forwards.matches[0]?.pool.id).toBe(address("a"));
   });
 
-  it("publishes no more pools than a search asks for, keeping the best", () => {
-    const many = Array.from({ length: POOL_SEARCH_RESULT_LIMIT + 3 }, (_unused, index) =>
-      rawPool({ id: (index + 1).toString(16), symbols: ["USDC", "WETH"], tvl: String(index + 1) }),
+  it("publishes no more pools than a search asks for, keeping the largest", () => {
+    const ids = Array.from({ length: POOL_SEARCH_RESULT_LIMIT + 3 }, (_unused, index) =>
+      (index + 1).toString(16),
+    );
+    const many = ids.map((id) => rawPool({ id, symbols: ["USDC", "WETH"], tvl: "0" }));
+    /* The last pool holds the most, so truncation has something to cut wrongly. */
+    const held = Object.fromEntries(ids.map((id, index) => [id, String(index + 1)]));
+
+    const results = succeeded(
+      normalize(payload(many), ["usdc", "weth"], undefined, reservesFor(ids, held)),
     );
 
-    const results = succeeded(normalize(payload(many)));
-
     expect(results.matches).toHaveLength(POOL_SEARCH_RESULT_LIMIT);
-    expect(results.matches[0]?.tvlUsd).toBe(POOL_SEARCH_RESULT_LIMIT + 3);
+    expect(results.matches[0]?.pool.id).toBe(
+      address((POOL_SEARCH_RESULT_LIMIT + 3).toString(16)),
+    );
   });
 
   /*

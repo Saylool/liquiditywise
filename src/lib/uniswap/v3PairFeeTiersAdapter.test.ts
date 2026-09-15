@@ -19,6 +19,7 @@ const rawToken = (id: string, symbol: string, decimals: string, name = symbol) =
   symbol,
   name,
   decimals,
+  derivedETH: "1",
 });
 
 /**

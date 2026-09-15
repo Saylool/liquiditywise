@@ -11,6 +11,15 @@ export type PoolCard = {
   readonly pool: V3PoolMetadata;
   /** What the source reports is locked in it. The provider's figure, unverified. */
   readonly tvlUsd: number;
+  /**
+   * What one of each token is worth in ether, as the source derives it.
+   *
+   * Carried so a list can be ordered by what its pools actually hold: the
+   * balances come from the token contracts, and these are what makes two
+   * different pairs comparable. `null` when the source did not give a usable
+   * price, which is not the same as a price of zero.
+   */
+  readonly ethPrice: { readonly token0: number; readonly token1: number } | null;
 };
 
 /**
@@ -55,5 +64,15 @@ export const normalizePoolCard = (raw: RawPoolCard): PoolCard | null => {
   });
   if (!pool.success) return null;
 
-  return { pool: pool.data, tvlUsd: tvlUsd.value };
+  /*
+   * A missing or unusable price is not a zero price. It means this pool cannot
+   * be placed beside another by what it holds, and the list says so rather than
+   * sorting it as empty.
+   */
+  const price0 = convertNonNegativeDecimal(raw.token0.derivedETH, { allowZero: true });
+  const price1 = convertNonNegativeDecimal(raw.token1.derivedETH, { allowZero: true });
+  const ethPrice =
+    price0.ok && price1.ok ? { token0: price0.value, token1: price1.value } : null;
+
+  return { pool: pool.data, tvlUsd: tvlUsd.value, ethPrice };
 };

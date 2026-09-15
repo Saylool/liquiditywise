@@ -5,7 +5,12 @@ import {
   PoolSearchTermsSchema,
 } from "../../schemas";
 import { POOL_CARD_FRAGMENT } from "./v3PoolCardRawResponse";
-import { normalizeV3PoolSearch, type PoolSearchDiagnostic } from "./v3PoolSearchAdapter";
+import { fetchEthereumV3PoolReserves } from "./ethereumV3PoolReserves";
+import {
+  normalizeV3PoolSearch,
+  type PoolSearchDiagnostic,
+  readSearchPoolsForReserves,
+} from "./v3PoolSearchAdapter";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
@@ -24,7 +29,7 @@ import {
 export const V3_POOL_SEARCH_PAIR_QUERY = `query PoolSearchPair($first: String!, $second: String!, $limit: Int!) {
   forward: pools(
     where: { token0_: { symbol_contains_nocase: $first }, token1_: { symbol_contains_nocase: $second } }
-    orderBy: totalValueLockedUSD
+    orderBy: volumeUSD
     orderDirection: desc
     first: $limit
   ) {
@@ -32,7 +37,7 @@ export const V3_POOL_SEARCH_PAIR_QUERY = `query PoolSearchPair($first: String!, 
   }
   reverse: pools(
     where: { token0_: { symbol_contains_nocase: $second }, token1_: { symbol_contains_nocase: $first } }
-    orderBy: totalValueLockedUSD
+    orderBy: volumeUSD
     orderDirection: desc
     first: $limit
   ) {
@@ -49,7 +54,7 @@ ${POOL_CARD_FRAGMENT}`;
 export const V3_POOL_SEARCH_SINGLE_QUERY = `query PoolSearchSingle($term: String!, $limit: Int!) {
   forward: pools(
     where: { token0_: { symbol_contains_nocase: $term } }
-    orderBy: totalValueLockedUSD
+    orderBy: volumeUSD
     orderDirection: desc
     first: $limit
   ) {
@@ -57,7 +62,7 @@ export const V3_POOL_SEARCH_SINGLE_QUERY = `query PoolSearchSingle($term: String
   }
   reverse: pools(
     where: { token1_: { symbol_contains_nocase: $term } }
-    orderBy: totalValueLockedUSD
+    orderBy: volumeUSD
     orderDirection: desc
     first: $limit
   ) {
@@ -73,14 +78,20 @@ ${POOL_CARD_FRAGMENT}`;
 /**
  * How many pools to ask each selection for.
  *
- * More than are published, because the source orders by its own dollar figure
- * and this application does not. A pool named exactly what someone searched for
- * can sit below several whose tokens merely contain the word, so the window has
- * to be wider than the list or the relevant pool never arrives to be promoted.
+ * More than are published, because this application does not publish the order
+ * it receives. A pool named exactly what someone searched for can sit below
+ * several whose tokens merely contain the word, so the window has to be wider
+ * than the list or the relevant pool never arrives to be promoted.
  *
- * It is still a window. A pool with little liquidity and a matching name can
- * fall outside it, which is the honest limit of ranking within what a source
- * chose to return.
+ * The window is taken by traded volume rather than by reported liquidity, and
+ * that is a correction. Reported liquidity is the figure this application stopped
+ * publishing: it overstates what pools hold by up to three orders of magnitude,
+ * and selecting the window with it meant a pool that genuinely held a lot could
+ * be left outside on the strength of a number that was wrong about a different
+ * pool. Volume is money that moved, which is harder to inflate.
+ *
+ * It is still a window. A quiet pool with a matching name can fall outside it,
+ * which is the honest limit of ranking within what a source chose to return.
  */
 export const POOL_SEARCH_FETCH_LIMIT = POOL_SEARCH_RESULT_LIMIT * 2;
 
@@ -93,6 +104,8 @@ export type EthereumV3PoolSearchRequest = {
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
+  /** Raw environment value; without it the results arrive with no reserves. */
+  readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
   /** Injected, because a result carries when it was read. */
   readonly now: () => Date;
@@ -143,8 +156,22 @@ export const fetchEthereumV3PoolSearch = async (
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
+  /*
+   * Which pools exist comes from the indexer; what they hold comes from the
+   * chain. The second read decides the order, and the indexer's own figure could
+   * not: it published a WETH/LOOKS pool at nine million dollars while the
+   * contracts held nine thousand, above pools that genuinely held more.
+   */
+  const reserves = await fetchEthereumV3PoolReserves({
+    pools: readSearchPoolsForReserves(transport.payload),
+    rpcUrl: request.rpcUrl,
+    fetchImpl: request.fetchImpl,
+    timeoutMs: request.timeoutMs,
+  });
+
   return normalizeV3PoolSearch({
     payload: transport.payload,
+    reserves,
     terms: terms.data,
     fetchedAt: request.now().toISOString(),
     onDiagnostic: request.onDiagnostic,

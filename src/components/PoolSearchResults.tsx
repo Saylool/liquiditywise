@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { formatFeePpm, formatUsd } from "../lib/format/displayFormats";
+import { formatFeePpm, formatTokenAmount } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { DataResult, PoolSearchMatch, PoolSearchResults as SearchResults } from "../schemas";
@@ -24,7 +24,7 @@ import type { DataResult, PoolSearchMatch, PoolSearchResults as SearchResults } 
  */
 
 const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; locale: Locale }) => {
-  const { pool, tvlUsd } = match;
+  const { pool, reserves } = match;
 
   return (
     <li>
@@ -41,9 +41,26 @@ const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; 
           </span>
         </div>
 
+        {/*
+         * What the pool contracts say they hold, not what the indexer claims.
+         * The claim was wrong by up to a thousand times and it decided this
+         * list's order; the amounts here decided it instead.
+         */}
         <p className="text-xs text-muted">
-          {t.search.reportedLiquidity}{" "}
-          <span className="font-mono">{formatUsd(tvlUsd, locale)}</span>
+          {reserves === null ? (
+            t.search.reservesUnread
+          ) : (
+            <>
+              {t.search.holds}{" "}
+              <span className="font-mono">
+                {formatTokenAmount(reserves.token0, pool.token0.decimals, locale)}{" "}
+                {pool.token0.symbol}
+                {" + "}
+                {formatTokenAmount(reserves.token1, pool.token1.decimals, locale)}{" "}
+                {pool.token1.symbol}
+              </span>
+            </>
+          )}
         </p>
 
         {/* What actually tells two tokens with the same symbol apart. */}
@@ -110,9 +127,22 @@ export function PoolSearchResults({
           <div className="flex flex-col gap-3 border-t border-border pt-3 text-xs leading-relaxed text-muted">
             <p>{t.search.symbolWarning}</p>
             <p>{t.search.ordering}</p>
+            <p>{t.search.windowing}</p>
           </div>
         </>
       )}
+    </section>
+  );
+}
+
+/** The panel's shape while the search and its balance reads are still running. */
+export function PoolSearchPending({ t }: { t: Dictionary }) {
+  return (
+    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+        {t.search.heading}
+      </h2>
+      <div className="h-24 animate-pulse rounded-md border border-border" aria-hidden="true" />
     </section>
   );
 }

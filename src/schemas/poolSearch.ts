@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { DataSourceSchema } from "./dataSource";
-import { IsoTimestampSchema, UsdAmountSchema } from "./primitives";
+import { IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
 import { PoolSearchTermsSchema } from "./searchTerms";
 import { V3PoolMetadataSchema } from "./uniswap";
 
@@ -45,14 +45,38 @@ export const PoolSearchMatchSchema = z.strictObject({
    */
   pool: V3PoolMetadataSchema,
   /**
-   * What the source reports is locked in the pool, in US dollars.
+   * What the pool contract actually holds, in each token's own base units.
    *
-   * The provider's figure, not one this application computed or cross-checked,
-   * and the interface says so where it is shown. It is here because it is half
-   * of what the list is ordered by, and a ranking whose criterion is hidden is
-   * worse than no ranking at all.
+   * Read from the token contracts rather than taken from the indexer, because
+   * the indexer's figure is wrong and wrong in a way that reorders this list. A
+   * WETH/LOOKS pool was published here at nine million dollars of reported
+   * liquidity while its contracts held three and a half WETH — nine thousand
+   * dollars, a thousandth of the claim — and it sat above pools that genuinely
+   * held more.
+   *
+   * `null` when the chain could not be read, which is not an empty pool.
    */
-  tvlUsd: UsdAmountSchema,
+  reserves: z
+    .strictObject({
+      token0: UnsignedIntegerStringSchema,
+      token1: UnsignedIntegerStringSchema,
+    })
+    .nullable(),
+  /**
+   * What one of each token is worth in ether, as the source derives it.
+   *
+   * The half of the ordering that makes two different pairs comparable, and the
+   * half the source can still be trusted for: a price comes out of a pool's
+   * `sqrtPrice`, which is chain state, while a balance is accumulated from
+   * events and drifts. Checked against live data — a stablecoin at 0.000403 ETH,
+   * a liquid-staking token at 1.103, a near-worthless one at 3e-8.
+   */
+  ethPrice: z
+    .strictObject({
+      token0: z.number().min(0),
+      token1: z.number().min(0),
+    })
+    .nullable(),
   /**
    * How many of this pool's two sides carry a symbol that is exactly one of the
    * search terms, ignoring case. The other half of the order.
@@ -73,6 +97,33 @@ export const PoolSearchMatchSchema = z.strictObject({
 });
 
 export type PoolSearchMatch = z.infer<typeof PoolSearchMatchSchema>;
+
+/**
+ * What a pool holds, valued in ether, or `null` when it cannot be known.
+ *
+ * Exported because two places need exactly this number and must not disagree:
+ * the adapter that orders the list, and the schema that checks the order it
+ * claims. Ether rather than dollars because ordering only needs a common unit,
+ * and introducing a dollar figure would mean introducing one more derived number
+ * to display and defend.
+ *
+ * Base units are converted here, where the token's decimals are in hand. A
+ * balance can exceed what a double holds exactly; for a ranking key that is
+ * harmless, and it is never shown.
+ */
+export const heldInEth = (match: {
+  readonly pool: { readonly token0: { readonly decimals: number }; readonly token1: { readonly decimals: number } };
+  readonly reserves: { readonly token0: string; readonly token1: string } | null;
+  readonly ethPrice: { readonly token0: number; readonly token1: number } | null;
+}): number | null => {
+  if (match.reserves === null || match.ethPrice === null) return null;
+
+  const value =
+    (Number(match.reserves.token0) / 10 ** match.pool.token0.decimals) * match.ethPrice.token0 +
+    (Number(match.reserves.token1) / 10 ** match.pool.token1.decimals) * match.ethPrice.token1;
+
+  return Number.isFinite(value) ? value : null;
+};
 
 /** `toLowerCase` rather than the locale-aware form: a ticker is not Turkish text. */
 const foldCase = (value: string): string => value.toLowerCase();
@@ -121,6 +172,9 @@ const scoresAreCorrect = ({ terms, matches }: ResultsShape): boolean =>
  * The order is the claim, so it is checked rather than assumed. An adapter that
  * concatenated two already-sorted lists without merging them produces a sequence
  * that looks sorted at a glance and puts a dead pool above a real one.
+ *
+ * A pool whose reserves could not be read has no place in the size order, so it
+ * goes last rather than being sorted as though it were empty.
  */
 const matchesAreOrdered = ({ matches }: ResultsShape): boolean =>
   matches.every((match, index) => {
@@ -129,7 +183,13 @@ const matchesAreOrdered = ({ matches }: ResultsShape): boolean =>
     if (previous.exactSymbolMatches !== match.exactSymbolMatches) {
       return previous.exactSymbolMatches > match.exactSymbolMatches;
     }
-    return previous.tvlUsd >= match.tvlUsd;
+
+    const before = heldInEth(previous);
+    const after = heldInEth(match);
+    if (before === null) return after === null;
+    if (after === null) return true;
+
+    return before >= after;
   });
 
 export const PoolSearchResultsSchema = z

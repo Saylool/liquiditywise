@@ -25,12 +25,14 @@ const successBody = {
           symbol: "USDC",
           name: "USD Coin",
           decimals: "6",
+          derivedETH: "0.0004",
         },
         token1: {
           id: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           symbol: "WETH",
           name: "Wrapped Ether",
           decimals: "18",
+          derivedETH: "1",
         },
       },
     ],
@@ -46,6 +48,9 @@ const run = (overrides: Partial<Parameters<typeof fetchEthereumV3PoolSearch>[0]>
     terms: ["usdc", "weth"],
     apiKey: API_KEY,
     subgraphId: SUBGRAPH_ID,
+    /* No endpoint: the results then arrive with no reserves, which the page
+     * renders as unread rather than as empty pools. */
+    rpcUrl: undefined,
     fetchImpl: vi.fn<FetchLike>(async () => jsonResponse(successBody)),
     now: () => NOW,
     ...overrides,

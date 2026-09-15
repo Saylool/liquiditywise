@@ -9,7 +9,7 @@ import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { PoolFeeTiersPending } from "@/components/PoolFeeTiers";
 import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
-import { PoolSearchResults } from "@/components/PoolSearchResults";
+import { PoolSearchPending } from "@/components/PoolSearchResults";
 import { PreferenceBar } from "@/components/PreferenceBar";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import {
@@ -21,10 +21,10 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { readPoolSearchInput } from "@/lib/search/poolSearchInput";
-import { getEthereumV3PoolSearch } from "@/lib/uniswap/getEthereumV3PoolSearch";
 import { EvmAddressSchema } from "@/schemas/primitives";
 import { PoolExplanationSection } from "./PoolExplanationSection";
 import { PoolFeeTiersSection } from "./PoolFeeTiersSection";
+import { PoolSearchSection } from "./PoolSearchSection";
 
 /*
  * The route that runs the whole pipeline against live data, and the way in.
@@ -198,13 +198,18 @@ export default async function PoolRangePage({
     );
   }
 
-  const results = await getEthereumV3PoolSearch(input.terms);
-
   return (
     <Shell locale={locale} t={t}>
       {/* The validated terms, not the raw string — which may have held a third. */}
       <PoolLookupForm t={t} value={input.terms.join(" ")} />
-      <PoolSearchResults result={results} terms={input.terms} t={t} locale={locale} />
+      {/*
+       * Streamed, because a search now asks the chain what each candidate holds
+       * — the figure the order rests on — and that is several batched calls. The
+       * box the reader just typed into should come back immediately either way.
+       */}
+      <Suspense fallback={<PoolSearchPending t={t} />}>
+        <PoolSearchSection terms={input.terms} locale={locale} t={t} />
+      </Suspense>
     </Shell>
   );
 }

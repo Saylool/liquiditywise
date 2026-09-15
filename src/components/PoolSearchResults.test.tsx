@@ -18,10 +18,11 @@ const REAL_USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 const FAKE_USDC = "0xdeadbeef00000000000000000000000000000001";
 const WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
+/** `heldWeth` is whole WETH the pool holds; the figure the row now shows. */
 const match = (
   poolId: string,
   token0Address: string,
-  tvlUsd: number,
+  heldWeth: number,
   exactSymbolMatches = 2,
 ): PoolSearchMatch => ({
   pool: {
@@ -32,7 +33,8 @@ const match = (
     token1: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 },
     feePpm: 500,
   },
-  tvlUsd,
+  reserves: { token0: "1000000", token1: `${BigInt(heldWeth) * 10n ** 18n}` },
+  ethPrice: { token0: 0.0004, token1: 1 },
   exactSymbolMatches,
 });
 
@@ -59,12 +61,26 @@ const REAL_POOL = `0x${"1".repeat(40)}`;
 const FAKE_POOL = `0x${"2".repeat(40)}`;
 
 describe("PoolSearchResults", () => {
-  it("shows the pair, the fee tier and the liquidity the source reported", () => {
+  /*
+   * The row used to show the dollar figure the indexer reports. It now shows the
+   * balances the token contracts report, because the indexer's figure was wrong
+   * by up to a thousand times and it decided this list's order.
+   */
+  it("shows the pair, the fee tier and what the pool actually holds", () => {
     const markup = render(found([match(REAL_POOL, REAL_USDC, 415_947_071)]));
 
     expect(markup).toContain("USDC / WETH");
     expect(markup).toContain("0.05%");
-    expect(markup).toContain("$415,947,071");
+    expect(markup).toContain("415,947,071 WETH");
+    expect(markup).not.toContain("$415,947,071");
+  });
+
+  it("says a pool is unread rather than empty when the chain would not answer", () => {
+    const unread = match(REAL_POOL, REAL_USDC, 1);
+    const markup = render(found([{ ...unread, reserves: null, ethPrice: null }]));
+
+    expect(markup).toContain("could not be read from the chain");
+    expect(markup).not.toContain("Holds");
   });
 
   it("links each pool to its own analysis", () => {
@@ -152,7 +168,7 @@ describe("PoolSearchResults", () => {
     it("translates the labels", () => {
       expect(markup).toContain("Eşleşen havuzlar");
       expect(markup).toContain("Komisyon kademesi");
-      expect(markup).toContain("Bildirilen likidite");
+      expect(markup).toContain("Tuttuğu");
       expect(markup).not.toContain("Matching pools");
     });
 

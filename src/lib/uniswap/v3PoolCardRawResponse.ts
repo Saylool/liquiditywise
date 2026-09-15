@@ -28,12 +28,14 @@ export const POOL_CARD_FRAGMENT = `fragment PoolCard on Pool {
     symbol
     name
     decimals
+    derivedETH
   }
   token1 {
     id
     symbol
     name
     decimals
+    derivedETH
   }
 }`;
 
@@ -50,6 +52,17 @@ const RawTokenSchema = z.object({
   symbol: z.string(),
   name: z.string(),
   decimals: z.string(),
+  /**
+   * `BigDecimal!`. What one of this token is worth in ether, as the source
+   * derives it from pool prices.
+   *
+   * Worth trusting in a way the source's *balances* are not, and the difference
+   * is where each comes from: a price is read out of a pool's `sqrtPrice`, which
+   * is chain state, while a balance is accumulated from events and drifts.
+   * Checked against the market on live data — USDT at 0.000403 ETH, weETH at
+   * 1.103, a near-worthless token at 3e-8 — and every one was where it should be.
+   */
+  derivedETH: z.string(),
 });
 
 export const RawPoolCardSchema = z.object({

@@ -206,8 +206,9 @@ were not there before:
   text in an order it was not written in.
 
 **The order is the only claim the list makes**, and it is not about quality.
-Pools whose token is exactly what was searched for come first; within that, the
-value the source reports as locked in each pool. There is no score, no badge, no
+Pools whose token is exactly what was searched for come first; within that, what
+each pool actually holds — read from the token contracts and put on one scale
+using the prices the source derives. There is no score, no badge, no
 "verified" mark and no list of tokens this application has decided are the real
 ones — it cannot tell which USDC is genuine, and a mark implying otherwise would
 be worse than none. What it does instead is show every token's contract address,
@@ -221,6 +222,34 @@ Ordered by reported liquidity alone, that last one was the top result for "weth"
 on the strength of a 1.3-billion-dollar figure the source derives and plainly got
 wrong. Both halves of the key are re-derived by the schema on the way out, so a
 merge that went wrong fails instead of publishing a plausible-looking list.
+
+**The size half stopped being the source's figure**, because that figure is not
+only unverified — it is wrong, and wrong enough to reorder this list. Measured
+against `balanceOf` on the pool contracts, a WETH/LOOKS pool published here at
+nine million dollars of reported liquidity held three and a half WETH: nine
+thousand dollars, a thousandth of the claim, ranked above pools that genuinely
+held more. Across the busiest pools the indexer's token totals run between 1.3
+and 13 times the balances the contracts report.
+
+So a search now reads the pool contracts. Each row shows the two token amounts,
+and the order uses them priced in ether — ether rather than dollars because
+ordering only needs a common unit, and a dollar figure would be one more derived
+number to display and defend. Prices are still the source's, and that is a
+different kind of figure: a price comes out of a pool's `sqrtPrice`, which is
+chain state, while a balance is accumulated from events and drifts. Checked
+against live data, a stablecoin came back at 0.000403 ETH, a liquid-staking token
+at 1.103, a near-worthless one at 3e-8.
+
+**The window changed with it, and the page says so.** The candidates used to be
+the 24 pools the source reported as largest, selected with the same broken
+figure. They are now the 24 it reports as most traded. That is a different bias
+rather than none — a pool holding a great deal but trading rarely can now fall
+outside the window and never reach the ordering at all — and the list states that
+limit rather than leaving it to be discovered.
+
+A search is streamed into a `<Suspense>` boundary, because reading what each
+candidate holds is several batched calls and the box somebody just typed into
+should come back immediately.
 
 **A list is the one place a single bad entry need not sink the answer.**
 Everywhere else a visitor asked about one pool and the only honest replies were
