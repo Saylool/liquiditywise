@@ -7,14 +7,10 @@ import {
   type PoolSearchResults,
   PoolSearchResultsSchema,
   type PoolSearchTerms,
-  V3PoolMetadataSchema,
 } from "../../schemas";
-import { type RawSearchPool, V3PoolSearchResponseSchema } from "./v3PoolSearchRawResponse";
-import { convertNonNegativeDecimal, convertSafeInteger } from "./v3SubgraphRawResponse";
-import { normalizeV3Token } from "./v3TokenAdapter";
-
-/** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
-export const ETHEREUM_MAINNET_CHAIN_ID = 1;
+import { normalizePoolCard } from "./v3PoolCardAdapter";
+import type { RawPoolCard } from "./v3PoolCardRawResponse";
+import { V3PoolSearchResponseSchema } from "./v3PoolSearchRawResponse";
 
 const MALFORMED = "market-data-malformed";
 const INDEXING_ERRORS = "market-data-indexing-errors";
@@ -31,53 +27,25 @@ export type PoolSearchDiagnostic = (detail: string) => void;
 /**
  * Turns one raw pool into a match, or `null` if it cannot be trusted.
  *
- * A list is the one place in this application where a single bad entry does not
- * have to sink the answer. Everywhere else the visitor asked about one pool and
- * the only honest replies were that pool or nothing; here a reader asked "which
- * pools are these", and eleven verified answers plus one dropped is a true — if
- * shorter — reply to that question.
+ * Verifying the pool is the shared card's job, and everything a search adds on
+ * top is the one field the card knows nothing about: how well this pool answers
+ * what was actually typed.
  *
- * It is also what the token-label rules are for. A pool whose symbol carries a
- * newline leaves the list instead of taking the page down with it, and the
- * reader never learns that a token tried to write a line of its own.
+ * Dropping an entry rather than failing the read is what the token-label rules
+ * are for. A pool whose symbol carries a newline leaves the list instead of
+ * taking the page down with it, and the reader never learns that a token tried
+ * to write a line of its own.
  */
-const normalizeMatch = (raw: RawSearchPool, terms: PoolSearchTerms): PoolSearchMatch | null => {
-  const feePpm = convertSafeInteger(raw.feeTier);
-  if (!feePpm.ok) return null;
-
-  /*
-   * Zero is allowed: a pool that has been fully withdrawn from reports exactly
-   * that, and it is a fact about the pool rather than a broken reading. It sorts
-   * to the bottom on its own.
-   */
-  const tvlUsd = convertNonNegativeDecimal(raw.totalValueLockedUSD, { allowZero: true });
-  if (!tvlUsd.ok) return null;
-
-  const token0 = normalizeV3Token(raw.token0, ETHEREUM_MAINNET_CHAIN_ID);
-  const token1 = normalizeV3Token(raw.token1, ETHEREUM_MAINNET_CHAIN_ID);
-  if (token0 === null || token1 === null) return null;
-
-  /*
-   * The same authority the single-pool read defers to: the fee bound, the uint8
-   * decimals, the non-zero token addresses, the token labels, and that token0
-   * sorts before token1. A search result is a link to an analysis, so a pair
-   * that arrived the wrong way round has to be refused here rather than
-   * discovered later.
-   */
-  const pool = V3PoolMetadataSchema.safeParse({
-    protocolVersion: "v3",
-    chainId: ETHEREUM_MAINNET_CHAIN_ID,
-    id: raw.id,
-    token0,
-    token1,
-    feePpm: feePpm.value,
-  });
-  if (!pool.success) return null;
+const normalizeMatch = (raw: RawPoolCard, terms: PoolSearchTerms): PoolSearchMatch | null => {
+  const card = normalizePoolCard(raw);
+  if (card === null) return null;
 
   return {
-    pool: pool.data,
-    tvlUsd: tvlUsd.value,
-    exactSymbolMatches: countExactSymbolMatches(terms, [token0.symbol, token1.symbol]),
+    ...card,
+    exactSymbolMatches: countExactSymbolMatches(terms, [
+      card.pool.token0.symbol,
+      card.pool.token1.symbol,
+    ]),
   };
 };
 

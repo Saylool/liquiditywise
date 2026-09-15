@@ -4,34 +4,13 @@ import {
   type PoolSearchResults,
   PoolSearchTermsSchema,
 } from "../../schemas";
+import { POOL_CARD_FRAGMENT } from "./v3PoolCardRawResponse";
 import { normalizeV3PoolSearch, type PoolSearchDiagnostic } from "./v3PoolSearchAdapter";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
-
-/**
- * The fields a candidate is shown by, as a fragment so the two search documents
- * cannot drift apart in what they select.
- */
-const POOL_CARD_FRAGMENT = `fragment PoolCard on Pool {
-  id
-  feeTier
-  totalValueLockedUSD
-  token0 {
-    id
-    symbol
-    name
-    decimals
-  }
-  token1 {
-    id
-    symbol
-    name
-    decimals
-  }
-}`;
 
 /**
  * A pool stores its pair in address order, which has nothing to do with the

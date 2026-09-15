@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { BandParametersForm } from "@/components/BandParametersForm";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { PoolExplanationPending } from "@/components/PoolExplanation";
+import { PoolFeeTiersPending } from "@/components/PoolFeeTiers";
 import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { PoolSearchResults } from "@/components/PoolSearchResults";
@@ -23,6 +24,7 @@ import { readPoolSearchInput } from "@/lib/search/poolSearchInput";
 import { getEthereumV3PoolSearch } from "@/lib/uniswap/getEthereumV3PoolSearch";
 import { EvmAddressSchema } from "@/schemas/primitives";
 import { PoolExplanationSection } from "./PoolExplanationSection";
+import { PoolFeeTiersSection } from "./PoolFeeTiersSection";
 
 /*
  * The route that runs the whole pipeline against live data, and the way in.
@@ -125,18 +127,34 @@ export default async function PoolRangePage({
         />
         {result.status === "unavailable" ? null : (
           /*
-           * Never awaited by this component, so the figures above are sent as soon
-           * as they exist and the explanation streams in behind them. There is
-           * nothing to explain when the analysis itself produced nothing.
+           * Neither of these is awaited by this component, so the figures above
+           * are sent as soon as they exist and both stream in behind them. There
+           * is nothing to explain, and no pair to place, when the analysis itself
+           * produced nothing.
+           *
+           * The fee tiers come first because they are about which pool to read,
+           * which is a question that precedes everything the explanation says —
+           * and because they arrive in a fraction of the time the model takes.
            */
-          <Suspense fallback={<PoolExplanationPending t={t} />}>
-            <PoolExplanationSection
-              analysis={result.data}
-              warnings={result.status === "partial" ? result.warnings : []}
-              locale={locale}
-              t={t}
-            />
-          </Suspense>
+          <>
+            <Suspense fallback={<PoolFeeTiersPending t={t} />}>
+              <PoolFeeTiersSection
+                pool={result.data.pool}
+                parameters={result.data.parameters}
+                locale={locale}
+                t={t}
+              />
+            </Suspense>
+
+            <Suspense fallback={<PoolExplanationPending t={t} />}>
+              <PoolExplanationSection
+                analysis={result.data}
+                warnings={result.status === "partial" ? result.warnings : []}
+                locale={locale}
+                t={t}
+              />
+            </Suspense>
+          </>
         )}
       </Shell>
     );

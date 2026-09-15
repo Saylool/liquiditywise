@@ -4,7 +4,10 @@ import { MAX_HORIZON_DAYS } from "../../schemas";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
 import {
   HORIZON_CHOICES,
+  HORIZON_PARAMETER,
   MULTIPLIER_CHOICES,
+  MULTIPLIER_PARAMETER,
+  poolAnalysisHref,
   readRequestedParameters,
 } from "./requestedParameters";
 
@@ -113,5 +116,49 @@ describe("readRequestedParameters", () => {
 
     expect(result.parameters.horizonDays).toBe(DEFAULT_PRICE_BAND_PARAMETERS.horizonDays);
     expect(result.fellBack).toBe(true);
+  });
+});
+
+/*
+ * The link between two pools of one pair. Its whole job is to carry the band,
+ * because the panel it serves invites a reader to open the tier next door and
+ * compare — and two pools read under two different bands are not comparable.
+ */
+describe("poolAnalysisHref", () => {
+  const POOL = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8";
+
+  it("points at the analysis of the pool it was given", () => {
+    const href = poolAnalysisHref(POOL, DEFAULT_PRICE_BAND_PARAMETERS);
+
+    expect(href.startsWith("/pool?")).toBe(true);
+    expect(new URL(href, "https://example.invalid").searchParams.get("address")).toBe(POOL);
+  });
+
+  it("carries the band that was in effect", () => {
+    const href = poolAnalysisHref(POOL, { horizonDays: 90, standardDeviationMultiplier: 1.5 });
+    const query = new URL(href, "https://example.invalid").searchParams;
+
+    expect(query.get(HORIZON_PARAMETER)).toBe("90");
+    expect(query.get(MULTIPLIER_PARAMETER)).toBe("1.5");
+  });
+
+  /*
+   * The parameters it writes have to be the ones the page reads back, or a link
+   * would silently land on the defaults.
+   */
+  it("round-trips through the reader that parses it", () => {
+    const parameters = { horizonDays: 7, standardDeviationMultiplier: 3 };
+    const query = new URL(
+      poolAnalysisHref(POOL, parameters),
+      "https://example.invalid",
+    ).searchParams;
+
+    const read = readRequestedParameters(
+      query.get(HORIZON_PARAMETER) ?? undefined,
+      query.get(MULTIPLIER_PARAMETER) ?? undefined,
+    );
+
+    expect(read.parameters).toEqual(parameters);
+    expect(read.fellBack).toBe(false);
   });
 });

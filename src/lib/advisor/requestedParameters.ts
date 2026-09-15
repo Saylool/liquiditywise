@@ -117,3 +117,27 @@ export const readRequestedParameters = (
     fellBack: horizonDays.fellBack || standardDeviationMultiplier.fellBack,
   };
 };
+
+/**
+ * The link to one pool's analysis, carrying a chosen band.
+ *
+ * Used by every link that leaves one analysis for another, so that a reader who
+ * set a ninety-day horizon does not land on the next pool at thirty. Comparing
+ * two pools under two different bands is worse than not comparing them: the
+ * figures look comparable and are not.
+ *
+ * Links arriving from a search carry no band, because none was chosen there, and
+ * the page falls back to the defaults it documents.
+ */
+export const poolAnalysisHref = (
+  poolAddress: string,
+  parameters: PriceBandParameters,
+): string => {
+  const query = new URLSearchParams({
+    address: poolAddress,
+    [HORIZON_PARAMETER]: String(parameters.horizonDays),
+    [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
+  });
+
+  return `/pool?${query.toString()}`;
+};

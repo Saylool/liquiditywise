@@ -16,4 +16,5 @@ export * from "./divergence";
 export * from "./poolActivity";
 export * from "./searchTerms";
 export * from "./poolSearch";
+export * from "./pairFeeTiers";
 export * from "./interpretation";

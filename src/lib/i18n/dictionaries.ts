@@ -173,6 +173,27 @@ const en = {
       "This is what is usually called impermanent loss. It is only impermanent if price comes back: a position closed at a price other than the one it opened at has realised it.",
   },
 
+  feeTiers: {
+    heading: "Where else this pair trades",
+    intro: (pair: string) =>
+      `${pair} trades at more than one fee tier. Each is a separate pool with its own liquidity, its own price history and its own range — the figures above describe this one only.`,
+    onlyOne: (pair: string) =>
+      `${pair} trades at only this fee tier on Ethereum mainnet. Everything above is about the whole pair, because the pair is this one pool.`,
+    thisOne: "You are reading this one",
+    feeTier: "Fee tier",
+    reportedLiquidity: "Reported liquidity",
+    open: "Analyse this tier",
+    /*
+     * The sentence the panel exists to carry. A list of pools ordered beside
+     * dollar figures invites exactly one conclusion, and it is the wrong one.
+     */
+    biggerIsNotBetter:
+      "A tier holding more liquidity is a larger crowd sharing the same swap fees, not a better place to be. Which one suits a position depends on how far the price moves and how often, and that is measured per pool — so the honest way to compare them is to open each and read its own figures. The horizon and multiplier you chose travel with the link.",
+    reportedNote:
+      "The liquidity figure is the data source's own, not one this application computed or checked.",
+    unavailableHeading: "The pair's other fee tiers could not be read",
+  },
+
   parameters: {
     heading: "Change the range",
     apply: "Recalculate",
@@ -600,6 +621,23 @@ const tr: Dictionary = {
     entryRow: "Bunun ölçüldüğü fiyat — havuzun güncel fiyatı.",
     impermanentNote:
       "Buna genelde geçici kayıp denir. Yalnızca fiyat geri gelirse geçicidir: açıldığı fiyattan farklı bir fiyatta kapatılan bir pozisyon onu gerçekleştirmiş olur.",
+  },
+
+  feeTiers: {
+    heading: "Bu parite başka nerede işlem görüyor",
+    intro: (pair: string) =>
+      `${pair} birden fazla komisyon kademesinde işlem görüyor. Her biri kendi likiditesi, kendi fiyat geçmişi ve kendi aralığı olan ayrı bir havuz — yukarıdaki rakamlar yalnızca bu havuzu anlatıyor.`,
+    onlyOne: (pair: string) =>
+      `${pair} Ethereum mainnet üzerinde yalnızca bu komisyon kademesinde işlem görüyor. Yukarıdaki her şey pariteyi anlatıyor, çünkü parite bu tek havuzdan ibaret.`,
+    thisOne: "Şu an bunu okuyorsun",
+    feeTier: "Komisyon kademesi",
+    reportedLiquidity: "Bildirilen likidite",
+    open: "Bu kademeyi analiz et",
+    biggerIsNotBetter:
+      "Daha çok likidite tutan bir kademe, aynı takas komisyonlarını paylaşan daha kalabalık bir gruptur; daha iyi bir yer değil. Hangisinin bir pozisyona uyduğu, fiyatın ne kadar ve ne sıklıkta hareket ettiğine bağlıdır ve bu havuz havuz ölçülür — yani dürüst karşılaştırma, her birini açıp kendi rakamlarını okumaktır. Seçtiğin ufuk ve çarpan bağlantıyla birlikte taşınır.",
+    reportedNote:
+      "Likidite rakamı veri kaynağının kendi rakamıdır; bu uygulamanın hesapladığı ya da doğruladığı bir şey değil.",
+    unavailableHeading: "Paritenin diğer komisyon kademeleri okunamadı",
   },
 
   parameters: {

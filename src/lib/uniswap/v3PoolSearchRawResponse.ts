@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { RawPoolCardSchema } from "./v3PoolCardRawResponse";
+
 /*
  * The untrusted edge of the pool-search queries. Provider field names stop here.
  *
@@ -10,35 +12,9 @@ import { z } from "zod";
  * One schema covers both search documents. The pair query and the single-term
  * query differ only in what they filter on, and both answer with the same two
  * aliased selections, so a second shape here would be the same shape written
- * twice.
+ * twice. What a pool itself looks like is not decided here either — that is the
+ * shared pool card, selected by the same fragment both documents use.
  */
-
-/**
- * A `Token` entity, narrowed to identity.
- *
- * `decimals` is `BigInt!` in the official schema, so it arrives as a *string*
- * rather than a JSON number — the same for `feeTier` below. Declaring them as
- * strings up front is what stops a silent coercion from papering over a provider
- * that changed representation.
- */
-const RawTokenSchema = z.object({
-  id: z.string(),
-  symbol: z.string(),
-  name: z.string(),
-  decimals: z.string(),
-});
-
-const RawPoolSchema = z.object({
-  id: z.string(),
-  /** `BigInt!`, in hundredths of a basis point. 3000 means 0.30%. */
-  feeTier: z.string(),
-  /** `BigDecimal!`. The provider's own dollar figure, not a verified one. */
-  totalValueLockedUSD: z.string(),
-  token0: RawTokenSchema,
-  token1: RawTokenSchema,
-});
-
-export type RawSearchPool = z.infer<typeof RawPoolSchema>;
 
 /**
  * Only the indexing-error flag is read from `_meta`, as with the metadata query.
@@ -63,8 +39,8 @@ const RawMetaSchema = z.object({
 export const V3PoolSearchResponseSchema = z.object({
   data: z
     .object({
-      forward: z.array(RawPoolSchema),
-      reverse: z.array(RawPoolSchema),
+      forward: z.array(RawPoolCardSchema),
+      reverse: z.array(RawPoolCardSchema),
       _meta: RawMetaSchema.nullable(),
     })
     .nullish(),

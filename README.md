@@ -15,7 +15,7 @@ read a plain-language explanation written from them by a model that is not
 allowed to state one. There is no persistence, authentication, wallet connection
 or transaction capability of any kind, and none is planned.
 
-Four read-only market-data adapters exist, all server-only readers over The
+Five read-only market-data adapters exist, all server-only readers over The
 Graph:
 
 1. **Current pool snapshot** — one Ethereum mainnet Uniswap v3 pool, normalised
@@ -31,6 +31,16 @@ Graph:
 4. **Pool search** — the pools whose token symbols match one or two terms,
    normalised into a `PoolSearchResults` and ordered by this application rather
    than by the source. See [Finding a pool](#finding-a-pool).
+5. **Pair fee tiers** — every pool trading the same pair as a given one,
+   normalised into a `PairFeeTiers`. Filtered on token addresses rather than
+   symbols, so a lookalike ticker cannot join the list. See
+   [Where else this pair trades](#where-else-this-pair-trades).
+
+The two readers that return *lists* — 4 and 5 — select a pool through one shared
+GraphQL fragment, parse it with one shared schema and verify it with one shared
+normaliser, so neither list can admit a pool on easier terms than the other. Both
+kinds of entry are a link into a full analysis, and the check that lets a pool
+become one belongs in a single place.
 
 Days the source never indexed are reported as gaps, never invented. There is no
 forward-filling of a previous close and no treating a missing day as zero, so a
@@ -328,8 +338,65 @@ this project exists not to produce, so there is no APR here and there will not
 be one.
 
 What can honestly be said about fees is what the pool actually did — its real
-volume and the fees it generated, per day, which the source does publish — and
-that is the next thing to build.
+volume and the fees it generated, per day, which the source does publish. That is
+[What the pool actually did](#what-the-pool-actually-did), above.
+
+## Where else this pair trades
+
+A pair is not one market. Uniswap v3 deploys a pool per `(token0, token1, fee)`
+triple, so USDC/WETH trades at 0.01%, 0.05%, 0.30% and 1% on mainnet — four
+separate pools, four separate price histories, four separate ranges. Someone who
+arrived by pasting an address had no way to know the others were there, and
+choosing between them is a decision that comes before anything else on the page
+applies.
+
+So under the figures the page lists every pool of the same pair, with what the
+source reports is locked in each, and links to the same analysis run on that one.
+
+**It does not say which tier is better, and it is not ordered as if it did.** A
+tier holding more liquidity is a larger crowd sharing the same swap fees, not a
+better place to be; answering "which one" would need the tick-level liquidity
+distribution this application does not read. The list is therefore ascending by
+fee — a fixed property of each pool, so it reads the same way today and next
+month — rather than descending by dollars, which would make it a ranking. What
+the panel offers instead is the comparison itself: open a tier and read its own
+figures.
+
+**The chosen band travels with every link.** A reader who set a ninety-day
+horizon lands on the next tier at ninety days, because two pools read under two
+different bands are not comparable and would look as though they were.
+`poolAnalysisHref` is the one place that is decided.
+
+Four things about the read, three of them confirmed against the live gateway
+rather than assumed:
+
+- **The filter is on token addresses, not symbols.** A symbol search would return
+  pools of different contracts that happen to share a ticker, which is the
+  failure the search's own ordering exists to contain. Addresses come from a
+  pool this application already verified.
+- **Asked with the pair the other way round, the source returns nothing** — a
+  pool stores its pair in address order. So there is one selection here, where
+  the search needs two aliased ones, and the caller's verified token ordering is
+  what makes that safe.
+- **An entity-reference filter takes the referenced entity's id**, typed `String!`
+  in the generated schema. `ID!` is accepted too; the declared one is used.
+- **It costs one request beyond the analysis**, deliberately its own rather than a
+  second selection bolted onto the metadata read. A pair's siblings are context:
+  failing to read them must cost the page a panel, never its figures. It streams
+  into a `<Suspense>` boundary for the same reason the explanation does.
+
+Four invariants are checked on the way out, and each of them would otherwise
+produce a list that looks entirely reasonable on screen: every entry is the same
+pair (by address, not symbol), no fee tier appears twice — the factory reverts on
+a triple that already exists — the order is the one claimed, and the pool the
+reader is on is among them. That last one cannot be a fact about Uniswap: the
+page has just read that pool's metadata from this same source, so its absence
+means the two reads disagree about which pair this is.
+
+A sibling that cannot be verified leaves the list the way a search result does.
+The pool the reader is *on* is not special-cased in that loop — the schema
+requires it, so dropping it takes the panel down rather than quietly showing
+someone every tier except their own.
 
 ## The explanation
 
