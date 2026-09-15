@@ -162,6 +162,34 @@ const en = {
       "None of this is what a position would earn. That would be these fees multiplied by your share of the liquidity active in the range while the swaps happened — a share this application does not read, for a deposit it will not size. There is no yield figure here on purpose.",
   },
 
+  outOfSample: {
+    heading: "The same method, on days it never saw",
+    intro: (horizon: string) =>
+      `Every figure above is fitted to the days it describes. This one is not. The method was stepped back ${horizon}, run again on the prices before that point only, and centred on the price at that point — one somebody standing there would actually have seen. Then it was laid over the days that followed.`,
+    fittedFrom: "Fitted from",
+    fittedVolatility: "Volatility the fit saw",
+    fittedVolatilityNote: "Not the figure above. It is what the older window measured.",
+    origin: "Centred on",
+    originNote: (date: string) => `The close on ${date}, the last one the fit could see.`,
+    lowerBound: "Lower bound",
+    upperBound: "Upper bound",
+    checkedAgainst: "Checked against",
+    fullyInside: "Days entirely inside",
+    fullyOutside: "Days entirely outside",
+    undetermined: "Days that crossed an edge",
+    verdict: (inside: string, measured: string) =>
+      `${inside} of ${measured} days stayed entirely inside the band this method would have drawn.`,
+    /*
+     * The two sentences that stop a single number becoming a claim about the
+     * method. One fold is one fold, and nobody held this band.
+     */
+    oneFold:
+      "One origin, one horizon, one pool. This is what would have happened once, not a measure of how often the method holds, and it says nothing about what happens next.",
+    notHeld:
+      "Nobody held this band. It is what the method would have suggested at that moment, laid over prices that then happened — and the days above, which the band was drawn from, are not these days.",
+    unavailableHeading: "This pool could not be checked out of sample",
+  },
+
   divergence: {
     heading: "Against simply holding",
     intro:
@@ -429,6 +457,10 @@ const en = {
         "The comparison against holding produced a result this application cannot verify.",
       "activity-unverifiable":
         "The pool's recent activity produced a result this application cannot verify.",
+      "out-of-sample-insufficient-history":
+        "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
+      "out-of-sample-unverifiable":
+        "The out-of-sample check produced a result this application cannot verify.",
       "explanation-key-rejected":
         "The explanation service did not accept the configured key, so no explanation is shown.",
       "explanation-model-not-permitted":
@@ -610,6 +642,30 @@ const tr: Dictionary = {
       "Bunlar, aralığın kendisinden ölçüldüğü günlerin ta kendisi; yani bu, bandın nasıl oturtulduğunu anlatır, ne kadar tuttuğunu sınamaz. Aralık ayrıca bugünkü fiyata göre ortalanmış — bir ay önce kimse onu açamazdı. Bir geriye dönük test olarak değil, havuzun son dönem hareketinin önerilen aralığa göre nerede durduğu olarak oku.",
     notYourEarnings:
       "Bunların hiçbiri bir pozisyonun kazanacağı miktar değil. O, bu komisyonların, takaslar olurken aralıkta aktif olan likiditedeki payınla çarpımı olurdu — bu uygulamanın okumadığı bir pay, ve büyüklüğünü belirlemeyeceği bir yatırım için. Burada bilerek bir getiri rakamı yok.",
+  },
+
+  outOfSample: {
+    heading: "Aynı yöntem, hiç görmediği günlerde",
+    intro: (horizon: string) =>
+      `Yukarıdaki her rakam, anlattığı günlere oturtulmuştur. Bu öyle değil. Yöntem ${horizon} geriye alındı, yalnızca o noktadan önceki fiyatlarla yeniden çalıştırıldı ve o andaki fiyata ortalandı — orada duran birinin gerçekten göreceği bir fiyata. Sonra da sonrasında gelen günlerin üzerine serildi.`,
+    fittedFrom: "Kurulduğu pencere",
+    fittedVolatility: "Kurulumun gördüğü volatilite",
+    fittedVolatilityNote: "Yukarıdaki rakam değil. Daha eski pencerenin ölçtüğü şey.",
+    origin: "Ortalandığı fiyat",
+    originNote: (date: string) => `${date} kapanışı — kurulumun görebildiği son fiyat.`,
+    lowerBound: "Alt sınır",
+    upperBound: "Üst sınır",
+    checkedAgainst: "Sınandığı pencere",
+    fullyInside: "Tamamen içeride geçen gün",
+    fullyOutside: "Tamamen dışarıda geçen gün",
+    undetermined: "Bir kenarı geçen gün",
+    verdict: (inside: string, measured: string) =>
+      `${measured} günün ${inside} tanesi, bu yöntemin çizeceği bandın tamamen içinde kaldı.`,
+    oneFold:
+      "Tek başlangıç, tek ufuk, tek havuz. Bu, bir kez ne olacağıdır; yöntemin ne sıklıkta tuttuğunun ölçüsü değildir ve bundan sonra ne olacağı hakkında hiçbir şey söylemez.",
+    notHeld:
+      "Bu bandı kimse tutmadı. Yöntemin o anda önereceği şeyin, sonradan gerçekleşen fiyatların üzerine serilmiş hali — ve yukarıdaki günler, bandın kendisinden çizildiği günler, bu günler değil.",
+    unavailableHeading: "Bu havuz örneklem dışı sınanamadı",
   },
 
   divergence: {
@@ -860,6 +916,10 @@ const tr: Dictionary = {
         "Tutmaya kıyaslama hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "activity-unverifiable":
         "Havuzun son dönem hareketliliği, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "out-of-sample-insufficient-history":
+        "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
+      "out-of-sample-unverifiable":
+        "Örneklem dışı kontrol, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "explanation-key-rejected":
         "Açıklama servisi yapılandırılmış anahtarı kabul etmedi, bu yüzden açıklama gösterilmiyor.",
       "explanation-model-not-permitted":

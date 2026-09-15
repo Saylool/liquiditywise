@@ -104,7 +104,7 @@ export function PoolRangeReport({
     );
   }
 
-  const { pool, snapshot, volatility, band, range, divergence, activity, parameters } =
+  const { pool, snapshot, volatility, band, range, divergence, activity, outOfSample, parameters } =
     result.data;
   const warnings = result.status === "partial" ? result.warnings : [];
 
@@ -291,6 +291,77 @@ export function PoolRangeReport({
         <p className="text-xs leading-relaxed text-muted">{t.activity.inSample}</p>
         <p className="text-sm leading-relaxed">{t.activity.notYourEarnings}</p>
       </Panel>
+
+      {/*
+       * Directly under the in-sample figures, because the contrast is the whole
+       * point: the same three buckets, counted over days the band was not drawn
+       * from. Read apart, either one is a number; read together, they say how
+       * much of the picture above was the fitting.
+       */}
+      {outOfSample.status !== "success" ? (
+        <Panel title={t.outOfSample.heading}>
+          <p className="text-sm leading-relaxed">{t.outOfSample.unavailableHeading}</p>
+          <p className="text-sm leading-relaxed text-muted">
+            {t.notices.failure[outOfSample.notice]}
+          </p>
+        </Panel>
+      ) : (
+        <Panel title={t.outOfSample.heading}>
+          <p className="text-sm leading-relaxed">
+            {t.outOfSample.intro(t.parameters.days(formatWhole(outOfSample.data.horizonDays, locale)))}
+          </p>
+
+          <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <Figure
+              label={t.outOfSample.fittedFrom}
+              value={`${formatUtcDate(outOfSample.data.fitRangeStart)} → ${formatUtcDate(outOfSample.data.fitRangeEndExclusive)}`}
+            />
+            <Figure
+              label={t.outOfSample.fittedVolatility}
+              value={formatPercent(outOfSample.data.annualizedVolatility, locale)}
+              note={t.outOfSample.fittedVolatilityNote}
+            />
+            <Figure
+              label={t.outOfSample.origin}
+              value={formatPrice(outOfSample.data.originPrice, locale)}
+              note={t.outOfSample.originNote(formatUtcDate(outOfSample.data.originTimestamp))}
+            />
+            <Figure
+              label={t.outOfSample.lowerBound}
+              value={formatPrice(outOfSample.data.lowerPrice, locale)}
+            />
+            <Figure
+              label={t.outOfSample.upperBound}
+              value={formatPrice(outOfSample.data.upperPrice, locale)}
+            />
+            <Figure
+              label={t.outOfSample.checkedAgainst}
+              value={`${formatUtcDate(outOfSample.data.measuredRangeStart)} → ${formatUtcDate(outOfSample.data.measuredRangeEndExclusive)}`}
+            />
+            <Figure
+              label={t.outOfSample.fullyInside}
+              value={formatWhole(outOfSample.data.occupancy.fullyInside, locale)}
+            />
+            <Figure
+              label={t.outOfSample.fullyOutside}
+              value={formatWhole(outOfSample.data.occupancy.fullyOutside, locale)}
+            />
+            <Figure
+              label={t.outOfSample.undetermined}
+              value={formatWhole(outOfSample.data.occupancy.undetermined, locale)}
+            />
+          </dl>
+
+          <p className="text-sm leading-relaxed">
+            {t.outOfSample.verdict(
+              formatWhole(outOfSample.data.occupancy.fullyInside, locale),
+              formatWhole(outOfSample.data.daysMeasured, locale),
+            )}
+          </p>
+          <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notHeld}</p>
+          <p className="text-xs leading-relaxed text-muted">{t.outOfSample.oneFold}</p>
+        </Panel>
+      )}
 
       <Panel title={t.divergence.heading}>
         <p className="text-sm leading-relaxed">{t.divergence.intro}</p>

@@ -287,7 +287,8 @@ volatility of these same days, so a band containing most of them describes how i
 was fitted rather than testing how it holds. It is also a counterfactual nobody
 could have acted on — the range is centred on *today's* price. Read as how the
 pool's recent movement sits against the range being suggested, it is worth
-knowing; read as a backtest, it is wrong.
+knowing; read as a backtest, it is wrong. The check that *is* one sits directly
+below it: [The same method, on days it never saw](#the-same-method-on-days-it-never-saw).
 
 Two things the source got in the way of, both found by looking rather than
 assuming:
@@ -305,6 +306,55 @@ The snapshot's three rolling-volume fields are gone with this. They were always
 null — the source publishes a lifetime cumulative figure and nothing per window —
 and they put a caveat on every single analysis that said only that. A snapshot
 with a reported block time is now a plain success.
+
+## The same method, on days it never saw
+
+The figures above are all fitted to the days they describe. This one is not.
+
+The method is stepped back by exactly one horizon. Volatility is measured from
+the 31 closes *before* that point, the band is centred on the close *at* that
+point — a price somebody standing there would actually have seen — and it is then
+laid over the days that followed, which the fit knew nothing about.
+
+```
+|<-- fit: 31 closes -->|<-- measured: one horizon -->|
+                       ^ origin: the band is centred here
+```
+
+It costs no request: the daily reader already fetches 121 days for exactly this.
+One reading, two windows — two reads of a moving market pretending to be one
+series is the failure mode that would make the whole thing meaningless.
+
+**What it found is not flattering, which is the point.** Against the live
+USDC/WETH 0.05% pool at the default 30 days and 1σ: the in-sample panel reports
+26 of 30 days entirely inside the suggested range; the out-of-sample check
+reports **3**. The band was fitted on 16 July → 16 August, centred at 0.000531,
+and price then fell to 0.000404. Widening to 2σ barely moved it — 3 inside
+instead of 3. WBTC/WETH told the opposite story at the same settings: 8 inside at
+1σ, 26 at 2σ.
+
+**It is one fold and the page says so.** One origin, one horizon, one pool: what
+would have happened once, not a measure of how often the method holds, and
+nothing at all about what happens next. Nobody held this band either — it is what
+the method would have suggested at that moment, laid over prices that then
+happened.
+
+A pool without enough indexed history to fit a band *and* leave a full horizon to
+check it against gets no check rather than a shortened one. A 30-day band checked
+over 20 days is not a check of a 30-day band, and the shorter window flatters it:
+fewer days is fewer chances to leave the range.
+
+Six invariants guard it, and the two that matter most are about the seam between
+the windows. The fit must end exactly where the measurement begins — a gap
+discards days, an overlap puts days the fit saw back into the test, which is the
+in-sample problem reappearing where nobody would look for it. And the price the
+band was centred on must be a close from inside the fit window, never one from
+the window being tested.
+
+The band arithmetic and the three-bucket day counting are each shared with the
+figures above rather than reimplemented, so the honest check and the in-sample
+description cannot drift apart about what "inside" means or where a band's edges
+fall.
 
 ## Against simply holding
 

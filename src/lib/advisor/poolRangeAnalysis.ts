@@ -18,6 +18,10 @@ import {
   type VolatilityPriceBand,
 } from "../../schemas";
 import { takeRecentDays } from "../analytics/dailyHistoryWindows";
+import {
+  calculateOutOfSampleCheck,
+  type OutOfSampleCheckResult,
+} from "../analytics/outOfSampleCheck";
 import { calculateHistoricalVolatility } from "../analytics/historicalVolatility";
 import { calculateV3TickRange } from "../analytics/v3TickRange";
 import { calculateVolatilityPriceBand } from "../analytics/volatilityPriceBand";
@@ -66,6 +70,14 @@ export type PoolRangeAnalysis = {
   readonly divergence: DivergenceLoss;
   /** What the pool did over the window, and how those days sat against the range. */
   readonly activity: PoolActivity;
+  /**
+   * The same method stepped back one horizon and checked against what followed.
+   *
+   * Carried as a *result* rather than as data, unlike every stage above it: a
+   * pool too young to fit a band in the past still has every other figure on
+   * this page, so failing to check costs the reader a panel and nothing else.
+   */
+  readonly outOfSample: OutOfSampleCheckResult;
   readonly parameters: PriceBandParameters;
 };
 
@@ -245,6 +257,17 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     };
   }
 
+  /*
+   * Last, and the only stage allowed to fail without stopping the pipeline. It
+   * reads no source of its own — every day it uses was fetched for the
+   * volatility figure — and it answers a question none of the figures above it
+   * can: whether a band built this way has held, on days it was not fitted to.
+   */
+  const outOfSample = calculateOutOfSampleCheck({
+    history: history.value,
+    parameters: input.parameters,
+  });
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -254,6 +277,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     range: range.data,
     divergence: divergence.data,
     activity: activity.data,
+    outOfSample,
     parameters: input.parameters,
   };
 

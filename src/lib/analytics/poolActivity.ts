@@ -6,6 +6,7 @@ import type {
   V3TickRange,
 } from "../../schemas";
 import { PoolActivitySchema } from "../../schemas";
+import { countOccupancy } from "./rangeOccupancy";
 
 /*
  * What the pool did over the measured window, and how those days sat against the
@@ -22,23 +23,6 @@ import { PoolActivitySchema } from "../../schemas";
  * honestly says is how the pool's recent movement sits against the range being
  * suggested — which is worth knowing, and is not a backtest.
  */
-
-/** A day's price range against the suggested one, when it can be placed at all. */
-type Placement = "inside" | "outside" | "undetermined";
-
-const placeDay = (
-  point: HistoricalPricePoint,
-  lowerPrice: number,
-  upperPrice: number,
-): Placement => {
-  // Extremes are dropped upstream when a day's own price fell outside them, so
-  // their absence means the day cannot be placed rather than that it was quiet.
-  if (point.low === null || point.high === null) return "undetermined";
-  if (point.low >= lowerPrice && point.high <= upperPrice) return "inside";
-  if (point.high < lowerPrice || point.low > upperPrice) return "outside";
-
-  return "undetermined";
-};
 
 /**
  * Sums a figure over the last `days` days, or returns `null`.
@@ -94,15 +78,11 @@ export const calculatePoolActivity = ({
   const measured = history.points.slice(-ROLLING_WINDOWS.month);
   if (measured.length === 0) return { status: "unavailable", notice: "activity-unverifiable" };
 
-  const placements = measured.map((point) =>
-    placeDay(point, range.lowerPrice, range.upperPrice),
+  const { occupancy, placements } = countOccupancy(
+    measured,
+    range.lowerPrice,
+    range.upperPrice,
   );
-
-  const occupancy = {
-    fullyInside: placements.filter((placement) => placement === "inside").length,
-    fullyOutside: placements.filter((placement) => placement === "outside").length,
-    undetermined: placements.filter((placement) => placement === "undetermined").length,
-  };
 
   /*
    * Only the days that sat entirely inside. A straddling day charged some of its

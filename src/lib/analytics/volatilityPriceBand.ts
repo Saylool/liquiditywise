@@ -13,6 +13,7 @@ import {
   type VolatilityPriceBand,
   VolatilityPriceBandSchema,
 } from "../../schemas";
+import { projectLogSymmetricBand } from "./logSymmetricBand";
 
 export type VolatilityPriceBandResult = AnalyticsResult<VolatilityPriceBand>;
 
@@ -105,40 +106,15 @@ export const calculateVolatilityPriceBand = (
   const currentPrice = price.token0PriceInToken1;
   if (currentPrice === null) return unavailable("insufficient-data", NO_CURRENT_PRICE);
 
-  const timeFractionYears = parameters.data.horizonDays / ANNUALIZATION_DAYS;
-  const horizonVolatility = vol.annualizedVolatility * Math.sqrt(timeFractionYears);
-  const logPriceDistance = parameters.data.standardDeviationMultiplier * horizonVolatility;
+  const projected = projectLogSymmetricBand({
+    price: currentPrice,
+    annualizedVolatility: vol.annualizedVolatility,
+    horizonDays: parameters.data.horizonDays,
+    standardDeviationMultiplier: parameters.data.standardDeviationMultiplier,
+  });
+  if (projected === null) return unavailable("calculation-error", CALCULATION_ERROR);
 
-  /*
-   * A zero distance is a real state — a pool whose price never moved has no
-   * measured dispersion — and its band is the price itself. It is computed by
-   * identity rather than through `exp(log(p))`, which does not round-trip exactly
-   * and for some prices lands a few ulps *above* `p`; that would invert the band
-   * and turn a valid collapsed result into a failure.
-   *
-   * This is not a minimum width and not a clamp. Deciding whether a zero-width
-   * band is deployable belongs to the later tick-alignment and policy layers.
-   */
-  const logPrice = Math.log(currentPrice);
-  const lowerPrice = logPriceDistance === 0 ? currentPrice : Math.exp(logPrice - logPriceDistance);
-  const upperPrice = logPriceDistance === 0 ? currentPrice : Math.exp(logPrice + logPriceDistance);
-
-  /*
-   * Fail closed on anything the exponential could not represent. An underflowed
-   * lower bound arrives as exactly 0 and an overflowed upper bound as Infinity;
-   * both are reported rather than replaced with an artificial bound, because a
-   * substituted number would be indistinguishable from a real one downstream.
-   */
-  if (
-    !Number.isFinite(horizonVolatility) ||
-    !Number.isFinite(logPriceDistance) ||
-    !Number.isFinite(lowerPrice) ||
-    !Number.isFinite(upperPrice) ||
-    lowerPrice <= 0 ||
-    upperPrice <= 0
-  ) {
-    return unavailable("calculation-error", CALCULATION_ERROR);
-  }
+  const { horizonVolatility, logPriceDistance, lowerPrice, upperPrice } = projected;
 
   const candidate = {
     pool: price.pool,
