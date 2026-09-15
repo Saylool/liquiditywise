@@ -1,0 +1,218 @@
+import Link from "next/link";
+
+import { poolAnalysisHref } from "../lib/advisor/requestedParameters";
+import { formatFeePpm, formatTokenAmount, formatWhole } from "../lib/format/displayFormats";
+import type { Dictionary } from "../lib/i18n/dictionaries";
+import type { Locale } from "../lib/i18n/locales";
+import type {
+  AddressHoldings as Holdings,
+  DataResult,
+  HoldingPool,
+  PriceBandParameters,
+} from "../schemas";
+
+/**
+ * What an address holds, and the pools that opens.
+ *
+ * Presentational only. Two things about it are deliberate:
+ *
+ *   - **The width of the search is part of the answer, not a footnote.** Nothing
+ *     can list an address's tokens, so "nothing found" means "none of the ones
+ *     asked", and a page that let that read as "your wallet is empty" would be
+ *     answering a question it never asked.
+ *   - **Holding both sides comes first, and that is the only ordering claim.**
+ *     It is about the reader — a pool you already hold both sides of needs no
+ *     swap first — and not about which pool is worth anything. The paragraph at
+ *     the end says so in as many words.
+ *   - **The one-sided list is cut, and the cut is stated.** Holding WETH puts
+ *     two hundred pools within a swap, which is true and is not a page anybody
+ *     can read. What is shown is the most-traded of them, in the order the
+ *     source reports — a second ordering claim, and one that has to be made out
+ *     loud rather than left to be inferred from a list that stops.
+ */
+
+/**
+ * How many of the one-sided pools to show.
+ *
+ * The same count the search publishes, for the same reason: enough that the
+ * useful ones are there, few enough that the list is read rather than scrolled.
+ */
+const ONE_SIDED_SHOWN = 12;
+
+const TierRow = ({
+  entry,
+  parameters,
+  t,
+  locale,
+}: {
+  entry: HoldingPool;
+  parameters: PriceBandParameters;
+  t: Dictionary;
+  locale: Locale;
+}) => (
+  <li>
+    <Link
+      href={poolAnalysisHref(entry.pool.id, parameters)}
+      className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="text-base font-medium">
+          {entry.pool.token0.symbol} / {entry.pool.token1.symbol}
+        </span>
+        <span className="font-mono text-xs text-muted">
+          {formatFeePpm(entry.pool.feePpm, locale)}
+        </span>
+      </div>
+      <p className="text-xs text-accent">{t.holdings.analyse}</p>
+    </Link>
+  </li>
+);
+
+const PoolGroup = ({
+  entries,
+  title,
+  note,
+  shown,
+  parameters,
+  t,
+  locale,
+}: {
+  entries: readonly HoldingPool[];
+  title: string;
+  note: string;
+  /** How many to render. The rest are counted in a sentence, not hidden. */
+  shown?: number;
+  parameters: PriceBandParameters;
+  t: Dictionary;
+  locale: Locale;
+}) => {
+  const visible = shown === undefined ? entries : entries.slice(0, shown);
+  const remaining = entries.length - visible.length;
+
+  return entries.length === 0 ? null : (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-xs uppercase tracking-widest text-muted">
+        {title} · {formatWhole(entries.length, locale)}
+      </h3>
+      <p className="text-xs leading-relaxed text-muted">{note}</p>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {visible.map((entry) => (
+          <TierRow
+            key={entry.pool.id}
+            entry={entry}
+            parameters={parameters}
+            t={t}
+            locale={locale}
+          />
+        ))}
+      </ul>
+      {remaining > 0 ? (
+        <p className="text-xs leading-relaxed text-muted">
+          {t.holdings.moreNotShown(formatWhole(remaining, locale))}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+export function AddressHoldings({
+  result,
+  poolsSearched,
+  parameters,
+  t,
+  locale,
+}: {
+  result: DataResult<Holdings>;
+  /** How many pools the candidate tokens were drawn from, for the honest note. */
+  poolsSearched: number;
+  parameters: PriceBandParameters;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  if (result.status === "unavailable") {
+    return (
+      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+          {t.holdings.heading}
+        </h2>
+        <p className="text-sm leading-relaxed">{t.holdings.unavailableHeading}</p>
+        <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
+      </section>
+    );
+  }
+
+  const { holdings, pools, tokensChecked } = result.data;
+  const both = pools.filter((entry) => entry.heldSides === "both");
+  const one = pools.filter((entry) => entry.heldSides !== "both");
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+          {t.holdings.heading}
+        </h2>
+        <p className="text-sm leading-relaxed">{t.holdings.intro}</p>
+
+        <p className="text-xs uppercase tracking-widest text-muted">{t.holdings.forAddress}</p>
+        {/* In full, like every address here: a truncated one tells you nothing. */}
+        <p className="break-all font-mono text-sm">{result.data.address}</p>
+
+        <h3 className="pt-2 text-xs uppercase tracking-widest text-muted">
+          {t.holdings.holdingsHeading}
+        </h3>
+        {holdings.length === 0 ? (
+          <p className="text-sm leading-relaxed">{t.holdings.nothingFound}</p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {holdings.map((holding) => (
+              <li
+                key={holding.token.address}
+                className="flex justify-between gap-4 font-mono text-sm"
+              >
+                <span>{holding.token.symbol}</span>
+                <span>{formatTokenAmount(holding.amount, holding.token.decimals, locale)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
+          {t.holdings.howItLooked(
+            formatWhole(tokensChecked, locale),
+            formatWhole(poolsSearched, locale),
+          )}
+        </p>
+      </section>
+
+      {pools.length === 0 ? null : (
+        <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+            {t.holdings.poolsHeading}
+          </h2>
+
+          <PoolGroup
+            entries={both}
+            title={t.holdings.bothSides}
+            note={t.holdings.bothSidesNote}
+            parameters={parameters}
+            t={t}
+            locale={locale}
+          />
+          <PoolGroup
+            entries={one}
+            title={t.holdings.oneSide}
+            note={t.holdings.oneSideNote}
+            shown={ONE_SIDED_SHOWN}
+            parameters={parameters}
+            t={t}
+            locale={locale}
+          />
+
+          <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
+            {t.holdings.notAdvice}
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}

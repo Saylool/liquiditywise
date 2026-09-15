@@ -102,6 +102,17 @@ export function WalletConnect({ strings }: { strings: Dictionary["wallet"] }) {
           <p className="text-xs uppercase tracking-widest text-muted">{strings.connectedAs}</p>
           {/* Shown in full, like every other address here: a truncated one is what a lookalike hides behind. */}
           <p className="break-all font-mono text-sm">{connection.address}</p>
+          {/*
+           * The address travels in a URL rather than in state, like everything
+           * else this application knows: the page it opens can be linked,
+           * reloaded and gone back to, and nothing is kept between visits.
+           */}
+          <a
+            href={`/holdings?address=${connection.address}`}
+            className="w-fit rounded-md border border-accent px-4 py-2 text-sm text-accent"
+          >
+            {strings.showHoldings}
+          </a>
           <button
             type="button"
             onClick={() => setConnection({ state: "idle" })}

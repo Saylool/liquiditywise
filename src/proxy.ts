@@ -32,8 +32,17 @@ import {
  *     as the hop in front of it. See `clientKey.ts`.
  */
 
+/*
+ * Both routes that reach a source. The rule for what actually counts is next
+ * door and is the same for both: a valid address is a request that will spend
+ * something upstream, whichever page it was asked of.
+ *
+ * A holdings lookup is the more expensive of the two — a pool list and then
+ * seven batches of contract calls — so leaving it outside this would have made
+ * the cheaper page the guarded one.
+ */
 export const config = {
-  matcher: "/pool",
+  matcher: ["/pool", "/holdings"],
 };
 
 /**

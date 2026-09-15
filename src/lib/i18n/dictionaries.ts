@@ -23,6 +23,9 @@ const en = {
     title: "Uniswap Strategy Advisor",
     description:
       "An educational AI-assisted advisor for Uniswap v3 and v4 liquidity strategies. Guidance only — not financial advice.",
+    holdingsTitle: "What an address holds · Uniswap Strategy Advisor",
+    holdingsDescription:
+      "The tokens found at one Ethereum address, and the Uniswap v3 pools they can go into.",
     poolTitle: "Pool range analysis · Uniswap Strategy Advisor",
     poolDescription:
       "Historical-volatility price band for one Ethereum mainnet Uniswap v3 pool, aligned onto the pool's tick grid.",
@@ -231,6 +234,37 @@ const en = {
       "Part of what was asked for could not be read, so the default was used where that happened. The horizon and multiplier actually used are shown above.",
   },
 
+  holdings: {
+    heading: "What this address holds",
+    intro:
+      "The tokens found at this address, and the pools they can go into. Nothing here is stored, and the address is public information — the same list is visible to anyone who looks it up.",
+    forAddress: "Address",
+    /*
+     * The sentence that keeps the answer honest. Nothing can list an address's
+     * tokens, so the width of the search is part of the answer.
+     */
+    howItLooked: (tokens: string, pools: string) =>
+      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${pools} most-traded pools on Ethereum mainnet. Something held outside that set is not missing from this page because the address does not hold it.`,
+    holdingsHeading: "Tokens found",
+    nothingFound:
+      "None of the tokens checked were found at this address. That is not the same as an empty wallet — see how the search was made, above.",
+    poolsHeading: "Pools these tokens can go into",
+    bothSides: "You hold both sides",
+    oneSide: "You hold one side",
+    bothSidesNote:
+      "Both of this pool's tokens were found at the address, so a position here needs no swap first.",
+    oneSideNote:
+      "One of this pool's two tokens was found. A position here needs the other side as well, which means swapping part of what you hold.",
+    moreNotShown: (count: string) =>
+      `${count} more are not shown. The ones above are the most traded of them, in the order the data source reports — which is a claim about how busy a pool is and about nothing else.`,
+    analyse: "Analyse this pool",
+    notAdvice:
+      "This is a list of what is possible, not a list of what is worth doing. Which of these pools suits anything depends on the figures on each pool's own page, and on what a position is for — neither of which this list knows.",
+    unavailableHeading: "This address could not be read",
+    invalidAddress: "That is not an Ethereum address, so nothing was looked up.",
+    noAddress: "Connect a wallet on the front page, and this page will show what it holds.",
+  },
+
   wallet: {
     heading: "Connect a wallet",
     intro:
@@ -238,6 +272,7 @@ const en = {
     connect: "Connect wallet",
     connecting: "Waiting for the wallet…",
     connectedAs: "Connected as",
+    showHoldings: "Show what it holds",
     forget: "Forget this address",
     /*
      * The sentence that replaced "never connects a wallet". The half that is
@@ -284,6 +319,8 @@ const en = {
 
     feeTier: "Fee tier",
     reportedLiquidity: "Reported liquidity",
+    moreNotShown: (count: string) =>
+      `${count} more are not shown. The ones above are the most traded of them, in the order the data source reports — which is a claim about how busy a pool is and about nothing else.`,
     analyse: "Analyse this pool",
 
     unavailableHeading: "The search could not be run",
@@ -549,6 +586,9 @@ const tr: Dictionary = {
     title: "Uniswap Strateji Danışmanı",
     description:
       "Uniswap v3 ve v4 likidite stratejileri için eğitim amaçlı, yapay zekâ destekli bir danışman. Yalnızca bilgilendirme — yatırım tavsiyesi değildir.",
+    holdingsTitle: "Bir adres ne tutuyor · Uniswap Strateji Danışmanı",
+    holdingsDescription:
+      "Bir Ethereum adresinde bulunan tokenlar ve girebilecekleri Uniswap v3 havuzları.",
     poolTitle: "Havuz aralığı analizi · Uniswap Strateji Danışmanı",
     poolDescription:
       "Bir Ethereum mainnet Uniswap v3 havuzu için tarihsel volatiliteye dayalı fiyat bandı, havuzun tick ızgarasına hizalanmış hâliyle.",
@@ -732,6 +772,33 @@ const tr: Dictionary = {
       "İstenenlerin bir kısmı okunamadı, o alanda varsayılan kullanıldı. Gerçekten kullanılan ufuk ve çarpan yukarıda yazıyor.",
   },
 
+  holdings: {
+    heading: "Bu adres ne tutuyor",
+    intro:
+      "Bu adreste bulunan tokenlar ve girebilecekleri havuzlar. Burada hiçbir şey saklanmıyor ve adres zaten herkese açık bilgi — aynı liste, bakan herkese görünür.",
+    forAddress: "Adres",
+    howItLooked: (tokens: string, pools: string) =>
+      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: Ethereum mainnet'te en çok işlem gören ${pools} havuzda geçen tokenların tamamı. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
+    holdingsHeading: "Bulunan tokenlar",
+    nothingFound:
+      "Kontrol edilen tokenların hiçbiri bu adreste bulunamadı. Bu, cüzdanın boş olduğu anlamına gelmez — aramanın nasıl yapıldığı yukarıda yazıyor.",
+    poolsHeading: "Bu tokenların girebileceği havuzlar",
+    bothSides: "İki tarafı da tutuyorsun",
+    oneSide: "Bir tarafını tutuyorsun",
+    bothSidesNote:
+      "Bu havuzun iki tokenı da adreste bulundu; yani buradaki bir pozisyon önce takas gerektirmiyor.",
+    oneSideNote:
+      "Bu havuzun iki tokenından biri bulundu. Buradaki bir pozisyon diğer tarafı da gerektirir; bu da elindekinin bir kısmını takas etmek demek.",
+    moreNotShown: (count: string) =>
+      `${count} tanesi daha gösterilmiyor. Yukarıdakiler bunların en çok işlem görenleri, veri kaynağının bildirdiği sırayla — bu, bir havuzun ne kadar yoğun olduğuna dair bir iddiadır ve başka hiçbir şeye dair değildir.`,
+    analyse: "Bu havuzu analiz et",
+    notAdvice:
+      "Bu, neyin mümkün olduğunun listesi; neyin yapmaya değer olduğunun değil. Bu havuzlardan hangisinin neye uyduğu, her havuzun kendi sayfasındaki rakamlara ve pozisyonun ne için açıldığına bağlı — bu listenin ikisini de bilmesi mümkün değil.",
+    unavailableHeading: "Bu adres okunamadı",
+    invalidAddress: "Bu bir Ethereum adresi değil, bu yüzden hiçbir sorgu yapılmadı.",
+    noAddress: "Ön sayfadan bir cüzdan bağla; bu sayfa onun ne tuttuğunu gösterecek.",
+  },
+
   wallet: {
     heading: "Cüzdan bağla",
     intro:
@@ -739,6 +806,7 @@ const tr: Dictionary = {
     connect: "Cüzdanı bağla",
     connecting: "Cüzdan bekleniyor…",
     connectedAs: "Bağlı adres",
+    showHoldings: "Ne tuttuğunu göster",
     forget: "Bu adresi unut",
     readOnly:
       "Salt okunur. Bu uygulama cüzdandan adresini ister, imza istemez: burada bir mesajı imzalayabilecek ya da işlem gönderebilecek hiçbir kod yok, ve ziyaretler arasında hiçbir şey saklanmıyor.",
@@ -773,6 +841,8 @@ const tr: Dictionary = {
 
     feeTier: "Komisyon kademesi",
     reportedLiquidity: "Bildirilen likidite",
+    moreNotShown: (count: string) =>
+      `${count} tanesi daha gösterilmiyor. Yukarıdakiler bunların en çok işlem görenleri, veri kaynağının bildirdiği sırayla — bu, bir havuzun ne kadar yoğun olduğuna dair bir iddiadır ve başka hiçbir şeye dair değildir.`,
     analyse: "Bu havuzu analiz et",
 
     unavailableHeading: "Arama yapılamadı",

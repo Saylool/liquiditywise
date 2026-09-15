@@ -521,6 +521,70 @@ Two implementation notes, both learned the hard way:
   and worse behaviour: someone without a wallet is told so when they ask, rather
   than greeted with it.
 
+## What an address holds
+
+A connected wallet gives the page an address, and `/holdings?address=…` answers
+the question a newcomer actually has: which pools can the tokens I already own
+go into. Every other page here starts from a pool and assumes the reader knows
+which one to ask about.
+
+**It is a search, not an inventory, and the page says so beside the answer.** A
+token's balance lives inside the token's own contract, so there is no list of
+what an address owns — only tokens that can be asked, one at a time. Every
+"wallet contents" anywhere is a list of guesses that were checked; this one
+reports how many it checked, and says that something held outside that set is
+missing from the page because nobody asked about it, not because the address
+does not hold it.
+
+The candidates come from the pools that have actually been traded. Ordered by
+`totalValueLockedUSD` this subgraph answers with `ease.org`, `ez-cvxsteCRV` and
+`ez-yvCurve-IronBank` before it reaches USDC — the same derived dollar figure
+that once put a pool nobody trades at the top of a search for "weth". Ordered by
+volume with a floor on transaction count, the first names are USDC, WETH, USDT,
+WBTC, DAI, wstETH. Money that moved is harder to inflate than money claimed to be
+sitting there, and the transaction floor alone removes all four of those.
+
+Four measurements shaped the read, each of which changed the design:
+
+- **250 pools yield 175 distinct tokens.** A wide net is nearly free: a candidate
+  nobody holds costs one call inside a batch; a candidate that is missing costs
+  the reader the token they came to ask about.
+- **175 calls at once are refused** — not for concurrency, since a width of eight
+  fails too, but because the provider meters compute units per second.
+- **JSON-RPC's own batch form fixes it**, with no aggregating contract and so no
+  address asserted from memory. A batch of 25 is answered in full; a batch of 175
+  loses nine to the same per-second budget, refused individually.
+- **Seven spaced batches read all 175 with nothing lost, in 4.8 seconds.** The
+  same seven sent back to back lose thirteen.
+
+Answers are matched by JSON-RPC `id`, never by position. The specification lets a
+server return them in any order, and pairing one token's balance with another
+token's identity would be wrong in a way nothing downstream could detect.
+
+**An unread balance is not a zero balance**, and that is the failure this whole
+read is shaped around. A list built from failed reads renders as "you hold
+nothing", which is a definite-looking answer to a question nobody answered — and
+unlike a dropped search result, which shortens a visible list, a dropped balance
+is invisible. So a lost batch stops the read, and losses spread thinly enough to
+survive that check are counted and refused past a tenth of the sweep. A clean
+sweep loses none, which is what makes any material number a signal.
+
+Balances stay base-unit strings from the wire to the formatter, and the formatter
+moves a point through the string rather than dividing. An eighteen-decimal
+balance is routinely past what a double holds exactly. The digits beyond what is
+shown are cut rather than rounded, so a figure someone might act on never reads
+higher than what they have.
+
+Two ordering claims are made, and both are stated on the page. Pools whose two
+sides are both held come first, which is about the reader rather than the pool —
+no swap is needed first. And the one-sided list is cut at twelve, because holding
+WETH puts two hundred pools within a swap; what is shown is the most traded of
+them, and the page says that is a claim about how busy a pool is and about
+nothing else.
+
+The route is guarded by the same rate limit as an analysis, and is the more
+expensive of the two.
+
 ## The explanation
 
 `getRangeInterpretation` hands one finished analysis to a model and gets back four

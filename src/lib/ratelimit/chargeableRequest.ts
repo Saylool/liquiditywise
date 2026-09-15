@@ -24,6 +24,10 @@ import { readPoolSearchInput } from "../search/poolSearchInput";
  * cheaper of the two to send in a loop: a box that takes ordinary words is a
  * larger invitation to do that than one that took a 40-character address.
  *
+ * The same rule serves both guarded routes. A pool analysis and a holdings
+ * lookup are each addressed by a valid `address`, and each spends upstream when
+ * it has one — the holdings sweep considerably more.
+ *
  * An address typed into the search box is not counted here. It is answered with
  * a redirect to the canonical `?address=` form, and that request is counted when
  * it arrives — counting both would charge one visitor twice for one analysis.

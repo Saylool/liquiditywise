@@ -196,3 +196,70 @@ export const formatUtcMinute = (timestamp: string): string =>
 /** The date alone, for a window boundary where the time of day is always midnight. */
 export const formatUtcDate = (timestamp: string): string =>
   ISO_MILLISECOND_UTC.test(timestamp) ? timestamp.slice(0, 10) : ABSENT;
+
+/**
+ * Whole token units, grouped. Built per language like the rest.
+ *
+ * Takes a `bigint`, which `Intl.NumberFormat` accepts and formats exactly. A
+ * balance's whole part can be larger than a double holds, and passing it through
+ * a number to get grouping would round it on the way.
+ */
+const wholeTokenUnits = byLocale((tag) => new Intl.NumberFormat(tag, { useGrouping: true }));
+
+/** The decimal separator this language writes, taken from the language itself. */
+const decimalSeparator = byLocale(
+  (tag) =>
+    new Intl.NumberFormat(tag)
+      .formatToParts(1.1)
+      .find((part) => part.type === "decimal")?.value ?? ".",
+);
+
+/** Fraction digits shown when there is a whole part to anchor the figure. */
+const FRACTION_DIGITS_WITH_WHOLE = 4;
+
+/** And when there is not, where the meaning is entirely in the small digits. */
+const FRACTION_DIGITS_WITHOUT_WHOLE = 8;
+
+/**
+ * A token balance, from base units, without ever becoming a number.
+ *
+ * The amount arrives as a decimal string of base units — `"11923665594771177257765"`
+ * of an eighteen-decimal token — and is split by moving a point through the
+ * string rather than dividing. Eighteen decimals put an ordinary balance far
+ * past what a double represents exactly, so `Number(amount) / 10 ** decimals`
+ * would round somebody's balance before it was ever displayed.
+ *
+ * How many fraction digits depends on where the value is. With a whole part,
+ * four is plenty and more is noise; without one, the entire figure lives in the
+ * small digits and cutting at four would render real dust as zero. A balance too
+ * small to show at all is reported as being under the smallest shown figure,
+ * which is true, rather than as zero, which is not.
+ *
+ * The digits beyond that are **cut, not rounded**. A rounded balance can read
+ * higher than what the address holds, and a figure someone might act on should
+ * never be the generous one — 11923.665594… is shown as 11,923.6655.
+ */
+export const formatTokenAmount = (
+  amount: string,
+  decimals: number,
+  locale: Locale = DEFAULT_FORMAT_LOCALE,
+): string => {
+  if (!/^\d+$/.test(amount) || !Number.isInteger(decimals) || decimals < 0) return ABSENT;
+
+  const padded = amount.padStart(decimals + 1, "0");
+  const whole = BigInt(padded.slice(0, padded.length - decimals));
+  const fraction = decimals === 0 ? "" : padded.slice(padded.length - decimals);
+
+  const width = whole === 0n ? FRACTION_DIGITS_WITHOUT_WHOLE : FRACTION_DIGITS_WITH_WHOLE;
+  const shown = fraction.slice(0, width).replace(/0+$/, "");
+
+  if (whole === 0n && shown === "") {
+    const smallest = `0${decimalSeparator[locale]}${"0".repeat(width - 1)}1`;
+
+    return amount === "0" ? `0` : `< ${smallest}`;
+  }
+
+  const formattedWhole = wholeTokenUnits[locale].format(whole);
+
+  return shown === "" ? formattedWhole : `${formattedWhole}${decimalSeparator[locale]}${shown}`;
+};
