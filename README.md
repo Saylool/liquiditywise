@@ -24,10 +24,17 @@ Graph:
    token `decimals`, symbols and fee tier, normalised into a `V3PoolMetadata`.
    Read separately because the snapshot does not carry it, and it is what any
    price/decimal conversion needs first.
-3. **Daily price history** — the previous 31 *completed* UTC days of closing
-   prices for one such pool, normalised into a `PoolDailyPriceHistory`. 31 closes
-   give 30 daily returns, which is what a 30-day volatility figure needs. The
+3. **Daily price history** — the previous 121 *completed* UTC days of closing
+   prices for one such pool, normalised into a `PoolDailyPriceHistory`. The
    current, still-incomplete UTC day is always excluded.
+
+   Only the most recent 31 of those closes are *measured from*: 31 closes give 30
+   daily returns, which is what a 30-day volatility figure needs, and the
+   pipeline narrows the history to that window before measuring it. The older
+   ninety days are fetched so a band can be fitted at a point in the past and
+   checked against the days that actually followed — one request answers both
+   questions, and the two windows cannot come from different readings of a moving
+   market.
 4. **Pool search** — the pools whose token symbols match one or two terms,
    normalised into a `PoolSearchResults` and ordered by this application rather
    than by the source. See [Finding a pool](#finding-a-pool).

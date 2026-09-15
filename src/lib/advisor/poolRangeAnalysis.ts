@@ -14,8 +14,10 @@ import {
   type PriceBandParameters,
   type V3Pool,
   type V3TickRange,
+  VOLATILITY_WINDOW_DAYS,
   type VolatilityPriceBand,
 } from "../../schemas";
+import { takeRecentDays } from "../analytics/dailyHistoryWindows";
 import { calculateHistoricalVolatility } from "../analytics/historicalVolatility";
 import { calculateV3TickRange } from "../analytics/v3TickRange";
 import { calculateVolatilityPriceBand } from "../analytics/volatilityPriceBand";
@@ -163,7 +165,25 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     };
   }
 
-  const volatility = calculateHistoricalVolatility(history.value);
+  /*
+   * Measured over the most recent window only, not over everything fetched.
+   *
+   * The reader deliberately asks for far more days than a volatility figure
+   * needs, so that a band can later be fitted at a point in the past and checked
+   * against the days that followed. Handing the whole span to this calculator
+   * would quietly turn a 30-day figure into a 120-day one.
+   */
+  const measured = takeRecentDays(history.value, VOLATILITY_WINDOW_DAYS);
+  if (measured === null) {
+    return {
+      status: "unavailable",
+      step: "volatility",
+      reason: "invalid-input",
+      notice: "volatility-invalid-input",
+    };
+  }
+
+  const volatility = calculateHistoricalVolatility(measured);
   if (volatility.status === "unavailable") {
     return {
       status: "unavailable",

@@ -4,20 +4,31 @@ import { DAILY_HISTORY_DAYS, resolveDailyHistoryWindow } from "./v3DailyHistoryW
 
 const MS_PER_DAY = 86_400_000;
 
+/**
+ * The window's end is a fixed fact — the start of the current UTC day — so it
+ * stays a literal. Its start is that end minus however many days the history
+ * asks for, so it is derived: pinning a second literal would only record today's
+ * value of a constant that is meant to change.
+ */
+const daysBefore = (iso: string, days: number) =>
+  new Date(Date.parse(iso) - days * MS_PER_DAY).toISOString();
+
+const START_OF_TODAY = "2026-08-20T00:00:00.000Z";
+
 describe("resolveDailyHistoryWindow", () => {
   const window = resolveDailyHistoryWindow(new Date("2026-08-20T09:15:00.000Z"));
 
-  it("covers 31 completed days", () => {
-    expect(DAILY_HISTORY_DAYS).toBe(31);
-    expect(window.expectedTimestamps).toHaveLength(31);
+  it("covers every completed day the history asks for", () => {
+    expect(DAILY_HISTORY_DAYS).toBe(121);
+    expect(window.expectedTimestamps).toHaveLength(DAILY_HISTORY_DAYS);
   });
 
   it("ends at the start of the current UTC day, exclusively", () => {
     expect(window.rangeEndExclusive).toBe("2026-08-20T00:00:00.000Z");
   });
 
-  it("starts exactly 31 days before that", () => {
-    expect(window.rangeStart).toBe("2026-07-20T00:00:00.000Z");
+  it("starts exactly that many days before the current UTC day", () => {
+    expect(window.rangeStart).toBe(daysBefore(START_OF_TODAY, DAILY_HISTORY_DAYS));
   });
 
   it("excludes the current, still-incomplete UTC day", () => {
@@ -26,8 +37,8 @@ describe("resolveDailyHistoryWindow", () => {
   });
 
   it("lists every day-start in the window, ascending and unique", () => {
-    expect(window.expectedTimestamps[0]).toBe("2026-07-20T00:00:00.000Z");
-    expect(new Set(window.expectedTimestamps).size).toBe(31);
+    expect(window.expectedTimestamps[0]).toBe(daysBefore(START_OF_TODAY, DAILY_HISTORY_DAYS));
+    expect(new Set(window.expectedTimestamps).size).toBe(DAILY_HISTORY_DAYS);
     expect([...window.expectedTimestamps].sort()).toEqual([...window.expectedTimestamps]);
   });
 
@@ -39,9 +50,11 @@ describe("resolveDailyHistoryWindow", () => {
   });
 
   it("exposes the same bounds as Unix seconds for the subgraph filter", () => {
-    expect(window.rangeStartUnixSeconds).toBe(1_784_505_600);
     expect(window.rangeEndExclusiveUnixSeconds).toBe(1_787_184_000);
-    expect(window.rangeEndExclusiveUnixSeconds - window.rangeStartUnixSeconds).toBe(31 * 86_400);
+    expect(window.rangeStartUnixSeconds).toBe(
+      1_787_184_000 - DAILY_HISTORY_DAYS * 86_400,
+    );
+    expect(window.rangeEndExclusiveUnixSeconds - window.rangeStartUnixSeconds).toBe(DAILY_HISTORY_DAYS * 86_400);
   });
 
   it.each([
@@ -56,7 +69,7 @@ describe("resolveDailyHistoryWindow", () => {
     const next = resolveDailyHistoryWindow(new Date("2026-08-21T00:00:00.000Z"));
 
     expect(next.rangeEndExclusive).toBe("2026-08-21T00:00:00.000Z");
-    expect(next.rangeStart).toBe("2026-07-21T00:00:00.000Z");
+    expect(next.rangeStart).toBe(daysBefore("2026-08-21T00:00:00.000Z", DAILY_HISTORY_DAYS));
   });
 
   it("does not depend on the host timezone", () => {

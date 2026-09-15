@@ -4,7 +4,7 @@ import {
   fetchEthereumV3DailyPriceHistory,
   V3_DAILY_PRICE_HISTORY_QUERY,
 } from "./ethereumV3DailyPriceHistory";
-import { resolveDailyHistoryWindow } from "./v3DailyHistoryWindow";
+import { DAILY_HISTORY_DAYS, resolveDailyHistoryWindow } from "./v3DailyHistoryWindow";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 const POOL_ADDRESS = "0xabcdef0123456789abcdef0123456789abcdef01";
@@ -20,7 +20,7 @@ const DAY = 86_400;
 const successBody = {
   data: {
     pool: { id: POOL_ADDRESS },
-    poolDayDatas: Array.from({ length: 31 }, (_unused, index) => ({
+    poolDayDatas: Array.from({ length: DAILY_HISTORY_DAYS }, (_unused, index) => ({
       id: `${POOL_ADDRESS}-${index}`,
       date: WINDOW.rangeStartUnixSeconds + index * DAY,
       token1Price: String(2500 + index),
@@ -104,9 +104,9 @@ describe("request construction", () => {
   it("passes the UTC window bounds as Int variables", async () => {
     const { body } = await captureRequest();
 
-    expect(body.variables.rangeStart).toBe(1_784_505_600);
+    expect(body.variables.rangeStart).toBe(WINDOW.rangeStartUnixSeconds);
     expect(body.variables.rangeEndExclusive).toBe(1_787_184_000);
-    expect(body.variables.dayLimit).toBe(31);
+    expect(body.variables.dayLimit).toBe(DAILY_HISTORY_DAYS);
   });
 
   it("never interpolates the pool address into the query string", async () => {
@@ -308,8 +308,8 @@ describe("end to end", () => {
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
-    expect(result.data.points).toHaveLength(31);
-    expect(result.data.rangeStart).toBe("2026-07-20T00:00:00.000Z");
+    expect(result.data.points).toHaveLength(DAILY_HISTORY_DAYS);
+    expect(result.data.rangeStart).toBe(WINDOW.rangeStart);
     expect(result.data.rangeEndExclusive).toBe("2026-08-20T00:00:00.000Z");
     expect(result.data.interval).toBe("1d");
     expect(result.data.priceDirection).toBe("token0PriceInToken1");
@@ -333,7 +333,9 @@ describe("end to end", () => {
     const { body } = await captureRequest({ now: () => new Date("2026-09-01T23:59:59.999Z") });
 
     expect(body.variables.rangeEndExclusive).toBe(Date.parse("2026-09-01T00:00:00.000Z") / 1000);
-    expect(body.variables.rangeStart).toBe(Date.parse("2026-08-01T00:00:00.000Z") / 1000);
+    expect(body.variables.rangeStart).toBe(
+      Date.parse("2026-09-01T00:00:00.000Z") / 1000 - DAILY_HISTORY_DAYS * DAY,
+    );
   });
 
   it("applies the shared stale-data policy to a lagging source", async () => {
@@ -383,7 +385,7 @@ describe("clock capture around the request", () => {
       variables: Record<string, unknown>;
     };
     expect(body.variables.rangeEndExclusive).toBe(Date.parse("2026-08-20T00:00:00.000Z") / 1000);
-    expect(body.variables.rangeStart).toBe(Date.parse("2026-07-20T00:00:00.000Z") / 1000);
+    expect(body.variables.rangeStart).toBe(WINDOW.rangeStartUnixSeconds);
   });
 
   it("stamps fetchedAt with the post-response instant, not the pre-request one", async () => {

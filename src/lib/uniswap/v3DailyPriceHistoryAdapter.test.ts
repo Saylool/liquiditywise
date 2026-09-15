@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveDailyHistoryWindow } from "./v3DailyHistoryWindow";
+import { DAILY_HISTORY_DAYS, resolveDailyHistoryWindow } from "./v3DailyHistoryWindow";
 import { normalizeV3DailyPriceHistory } from "./v3DailyPriceHistoryAdapter";
 
 const POOL_ADDRESS = "0xabcdef0123456789abcdef0123456789abcdef01";
@@ -34,7 +34,8 @@ const dayRow = (index: number, token1Price = String(2500 + index)) => ({
   pool: { id: POOL_ADDRESS },
 });
 
-const fullDays = () => Array.from({ length: 31 }, (_unused, index) => dayRow(index));
+const fullDays = () =>
+  Array.from({ length: DAILY_HISTORY_DAYS }, (_unused, index) => dayRow(index));
 
 const rawMeta = (overrides: Record<string, unknown> = {}) => ({
   block: { number: 21_500_000, timestamp: BLOCK_TIMESTAMP_SECONDS },
@@ -56,7 +57,7 @@ const normalize = (body: unknown) =>
     window: WINDOW,
   });
 
-describe("a complete 31-day history", () => {
+describe("a complete history", () => {
   it("produces the exact expected success object", () => {
     const result = normalize(payload());
 
@@ -67,11 +68,11 @@ describe("a complete 31-day history", () => {
       fetchedAt: FETCHED_AT,
       sourceBlockNumber: "21500000",
       sourceBlockTimestamp: "2026-08-20T09:14:48.000Z",
-      rangeStart: "2026-07-20T00:00:00.000Z",
-      rangeEndExclusive: "2026-08-20T00:00:00.000Z",
+      rangeStart: WINDOW.rangeStart,
+      rangeEndExclusive: WINDOW.rangeEndExclusive,
       interval: "1d",
       priceDirection: "token0PriceInToken1",
-      points: Array.from({ length: 31 }, (_unused, index) => ({
+      points: Array.from({ length: DAILY_HISTORY_DAYS }, (_unused, index) => ({
         timestamp: new Date((FIRST_DAY_UNIX + index * DAY) * 1000).toISOString(),
         price: 2500 + index,
         /* Inverted from the provider's direction, which swaps which is which. */
@@ -93,7 +94,7 @@ describe("a complete 31-day history", () => {
     if (result.status !== "success") return;
     expect(result.data.priceDirection).toBe("token0PriceInToken1");
     expect(result.data.points[0]?.price).toBe(1000);
-    expect(result.data.points.at(-1)?.price).toBe(1030);
+    expect(result.data.points.at(-1)?.price).toBe(1000 + DAILY_HISTORY_DAYS - 1);
   });
 
   it("ignores a token0Price the provider also sends", () => {
@@ -112,7 +113,7 @@ describe("a complete 31-day history", () => {
     if (result.status !== "success") return;
     const instants = result.data.points.map((point) => Date.parse(point.timestamp));
     expect(instants).toEqual([...instants].sort((a, b) => a - b));
-    expect(new Set(instants).size).toBe(31);
+    expect(new Set(instants).size).toBe(DAILY_HISTORY_DAYS);
   });
 
   it("covers the whole window without touching the current day", () => {
@@ -120,8 +121,10 @@ describe("a complete 31-day history", () => {
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
-    expect(result.data.points[0]?.timestamp).toBe("2026-07-20T00:00:00.000Z");
-    expect(result.data.points.at(-1)?.timestamp).toBe("2026-08-19T00:00:00.000Z");
+    expect(result.data.points[0]?.timestamp).toBe(WINDOW.rangeStart);
+    expect(result.data.points.at(-1)?.timestamp).toBe(
+      new Date(Date.parse(WINDOW.rangeEndExclusive) - DAY * 1000).toISOString(),
+    );
   });
 });
 
@@ -132,7 +135,7 @@ describe("incomplete coverage", () => {
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
-    expect(result.data.points).toHaveLength(30);
+    expect(result.data.points).toHaveLength(DAILY_HISTORY_DAYS - 1);
     const missingDay = new Date((FIRST_DAY_UNIX + 10 * DAY) * 1000).toISOString();
     expect(result.data.points.map((point) => point.timestamp)).not.toContain(missingDay);
     expect(result.missingFields).toContain("points");
@@ -174,7 +177,7 @@ describe("incomplete coverage", () => {
 
     expect(result.status).toBe("partial");
     if (result.status !== "partial") return;
-    expect(result.data.points).toHaveLength(31);
+    expect(result.data.points).toHaveLength(DAILY_HISTORY_DAYS);
     expect(result.missingFields).toEqual(["sourceBlockTimestamp"]);
     expect(result.warnings).toEqual(["block-time-unreported"]);
   });

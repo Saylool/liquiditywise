@@ -1,10 +1,19 @@
+import { DAILY_PRICE_HISTORY_MAX_POINTS } from "../../schemas";
+
 /**
  * How many completed daily observations the history covers.
  *
- * 31 closes yield 30 daily returns, which is what a 30-day volatility figure
- * needs. Asking for 30 closes would quietly produce 29 returns.
+ * Derived from the schema's cap rather than restated, because the two have to be
+ * the same number: the reader asks for exactly as many days as the domain
+ * contract will accept, so a response that fills the window is never one the
+ * schema then refuses.
+ *
+ * It is deliberately longer than a volatility figure needs. The oldest days are
+ * not measured from — `VOLATILITY_WINDOW_DAYS` says how many are — they are what
+ * lets a band fitted at a point in the past be checked against the days that
+ * actually followed it.
  */
-export const DAILY_HISTORY_DAYS = 31;
+export const DAILY_HISTORY_DAYS = DAILY_PRICE_HISTORY_MAX_POINTS;
 
 const MS_PER_DAY = 86_400_000;
 

@@ -190,8 +190,28 @@ export const HistoricalPricePointSchema = z
 
 export type HistoricalPricePoint = z.infer<typeof HistoricalPricePointSchema>;
 
-/** The number of completed daily observations a full history carries. */
-export const DAILY_PRICE_HISTORY_MAX_POINTS = 31;
+/**
+ * How many completed daily closes a volatility figure is measured over.
+ *
+ * 31 closes yield 30 daily returns, which is what a 30-day volatility figure
+ * needs. Asking for 30 closes would quietly produce 29 returns.
+ *
+ * This is a property of the *measurement*, not of the fetch. A history may carry
+ * many more days than this — see {@link DAILY_PRICE_HISTORY_MAX_POINTS} — and
+ * the extra ones are there to be measured *against* rather than measured *from*.
+ */
+export const VOLATILITY_WINDOW_DAYS = 31;
+
+/**
+ * The longest history this schema will accept, and exactly what the reader asks
+ * for.
+ *
+ * It is the volatility window plus the longest horizon the interface offers, so
+ * that a band can be fitted at a point in the past and then checked against the
+ * whole horizon that followed it. Every extra day is a day the suggested method
+ * can be tested on rather than fitted to.
+ */
+export const DAILY_PRICE_HISTORY_MAX_POINTS = VOLATILITY_WINDOW_DAYS + 90;
 
 /** Ethereum mainnet; this history is not modelled for other chains yet. */
 const HISTORY_CHAIN_ID = 1;

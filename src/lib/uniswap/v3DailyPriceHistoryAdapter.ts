@@ -203,6 +203,12 @@ export const normalizeV3DailyPriceHistory = ({
   const history = PoolDailyPriceHistorySchema.safeParse(candidate);
   if (!history.success) return unavailable("invalid-response", MALFORMED);
 
+  /*
+   * Judged over the whole window asked for, not over the part any one figure is
+   * measured from. This is a statement about the *read* — the source did not
+   * fill what it was asked to fill — and which of the missing days matter is a
+   * question each calculation answers for itself, in its own coverage figure.
+   */
   const isIncomplete = history.data.points.length < DAILY_HISTORY_DAYS;
   const missing = REPORTABLE_MISSING_FIELDS.filter((field) =>
     field === "points" ? isIncomplete : history.data[field] === null,
