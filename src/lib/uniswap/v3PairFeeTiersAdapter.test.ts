@@ -51,7 +51,7 @@ const payload = (pools: readonly unknown[]) => ({
 
 const normalize = (
   body: unknown,
-  analysedPoolId = POOL_500,
+  analysedPoolId: string | null = POOL_500,
   onDiagnostic?: (detail: string) => void,
   reserves: ReadonlyMap<string, { token0: string; token1: string }> = new Map(),
 ) =>
@@ -223,5 +223,30 @@ describe("reserves from the chain", () => {
     const data = succeeded(normalize(payload([rawPool({ id: POOL_500, feeTier: "500" })])));
 
     expect(data.tiers[0]?.reserves).toBeNull();
+  });
+});
+
+/*
+ * The same list, read for a v4 pool's page. None of these is the pool being
+ * read, so an empty list is a real answer rather than a disagreement between
+ * two reads about which pair this is.
+ */
+describe("normalizeV3PairFeeTiers for a pair named from elsewhere", () => {
+  it("accepts an empty list when no pool is being read", () => {
+    const result = normalize(payload([]), null);
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.tiers).toEqual([]);
+    expect(result.data.analysedPoolId).toBeNull();
+  });
+
+  it("still lists the pair's pools, ascending by fee", () => {
+    const result = normalize(
+      payload([rawPool({ id: POOL_500, feeTier: "500" }), rawPool({ id: address("3"), feeTier: "3000" })]),
+      null,
+    );
+
+    expect(result.status === "success" && result.data.tiers.map((tier) => tier.pool.feePpm)).toEqual([500, 3000]);
   });
 });

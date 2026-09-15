@@ -2,10 +2,12 @@ import { PoolFeeTiers } from "@/components/PoolFeeTiers";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV3PairFeeTiers } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
+import { getEthereumV4PairPools } from "@/lib/uniswap/getEthereumV4PairPools";
 import type { PriceBandParameters, V3PoolMetadata } from "@/schemas";
 
 /**
- * Reads the other fee tiers of one finished analysis's pair.
+ * Reads the other fee tiers of one finished analysis's pair, and the same pair
+ * on v4.
  *
  * Lives in the route rather than in `src/components`, because it reads data and
  * components there do not. Rendered inside a `<Suspense>` boundary and never
@@ -28,11 +30,24 @@ export async function PoolFeeTiersSection({
   locale: Locale;
   t: Dictionary;
 }) {
-  const result = await getEthereumV3PairFeeTiers(pool);
+  /*
+   * Both protocols at once. The v4 list is the same two token contracts on v4
+   * — wrapped ether stays wrapped ether — and no entry there is the pool being
+   * read, which the `null` says.
+   */
+  const [result, v4Result] = await Promise.all([
+    getEthereumV3PairFeeTiers(pool),
+    getEthereumV4PairPools({
+      analysedPoolId: null,
+      token0Address: pool.token0.address,
+      token1Address: pool.token1.address,
+    }),
+  ]);
 
   return (
     <PoolFeeTiers
       result={result}
+      v4Result={v4Result}
       pair={`${pool.token0.symbol} / ${pool.token1.symbol}`}
       parameters={parameters}
       t={t}

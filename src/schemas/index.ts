@@ -19,6 +19,7 @@ export * from "./realizedFee";
 export * from "./searchTerms";
 export * from "./poolSearch";
 export * from "./v4PoolSearch";
+export * from "./v4PairPools";
 export * from "./pairFeeTiers";
 export * from "./outOfSampleCheck";
 export * from "./holdings";

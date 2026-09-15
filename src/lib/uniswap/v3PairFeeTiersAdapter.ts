@@ -58,8 +58,8 @@ export type NormalizeV3PairFeeTiersInput = {
    * nothing validated.
    */
   readonly reserves: ReadonlyMap<string, PoolReserves>;
-  /** The pool the reader is looking at, already validated by the caller. */
-  readonly analysedPoolId: string;
+  /** The pool the reader is looking at, already validated — or `null` from a v4 page. */
+  readonly analysedPoolId: string | null;
   /** When the request was made, from the reader's injected clock. */
   readonly fetchedAt: string;
   readonly onDiagnostic?: PairFeeTiersDiagnostic | undefined;

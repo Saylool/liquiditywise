@@ -266,6 +266,36 @@ const en = {
     reservesNote:
       "These are the balances the two token contracts report for each pool, read from the chain rather than from an indexer. The indexer's own figure was measured against them and overstates what is there by between 1.3 and 13 times, so it is not shown. Two token amounts rather than one dollar figure, because every tier here holds the same two tokens and nothing has to be priced to compare them.",
     unavailableHeading: "The pair's other fee tiers could not be read",
+
+    /*
+     * The other protocol. On a v3 page the same two token contracts on v4; on
+     * a v4 page, v4's other pools of the pair and then v3's. Both lists say
+     * what "same pair" means here — the same two contracts — because ether and
+     * wrapped ether are two different tokens to a pool, whatever they are to
+     * a person.
+     */
+    onV3: "On Uniswap v3",
+    onV4: "On Uniswap v4",
+    v4Intro: (pair: string) =>
+      `The v4 pools that trade ${pair} — the same two contracts. A v4 pair can be many pools: the fee is any number, the tick spacing is free, and every hook makes another.`,
+    v4None: (pair: string) => `No Uniswap v4 pool trades ${pair} with these two contracts.`,
+    v4OnlyThis: (pair: string) => `On v4, ${pair} trades at only this pool.`,
+    v3Intro: (pair: string) => `The v3 pools that trade ${pair} — the same two token contracts, at each fee tier.`,
+    v3None: (pair: string) => `No Uniswap v3 pool trades ${pair} with these two contracts.`,
+    v3NoNative:
+      "This pool holds the chain's own ether, and v3 cannot: every v3 currency is a token contract. Its nearest v3 pools trade wrapped ether instead, which is a different token to a pool.",
+    depth: "Depth at the current price",
+    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    stateUnread: "The pool's liquidity could not be read from the chain.",
+    hook: "hook",
+    noHook: "no hook",
+    hookAltersSwaps: "may change what a swap costs",
+    tickSpacing: (spacing: string) => `spacing ${spacing}`,
+    v4Ordering:
+      "Ordered by depth at the current price — the pool's active liquidity and price, read from the PoolManager's storage — because a v4 pair is mostly pools somebody initialised and left, and depth is what tells those apart. It says how much a swap can draw on, and nothing about which pool is better: a deeper pool is a larger crowd sharing the same fees.",
+    moreNotShown: (count: string) => `${count} more are not shown; they are shallower than these.`,
+    v4Unavailable: "The pair's v4 pools could not be read",
+    v3Unavailable: "The pair's v3 pools could not be read",
   },
 
   parameters: {
@@ -918,6 +948,29 @@ const tr: Dictionary = {
     reservesNote:
       "Bunlar, her havuz için iki token sözleşmesinin bildirdiği bakiyeler — bir indeksleyiciden değil, doğrudan zincirden okundu. İndeksleyicinin kendi rakamı bunlara karşı ölçüldü ve orada olanı 1,3 ile 13 kat arasında fazla gösteriyor; bu yüzden gösterilmiyor. Tek bir dolar rakamı yerine iki token miktarı, çünkü buradaki her kademe aynı iki tokenı tutuyor ve karşılaştırmak için hiçbir şeyin fiyatlanması gerekmiyor.",
     unavailableHeading: "Paritenin diğer komisyon kademeleri okunamadı",
+
+    onV3: "Uniswap v3'te",
+    onV4: "Uniswap v4'te",
+    v4Intro: (pair: string) =>
+      `${pair} işlem gören v4 havuzları — aynı iki sözleşme. Bir v4 paritesi pek çok havuz olabilir: komisyon herhangi bir sayı, tick adımı serbest, ve her hook bir havuz daha demek.`,
+    v4None: (pair: string) => `Bu iki sözleşmeyle ${pair} işlem gören bir Uniswap v4 havuzu yok.`,
+    v4OnlyThis: (pair: string) => `v4'te ${pair} yalnızca bu havuzda işlem görüyor.`,
+    v3Intro: (pair: string) => `${pair} işlem gören v3 havuzları — aynı iki token sözleşmesi, her komisyon kademesinde.`,
+    v3None: (pair: string) => `Bu iki sözleşmeyle ${pair} işlem gören bir Uniswap v3 havuzu yok.`,
+    v3NoNative:
+      "Bu havuz zincirin kendi ether'ini tutuyor; v3 bunu yapamaz, çünkü v3'te her para birimi bir token sözleşmesidir. En yakın v3 havuzları sarmalanmış ether'le işlem görür; o da bir havuz için başka bir token.",
+    depth: "Güncel fiyattaki derinlik",
+    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    stateUnread: "Havuzun likiditesi zincirden okunamadı.",
+    hook: "hook",
+    noHook: "hook yok",
+    hookAltersSwaps: "bir takasın neye mal olduğunu değiştirebilir",
+    tickSpacing: (spacing: string) => `adım ${spacing}`,
+    v4Ordering:
+      "Güncel fiyattaki derinliğe göre sıralı — havuzun aktif likiditesi ve fiyatı, PoolManager'ın depolamasından okunmuş — çünkü bir v4 paritesi çoğunlukla birinin kurup bıraktığı havuzlardan oluşur ve onları ayıran şey derinliktir. Bir takasın ne kadar çekebileceğini söyler; hangi havuzun daha iyi olduğunu değil: daha derin bir havuz, aynı komisyonları paylaşan daha kalabalık bir gruptur.",
+    moreNotShown: (count: string) => `${count} tanesi daha gösterilmiyor; bunlardan daha sığlar.`,
+    v4Unavailable: "Paritenin v4 havuzları okunamadı",
+    v3Unavailable: "Paritenin v3 havuzları okunamadı",
   },
 
   parameters: {

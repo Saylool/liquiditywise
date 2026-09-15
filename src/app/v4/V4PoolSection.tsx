@@ -2,8 +2,10 @@ import { Suspense } from "react";
 
 import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
+import { V4PairPanelPending } from "@/components/V4PairPanel";
 import { V4PoolIdentity } from "@/components/V4PoolIdentity";
 import { PoolExplanationSection } from "@/app/pool/PoolExplanationSection";
+import { V4PairSection } from "./V4PairSection";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import type { PoolRangeAnalysisResult } from "@/lib/advisor/poolRangeAnalysis";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -82,15 +84,31 @@ async function V4RangeReport({
        * and the prose follows. The prompt it is written from names the hook
        * and what the protocol permits it to do, and nothing more about it.
        */}
-      {result.status === "unavailable" ? null : (
-        <Suspense fallback={<PoolExplanationPending t={t} />}>
-          <PoolExplanationSection
-            analysis={result.data}
-            warnings={result.status === "partial" ? result.warnings : []}
-            locale={locale}
-            t={t}
-          />
-        </Suspense>
+      {result.status === "unavailable" || result.data.pool.protocolVersion !== "v4" ? null : (
+        <>
+          {/*
+           * Where else the pair trades, first, as on the v3 page: it is about
+           * which pool to read, a question that precedes everything the
+           * explanation says, and it arrives in a fraction of the time.
+           */}
+          <Suspense fallback={<V4PairPanelPending t={t} />}>
+            <V4PairSection
+              pool={result.data.pool}
+              parameters={result.data.parameters}
+              locale={locale}
+              t={t}
+            />
+          </Suspense>
+
+          <Suspense fallback={<PoolExplanationPending t={t} />}>
+            <PoolExplanationSection
+              analysis={result.data}
+              warnings={result.status === "partial" ? result.warnings : []}
+              locale={locale}
+              t={t}
+            />
+          </Suspense>
+        </>
       )}
     </>
   );

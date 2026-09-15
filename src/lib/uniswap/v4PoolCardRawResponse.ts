@@ -106,3 +106,19 @@ export const V4PoolListResponseSchema = z.object({
   /** Read only for presence; provider error text is never inspected or forwarded. */
   errors: z.array(z.unknown()).nullish(),
 });
+
+/**
+ * The untrusted edge of the pair query: one list of pools, plus the manager the
+ * chain read needs — the list envelope with the search's extra field.
+ */
+export const V4PairPoolsResponseSchema = z.object({
+  data: z
+    .object({
+      pools: z.array(RawV4PoolCardSchema),
+      poolManagers: z.array(z.object({ id: z.string() })),
+      _meta: RawMetaSchema.nullable(),
+    })
+    .nullish(),
+  /** Read only for presence; provider error text is never inspected or forwarded. */
+  errors: z.array(z.unknown()).nullish(),
+});

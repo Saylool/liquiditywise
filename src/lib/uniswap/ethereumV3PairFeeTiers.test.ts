@@ -194,3 +194,13 @@ describe("fetchEthereumV3PairFeeTiers", () => {
     expect(onDiagnostic).toHaveBeenCalledWith("1 of 2 fee tiers unverifiable");
   });
 });
+
+describe("fetchEthereumV3PairFeeTiers for a pair named from elsewhere", () => {
+  it("accepts no analysed pool and forwards the null", async () => {
+    const result = await run({ poolAddress: null });
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.analysedPoolId).toBeNull();
+  });
+});

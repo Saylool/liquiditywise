@@ -4,7 +4,14 @@ import { poolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatFeePpm, formatTokenAmount } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
-import type { DataResult, PairFeeTier, PairFeeTiers, PriceBandParameters } from "../schemas";
+import type {
+  DataResult,
+  PairFeeTier,
+  PairFeeTiers,
+  PriceBandParameters,
+  V4PairPools,
+} from "../schemas";
+import { V4PairPoolList } from "./V4PairPoolList";
 
 /**
  * Where else this pair trades.
@@ -99,7 +106,16 @@ const TierRow = ({
   );
 };
 
-export function PoolFeeTiers({
+/**
+ * The v3 pools of one pair, as a list.
+ *
+ * Carried by two panels: the v3 page's, where the reader's own pool is marked,
+ * and the v4 page's, where it shows the same two token contracts on v3 and no
+ * entry is the pool being read. A `null` analysed id is the second case, and it
+ * changes the sentences — "only this tier" is a claim about the reader's pool,
+ * and there is none.
+ */
+export function V3PairPoolList({
   result,
   pair,
   parameters,
@@ -107,6 +123,70 @@ export function PoolFeeTiers({
   locale,
 }: {
   result: DataResult<PairFeeTiers>;
+  pair: string;
+  parameters: PriceBandParameters;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  if (result.status === "unavailable") {
+    return (
+      <>
+        {/*
+         * Said rather than left blank. An empty space here would read as "this
+         * pair trades nowhere else", which is a different claim entirely.
+         */}
+        <p className="text-sm leading-relaxed">{t.feeTiers.unavailableHeading}</p>
+        <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
+      </>
+    );
+  }
+
+  const { tiers, analysedPoolId } = result.data;
+  if (tiers.length === 0) {
+    return <p className="text-sm leading-relaxed text-muted">{t.feeTiers.v3None(pair)}</p>;
+  }
+  if (tiers.length === 1 && analysedPoolId !== null) {
+    return <p className="text-sm leading-relaxed text-muted">{t.feeTiers.onlyOne(pair)}</p>;
+  }
+
+  return (
+    <>
+      <p className="text-sm leading-relaxed text-muted">
+        {analysedPoolId === null ? t.feeTiers.v3Intro(pair) : t.feeTiers.intro(pair)}
+      </p>
+
+      <ul className="flex flex-col gap-3">
+        {tiers.map((tier) => (
+          <TierRow
+            key={tier.pool.id}
+            tier={tier}
+            current={tier.pool.id === analysedPoolId}
+            parameters={parameters}
+            t={t}
+            locale={locale}
+          />
+        ))}
+      </ul>
+
+      <div className="flex flex-col gap-3 text-xs leading-relaxed text-muted">
+        <p>{t.feeTiers.biggerIsNotBetter}</p>
+        <p>{t.feeTiers.reservesNote}</p>
+      </div>
+    </>
+  );
+}
+
+export function PoolFeeTiers({
+  result,
+  v4Result,
+  pair,
+  parameters,
+  t,
+  locale,
+}: {
+  result: DataResult<PairFeeTiers>;
+  /** The same two token contracts on v4, read beside the tiers. */
+  v4Result: DataResult<V4PairPools>;
   /** The pair as the report above names it, so the two agree. */
   pair: string;
   /** The band in effect, carried into every link out of here. */
@@ -120,40 +200,16 @@ export function PoolFeeTiers({
         {t.feeTiers.heading}
       </h2>
 
-      {result.status === "unavailable" ? (
-        <>
-          {/*
-           * Said rather than left blank. An empty space here would read as "this
-           * pair trades nowhere else", which is a different claim entirely.
-           */}
-          <p className="text-sm leading-relaxed">{t.feeTiers.unavailableHeading}</p>
-          <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
-        </>
-      ) : result.data.tiers.length === 1 ? (
-        <p className="text-sm leading-relaxed text-muted">{t.feeTiers.onlyOne(pair)}</p>
-      ) : (
-        <>
-          <p className="text-sm leading-relaxed text-muted">{t.feeTiers.intro(pair)}</p>
+      <V3PairPoolList result={result} pair={pair} parameters={parameters} t={t} locale={locale} />
 
-          <ul className="flex flex-col gap-3">
-            {result.data.tiers.map((tier) => (
-              <TierRow
-                key={tier.pool.id}
-                tier={tier}
-                current={tier.pool.id === result.data.analysedPoolId}
-                parameters={parameters}
-                t={t}
-                locale={locale}
-              />
-            ))}
-          </ul>
-
-          <div className="flex flex-col gap-3 border-t border-border pt-3 text-xs leading-relaxed text-muted">
-            <p>{t.feeTiers.biggerIsNotBetter}</p>
-            <p>{t.feeTiers.reservesNote}</p>
-          </div>
-        </>
-      )}
+      {/*
+       * The other protocol, beneath. The same two contracts, which is stated
+       * on the list itself: to a pool, ether and wrapped ether are two tokens.
+       */}
+      <h3 className="border-t border-border pt-4 text-xs uppercase tracking-widest text-muted">
+        {t.feeTiers.onV4}
+      </h3>
+      <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} t={t} locale={locale} />
     </section>
   );
 }

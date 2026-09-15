@@ -58,8 +58,11 @@ const NOT_CONFIGURED = "market-data-not-configured";
 const AddressSchema = nonZeroEvmAddress(INVALID_ADDRESS);
 
 export type EthereumV3PairFeeTiersRequest = {
-  /** The pool the reader is looking at. It must be one of the pair's pools. */
-  readonly poolAddress: string;
+  /**
+   * The pool the reader is looking at, which must be one of the pair's pools —
+   * or `null` when the pair comes from a v4 pool's page, and none of these is.
+   */
+  readonly poolAddress: string | null;
   /** The pair, in the pool's own address order. */
   readonly token0Address: string;
   readonly token1Address: string;
@@ -90,7 +93,10 @@ export type EthereumV3PairFeeTiersRequest = {
 export const fetchEthereumV3PairFeeTiers = async (
   request: EthereumV3PairFeeTiersRequest,
 ): Promise<DataResult<PairFeeTiers>> => {
-  const poolAddress = AddressSchema.safeParse(request.poolAddress);
+  const poolAddress =
+    request.poolAddress === null
+      ? { success: true as const, data: null }
+      : AddressSchema.safeParse(request.poolAddress);
   const token0 = AddressSchema.safeParse(request.token0Address);
   const token1 = AddressSchema.safeParse(request.token1Address);
   if (!poolAddress.success || !token0.success || !token1.success) {

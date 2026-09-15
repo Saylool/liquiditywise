@@ -77,7 +77,7 @@ export const PairFeeTierSchema = z.strictObject({
 export type PairFeeTier = z.infer<typeof PairFeeTierSchema>;
 
 type TiersShape = {
-  readonly analysedPoolId: string;
+  readonly analysedPoolId: string | null;
   readonly tiers: readonly PairFeeTier[];
 };
 
@@ -144,9 +144,14 @@ const tiersAreOrderedByFee = ({ tiers }: TiersShape): boolean =>
  * two reads disagree about which pair this is. An empty list fails here too,
  * which is the honest outcome: a pair always has at least the pool in front of
  * the reader.
+ *
+ * Unless there is no analysed pool among them by design: the same list is read
+ * for a v4 pool's page, to show where its pair trades on v3, and then none of
+ * these is the one being read. A `null` id says so, and an empty list is then
+ * a real answer — the pair does not trade on v3 at all.
  */
 const includesTheAnalysedPool = ({ analysedPoolId, tiers }: TiersShape): boolean =>
-  tiers.some((tier) => tier.pool.id === analysedPoolId);
+  analysedPoolId === null || tiers.some((tier) => tier.pool.id === analysedPoolId);
 
 export const PairFeeTiersSchema = z
   .strictObject({
@@ -156,7 +161,7 @@ export const PairFeeTiersSchema = z
      */
     analysedPoolId: nonZeroEvmAddress(
       "A v3 pool id must be the deployed pool contract address, never the zero address.",
-    ),
+    ).nullable(),
     tiers: z.array(PairFeeTierSchema).max(PAIR_FEE_TIER_FETCH_LIMIT, {
       error: "A pair returned more pools than this application asked for.",
     }),

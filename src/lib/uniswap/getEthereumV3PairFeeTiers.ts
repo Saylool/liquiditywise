@@ -33,12 +33,28 @@ const LABEL = "v3-pair-fee-tiers";
 export const getEthereumV3PairFeeTiers = async (
   pool: V3PoolMetadata,
 ): Promise<DataResult<PairFeeTiers>> =>
+  getEthereumV3PoolsOfPair({
+    analysedPoolId: pool.id,
+    token0Address: pool.token0.address,
+    token1Address: pool.token1.address,
+  });
+
+/**
+ * The same read for a pair named from elsewhere — a v4 pool's page, asking
+ * where its two token contracts trade on v3. No entry is then the pool being
+ * read, and an empty list is a real answer.
+ */
+export const getEthereumV3PoolsOfPair = async (pair: {
+  readonly analysedPoolId: string | null;
+  readonly token0Address: string;
+  readonly token1Address: string;
+}): Promise<DataResult<PairFeeTiers>> =>
   logUnavailable(
     LABEL,
     await fetchEthereumV3PairFeeTiers({
-      poolAddress: pool.id,
-      token0Address: pool.token0.address,
-      token1Address: pool.token1.address,
+      poolAddress: pair.analysedPoolId,
+      token0Address: pair.token0Address,
+      token1Address: pair.token1Address,
       apiKey: process.env.THE_GRAPH_API_KEY,
       subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
       rpcUrl: process.env.ETHEREUM_RPC_URL,
