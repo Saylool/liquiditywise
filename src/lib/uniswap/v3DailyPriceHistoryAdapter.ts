@@ -11,7 +11,7 @@ import {
 import { DAILY_HISTORY_DAYS, type DailyHistoryWindow } from "./v3DailyHistoryWindow";
 import { V3DailyPriceHistoryResponseSchema } from "./v3DailyPriceHistoryRawResponse";
 import {
-  evaluateSourceFreshness,
+  evaluateSettledSourceFreshness,
   FRESHNESS_UNVERIFIED_WARNING,
 } from "./v3SourceFreshness";
 import { convertNonNegativeDecimal, unixSecondsToIso } from "./v3SubgraphRawResponse";
@@ -98,7 +98,13 @@ export const normalizeV3DailyPriceHistory = ({
     if (sourceBlockTimestamp === null) return unavailable("invalid-response", MALFORMED);
   }
 
-  const freshness = evaluateSourceFreshness({ fetchedAt, sourceBlockTimestamp });
+  /*
+   * The settled policy, not the moment-in-time one. Every point here is a closed
+   * UTC day, so an indexer a few minutes behind describes the same days as one
+   * caught up — and whether it indexed through the last of them is answered by
+   * the day coverage below, not by a clock.
+   */
+  const freshness = evaluateSettledSourceFreshness({ fetchedAt, sourceBlockTimestamp });
   if (!freshness.ok) return unavailable(freshness.reason, freshness.notice);
 
   /*

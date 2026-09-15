@@ -48,8 +48,34 @@ export type SourceFreshnessVerdict =
       readonly notice: DataFailureNotice;
     };
 
+export type SourceFreshnessInput = {
+  readonly fetchedAt: string;
+  readonly sourceBlockTimestamp: string | null;
+};
+
 /**
- * Judges a source block time against the moment the response arrived.
+ * A block time that claims to be in our future.
+ *
+ * Checked whatever the data describes, because it is not a staleness question at
+ * all: a block cannot genuinely be mined ahead of us, so beyond an allowance for
+ * clock drift one of the two timestamps is wrong and the response contradicts
+ * itself.
+ */
+const contradictsOurClock = ({
+  fetchedAt,
+  sourceBlockTimestamp,
+}: SourceFreshnessInput): SourceFreshnessVerdict => {
+  if (sourceBlockTimestamp === null) return { ok: true };
+
+  const lagMs = Date.parse(fetchedAt) - Date.parse(sourceBlockTimestamp);
+
+  return lagMs < -MAX_SOURCE_CLOCK_SKEW_MS
+    ? { ok: false, reason: "invalid-response", notice: FUTURE_BLOCK_TIME_MESSAGE }
+    : { ok: true };
+};
+
+/**
+ * Freshness for figures that describe *now*: a price, a tick, a moment's state.
  *
  * A `null` block time is not a failure here — the caller reports it as an
  * unverified-freshness warning instead. What this must never do is treat absence
@@ -67,12 +93,34 @@ export const evaluateSourceFreshness = ({
 }): SourceFreshnessVerdict => {
   if (sourceBlockTimestamp === null) return { ok: true };
 
+  const contradiction = contradictsOurClock({ fetchedAt, sourceBlockTimestamp });
+  if (!contradiction.ok) return contradiction;
+
   const lagMs = Date.parse(fetchedAt) - Date.parse(sourceBlockTimestamp);
-  if (lagMs > MAX_SOURCE_LAG_MS) {
-    return { ok: false, reason: "stale-data", notice: STALE_SOURCE_MESSAGE };
-  }
-  if (lagMs < -MAX_SOURCE_CLOCK_SKEW_MS) {
-    return { ok: false, reason: "invalid-response", notice: FUTURE_BLOCK_TIME_MESSAGE };
-  }
-  return { ok: true };
+
+  return lagMs > MAX_SOURCE_LAG_MS
+    ? { ok: false, reason: "stale-data", notice: STALE_SOURCE_MESSAGE }
+    : { ok: true };
 };
+
+/**
+ * Freshness for figures that describe *settled days* rather than a moment.
+ *
+ * A daily price history is a series of completed UTC days, and the newest of
+ * them closed before today began. An indexer twenty minutes behind describes
+ * exactly the same days as one caught up, so a fifteen-minute bar is measuring
+ * something the data does not depend on — and refusing the read on it takes a
+ * whole analysis down for a reason that does not bear on it. The page then says
+ * the pool has no range, which is true of nothing.
+ *
+ * The question that *does* matter for settled data is whether the source indexed
+ * through the last completed day, and that is not a clock question: the adapter
+ * already knows which days the window expects and reports the ones that are
+ * missing. An indexer far enough behind to matter is an indexer missing days.
+ *
+ * So this checks only the one thing that is wrong whatever the data describes: a
+ * block claiming to be in our future.
+ */
+export const evaluateSettledSourceFreshness = (
+  input: SourceFreshnessInput,
+): SourceFreshnessVerdict => contradictsOurClock(input);

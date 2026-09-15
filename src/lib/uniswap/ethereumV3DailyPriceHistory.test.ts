@@ -338,11 +338,14 @@ describe("end to end", () => {
     );
   });
 
-  it("applies the shared stale-data policy to a lagging source", async () => {
-    expect(await run({ now: () => new Date("2026-08-20T11:00:00.000Z") })).toMatchObject({
-      status: "unavailable",
-      reason: "stale-data",
-    });
+  /*
+   * Nearly two hours behind, and still a success: every point in this answer is a
+   * closed UTC day, and those do not change while an indexer catches up.
+   */
+  it("accepts a lagging source, because a settled day does not go stale", async () => {
+    const result = await run({ now: () => new Date("2026-08-20T11:00:00.000Z") });
+
+    expect(result.status).not.toBe("unavailable");
   });
 });
 
@@ -406,11 +409,14 @@ describe("clock capture around the request", () => {
     expect(now).toHaveBeenCalledTimes(1);
   });
 
-  it("measures freshness against the post-response instant", async () => {
-    // The source block sits 14m56s behind the pre-request clock — inside the
-    // 15-minute limit — but 15m04s behind the post-response clock. A slow request
-    // must not be able to launder stale data into a fresh-looking result.
-    const blockTime = Date.parse("2026-08-20T09:00:04.000Z") / 1000;
+  /*
+   * The one clock question a settled series still has: a block cannot be mined in
+   * our future, and beyond the allowance for drift one of the two timestamps is
+   * wrong. Measured against the post-response instant, which is the later of the
+   * two and so the harder one to contradict.
+   */
+  it("still refuses a block time in our future, measured after the response", async () => {
+    const blockTime = Date.parse("2026-08-20T09:20:00.000Z") / 1000;
     const body = {
       data: {
         ...successBody.data,
@@ -421,7 +427,10 @@ describe("clock capture around the request", () => {
 
     const result = await run({ now, fetchImpl: respondWith(jsonResponse(body)) });
 
-    expect(result).toMatchObject({ status: "unavailable", reason: "stale-data" });
+    expect(result).toMatchObject({
+      status: "unavailable",
+      notice: "market-data-future-block-time",
+    });
     expect(now).toHaveBeenCalledTimes(2);
   });
 

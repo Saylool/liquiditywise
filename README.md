@@ -1025,6 +1025,17 @@ user input
   response arrived; `sourceBlockNumber` / `sourceBlockTimestamp` record what it
   describes. A lagging indexer must never look fresh, so fetch time is never
   copied into the source-block fields.
+- **Freshness is judged by what the data describes, not by one clock for
+  everything.** A snapshot is a moment — a price and a tick — and goes stale in
+  minutes, so a source more than fifteen behind is refused. A daily history is a
+  series of closed UTC days, and an indexer twenty minutes or six hours behind
+  describes exactly the same days as one caught up; applying the same bar to it
+  refused a whole analysis for a reason that did not bear on it, and the page
+  said the pool had no range. Whether the source indexed through the last
+  completed day is a real question and not a clock one — the adapter knows which
+  days the window expects and reports the ones missing. Both policies still
+  refuse a block time in our own future, which is not staleness but a response
+  contradicting itself.
 - Protocol limits that differ between v3 and v4 (fee ceiling, tick spacing, whether
   the zero address is a valid currency) are validated per protocol variant, not by
   a shared permissive schema.

@@ -347,11 +347,19 @@ describe("source freshness reuse", () => {
     expect(withBlockTime(15 * 60).status).toBe("success");
   });
 
-  it("applies the shared stale-data policy past that limit", () => {
-    expect(withBlockTime(15 * 60 + 1)).toMatchObject({
-      status: "unavailable",
-      reason: "stale-data",
-    });
+  /*
+   * A history is a series of closed UTC days, and an indexer a few minutes — or
+   * a few hours — behind describes exactly the same days as one caught up. The
+   * moment-in-time staleness bar used to refuse this read, which took a whole
+   * analysis down for a reason that did not bear on it: the page said the pool
+   * had no range, which was true of nothing.
+   *
+   * Whether the source indexed through the last completed day is a different
+   * question, and it is answered below by which days are present.
+   */
+  it("accepts a lagging source, because a settled day does not go stale", () => {
+    expect(withBlockTime(15 * 60 + 1).status).toBe("success");
+    expect(withBlockTime(6 * 60 * 60).status).toBe("success");
   });
 
   it("tolerates the shared 2-minute future clock skew", () => {
