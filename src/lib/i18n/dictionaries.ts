@@ -23,6 +23,9 @@ const en = {
     title: "Uniswap Strategy Advisor",
     description:
       "An educational AI-assisted advisor for Uniswap v3 and v4 liquidity strategies. Guidance only — not financial advice.",
+    v4Title: "A Uniswap v4 pool · Uniswap Strategy Advisor",
+    v4Description:
+      "What one Uniswap v4 pool is, and what its hook is permitted to do.",
     holdingsTitle: "What an address holds · Uniswap Strategy Advisor",
     holdingsDescription:
       "The tokens found at one Ethereum address, and the Uniswap v3 pools they can go into.",
@@ -264,6 +267,44 @@ const en = {
     unavailableHeading: "This address could not be read",
     invalidAddress: "That is not an Ethereum address, so nothing was looked up.",
     noAddress: "Connect a wallet on the front page, and this page will show what it holds.",
+  },
+
+  v4: {
+    heading: "A Uniswap v4 pool",
+    intro:
+      "What this pool is, read from its own key. A v4 pool is not a contract of its own: it lives inside one PoolManager and is named by a hash of the five things that define it — the two currencies, the fee, the tick spacing, and the hook.",
+    poolId: "Pool id",
+    pair: "Currencies",
+    fee: "Fee",
+    dynamicFee: "Set by the hook, per swap",
+    dynamicFeeNote:
+      "This pool's key carries the dynamic-fee flag instead of a fee, so what a swap costs is decided by the hook at the moment it happens. This read did not observe one, and there is no fee here to report.",
+    tickSpacing: "Tick spacing",
+    tickSpacingNote:
+      "Part of the pool's key in v4, so unlike v3 it needs no separate contract call.",
+    nativeCurrency: "Native ether",
+    nativeCurrencyNote:
+      "The zero address here is not a missing field. v4 lets a pool hold the chain's own ether rather than a wrapped token, and that is what this is.",
+    hookHeading: "The hook",
+    noHook: "This pool runs without a hook.",
+    noHookNote:
+      "Nothing runs alongside its swaps or its deposits, so it behaves the way a v3 pool does.",
+    hookMay: "What it is permitted to do",
+    /*
+     * The sentence this whole page exists to carry. A hook's permissions are not
+     * stored anywhere — the address is the permission list — so this is the one
+     * claim about a hook that can be made without trusting somebody.
+     */
+    hookAddressIsThePermission:
+      "These are read out of the hook's own address. v4 stores a hook's permissions nowhere: a hook is deployed to an address whose last fourteen bits spell out which callbacks the PoolManager will invoke, and the PoolManager checks those bits rather than asking the contract. So this says what the hook may do, never what it does — one permitted to rewrite the fee on every swap may always return the same fee, and that is not knowable from here.",
+    alterSwapWarning:
+      "This hook is permitted to change what a swap costs or pays. Any figure drawn from price history — a suggested range, a fee tier, a comparison against simply holding — assumes the pool charges what it says and pays what the curve says. Neither assumption is safe here, and none of it is visible in a price series.",
+    notAnalysed:
+      "There is no range analysis for v4 pools yet. What this page shows is identity: what the pool is, and what its hook is allowed to do.",
+    unavailableHeading: "This pool could not be read",
+    invalidId:
+      "That is not a v4 pool id. A v4 pool is named by a 32-byte hash — 0x followed by 64 hexadecimal characters — not by a contract address.",
+    noId: "Paste a v4 pool id to see what the pool is and what its hook may do.",
   },
 
   wallet: {
@@ -590,6 +631,9 @@ const tr: Dictionary = {
     title: "Uniswap Strateji Danışmanı",
     description:
       "Uniswap v3 ve v4 likidite stratejileri için eğitim amaçlı, yapay zekâ destekli bir danışman. Yalnızca bilgilendirme — yatırım tavsiyesi değildir.",
+    v4Title: "Bir Uniswap v4 havuzu · Uniswap Strateji Danışmanı",
+    v4Description:
+      "Bir Uniswap v4 havuzunun ne olduğu ve hook'unun neye izinli olduğu.",
     holdingsTitle: "Bir adres ne tutuyor · Uniswap Strateji Danışmanı",
     holdingsDescription:
       "Bir Ethereum adresinde bulunan tokenlar ve girebilecekleri Uniswap v3 havuzları.",
@@ -802,6 +846,39 @@ const tr: Dictionary = {
     unavailableHeading: "Bu adres okunamadı",
     invalidAddress: "Bu bir Ethereum adresi değil, bu yüzden hiçbir sorgu yapılmadı.",
     noAddress: "Ön sayfadan bir cüzdan bağla; bu sayfa onun ne tuttuğunu gösterecek.",
+  },
+
+  v4: {
+    heading: "Bir Uniswap v4 havuzu",
+    intro:
+      "Bu havuzun ne olduğu, kendi anahtarından okundu. Bir v4 havuzu kendine ait bir sözleşme değildir: tek bir PoolManager'ın içinde yaşar ve onu tanımlayan beş şeyin özetiyle adlandırılır — iki para birimi, komisyon, tick adımı ve hook.",
+    poolId: "Havuz kimliği",
+    pair: "Para birimleri",
+    fee: "Komisyon",
+    dynamicFee: "Hook belirliyor, her takasta",
+    dynamicFeeNote:
+      "Bu havuzun anahtarı komisyon yerine dinamik komisyon bayrağını taşıyor; yani bir takasın ne tutacağına, olduğu anda hook karar veriyor. Bu okuma bir tanesini gözlemlemedi ve burada bildirilecek bir komisyon yok.",
+    tickSpacing: "Tick adımı",
+    tickSpacingNote:
+      "v4'te havuzun anahtarının parçası; yani v3'ten farklı olarak ayrı bir sözleşme çağrısı gerektirmiyor.",
+    nativeCurrency: "Yerli ether",
+    nativeCurrencyNote:
+      "Buradaki sıfır adres eksik bir alan değil. v4, bir havuzun sarmalanmış token yerine zincirin kendi ether'ini tutmasına izin veriyor; bu da o.",
+    hookHeading: "Hook",
+    noHook: "Bu havuz hook'suz çalışıyor.",
+    noHookNote:
+      "Takaslarının ya da yatırımlarının yanında hiçbir şey çalışmıyor; yani bir v3 havuzu gibi davranıyor.",
+    hookMay: "Neye izinli",
+    hookAddressIsThePermission:
+      "Bunlar hook'un kendi adresinden okundu. v4 bir hook'un izinlerini hiçbir yerde saklamaz: hook, son on dört biti PoolManager'ın hangi geri çağrıları tetikleyeceğini yazan bir adrese kurulur, ve PoolManager sözleşmeye sormak yerine o bitlere bakar. Yani burada yazan, hook'un ne *yapabileceği*; ne yaptığı değil — her takasta komisyonu yeniden yazmaya izinli bir hook hep aynı komisyonu döndürüyor olabilir, ve bu buradan bilinemez.",
+    alterSwapWarning:
+      "Bu hook, bir takasın ne tutacağını ya da ne ödeyeceğini değiştirmeye izinli. Fiyat geçmişinden türeyen her rakam — önerilen aralık, komisyon kademesi, sadece tutmaya kıyaslama — havuzun söylediği komisyonu aldığını ve eğrinin söylediğini ödediğini varsayar. Burada iki varsayım da güvenli değil, ve bunların hiçbiri bir fiyat serisinde görünmez.",
+    notAnalysed:
+      "v4 havuzları için henüz aralık analizi yok. Bu sayfanın gösterdiği şey kimlik: havuzun ne olduğu ve hook'unun neye izinli olduğu.",
+    unavailableHeading: "Bu havuz okunamadı",
+    invalidId:
+      "Bu bir v4 havuz kimliği değil. Bir v4 havuzu 32 baytlık bir özetle adlandırılır — 0x ve ardından 64 onaltılık karakter — bir sözleşme adresiyle değil.",
+    noId: "Havuzun ne olduğunu ve hook'unun neye izinli olduğunu görmek için bir v4 havuz kimliği yapıştır.",
   },
 
   wallet: {

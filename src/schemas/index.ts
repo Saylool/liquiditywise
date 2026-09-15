@@ -6,6 +6,7 @@
 export * from "./primitives";
 export * from "./dataSource";
 export * from "./uniswap";
+export * from "./hookPermissions";
 export * from "./market";
 export * from "./notices";
 export * from "./dataResult";

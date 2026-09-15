@@ -523,6 +523,71 @@ The pool the reader is *on* is not special-cased in that loop — the schema
 requires it, so dropping it takes the panel down rather than quietly showing
 someone every tier except their own.
 
+## Uniswap v4
+
+A v4 pool can be read at `/v4?id=0x…`, where the id is a 32-byte hash rather than
+an address: a v4 pool is not a contract of its own but an entry inside the
+singleton PoolManager, named by the keccak256 of the five things that define it —
+the two currencies, the fee, the tick spacing, and the hook.
+
+The read is shorter than the v3 one by a whole request. A v3 pool's tick spacing
+appears in no subgraph and has to come from the pool contract; a v4 pool's is in
+the PoolKey, so it arrives with everything else and there is no `eth_call` on
+this path at all. Three other things have no v3 counterpart, and all three turn
+up in live data:
+
+- **Fees finer than v3 can express.** The busiest v4 pool on mainnet, USDC/USDT,
+  charges twelve parts per million — 0.0012%, where v3's lowest tier is a
+  hundred.
+- **Native ether as a currency.** A pool can hold the chain's own ether rather
+  than a wrapped token, and it appears as the zero address. That is a currency,
+  not a dropped field, which is why a v4 currency goes through `TokenSchema` and
+  a v3 one through the stricter schema that refuses it.
+- **A fee decided per swap.** A PoolKey can carry the dynamic-fee sentinel
+  instead of a fee. It is a wire-format detail and stops at the adapter: nothing
+  above sees the number, only that the hook decides.
+
+### What the hook is permitted to do
+
+This is the part the page exists for. A v4 hook can run alongside swaps,
+deposits and withdrawals, and nothing about that is visible in a price series —
+so a range drawn from price history says less about a v4 pool than about a v3
+one, and saying so is not enough on its own.
+
+What *can* be said without trusting anybody is what the protocol will let the
+hook do. **v4 stores a hook's permissions nowhere.** A hook is deployed to a
+mined address whose last fourteen bits spell out which callbacks the PoolManager
+will invoke, and the PoolManager checks those bits rather than asking the
+contract. Reading the address is reading the rule; reading the contract's code,
+or its name, or its documentation, would be taking somebody's word for it.
+
+So the page lists them, and says in as many words that this is what the hook
+*may* do and never what it does — one permitted to rewrite the fee on every swap
+may always return the same fee, and that is not knowable from here.
+
+One class of permission is singled out and warned about above the list rather
+than below it, because it changes what every other figure would mean: a hook
+holding `beforeSwap` can rewrite the fee, and one holding a returns-delta flag
+can take a share of the swap itself. A live example — the busiest hooked pool on
+mainnet, USDC/WETH — is permitted to do eight things including
+`afterSwapReturnsDelta`.
+
+There is no range analysis for v4 yet. This page is identity.
+
+### Choosing the subgraph
+
+Six v4 Ethereum subgraphs are published, and the one this reads was chosen by
+measurement rather than by popularity — which mattered, because popularity picked
+the wrong one. The most queried, at nine million a month, answers `_meta` and
+fails every real query: its indexers report "too far behind" or "no attestation:
+indexing_error", and `hasIndexingErrors` is true. Two more are healthy but model
+a different schema, with no `feeTier` and no `token0` on `Pool`. Two have no
+allocations at all. The sixth, with two thousand queries a month, answers,
+indexes within seconds of head, and carries every field a v4 read needs.
+
+A Subgraph ID is public rather than a credential, so the working one is written
+into `.env.example` rather than left blank.
+
 ## Connecting a wallet
 
 A visitor can connect a browser wallet, and the page then knows one thing it did
