@@ -294,9 +294,13 @@ export function PoolRangeReport({
 
       {/*
        * Directly under the in-sample figures, because the contrast is the whole
-       * point: the same three buckets, counted over days the band was not drawn
-       * from. Read apart, either one is a number; read together, they say how
-       * much of the picture above was the fitting.
+       * point: the same three buckets, counted over days the bands were not
+       * drawn from. Read apart, either one is a number; read together, they say
+       * how much of the picture above was the fitting.
+       *
+       * The totals lead and the folds follow. A reader who wants the headline
+       * gets it in one line; one who wants to know whether it rests on a single
+       * lucky month can count the rows.
        */}
       {outOfSample.status !== "success" ? (
         <Panel title={t.outOfSample.heading}>
@@ -308,35 +312,16 @@ export function PoolRangeReport({
       ) : (
         <Panel title={t.outOfSample.heading}>
           <p className="text-sm leading-relaxed">
-            {t.outOfSample.intro(t.parameters.days(formatWhole(outOfSample.data.horizonDays, locale)))}
+            {t.outOfSample.intro(
+              t.parameters.days(formatWhole(outOfSample.data.horizonDays, locale)),
+            )}
           </p>
 
-          <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Figure
-              label={t.outOfSample.fittedFrom}
-              value={`${formatUtcDate(outOfSample.data.fitRangeStart)} → ${formatUtcDate(outOfSample.data.fitRangeEndExclusive)}`}
-            />
-            <Figure
-              label={t.outOfSample.fittedVolatility}
-              value={formatPercent(outOfSample.data.annualizedVolatility, locale)}
-              note={t.outOfSample.fittedVolatilityNote}
-            />
-            <Figure
-              label={t.outOfSample.origin}
-              value={formatPrice(outOfSample.data.originPrice, locale)}
-              note={t.outOfSample.originNote(formatUtcDate(outOfSample.data.originTimestamp))}
-            />
-            <Figure
-              label={t.outOfSample.lowerBound}
-              value={formatPrice(outOfSample.data.lowerPrice, locale)}
-            />
-            <Figure
-              label={t.outOfSample.upperBound}
-              value={formatPrice(outOfSample.data.upperPrice, locale)}
-            />
-            <Figure
-              label={t.outOfSample.checkedAgainst}
-              value={`${formatUtcDate(outOfSample.data.measuredRangeStart)} → ${formatUtcDate(outOfSample.data.measuredRangeEndExclusive)}`}
+              label={t.outOfSample.folds}
+              value={formatWhole(outOfSample.data.folds.length, locale)}
+              note={t.outOfSample.foldsNote}
             />
             <Figure
               label={t.outOfSample.fullyInside}
@@ -356,10 +341,38 @@ export function PoolRangeReport({
             {t.outOfSample.verdict(
               formatWhole(outOfSample.data.occupancy.fullyInside, locale),
               formatWhole(outOfSample.data.daysMeasured, locale),
+              formatWhole(outOfSample.data.folds.length, locale),
             )}
           </p>
+
+          {/* One row per fold, oldest first, so a run of them can be scanned. */}
+          <div className="flex flex-col gap-1 overflow-x-auto">
+            <div className="flex min-w-max justify-between gap-6 text-xs uppercase tracking-widest text-muted">
+              <span>{t.outOfSample.foldPeriod}</span>
+              <span>{t.outOfSample.foldVolatility}</span>
+              <span>{t.outOfSample.foldVerdict}</span>
+            </div>
+            {outOfSample.data.folds.map((fold) => (
+              <div
+                key={fold.measuredRangeStart}
+                className="flex min-w-max justify-between gap-6 font-mono text-sm"
+              >
+                <span>
+                  {formatUtcDate(fold.measuredRangeStart)} → {formatUtcDate(fold.measuredRangeEndExclusive)}
+                </span>
+                <span className="text-muted">{formatPercent(fold.annualizedVolatility, locale)}</span>
+                <span>
+                  {formatWhole(fold.occupancy.fullyInside, locale)} /{" "}
+                  {formatWhole(fold.occupancy.fullyOutside, locale)} /{" "}
+                  {formatWhole(fold.occupancy.undetermined, locale)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs leading-relaxed text-muted">{t.outOfSample.foldColumns}</p>
           <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notHeld}</p>
-          <p className="text-xs leading-relaxed text-muted">{t.outOfSample.oneFold}</p>
+          <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notIndependent}</p>
         </Panel>
       )}
 

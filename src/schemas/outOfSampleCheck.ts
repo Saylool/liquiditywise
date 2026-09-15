@@ -18,10 +18,16 @@ import { IsoTimestampSchema, PositivePriceSchema } from "./primitives";
  * and it is then compared against the days that followed, which the fit knew
  * nothing about.
  *
- * **It is one fold, and the page says so.** One origin, one horizon, one pool:
- * a single observation of how the method did, not a distribution of how it does.
- * A band that held here may not hold next month, and the honest reading is "this
- * is what would have happened once", not "this works".
+ * The window is long enough to do this more than once. Each *fold* steps back by
+ * another horizon, and the folds tile the recent history end to end, so no day is
+ * counted twice and none is skipped. How many fit depends on the horizon: with
+ * 121 closes and a 31-close fit, a 7-day horizon gives twelve folds, 30 days
+ * gives three, 90 days gives one.
+ *
+ * **It is still a handful of folds on one pool, and the page says so.** A few
+ * observations of how the method did, not a distribution of how it does, and
+ * nothing at all about what happens next. Consecutive fit windows also overlap
+ * slightly, so the folds are not independent of each other.
  */
 
 /** Two windows that meet at a point, in milliseconds. */
@@ -102,7 +108,7 @@ const everyDayIsCounted = (check: CheckShape): boolean =>
 const noMoreDaysThanTheHorizon = (check: CheckShape): boolean =>
   check.daysMeasured <= check.horizonDays;
 
-export const OutOfSampleCheckSchema = z
+export const OutOfSampleFoldSchema = z
   .strictObject({
     /** The window the volatility was measured from. All of it precedes the test. */
     fitRangeStart: IsoTimestampSchema,
@@ -160,6 +166,101 @@ export const OutOfSampleCheckSchema = z
   .refine(noMoreDaysThanTheHorizon, {
     error: "A horizon cannot hold more observed days than it has days.",
     path: ["daysMeasured"],
+  });
+
+export type OutOfSampleFold = z.infer<typeof OutOfSampleFoldSchema>;
+
+
+/* ------------------------------------------------------------------ */
+
+type RollUpShape = {
+  readonly horizonDays: number;
+  readonly standardDeviationMultiplier: number;
+  readonly folds: readonly OutOfSampleFold[];
+  readonly daysMeasured: number;
+  readonly occupancy: { fullyInside: number; fullyOutside: number; undetermined: number };
+};
+
+/**
+ * Every fold answers the question the reader actually asked.
+ *
+ * The horizon and the multiplier are the reader's, and a fold drawn with
+ * different ones is a check of a different band. Stated once at the top and
+ * required of each fold, rather than left to be compared by eye across rows.
+ */
+const foldsShareTheSettings = (check: RollUpShape): boolean =>
+  check.folds.every(
+    (fold) =>
+      fold.horizonDays === check.horizonDays &&
+      fold.standardDeviationMultiplier === check.standardDeviationMultiplier,
+  );
+
+/**
+ * The folds tile the history end to end, oldest first.
+ *
+ * One refinement for two failures that look identical in a table. A gap means
+ * days were silently dropped from the count; an overlap means days were counted
+ * twice, which inflates whichever verdict those days happened to support.
+ */
+const foldsAreContiguous = (check: RollUpShape): boolean =>
+  check.folds.every((fold, index) => {
+    const previous = check.folds[index - 1];
+
+    return previous === undefined || previous.measuredRangeEndExclusive === fold.measuredRangeStart;
+  });
+
+/**
+ * The totals are the folds added up, and nothing else.
+ *
+ * They are the figures a reader takes away, so they are re-derived here rather
+ * than believed. A total that drifted from its rows would be the most persuasive
+ * wrong number on the page.
+ */
+const totalsAddUp = (check: RollUpShape): boolean => {
+  const summed = check.folds.reduce(
+    (running, fold) => ({
+      daysMeasured: running.daysMeasured + fold.daysMeasured,
+      fullyInside: running.fullyInside + fold.occupancy.fullyInside,
+      fullyOutside: running.fullyOutside + fold.occupancy.fullyOutside,
+      undetermined: running.undetermined + fold.occupancy.undetermined,
+    }),
+    { daysMeasured: 0, fullyInside: 0, fullyOutside: 0, undetermined: 0 },
+  );
+
+  return (
+    summed.daysMeasured === check.daysMeasured &&
+    summed.fullyInside === check.occupancy.fullyInside &&
+    summed.fullyOutside === check.occupancy.fullyOutside &&
+    summed.undetermined === check.occupancy.undetermined
+  );
+};
+
+export const OutOfSampleCheckSchema = z
+  .strictObject({
+    /** The reader's own settings. Every fold is drawn with these. */
+    horizonDays: z.int().min(1).max(MAX_HORIZON_DAYS),
+    standardDeviationMultiplier: z.number().positive(),
+
+    /** Oldest first, tiling the recent history without gap or overlap. */
+    folds: z.array(OutOfSampleFoldSchema).min(1, {
+      error: "A check with no folds in it checked nothing.",
+    }),
+
+    /** The folds added up: the figures a reader takes away. */
+    daysMeasured: z.int().min(1),
+    occupancy: RangeOccupancySchema,
+  })
+  .refine(foldsShareTheSettings, {
+    error: "Every fold must be drawn with the horizon and multiplier the reader chose.",
+    path: ["folds"],
+  })
+  .refine(foldsAreContiguous, {
+    error: "Folds must tile the history oldest first, without a gap or an overlap.",
+    path: ["folds"],
+  })
+  .refine(totalsAddUp, {
+    error: "The totals must be exactly the folds added up.",
+    path: ["occupancy"],
   });
 
 export type OutOfSampleCheck = z.infer<typeof OutOfSampleCheckSchema>;

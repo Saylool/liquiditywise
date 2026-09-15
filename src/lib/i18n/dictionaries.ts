@@ -165,28 +165,27 @@ const en = {
   outOfSample: {
     heading: "The same method, on days it never saw",
     intro: (horizon: string) =>
-      `Every figure above is fitted to the days it describes. This one is not. The method was stepped back ${horizon}, run again on the prices before that point only, and centred on the price at that point — one somebody standing there would actually have seen. Then it was laid over the days that followed.`,
-    fittedFrom: "Fitted from",
-    fittedVolatility: "Volatility the fit saw",
-    fittedVolatilityNote: "Not the figure above. It is what the older window measured.",
-    origin: "Centred on",
-    originNote: (date: string) => `The close on ${date}, the last one the fit could see.`,
-    lowerBound: "Lower bound",
-    upperBound: "Upper bound",
-    checkedAgainst: "Checked against",
+      `Every figure above is fitted to the days it describes. These are not. The method was stepped back ${horizon}, run again on the prices before that point only, and centred on the price at that point — one somebody standing there would actually have seen. Then it was laid over the days that followed, and the whole thing repeated back through the history as many times as it had room for.`,
+    folds: "Folds",
+    foldsNote: "How many times the history had room to fit a band and then test it.",
     fullyInside: "Days entirely inside",
     fullyOutside: "Days entirely outside",
     undetermined: "Days that crossed an edge",
-    verdict: (inside: string, measured: string) =>
-      `${inside} of ${measured} days stayed entirely inside the band this method would have drawn.`,
+    verdict: (inside: string, measured: string, folds: string) =>
+      `Across ${folds} folds, ${inside} of ${measured} days stayed entirely inside the band this method would have drawn.`,
+    foldPeriod: "Days checked",
+    foldVolatility: "Fitted volatility",
+    foldVerdict: "In / out / crossed",
+    foldColumns:
+      "Each row is one fold: the days it was checked over, the volatility its own fit measured — not the figure above — and how those days sat against the band that fit produced.",
     /*
-     * The two sentences that stop a single number becoming a claim about the
-     * method. One fold is one fold, and nobody held this band.
+     * The two sentences that stop a total becoming a claim about the method.
+     * Nobody held these bands, and the folds are not independent of each other.
      */
-    oneFold:
-      "One origin, one horizon, one pool. This is what would have happened once, not a measure of how often the method holds, and it says nothing about what happens next.",
+    notIndependent:
+      "A few folds on one pool are not a measure of how often the method holds, and say nothing about what happens next. Consecutive fits overlap, too — a 31-close fit is longer than a step of one horizon — so the folds are not independent of each other.",
     notHeld:
-      "Nobody held this band. It is what the method would have suggested at that moment, laid over prices that then happened — and the days above, which the band was drawn from, are not these days.",
+      "Nobody held these bands. Each is what the method would have suggested at that moment, laid over prices that then happened — and the days above, which the suggested range was drawn from, are not these days.",
     unavailableHeading: "This pool could not be checked out of sample",
   },
 
@@ -647,24 +646,23 @@ const tr: Dictionary = {
   outOfSample: {
     heading: "Aynı yöntem, hiç görmediği günlerde",
     intro: (horizon: string) =>
-      `Yukarıdaki her rakam, anlattığı günlere oturtulmuştur. Bu öyle değil. Yöntem ${horizon} geriye alındı, yalnızca o noktadan önceki fiyatlarla yeniden çalıştırıldı ve o andaki fiyata ortalandı — orada duran birinin gerçekten göreceği bir fiyata. Sonra da sonrasında gelen günlerin üzerine serildi.`,
-    fittedFrom: "Kurulduğu pencere",
-    fittedVolatility: "Kurulumun gördüğü volatilite",
-    fittedVolatilityNote: "Yukarıdaki rakam değil. Daha eski pencerenin ölçtüğü şey.",
-    origin: "Ortalandığı fiyat",
-    originNote: (date: string) => `${date} kapanışı — kurulumun görebildiği son fiyat.`,
-    lowerBound: "Alt sınır",
-    upperBound: "Üst sınır",
-    checkedAgainst: "Sınandığı pencere",
+      `Yukarıdaki her rakam, anlattığı günlere oturtulmuştur. Bunlar öyle değil. Yöntem ${horizon} geriye alındı, yalnızca o noktadan önceki fiyatlarla yeniden çalıştırıldı ve o andaki fiyata ortalandı — orada duran birinin gerçekten göreceği bir fiyata. Sonra sonrasında gelen günlerin üzerine serildi, ve bu işlem geçmişte yer buldukça geriye doğru tekrarlandı.`,
+    folds: "Kat sayısı",
+    foldsNote: "Geçmişin, bir bant kurup sonra onu sınamaya kaç kez yer verdiği.",
     fullyInside: "Tamamen içeride geçen gün",
     fullyOutside: "Tamamen dışarıda geçen gün",
     undetermined: "Bir kenarı geçen gün",
-    verdict: (inside: string, measured: string) =>
-      `${measured} günün ${inside} tanesi, bu yöntemin çizeceği bandın tamamen içinde kaldı.`,
-    oneFold:
-      "Tek başlangıç, tek ufuk, tek havuz. Bu, bir kez ne olacağıdır; yöntemin ne sıklıkta tuttuğunun ölçüsü değildir ve bundan sonra ne olacağı hakkında hiçbir şey söylemez.",
+    verdict: (inside: string, measured: string, folds: string) =>
+      `${folds} kat boyunca, ${measured} günün ${inside} tanesi bu yöntemin çizeceği bandın tamamen içinde kaldı.`,
+    foldPeriod: "Sınanan günler",
+    foldVolatility: "Kurulum volatilitesi",
+    foldVerdict: "İçeride / dışarıda / kenar",
+    foldColumns:
+      "Her satır bir kat: sınandığı günler, o katın kendi kurulumunun ölçtüğü volatilite — yukarıdaki rakam değil — ve o günlerin, o kurulumun ürettiği banda göre nerede durduğu.",
+    notIndependent:
+      "Tek bir havuzda birkaç kat, yöntemin ne sıklıkta tuttuğunun ölçüsü değildir ve bundan sonra ne olacağı hakkında hiçbir şey söylemez. Üstelik ardışık kurulumlar örtüşür — 31 kapanışlık bir kurulum, bir ufukluk adımdan uzundur — yani katlar birbirinden bağımsız değildir.",
     notHeld:
-      "Bu bandı kimse tutmadı. Yöntemin o anda önereceği şeyin, sonradan gerçekleşen fiyatların üzerine serilmiş hali — ve yukarıdaki günler, bandın kendisinden çizildiği günler, bu günler değil.",
+      "Bu bantları kimse tutmadı. Her biri, yöntemin o anda önereceği şeyin sonradan gerçekleşen fiyatların üzerine serilmiş hali — ve yukarıdaki günler, önerilen aralığın kendisinden çizildiği günler, bu günler değil.",
     unavailableHeading: "Bu havuz örneklem dışı sınanamadı",
   },
 

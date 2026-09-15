@@ -59,9 +59,16 @@ const succeeded = (result: ReturnType<typeof calculateOutOfSampleCheck>) => {
   return result.data;
 };
 
+/** Folds are published oldest first, so the most recent one is last. */
+const newest = (result: ReturnType<typeof calculateOutOfSampleCheck>) => {
+  const fold = succeeded(result).folds.at(-1);
+  if (fold === undefined) throw new Error("expected at least one fold");
+  return fold;
+};
+
 describe("calculateOutOfSampleCheck", () => {
   it("fits on the days before the test and measures the days after", () => {
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, wobbling), parameters }),
     );
 
@@ -85,8 +92,8 @@ describe("calculateOutOfSampleCheck", () => {
       parameters,
     });
 
-    const a = succeeded(calm);
-    const b = succeeded(violent);
+    const a = newest(calm);
+    const b = newest(violent);
     expect(b.annualizedVolatility).toBe(a.annualizedVolatility);
     expect(b.lowerPrice).toBe(a.lowerPrice);
     expect(b.upperPrice).toBe(a.upperPrice);
@@ -97,7 +104,7 @@ describe("calculateOutOfSampleCheck", () => {
   });
 
   it("centres the band on the last close the fit could see", () => {
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, wobbling), parameters }),
     );
 
@@ -116,7 +123,7 @@ describe("calculateOutOfSampleCheck", () => {
     const days = Array.from({ length: 61 }, (_unused, index) => index).filter(
       (index) => index !== 30,
     );
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({
         history: historyOf(61, wobbling, () => ({}), days),
         parameters,
@@ -128,7 +135,7 @@ describe("calculateOutOfSampleCheck", () => {
   });
 
   it("counts the measured days into the three buckets", () => {
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, wobbling), parameters }),
     );
     const { fullyInside, fullyOutside, undetermined } = data.occupancy;
@@ -137,7 +144,7 @@ describe("calculateOutOfSampleCheck", () => {
   });
 
   it("leaves a day with unusable extremes undetermined", () => {
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({
         history: historyOf(61, wobbling, (index) =>
           index === 40 ? { low: null, high: null } : {},
@@ -153,7 +160,7 @@ describe("calculateOutOfSampleCheck", () => {
     const days = Array.from({ length: 61 }, (_unused, index) => index).filter(
       (index) => index !== 45 && index !== 46,
     );
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, wobbling, () => ({}), days), parameters }),
     );
 
@@ -199,7 +206,7 @@ describe("calculateOutOfSampleCheck", () => {
    * the price itself. That is a real state, not a failure.
    */
   it("collapses the band onto the price when nothing moved", () => {
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, () => 1_000), parameters }),
     );
 
@@ -214,7 +221,7 @@ describe("calculateOutOfSampleCheck", () => {
     ["a shorter horizon", { horizonDays: 7, standardDeviationMultiplier: 1 }],
     ["a wider multiplier", { horizonDays: 30, standardDeviationMultiplier: 3 }],
   ])("honours %s the reader chose", (_label, chosen) => {
-    const data = succeeded(
+    const data = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, wobbling), parameters: chosen }),
     );
 
@@ -226,10 +233,10 @@ describe("calculateOutOfSampleCheck", () => {
   });
 
   it("widens the band when the multiplier widens, on the same fit", () => {
-    const narrow = succeeded(
+    const narrow = newest(
       calculateOutOfSampleCheck({ history: historyOf(61, wobbling), parameters }),
     );
-    const wide = succeeded(
+    const wide = newest(
       calculateOutOfSampleCheck({
         history: historyOf(61, wobbling),
         parameters: { horizonDays: 30, standardDeviationMultiplier: 3 },
@@ -239,5 +246,110 @@ describe("calculateOutOfSampleCheck", () => {
     expect(wide.lowerPrice).toBeLessThan(narrow.lowerPrice);
     expect(wide.upperPrice).toBeGreaterThan(narrow.upperPrice);
     expect(wide.annualizedVolatility).toBe(narrow.annualizedVolatility);
+  });
+});
+
+
+/*
+ * One fold is an anecdote. The window is long enough to lay several end to end,
+ * and how many fit is decided by the horizon, not by a setting.
+ */
+describe("folds", () => {
+  const longEnough = (foldCount: number, horizonDays: number) =>
+    historyOf(31 + foldCount * horizonDays, wobbling);
+
+  it.each([
+    ["three folds of thirty days", 3, 30],
+    ["a single fold of ninety", 1, 90],
+    ["twelve folds of seven", 12, 7],
+  ])("fits %s into a history sized for them", (_label, foldCount, horizonDays) => {
+    const data = succeeded(
+      calculateOutOfSampleCheck({
+        history: longEnough(foldCount, horizonDays),
+        parameters: { horizonDays, standardDeviationMultiplier: 1 },
+      }),
+    );
+
+    expect(data.folds).toHaveLength(foldCount);
+  });
+
+  it("stops at the first step the history cannot support, rather than shortening one", () => {
+    // Room for two folds and most of a third fit, which is not a third fold.
+    const data = succeeded(
+      calculateOutOfSampleCheck({
+        history: historyOf(31 + 2 * 30 + 20, wobbling),
+        parameters: { horizonDays: 30, standardDeviationMultiplier: 1 },
+      }),
+    );
+
+    expect(data.folds).toHaveLength(2);
+  });
+
+  /*
+   * The property that makes the total mean anything: every day between the
+   * oldest fold's start and the newest fold's end is counted exactly once.
+   */
+  it("tiles the history oldest first, with no gap and no overlap", () => {
+    const data = succeeded(
+      calculateOutOfSampleCheck({
+        history: longEnough(3, 30),
+        parameters: { horizonDays: 30, standardDeviationMultiplier: 1 },
+      }),
+    );
+
+    data.folds.forEach((fold, index) => {
+      const previous = data.folds[index - 1];
+      if (previous === undefined) return;
+      expect(previous.measuredRangeEndExclusive).toBe(fold.measuredRangeStart);
+    });
+    expect(data.folds.at(-1)?.measuredRangeEndExclusive).toBe(
+      longEnough(3, 30).rangeEndExclusive,
+    );
+  });
+
+  it("totals exactly what the folds hold", () => {
+    const data = succeeded(
+      calculateOutOfSampleCheck({
+        history: longEnough(3, 30),
+        parameters: { horizonDays: 30, standardDeviationMultiplier: 1 },
+      }),
+    );
+
+    const summed = data.folds.reduce((running, fold) => running + fold.daysMeasured, 0);
+    expect(data.daysMeasured).toBe(summed);
+    expect(data.daysMeasured).toBe(90);
+    expect(
+      data.occupancy.fullyInside + data.occupancy.fullyOutside + data.occupancy.undetermined,
+    ).toBe(90);
+  });
+
+  /*
+   * Each fold is fitted on its own window, so a pool that behaved differently in
+   * one stretch produces a different band there — which is the only reason more
+   * than one fold is worth having.
+   */
+  it("fits each fold on its own window", () => {
+    const data = succeeded(
+      calculateOutOfSampleCheck({
+        history: historyOf(121, (index) => (index < 60 ? 1_000 : wobbling(index))),
+        parameters: { horizonDays: 30, standardDeviationMultiplier: 1 },
+      }),
+    );
+
+    const volatilities = data.folds.map((fold) => fold.annualizedVolatility);
+    expect(new Set(volatilities).size).toBeGreaterThan(1);
+    expect(volatilities[0]).toBe(0);
+  });
+
+  it("carries the reader's settings onto every fold", () => {
+    const data = succeeded(
+      calculateOutOfSampleCheck({
+        history: longEnough(3, 30),
+        parameters: { horizonDays: 30, standardDeviationMultiplier: 2 },
+      }),
+    );
+
+    expect(data.folds.every((fold) => fold.horizonDays === 30)).toBe(true);
+    expect(data.folds.every((fold) => fold.standardDeviationMultiplier === 2)).toBe(true);
   });
 });

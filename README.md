@@ -321,35 +321,56 @@ laid over the days that followed, which the fit knew nothing about.
                        ^ origin: the band is centred here
 ```
 
+That is one **fold**, and the window is long enough for several. Each further
+fold steps back by another horizon, and the folds tile the recent history end to
+end, so no day is counted twice and none is skipped. How many fit is decided by
+the horizon, not by a setting: with 121 closes and a 31-close fit, a 7-day
+horizon gives twelve folds, 30 days gives three, 90 days gives one.
+
 It costs no request: the daily reader already fetches 121 days for exactly this.
-One reading, two windows — two reads of a moving market pretending to be one
+One reading, every window — two reads of a moving market pretending to be one
 series is the failure mode that would make the whole thing meaningless.
 
 **What it found is not flattering, which is the point.** Against the live
-USDC/WETH 0.05% pool at the default 30 days and 1σ: the in-sample panel reports
-26 of 30 days entirely inside the suggested range; the out-of-sample check
-reports **3**. The band was fitted on 16 July → 16 August, centred at 0.000531,
-and price then fell to 0.000404. Widening to 2σ barely moved it — 3 inside
-instead of 3. WBTC/WETH told the opposite story at the same settings: 8 inside at
-1σ, 26 at 2σ.
+USDC/WETH 0.05% pool at the default 30 days and 1σ, the three folds read:
 
-**It is one fold and the page says so.** One origin, one horizon, one pool: what
-would have happened once, not a measure of how often the method holds, and
-nothing at all about what happens next. Nobody held this band either — it is what
-the method would have suggested at that moment, laid over prices that then
-happened.
+| Days checked | Volatility its own fit measured | In / out / crossed |
+| --- | --- | --- |
+| 17 Jun → 17 Jul | 62.91% | 30 / 0 / 0 |
+| 17 Jul → 16 Aug | 47.81% | 30 / 0 / 0 |
+| 16 Aug → 15 Sep | 30.45% | 3 / 26 / 1 |
+
+63 of 90 days, against 26 of 30 for the in-sample panel directly above it. The
+rows say more than the total does: the two folds fitted on a loud window held
+completely, and the one fitted on the quietest window — 30% where the others saw
+48% and 63% — drew a band too narrow for what came next. A method that fails
+exactly when volatility is about to rise from a quiet stretch is a thing worth
+knowing about it, and a single fold would have shown only the failure.
+
+**A few folds on one pool is still not a measure of the method, and the page says
+so.** Nothing here is about what happens next. Nobody held these bands either —
+each is what the method would have suggested at that moment, laid over prices
+that then happened. Consecutive fits overlap, too, because a 31-close fit is
+longer than a step of one horizon at every horizon the interface offers, so the
+folds are not independent of each other.
 
 A pool without enough indexed history to fit a band *and* leave a full horizon to
 check it against gets no check rather than a shortened one. A 30-day band checked
 over 20 days is not a check of a 30-day band, and the shorter window flatters it:
 fewer days is fewer chances to leave the range.
 
-Six invariants guard it, and the two that matter most are about the seam between
-the windows. The fit must end exactly where the measurement begins — a gap
-discards days, an overlap puts days the fit saw back into the test, which is the
-in-sample problem reappearing where nobody would look for it. And the price the
-band was centred on must be a close from inside the fit window, never one from
-the window being tested.
+Six invariants guard each fold, and the two that matter most are about the seam
+between its windows. The fit must end exactly where the measurement begins — a
+gap discards days, an overlap puts days the fit saw back into the test, which is
+the in-sample problem reappearing where nobody would look for it. And the price
+the band was centred on must be a close from inside the fit window, never one
+from the window being tested.
+
+Three more guard the roll-up above them: the folds tile the history oldest first
+without a gap or an overlap, every fold carries the horizon and multiplier the
+reader chose, and the totals are re-derived from the rows rather than believed. A
+total that had drifted from its rows would be the most persuasive wrong number on
+the page.
 
 The band arithmetic and the three-bucket day counting are each shared with the
 figures above rather than reimplemented, so the honest check and the in-sample
