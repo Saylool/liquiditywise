@@ -11,6 +11,14 @@ export const DataSourceSchema = z.enum([
   "uniswap-v3-subgraph",
   "uniswap-v4-subgraph",
   "hook-registry",
+  /**
+   * The chain itself, read through a JSON-RPC `eth_call`.
+   *
+   * Distinct from a subgraph because it is a different kind of answer: an
+   * indexer reports what it has processed, and a contract call reports what the
+   * contract says right now. Where both can answer, they can disagree.
+   */
+  "ethereum-rpc",
   /** Computed by this application from other sources rather than fetched. */
   "derived-analytics",
 ]);

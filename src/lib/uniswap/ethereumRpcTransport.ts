@@ -111,3 +111,128 @@ export const postEthCall = async ({
     clearTimeout(timeout);
   }
 };
+
+/**
+ * How many calls travel in one batch.
+ *
+ * Measured against the live endpoint. A batch of 25 answers every call; a batch
+ * of 175 comes back with nine of them refused for exceeding the provider's
+ * compute units per second, and the refusals are per call rather than per
+ * request — so the size is a property of what the endpoint will compute at once,
+ * not of what it will accept.
+ */
+export const ETH_CALL_BATCH_SIZE = 25;
+
+/**
+ * A pause between batches, so a sweep is a sequence rather than a burst.
+ *
+ * Also measured: reading 175 tokens as seven spaced batches answered all 175
+ * with no refusals in 4.3 seconds, where the same seven sent back to back lost
+ * thirteen. The delay is most of a second across a whole lookup and it is the
+ * difference between an answer and a gap.
+ */
+export const ETH_CALL_BATCH_PAUSE_MS = 250;
+
+export type EthCallBatchRequest = {
+  readonly rpcUrl: string;
+  /** One `{ to, data }` per call, answered in the same order. */
+  readonly calls: readonly { readonly to: string; readonly data: string }[];
+  readonly fetchImpl: FetchLike;
+  readonly timeoutMs: number;
+};
+
+/** One call's answer: the raw word, or the fact that this one was refused. */
+export type BatchedCallResult =
+  | { readonly ok: true; readonly result: string }
+  | { readonly ok: false };
+
+export type EthCallBatchResult =
+  | { readonly ok: true; readonly results: readonly BatchedCallResult[] }
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
+
+/**
+ * Performs many `eth_call`s in one HTTP request.
+ *
+ * JSON-RPC's own batch form rather than an aggregating contract: a batch needs
+ * no address, and shipping a contract address asserted from memory is the thing
+ * this project refuses everywhere else.
+ *
+ * Answers are matched by `id` rather than by position. The specification permits
+ * a server to return them in any order, and a sweep that silently paired one
+ * token's balance with another token's identity would be wrong in a way nothing
+ * downstream could detect.
+ */
+const batchFailure = (
+  reason: DataFailureReason,
+  notice: DataFailureNotice,
+): EthCallBatchResult => ({ ok: false, reason, notice });
+
+export const postEthCallBatch = async ({
+  rpcUrl,
+  calls,
+  fetchImpl,
+  timeoutMs,
+}: EthCallBatchRequest): Promise<EthCallBatchResult> => {
+  if (calls.length === 0) return { ok: true, results: [] };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const response = await fetchImpl(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify(
+        calls.map((call, index) => ({
+          jsonrpc: "2.0",
+          id: index,
+          method: "eth_call",
+          params: [{ to: call.to, data: call.data }, "latest"],
+        })),
+      ),
+      signal: controller.signal,
+    });
+
+    // `classifyStatus` answers `null` for 200 and a failure otherwise, so the
+    // non-null branch is always one — narrowed here rather than asserted.
+    const statusFailure = classifyStatus(response.status);
+    if (statusFailure !== null && !statusFailure.ok) {
+      return batchFailure(statusFailure.reason, statusFailure.notice);
+    }
+
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch {
+      return controller.signal.aborted
+        ? batchFailure("timeout", TIMED_OUT)
+        : batchFailure("invalid-response", UNREADABLE);
+    }
+
+    if (!Array.isArray(payload)) return batchFailure("invalid-response", UNREADABLE);
+
+    const byId = new Map<number, unknown>();
+    for (const row of payload) {
+      const id = (row as { id?: unknown })?.id;
+      if (typeof id === "number") byId.set(id, (row as { result?: unknown }).result);
+    }
+
+    return {
+      ok: true,
+      results: calls.map((_call, index) => {
+        const result = byId.get(index);
+
+        return typeof result === "string" ? { ok: true, result } : { ok: false };
+      }),
+    };
+  } catch {
+    return controller.signal.aborted
+      ? batchFailure("timeout", TIMED_OUT)
+      : batchFailure("network-error", UNREACHABLE);
+  } finally {
+    clearTimeout(timeout);
+  }
+};

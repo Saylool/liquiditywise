@@ -5,7 +5,7 @@ import {
   type PairFeeTiers,
   PairFeeTiersSchema,
 } from "../../schemas";
-import { V3PairFeeTiersResponseSchema } from "./v3PairFeeTiersRawResponse";
+import { V3PoolListResponseSchema } from "./v3PoolListRawResponse";
 import { normalizePoolCard } from "./v3PoolCardAdapter";
 
 const MALFORMED = "market-data-malformed";
@@ -54,7 +54,7 @@ export const normalizeV3PairFeeTiers = ({
   fetchedAt,
   onDiagnostic,
 }: NormalizeV3PairFeeTiersInput): DataResult<PairFeeTiers> => {
-  const parsed = V3PairFeeTiersResponseSchema.safeParse(payload);
+  const parsed = V3PoolListResponseSchema.safeParse(payload);
   if (!parsed.success) return unavailable(MALFORMED);
 
   const { data, errors } = parsed.data;

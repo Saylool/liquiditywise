@@ -486,6 +486,8 @@ const en = {
         "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
       "out-of-sample-unverifiable":
         "The out-of-sample check produced a result this application cannot verify.",
+      "holdings-unverifiable":
+        "What this address holds produced a result this application cannot verify.",
       "explanation-key-rejected":
         "The explanation service did not accept the configured key, so no explanation is shown.",
       "explanation-model-not-permitted":
@@ -966,6 +968,8 @@ const tr: Dictionary = {
         "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
       "out-of-sample-unverifiable":
         "Örneklem dışı kontrol, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "holdings-unverifiable":
+        "Bu adresin ne tuttuğu, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "explanation-key-rejected":
         "Açıklama servisi yapılandırılmış anahtarı kabul etmedi, bu yüzden açıklama gösterilmiyor.",
       "explanation-model-not-permitted":

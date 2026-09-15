@@ -18,4 +18,5 @@ export * from "./searchTerms";
 export * from "./poolSearch";
 export * from "./pairFeeTiers";
 export * from "./outOfSampleCheck";
+export * from "./holdings";
 export * from "./interpretation";
