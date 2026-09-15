@@ -1,9 +1,9 @@
 import "server-only";
 
 import type { AddressHoldings, DataResult } from "../../schemas";
-import { logUnavailable, loggingFetch } from "../observability/serverDiagnostics";
+import { logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumErc20Balances } from "../uniswap/ethereumErc20Balances";
-import { fetchEthereumV3TradedPools } from "../uniswap/ethereumV3TradedPools";
+import { getEthereumV3TradedPools } from "../uniswap/getEthereumV3TradedPools";
 import { composeAddressHoldings } from "./addressHoldings";
 
 /** Identifies this reader in server-side diagnostics. */
@@ -31,12 +31,12 @@ const LABEL = "address-holdings";
 export const getAddressHoldings = async (
   address: string,
 ): Promise<DataResult<AddressHoldings>> => {
-  const candidates = await fetchEthereumV3TradedPools({
-    apiKey: process.env.THE_GRAPH_API_KEY,
-    subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
-    fetchImpl: loggingFetch(LABEL),
-    now: () => new Date(),
-  });
+  /*
+   * Behind a cache, because this query takes no input: every visitor asks the
+   * same question and it cost 3.7 seconds cold. See the wrapper for why reusing
+   * it is safe in a way that reusing a figure would not be.
+   */
+  const candidates = await getEthereumV3TradedPools();
 
   const tokenAddresses =
     candidates.status === "unavailable"

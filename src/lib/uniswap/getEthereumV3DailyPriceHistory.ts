@@ -4,6 +4,9 @@ import type { DataResult, PoolDailyPriceHistory } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV3DailyPriceHistory } from "./ethereumV3DailyPriceHistory";
 
+/** See the note where it is used: the cold path for 121 days is seconds long. */
+const DAILY_HISTORY_TIMEOUT_MS = 25_000;
+
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v3-daily-history";
 
@@ -40,6 +43,15 @@ export const getEthereumV3DailyPriceHistory = async (
       apiKey: process.env.THE_GRAPH_API_KEY,
       subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
       fetchImpl: loggingFetch(LABEL),
+      /*
+       * Longer than the shared default, because this is the largest query the
+       * application sends and the gateway's cold path for it is slow. Measured
+       * on the live endpoint: 5.5 seconds on a first ask, then 280 milliseconds
+       * on every repeat. At the default ten seconds a cold ask on a bad day
+       * failed the whole analysis and the page said the pool had no range —
+       * which was true of nothing except the timeout.
+       */
+      timeoutMs: DAILY_HISTORY_TIMEOUT_MS,
       now: () => new Date(),
     }),
   );

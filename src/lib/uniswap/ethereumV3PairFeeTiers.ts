@@ -4,7 +4,12 @@ import {
   PAIR_FEE_TIER_FETCH_LIMIT,
   type PairFeeTiers,
 } from "../../schemas";
-import { normalizeV3PairFeeTiers, type PairFeeTiersDiagnostic } from "./v3PairFeeTiersAdapter";
+import { fetchEthereumV3PoolReserves } from "./ethereumV3PoolReserves";
+import {
+  normalizeV3PairFeeTiers,
+  type PairFeeTiersDiagnostic,
+  readPoolsForReserves,
+} from "./v3PairFeeTiersAdapter";
 import { POOL_CARD_FRAGMENT } from "./v3PoolCardRawResponse";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
@@ -61,6 +66,8 @@ export type EthereumV3PairFeeTiersRequest = {
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
+  /** Raw environment value; without it the tiers arrive with no reserves. */
+  readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
   /** Injected, because a result carries when it was read. */
   readonly now: () => Date;
@@ -113,8 +120,23 @@ export const fetchEthereumV3PairFeeTiers = async (
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
+  /*
+   * The pools come from the indexer and what they hold comes from the chain,
+   * because the indexer's answer is measurably wrong — its own token totals run
+   * between 1.3 and 13 times the balances the token contracts report. The two
+   * reads are sequential because the second needs the first's pool addresses.
+   */
+  const pools = readPoolsForReserves(transport.payload);
+  const reserves = await fetchEthereumV3PoolReserves({
+    pools,
+    rpcUrl: request.rpcUrl,
+    fetchImpl: request.fetchImpl,
+    timeoutMs: request.timeoutMs,
+  });
+
   return normalizeV3PairFeeTiers({
     payload: transport.payload,
+    reserves,
     analysedPoolId: poolAddress.data,
     fetchedAt: request.now().toISOString(),
     onDiagnostic: request.onDiagnostic,

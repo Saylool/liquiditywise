@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { poolAnalysisHref } from "../lib/advisor/requestedParameters";
-import { formatFeePpm, formatUsd } from "../lib/format/displayFormats";
+import { formatFeePpm, formatTokenAmount } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { DataResult, PairFeeTier, PairFeeTiers, PriceBandParameters } from "../schemas";
@@ -51,9 +51,27 @@ const TierRow = ({
           <span className="text-xs text-accent">{t.feeTiers.open}</span>
         )}
       </div>
+      {/*
+       * Two token amounts rather than one dollar figure. Every tier of a pair
+       * holds the same two tokens, so nothing has to be priced to compare them
+       * — and the priced figure the indexer publishes is wrong by up to an
+       * order of magnitude, which is why it is not here.
+       */}
       <p className="text-xs text-muted">
-        {t.feeTiers.reportedLiquidity}{" "}
-        <span className="font-mono">{formatUsd(tier.tvlUsd, locale)}</span>
+        {tier.reserves === null ? (
+          t.feeTiers.reservesUnread
+        ) : (
+          <>
+            {t.feeTiers.holds}{" "}
+            <span className="font-mono">
+              {formatTokenAmount(tier.reserves.token0, tier.pool.token0.decimals, locale)}{" "}
+              {tier.pool.token0.symbol}
+              {" + "}
+              {formatTokenAmount(tier.reserves.token1, tier.pool.token1.decimals, locale)}{" "}
+              {tier.pool.token1.symbol}
+            </span>
+          </>
+        )}
       </p>
     </>
   );
@@ -132,7 +150,7 @@ export function PoolFeeTiers({
 
           <div className="flex flex-col gap-3 border-t border-border pt-3 text-xs leading-relaxed text-muted">
             <p>{t.feeTiers.biggerIsNotBetter}</p>
-            <p>{t.feeTiers.reportedNote}</p>
+            <p>{t.feeTiers.reservesNote}</p>
           </div>
         </>
       )}

@@ -4,8 +4,10 @@ import {
   type PairFeeTier,
   type PairFeeTiers,
   PairFeeTiersSchema,
+  type V3PoolMetadata,
 } from "../../schemas";
 import { V3PoolListResponseSchema } from "./v3PoolListRawResponse";
+import type { PoolReserves } from "./ethereumV3PoolReserves";
 import { normalizePoolCard } from "./v3PoolCardAdapter";
 
 const MALFORMED = "market-data-malformed";
@@ -24,9 +26,38 @@ export type PairFeeTiersDiagnostic = (detail: string) => void;
 const byFee = (left: PairFeeTier, right: PairFeeTier): number =>
   left.pool.feePpm - right.pool.feePpm;
 
+/**
+ * The verified pools in a payload, for asking the chain what they hold.
+ *
+ * A first pass rather than a second parse of a different shape: the same card
+ * normaliser runs here and again below, so a pool the reserves were read for is
+ * exactly a pool that can appear in the answer. Anything it refuses is skipped
+ * in both places.
+ */
+export const readPoolsForReserves = (payload: unknown): readonly V3PoolMetadata[] => {
+  const parsed = V3PoolListResponseSchema.safeParse(payload);
+  if (!parsed.success || parsed.data.data == null) return [];
+
+  const pools: V3PoolMetadata[] = [];
+  for (const raw of parsed.data.data.pools) {
+    const card = normalizePoolCard(raw);
+    if (card !== null) pools.push(card.pool);
+  }
+
+  return pools;
+};
+
 export type NormalizeV3PairFeeTiersInput = {
   /** The decoded JSON body, still untrusted. */
   readonly payload: unknown;
+  /**
+   * What each pool actually holds, read from the chain, keyed by pool address.
+   *
+   * Passed in rather than filled afterwards so that both sources go through the
+   * domain schema together. A figure patched onto a validated object is a figure
+   * nothing validated.
+   */
+  readonly reserves: ReadonlyMap<string, PoolReserves>;
   /** The pool the reader is looking at, already validated by the caller. */
   readonly analysedPoolId: string;
   /** When the request was made, from the reader's injected clock. */
@@ -50,6 +81,7 @@ export type NormalizeV3PairFeeTiersInput = {
  */
 export const normalizeV3PairFeeTiers = ({
   payload,
+  reserves,
   analysedPoolId,
   fetchedAt,
   onDiagnostic,
@@ -74,7 +106,7 @@ export const normalizeV3PairFeeTiers = ({
       dropped += 1;
       continue;
     }
-    tiers.push(card);
+    tiers.push({ pool: card.pool, reserves: reserves.get(card.pool.id) ?? null });
   }
 
   if (dropped > 0) {
@@ -92,7 +124,7 @@ export const normalizeV3PairFeeTiers = ({
     analysedPoolId,
     tiers: [...tiers].sort(byFee),
     fetchedAt,
-    source: "uniswap-v3-subgraph",
+    sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
   });
   if (!result.success) return unavailable(MALFORMED);
 

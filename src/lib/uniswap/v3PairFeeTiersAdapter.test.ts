@@ -52,7 +52,15 @@ const normalize = (
   body: unknown,
   analysedPoolId = POOL_500,
   onDiagnostic?: (detail: string) => void,
-) => normalizeV3PairFeeTiers({ payload: body, analysedPoolId, fetchedAt: FETCHED_AT, onDiagnostic });
+  reserves: ReadonlyMap<string, { token0: string; token1: string }> = new Map(),
+) =>
+  normalizeV3PairFeeTiers({
+    payload: body,
+    reserves,
+    analysedPoolId,
+    fetchedAt: FETCHED_AT,
+    onDiagnostic,
+  });
 
 const succeeded = (result: ReturnType<typeof normalize>) => {
   if (result.status !== "success") throw new Error(`expected success, got ${result.status}`);
@@ -68,9 +76,10 @@ describe("normalizeV3PairFeeTiers", () => {
     expect(data).toEqual({
       analysedPoolId: POOL_500,
       fetchedAt: FETCHED_AT,
-      source: "uniswap-v3-subgraph",
+      sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
       tiers: [
         {
+          reserves: null,
           pool: {
             protocolVersion: "v3",
             chainId: 1,
@@ -79,7 +88,6 @@ describe("normalizeV3PairFeeTiers", () => {
             token1: { chainId: 1, address: WETH, symbol: "WETH", name: "WETH", decimals: 18 },
             feePpm: 500,
           },
-          tvlUsd: 413951941.5,
         },
       ],
     });
@@ -184,5 +192,35 @@ describe("normalizeV3PairFeeTiers", () => {
     normalize(payload([rawPool({ id: POOL_500, feeTier: "500" })]), POOL_500, onDiagnostic);
 
     expect(onDiagnostic).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("reserves from the chain", () => {
+  it("carries a pool's balances onto its tier", () => {
+    const data = succeeded(
+      normalize(
+        payload([rawPool({ id: POOL_500, feeTier: "500" })]),
+        POOL_500,
+        undefined,
+        new Map([[POOL_500, { token0: "76111046960000", token1: "11822070000000000000000" }]]),
+      ),
+    );
+
+    expect(data.tiers[0]?.reserves).toEqual({
+      token0: "76111046960000",
+      token1: "11822070000000000000000",
+    });
+  });
+
+  /*
+   * An unread reserve is not an empty pool. It stays null so the page can say
+   * which it is, rather than showing a pool nobody could read as one holding
+   * nothing.
+   */
+  it("leaves a pool whose balances were not read as unread", () => {
+    const data = succeeded(normalize(payload([rawPool({ id: POOL_500, feeTier: "500" })])));
+
+    expect(data.tiers[0]?.reserves).toBeNull();
   });
 });

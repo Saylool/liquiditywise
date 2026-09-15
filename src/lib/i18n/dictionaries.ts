@@ -211,7 +211,8 @@ const en = {
       `${pair} trades at only this fee tier on Ethereum mainnet. Everything above is about the whole pair, because the pair is this one pool.`,
     thisOne: "You are reading this one",
     feeTier: "Fee tier",
-    reportedLiquidity: "Reported liquidity",
+    holds: "Holds",
+    reservesUnread: "What this pool holds could not be read from the chain.",
     open: "Analyse this tier",
     /*
      * The sentence the panel exists to carry. A list of pools ordered beside
@@ -219,8 +220,8 @@ const en = {
      */
     biggerIsNotBetter:
       "A tier holding more liquidity is a larger crowd sharing the same swap fees, not a better place to be. Which one suits a position depends on how far the price moves and how often, and that is measured per pool — so the honest way to compare them is to open each and read its own figures. The horizon and multiplier you chose travel with the link.",
-    reportedNote:
-      "The liquidity figure is the data source's own, not one this application computed or checked.",
+    reservesNote:
+      "These are the balances the two token contracts report for each pool, read from the chain rather than from an indexer. The indexer's own figure was measured against them and overstates what is there by between 1.3 and 13 times, so it is not shown. Two token amounts rather than one dollar figure, because every tier here holds the same two tokens and nothing has to be priced to compare them.",
     unavailableHeading: "The pair's other fee tiers could not be read",
   },
 
@@ -753,12 +754,13 @@ const tr: Dictionary = {
       `${pair} Ethereum mainnet üzerinde yalnızca bu komisyon kademesinde işlem görüyor. Yukarıdaki her şey pariteyi anlatıyor, çünkü parite bu tek havuzdan ibaret.`,
     thisOne: "Şu an bunu okuyorsun",
     feeTier: "Komisyon kademesi",
-    reportedLiquidity: "Bildirilen likidite",
+    holds: "Tuttuğu",
+    reservesUnread: "Bu havuzun ne tuttuğu zincirden okunamadı.",
     open: "Bu kademeyi analiz et",
     biggerIsNotBetter:
       "Daha çok likidite tutan bir kademe, aynı takas komisyonlarını paylaşan daha kalabalık bir gruptur; daha iyi bir yer değil. Hangisinin bir pozisyona uyduğu, fiyatın ne kadar ve ne sıklıkta hareket ettiğine bağlıdır ve bu havuz havuz ölçülür — yani dürüst karşılaştırma, her birini açıp kendi rakamlarını okumaktır. Seçtiğin ufuk ve çarpan bağlantıyla birlikte taşınır.",
-    reportedNote:
-      "Likidite rakamı veri kaynağının kendi rakamıdır; bu uygulamanın hesapladığı ya da doğruladığı bir şey değil.",
+    reservesNote:
+      "Bunlar, her havuz için iki token sözleşmesinin bildirdiği bakiyeler — bir indeksleyiciden değil, doğrudan zincirden okundu. İndeksleyicinin kendi rakamı bunlara karşı ölçüldü ve orada olanı 1,3 ile 13 kat arasında fazla gösteriyor; bu yüzden gösterilmiyor. Tek bir dolar rakamı yerine iki token miktarı, çünkü buradaki her kademe aynı iki tokenı tutuyor ve karşılaştırmak için hiçbir şeyin fiyatlanması gerekmiyor.",
     unavailableHeading: "Paritenin diğer komisyon kademeleri okunamadı",
   },
 

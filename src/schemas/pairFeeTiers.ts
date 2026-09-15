@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { DataSourceSchema } from "./dataSource";
-import { IsoTimestampSchema, nonZeroEvmAddress, UsdAmountSchema } from "./primitives";
+import {
+  IsoTimestampSchema,
+  nonZeroEvmAddress,
+  UnsignedIntegerStringSchema,
+} from "./primitives";
 import { V3PoolMetadataSchema } from "./uniswap";
 
 /*
@@ -32,8 +36,11 @@ import { V3PoolMetadataSchema } from "./uniswap";
  */
 export const PAIR_FEE_TIER_FETCH_LIMIT = 20;
 
-/** The only source that can answer this. */
-export const PairFeeTiersSourceSchema = DataSourceSchema.extract(["uniswap-v3-subgraph"]);
+/** Which pools exist comes from the indexer; what they hold comes from the chain. */
+export const PairFeeTiersSourceSchema = DataSourceSchema.extract([
+  "uniswap-v3-subgraph",
+  "ethereum-rpc",
+]);
 
 export const PairFeeTierSchema = z.strictObject({
   /**
@@ -42,13 +49,29 @@ export const PairFeeTierSchema = z.strictObject({
    */
   pool: V3PoolMetadataSchema,
   /**
-   * What the source reports is locked in this tier, in US dollars.
+   * What the pool contract actually holds, in each token's own base units.
    *
-   * The provider's own figure, not one this application computed or cross-checked,
-   * and the interface says so. It is here as context for a reader deciding where
-   * to look, and deliberately *not* as the order — see the note above.
+   * Read from the chain rather than taken from the indexer, and that is not
+   * caution — it is a correction. The subgraph's `totalValueLockedToken0/1`
+   * were measured against `balanceOf` on the pool contract for five of the
+   * busiest pools, and they overstate what is there by between 1.3 and 13
+   * times: 144 million USDC reported against 11 million held, 15,058 WETH
+   * against 1,729. The dollar figure derived from them is internally consistent
+   * and therefore wrong by the same factor.
+   *
+   * Two token amounts rather than one dollar figure, because every tier of one
+   * pair holds the same two tokens. Nothing has to be priced to compare them,
+   * so nothing can be mispriced.
+   *
+   * Null when the chain could not be read. An unread reserve is not an empty
+   * pool, and the interface says which it is.
    */
-  tvlUsd: UsdAmountSchema,
+  reserves: z
+    .strictObject({
+      token0: UnsignedIntegerStringSchema,
+      token1: UnsignedIntegerStringSchema,
+    })
+    .nullable(),
 });
 
 export type PairFeeTier = z.infer<typeof PairFeeTierSchema>;
@@ -139,7 +162,7 @@ export const PairFeeTiersSchema = z
     }),
     /** When this application asked. A reported liquidity figure is a reading. */
     fetchedAt: IsoTimestampSchema,
-    source: PairFeeTiersSourceSchema,
+    sources: z.array(PairFeeTiersSourceSchema).min(1),
   })
   .refine(everyTierIsTheSamePair, {
     error: "Every fee tier listed must belong to the same token pair.",

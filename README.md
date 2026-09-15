@@ -433,13 +433,29 @@ applies.
 So under the figures the page lists every pool of the same pair, with what the
 source reports is locked in each, and links to the same analysis run on that one.
 
+**What each tier holds is read from the chain, not from the indexer, and that is
+a correction rather than caution.** The panel used to show
+`totalValueLockedUSD`, labelled as the source's own figure. It was measured
+against `balanceOf` on the pool contracts for five of the busiest pools, and the
+indexer's token totals overstate what is there by between 1.3 and 13 times —
+144 million USDC reported against 11 million held, 15,058 WETH against 1,729. The
+dollar figure derived from them is internally consistent and therefore wrong by
+the same factor. For USDC/WETH it told a reader the 0.05% and 0.30% tiers were
+within 1.4x of each other; the chain says one holds seven times the USDC of the
+other.
+
+So the figure is two token amounts rather than one dollar amount. Every tier of a
+pair holds the same two tokens, so nothing has to be priced to compare them and
+nothing can be mispriced. An unread balance stays unread on the page: it is not
+an empty pool.
+
 **It does not say which tier is better, and it is not ordered as if it did.** A
-tier holding more liquidity is a larger crowd sharing the same swap fees, not a
-better place to be; answering "which one" would need the tick-level liquidity
+tier holding more is a larger crowd sharing the same swap fees, not a better
+place to be; answering "which one" would need the tick-level liquidity
 distribution this application does not read. The list is therefore ascending by
 fee — a fixed property of each pool, so it reads the same way today and next
-month — rather than descending by dollars, which would make it a ranking. What
-the panel offers instead is the comparison itself: open a tier and read its own
+month — rather than descending by size, which would make it a ranking. What the
+panel offers instead is the comparison itself: open a tier and read its own
 figures.
 
 **The chosen band travels with every link.** A reader who set a ninety-day
@@ -584,6 +600,14 @@ nothing else.
 
 The route is guarded by the same rate limit as an analysis, and is the more
 expensive of the two.
+
+The candidate list is cached for ten minutes, which took a warm lookup from 8.6
+seconds to 2.4. It is the one read here that takes no input — every visitor asks
+the same question — and reusing it is safe in a way that reusing a figure would
+not be: the list is a net, nothing on the page is derived from it except which
+token contracts get asked, and a ten-minute-old net can only mean a pool listed
+in the last ten minutes has not been asked about yet. That is a narrower version
+of the limit the page already states.
 
 ## The explanation
 

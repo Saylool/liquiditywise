@@ -41,6 +41,7 @@ export const getEthereumV3PairFeeTiers = async (
       token1Address: pool.token1.address,
       apiKey: process.env.THE_GRAPH_API_KEY,
       subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
+      rpcUrl: process.env.ETHEREUM_RPC_URL,
       fetchImpl: loggingFetch(LABEL),
       now: () => new Date(),
       onDiagnostic: (detail) => {

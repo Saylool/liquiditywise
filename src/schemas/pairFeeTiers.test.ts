@@ -37,14 +37,13 @@ const token = (address: string, symbol: string, decimals: number) => ({
 const tier = ({
   id,
   feePpm,
-  tvlUsd = 1_000_000,
   pair = [USDC, WETH],
 }: {
   id: string;
   feePpm: number;
-  tvlUsd?: number;
   pair?: readonly [string, string];
 }) => ({
+  reserves: { token0: "1000000", token1: "2000000000000000000" },
   pool: {
     protocolVersion: "v3",
     chainId: 1,
@@ -53,18 +52,17 @@ const tier = ({
     token1: token(pair[1], "TKB", 18),
     feePpm,
   },
-  tvlUsd,
 });
 
 const tiers = (overrides: Record<string, unknown> = {}) => ({
   analysedPoolId: POOL_500,
   tiers: [
-    tier({ id: POOL_100, feePpm: 100, tvlUsd: 8_701_671 }),
-    tier({ id: POOL_500, feePpm: 500, tvlUsd: 413_951_941 }),
-    tier({ id: POOL_3000, feePpm: 3_000, tvlUsd: 304_691_772 }),
+    tier({ id: POOL_100, feePpm: 100 }),
+    tier({ id: POOL_500, feePpm: 500 }),
+    tier({ id: POOL_3000, feePpm: 3_000 }),
   ],
   fetchedAt: "2026-09-15T08:21:00.000Z",
-  source: "uniswap-v3-subgraph",
+  sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
   ...overrides,
 });
 
@@ -110,7 +108,7 @@ describe("PairFeeTiersSchema", () => {
     const duplicated = tiers({
       tiers: [
         tier({ id: POOL_500, feePpm: 500 }),
-        tier({ id: POOL_3000, feePpm: 500, tvlUsd: 2 }),
+        tier({ id: POOL_3000, feePpm: 500 }),
       ],
     });
 
@@ -149,11 +147,53 @@ describe("PairFeeTiersSchema", () => {
 
   it.each([
     ["the zero address as the analysed pool", { analysedPoolId: `0x${"0".repeat(40)}` }],
-    ["a negative reported liquidity", { tiers: [{ ...tier({ id: POOL_500, feePpm: 500 }), tvlUsd: -1 }] }],
+    [
+      "a reserve that is not a base-unit integer",
+      { tiers: [{ ...tier({ id: POOL_500, feePpm: 500 }), reserves: { token0: "1.5", token1: "2" } }] },
+    ],
     ["a timestamp that is not a canonical instant", { fetchedAt: "2026-09-15T08:21:00Z" }],
-    ["a source that cannot answer this", { source: "ethereum-rpc" }],
+    ["a source that cannot answer this", { sources: ["hook-registry"] }],
+    ["no sources at all", { sources: [] }],
     ["a field nobody put there", { tierToPick: 500 }],
   ])("refuses %s", (_label, overrides) => {
     expect(PairFeeTiersSchema.safeParse(tiers(overrides)).success).toBe(false);
+  });
+});
+
+
+/*
+ * Reserves come from the chain, and the reason they do is that the indexer's own
+ * figure is wrong: measured against `balanceOf` on five of the busiest pools,
+ * `totalValueLockedToken0/1` overstate what is there by between 1.3 and 13
+ * times. An unread reserve is left null rather than shown as an empty pool.
+ */
+describe("PairFeeTiersSchema reserves", () => {
+  it("accepts a tier whose reserves could not be read", () => {
+    const unread = tiers({
+      tiers: [{ ...tier({ id: POOL_500, feePpm: 500 }), reserves: null }],
+      analysedPoolId: POOL_500,
+    });
+
+    expect(PairFeeTiersSchema.safeParse(unread).success).toBe(true);
+  });
+
+  it("accepts a pool that really holds nothing", () => {
+    const empty = tiers({
+      tiers: [
+        { ...tier({ id: POOL_500, feePpm: 500 }), reserves: { token0: "0", token1: "0" } },
+      ],
+      analysedPoolId: POOL_500,
+    });
+
+    expect(PairFeeTiersSchema.safeParse(empty).success).toBe(true);
+  });
+
+  it("refuses half a pool's reserves, which cannot be compared with another's", () => {
+    const half = tiers({
+      tiers: [{ ...tier({ id: POOL_500, feePpm: 500 }), reserves: { token0: "5" } }],
+      analysedPoolId: POOL_500,
+    });
+
+    expect(PairFeeTiersSchema.safeParse(half).success).toBe(false);
   });
 });

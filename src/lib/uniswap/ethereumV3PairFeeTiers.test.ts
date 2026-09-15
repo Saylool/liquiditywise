@@ -38,6 +38,9 @@ const run = (overrides: Partial<Parameters<typeof fetchEthereumV3PairFeeTiers>[0
     token1Address: WETH,
     apiKey: API_KEY,
     subgraphId: SUBGRAPH_ID,
+    /* No endpoint: the tiers then arrive with no reserves, which is a state the
+     * page renders rather than a failure. */
+    rpcUrl: undefined,
     fetchImpl: vi.fn<FetchLike>(async () => jsonResponse(successBody)),
     now: () => NOW,
     ...overrides,
