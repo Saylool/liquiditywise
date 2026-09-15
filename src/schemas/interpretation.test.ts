@@ -78,9 +78,9 @@ describe("RangeInterpretationSchema", () => {
    * A bound only one of two published languages can meet is a bug in the bound.
    */
   it("accepts a section as long as the longest published language has produced", () => {
-    const asLongAsTurkishRuns = `A section of ordinary prose. ${"Turkish runs longer. ".repeat(33)}`;
+    const asLongAsTurkishRuns = `A section of ordinary prose. ${"Turkish runs longer. ".repeat(45)}`;
 
-    expect(asLongAsTurkishRuns.length).toBeGreaterThan(700);
+    expect(asLongAsTurkishRuns.length).toBeGreaterThan(957);
     expect(
       RangeInterpretationSchema.safeParse({ ...valid, whatTheVolatilitySays: asLongAsTurkishRuns })
         .success,

@@ -495,6 +495,35 @@ recommendation, no score. A field the model can fill is a field the model will
 fill. What the schema cannot enforce is tone, so that part is the prompt's job
 and is not claimed as a guarantee.
 
+**The prose has to keep up with the page.** For as long as nothing on the page
+tested the suggested range, the model was told so, and it wrote — correctly —
+that the day counts beside the pool's activity were no independent check. The
+day an out-of-sample check appeared directly above that prose, the sentence
+became a text telling a reader the page lacks what the page is showing. So the
+request now carries both, and says which is which: the activity day counts
+describe the fit, the check that follows them tests it, and the standing
+instruction forbids turning a few stretches of one pool into a verdict on the
+method. Live, in Turkish, that comes back as "this shows the fit, it does not
+independently test the method… the great majority of checked days stayed inside
+the band, but results varied between different past stretches… this is not a
+general verdict".
+
+**Everything the model is told about a comparison is computed, not left to be
+inferred** — the direction a price is quoted in, which token a position holds at
+each edge, and, for the check, the spread between its best and worst stretch. A
+total of two thirds of days holding means one thing when every stretch behaved
+alike and another when two were perfect and one collapsed; the model cannot see
+the rows, so it is handed the difference rather than asked to guess at it.
+
+**The limits paragraph is not an inventory**, and that is enforced by the prompt
+rather than by a length. The page already prints its own caveat beside every
+figure it qualifies, in the reader's language, whether the prose repeats it or
+not — so a paragraph that lists all of them costs the reader the one that
+mattered. Telling the model that took the Turkish limits section from 957
+characters to 465 in a single change. See
+[What the interface says when a read fails](#what-the-interface-says-when-a-read-fails)
+for the length bound behind it, and why it is set from measurement.
+
 The request is built from the analysis alone, rendered with the interface's own
 formatters in the reader's language. Nothing a stranger wrote reaches it: the only
 visitor input is a pool address, and it passed a strict hex pattern long before

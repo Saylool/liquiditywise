@@ -222,8 +222,63 @@ const describeActivity = (analysis: PoolRangeAnalysis, locale: Locale): readonly
       "anyone's earnings; they are the whole pool's, and the share a position would take is not known here",
     ),
     line(
-      "Why the day counts are weak evidence",
-      "they are the same days the range was measured from, so they describe the fit rather than test it",
+      "Why these day counts do not test the range",
+      "they are the same days the range was measured from, so they describe how it was fitted",
+    ),
+  ];
+};
+
+/**
+ * The check that does test it, kept deliberately short.
+ *
+ * The model is told the outcome because the page shows it, and a text saying the
+ * analysis has no out-of-sample verification would be describing a different
+ * page. It is not told the outcome three times over — the first version of this
+ * handed across every caveat the panel prints, the model dutifully wrote all of
+ * them out, and the section grew from five hundred characters to nearly nine
+ * hundred. In English it fitted; in Turkish, which runs a quarter longer again,
+ * the whole answer was refused.
+ *
+ * So the page keeps its own caveats, in its own deterministic sentences, in both
+ * languages, directly beside the figures they qualify. What is left for the
+ * prose is the one thing the panel cannot do: stop the reader concluding from a
+ * table that the method has been shown to work. One sentence, and the standing
+ * instruction carries the rest.
+ *
+ * The spread between stretches is still handed over rather than inferred. A
+ * total of two thirds means something different when every stretch behaved
+ * alike than when two were perfect and one collapsed, and the model cannot see
+ * the rows.
+ */
+const describeOutOfSample = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
+  const { outOfSample } = analysis;
+  const whole = (value: number) => formatWhole(value, locale);
+
+  if (outOfSample.status !== "success") {
+    return [
+      line("Was the method checked on days it was not fitted to", "no"),
+      line("Why not", "this pool has too little indexed history to fit a band in the past and still leave a full horizon to check it against"),
+      line("Say", "at most that no such check was possible here. Never that one was run"),
+    ];
+  }
+
+  const { folds, daysMeasured, occupancy } = outOfSample.data;
+  const insideCounts = folds.map((fold) => fold.occupancy.fullyInside);
+
+  return [
+    line("Was the method checked on days it was not fitted to", "yes"),
+    line(
+      "How",
+      "a band drawn the same way at points in the past, each centred on the price at that point and laid over the days that came after it",
+    ),
+    line("Stretches checked", whole(folds.length)),
+    line("Days checked", whole(daysMeasured)),
+    line("Days that stayed entirely inside", whole(occupancy.fullyInside)),
+    line("Best single stretch, days inside", whole(Math.max(...insideCounts))),
+    line("Worst single stretch, days inside", whole(Math.min(...insideCounts))),
+    line(
+      "Say",
+      "one sentence: that this was checked on days the fit never saw, and roughly how it came out. Do not restate the limits printed beside the figures, and never write that the method works, usually works, or is reliable",
     ),
   ];
 };
@@ -278,6 +333,7 @@ export const buildRangeInterpretationPrompt = (
     section("SUGGESTED TICK RANGE", describeRange(analysis, locale)),
     section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
     section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
+    section("THE SAME METHOD, ON DAYS IT NEVER SAW", describeOutOfSample(analysis, locale)),
     warnings.length === 0
       ? "CAVEATS\n- none"
       : section(

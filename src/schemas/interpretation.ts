@@ -41,20 +41,29 @@ const containsFigure = (prose: string): boolean => /\d/.test(prose.replace(PROTO
 /**
  * The most characters one section may run to.
  *
- * Sized for the longest language the interface publishes, not for English.
+ * Sized for the longest language the interface publishes, and for how much the
+ * same section varies between answers — not for English on a good day.
  *
  * It was 700, which is comfortable in English and is not in Turkish. Measured
- * against the live model on one pool, the same four sections came back at
- * 392/333/479/518 characters in English and 471/297/710/653 in Turkish — the
- * same content running twenty to fifty per cent longer. The Turkish answer was
- * rejected whole for one section being ten characters over, and the reader was
- * shown "no explanation" instead of a good one.
+ * against the live model on one pool over several runs, English sections landed
+ * between 272 and 636 characters; Turkish ones between 297 and 957, and the same
+ * section came back at 466 characters in one run and 812 in the next. Turkish
+ * carries the same content twenty to fifty per cent longer, and the model moves
+ * material between sections from answer to answer.
  *
- * That is the bound doing the opposite of its job. It exists to catch a model
- * that has stopped cooperating, not to style-edit a cooperative one, and a
- * bound only one of two published languages can meet is a bug in the bound.
+ * So the ceiling is set above everything observed rather than just above the
+ * average, because the cost of the two outcomes is not symmetric: one long
+ * paragraph is a paragraph, and one section ten characters over loses the whole
+ * explanation and shows the reader nothing.
+ *
+ * What keeps the prose short is not this number. It is the instruction telling
+ * the model that the page prints its own caveat beside every figure, so listing
+ * them all costs it the one that mattered. That change alone took the Turkish
+ * limits section from 957 characters to 465. This bound exists to catch a model
+ * that has stopped cooperating, and a bound that also rejects a cooperative
+ * answer in one of two published languages is a bug in the bound.
  */
-const MAX_SECTION_CHARACTERS = 900;
+const MAX_SECTION_CHARACTERS = 1100;
 
 /**
  * One section of the explanation.

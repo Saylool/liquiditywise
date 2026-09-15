@@ -91,6 +91,51 @@ const analysis = ((): PoolRangeAnalysis => {
 const build = (locale: "en" | "tr" = "en", warnings: readonly DataWarningNotice[] = []) =>
   buildRangeInterpretationPrompt({ analysis, locale, warnings });
 
+/*
+ * A second fixture, long enough for the out-of-sample check to run: 31 closes to
+ * fit from plus a full 30-day horizon to test against. The short one above is
+ * kept because it exercises the other branch — a pool too young to be checked —
+ * which every other test in this file happens to run through.
+ *
+ * Extremes bracket each day's own close here, where the short fixture leaves
+ * them null, so the days can actually be placed inside or outside a band.
+ */
+const longHistory = (): PoolDailyPriceHistory => {
+  const points: unknown[] = [];
+  let price = CURRENT_PRICE;
+  for (let day = 0; day < 61; day += 1) {
+    if (day > 0) price *= day % 2 === 0 ? 1.01 : 1 / 1.01;
+    points.push({
+      timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
+      price,
+      low: price * 0.995,
+      high: price * 1.005,
+      volumeUsd: 1_000_000,
+      feesUsd: 500,
+    });
+  }
+
+  return {
+    ...(history() as unknown as Record<string, unknown>),
+    rangeEndExclusive: new Date(RANGE_START + 61 * DAY_MS).toISOString(),
+    points,
+  } as unknown as PoolDailyPriceHistory;
+};
+
+const checkedAnalysis = ((): PoolRangeAnalysis => {
+  const result = analysePoolRange({
+    pool: ok(pool),
+    snapshot: ok(snapshot),
+    history: ok(longHistory()),
+    parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+  });
+  if (result.status === "unavailable") throw new Error("fixture should analyse");
+  return result.data;
+})();
+
+const buildChecked = (locale: "en" | "tr" = "en") =>
+  buildRangeInterpretationPrompt({ analysis: checkedAnalysis, locale, warnings: [] });
+
 describe("buildRangeInterpretationPrompt", () => {
   it("is deterministic", () => {
     expect(build()).toEqual(build());
@@ -328,5 +373,77 @@ describe("terminology", () => {
 
   it("leaves English alone, where the interface already uses the model's words", () => {
     expect(build("en").user).not.toContain("WORDS TO USE");
+  });
+});
+
+
+/*
+ * The section added the day the page grew an out-of-sample check.
+ *
+ * Until then the model was told, correctly, that the day counts beside the
+ * pool's activity were measured over the days the range was drawn from and so
+ * tested nothing — and it wrote that the analysis had no independent check. That
+ * sentence stopped being true the moment one appeared directly above the prose,
+ * and a text that says the page lacks what the page is showing is worse than a
+ * text that says nothing.
+ */
+describe("the out-of-sample check, as the model is told about it", () => {
+  it("says the check was run, and how it turned out", () => {
+    const { user } = buildChecked();
+
+    expect(user).toContain("THE SAME METHOD, ON DAYS IT NEVER SAW");
+    expect(user).toContain(
+      "- Was the method checked on days it was not fitted to: yes",
+    );
+    expect(user).toContain("- Stretches checked: 1");
+    expect(user).toContain("- Days checked: 30");
+  });
+
+  /*
+   * A total can hide its own shape: two thirds of the days holding is a
+   * different thing to tell a reader when every stretch behaved alike than when
+   * two were perfect and one collapsed. The spread is handed over rather than
+   * left to be inferred, like every other direction in this prompt.
+   */
+  it("hands over the spread between stretches rather than only the total", () => {
+    const { user } = buildChecked();
+
+    expect(user).toContain("- Best single stretch, days inside:");
+    expect(user).toContain("- Worst single stretch, days inside:");
+  });
+
+  it("fences off the conclusion the number invites", () => {
+    const { user } = buildChecked();
+
+    expect(user).toContain("Do not restate the limits printed beside the figures");
+    expect(user).toContain("never write that the method works, usually works, or is reliable");
+  });
+
+  it("says plainly when the pool was too young to check, and forbids inventing one", () => {
+    // The short fixture: 31 closes, which leaves no horizon to test against.
+    const { user } = build();
+
+    expect(user).toContain(
+      "- Was the method checked on days it was not fitted to: no",
+    );
+    expect(user).toContain("Never that one was run");
+  });
+
+  /*
+   * The line that produced the false sentence. It still says the activity day
+   * counts describe the fit — that part was always true — but it no longer says
+   * the analysis has nothing that tests it.
+   */
+  it("scopes the in-sample caveat to the day counts it belongs to", () => {
+    const { user } = buildChecked();
+
+    expect(user).toContain("- Why these day counts do not test the range:");
+    expect(user).not.toContain("so they describe the fit rather than test it");
+  });
+
+  it("puts the standing instruction in charge of telling the two apart", () => {
+    expect(BASE_INSTRUCTION).toContain(
+      "Do not write that the analysis has no out-of-sample check when the request says it has one",
+    );
   });
 });
