@@ -58,8 +58,32 @@ describe("BandParametersForm", () => {
     const markup = render();
     const t = getDictionary("en");
 
-    expect(markup).toContain(t.report.horizon);
-    expect(markup).toContain(t.report.multiplier);
+    expect(markup).toContain(t.parameters.horizonLabel);
+    expect(markup).toContain(t.parameters.widthLabel);
+    expect(markup).toContain("How far ahead");
+    expect(markup).toContain("How wide");
+  });
+
+  /*
+   * "1σ" means nothing to most people. Each offered width carries a word, the
+   * sigma stays beside it, and the words are relative to each other only.
+   */
+  it("gives every offered width a word, with the sigma beside it", () => {
+    const markup = render();
+
+    expect(markup).toContain("Tight (1σ)");
+    expect(markup).toContain("Medium (1.5σ)");
+    expect(markup).toContain("Wide (2σ)");
+    expect(markup).toContain("Very wide (3σ)");
+    for (const sigma of MULTIPLIER_CHOICES) {
+      expect(markup).toMatch(new RegExp(`>[A-Z][a-z ]+ \\(${sigma}σ\\)<`));
+    }
+  });
+
+  it("gives a width that was typed rather than offered no word at all", () => {
+    const markup = render({ horizonDays: 30, standardDeviationMultiplier: 0.5 });
+
+    expect(markup).toContain(">0.5σ<");
   });
 
   /*
@@ -71,7 +95,7 @@ describe("BandParametersForm", () => {
     const markup = render({ horizonDays: 30, standardDeviationMultiplier: 1.5 }, { locale: "tr" });
 
     expect(markup).toContain('value="1.5"');
-    expect(markup).toContain("1,5σ");
+    expect(markup).toContain("Orta (1,5σ)");
     expect(markup).not.toContain('value="1,5"');
   });
 

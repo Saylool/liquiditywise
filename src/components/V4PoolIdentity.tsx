@@ -1,4 +1,5 @@
-import { formatFeePpm, formatWhole } from "../lib/format/displayFormats";
+import { formatFeePpm, formatPercent, formatWhole } from "../lib/format/displayFormats";
+import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import {
@@ -83,10 +84,15 @@ export function V4PoolIdentity({
             }
             {...(pool.fee.kind === "dynamic" ? { note: t.v4.dynamicFeeNote } : {})}
           />
+          {/*
+           * As a percentage, which is what the spacing means to a person: how
+           * finely a position's edges can be placed. The tick count is in the
+           * note for the reader who knows what one is.
+           */}
           <Figure
-            label={t.v4.tickSpacing}
-            value={formatWhole(pool.tickSpacing, locale)}
-            note={t.v4.tickSpacingNote}
+            label={t.v4.priceStep}
+            value={formatPercent(priceStepRatio(pool.tickSpacing), locale)}
+            note={t.v4.priceStepNote(formatWhole(pool.tickSpacing, locale))}
           />
           {holdsNativeEther ? (
             <Figure

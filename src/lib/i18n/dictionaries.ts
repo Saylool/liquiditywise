@@ -31,7 +31,7 @@ const en = {
       "The tokens found at one Ethereum address, and the Uniswap v3 pools they can go into.",
     poolTitle: "Pool range analysis · Uniswap Strategy Advisor",
     poolDescription:
-      "Historical-volatility price band for one Ethereum mainnet Uniswap v3 pool, aligned onto the pool's tick grid.",
+      "A price range for one Ethereum mainnet Uniswap v3 pool, drawn from how far its price has actually moved.",
   },
 
   preferences: {
@@ -57,19 +57,19 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste the pool's address. Read its verified configuration and current market state, its last 30 completed days of closing prices, historical volatility, a log-symmetric price band, and the Uniswap tick range that band aligns onto — then read a plain-language explanation of all of it, in English or Turkish. No AI touches any of those figures, none of them is estimated to fill a gap, and the model that writes the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste the pool's address. Read its verified configuration and current market state, its last 30 completed days of closing prices, how much its price moves, and the price range a position would use — then read a plain-language explanation of all of it, in English or Turkish. No AI touches any of those figures, none of them is estimated to fill a gap, and the model that writes the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
       {
         step: "Verified data",
         detail:
-          "Pool facts are fetched from Uniswap subgraphs and read on-chain, never assumed. The price is cross-checked against the tick the pool reports for itself.",
+          "Pool facts are fetched from Uniswap subgraphs and read on-chain, never assumed. The price is cross-checked against the state the pool reports for itself.",
       },
       {
         step: "Deterministic maths",
         detail:
-          "Volatility, the price band and the tick range are computed in plain TypeScript, so the same pool always yields the same numbers.",
+          "Volatility, the price band and the position range are computed in plain TypeScript, so the same pool always yields the same numbers.",
       },
       {
         step: "AI interpretation",
@@ -132,17 +132,6 @@ const en = {
   },
 
   /*
-   * The controls that change the band. The field labels are not here: they are
-   * `report.horizon` and `report.multiplier`, the same words the figures are
-   * labelled with a few lines above, so a reader changing one can see which
-   * number they are changing.
-   */
-  /*
-   * The one figure here that owes nothing to a data source, and the one most
-   * likely to be read as half an answer — so the text says what it leaves out
-   * before it says anything else.
-   */
-  /*
    * Facts about the pool, and the sentence that keeps them from being read as
    * something else. The gap between "the pool collected this" and "you would
    * have earned this" is where a reader is likeliest to fill in a number nobody
@@ -155,12 +144,11 @@ const en = {
     volume30d: "Volume, 30d",
     fees30d: "Fees charged, 30d",
     feesNote: "The whole pool's, shared among everyone whose liquidity was active.",
-    occupancyHeading: "How these days sat against the range",
-    fullyInside: "Days entirely inside",
-    fullyOutside: "Days entirely outside",
-    undetermined: "Days that crossed an edge",
+    tvl: "Total value locked",
+    occupancySentence: (days: string, inside: string, outside: string, crossed: string) =>
+      `Of the last ${days} days, ${inside} stayed entirely inside this range, ${outside} sat entirely outside it, and ${crossed} crossed an edge.`,
     undeterminedNote:
-      "The source publishes a daily high and low, so a day that spent part of itself inside cannot be split without intraday data this does not fetch.",
+      "A day that crossed an edge spent part of itself inside and part outside, and the source's daily high and low cannot say how much of each.",
     feesWhileInside: "Fees charged on the days entirely inside",
     /*
      * Shown instead of that figure when the pool's hook may take a share of a
@@ -171,7 +159,7 @@ const en = {
     feesWithheldNote:
       "This pool's hook is permitted to take a share of a swap, and nothing in the source separates the hook's share from the liquidity providers'. The fees above are what the pool charged, which is a fact; tying a portion of them to this range would be a claim about a position nobody can check.",
     inSample:
-      "These are the same days the range was measured from, so this describes how the band was fitted rather than testing how it holds up. The range is also centred on today's price, which nobody could have opened a month ago. Read it as how the pool's recent movement sits against the range being suggested, not as a backtest.",
+      "These are the same days the range was drawn from, so they show how it was fitted rather than testing how it holds up — and the range is centred on today's price, which nobody could have opened a month ago. Read them as how the pool's recent movement sits against the range, not as a backtest.",
     notYourEarnings:
       "None of this is what a position would earn. That would be these fees multiplied by your share of the liquidity active in the range while the swaps happened — a share this application does not read, for a deposit it will not size. There is no yield figure here on purpose.",
   },
@@ -179,16 +167,16 @@ const en = {
   realizedFee: {
     heading: "What it actually charged",
     intro:
-      "The rate above is what the pool declares. This is what swappers paid, divided back out of the same days the figures above are measured over: a day's fees over that day's volume. It costs no extra request and needs to know nothing about the hook.",
-    declared: "Declared rate",
+      "The fee the pool states is one number. This is what swappers actually paid, divided back out of the same days as the figures above: a day's fees over that day's volume. It needs no extra request and nothing from the hook.",
+    declared: "Stated fee",
     noDeclared: "None",
     noDeclaredNote: "This pool's key carries no fee. Its hook sets one per swap.",
-    median: "Median day",
-    spread: "Cheapest to dearest day",
+    median: "Typical day",
+    spread: "Lowest to highest day",
     spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
-    aggregate: "Over the whole window",
+    aggregate: "Whole window",
     aggregateNote:
-      "The window's fees over the window's volume, so a day that traded a hundred times as much has a hundred times the say.",
+      "The window's fees over the window's volume, so a busy day counts for more than a quiet one.",
     daysMeasured: "Days measured",
     daysMeasuredNote: (skipped: string) =>
       `${skipped} more day(s) in the window traded nothing, or were missing a figure, so no rate could be divided out of them.`,
@@ -209,7 +197,8 @@ const en = {
   },
 
   outOfSample: {
-    heading: "The same method, on days it never saw",
+    heading: "Tested on days it never saw",
+    showFolds: "Show each stretch",
     intro: (horizon: string) =>
       `Every figure above is fitted to the days it describes. These are not. The method was stepped back ${horizon}, run again on the prices before that point only, and centred on the price at that point — one somebody standing there would actually have seen. Then it was laid over the days that followed, and the whole thing repeated back through the history as many times as it had room for.`,
     folds: "Folds",
@@ -236,11 +225,11 @@ const en = {
   },
 
   divergence: {
-    heading: "Against simply holding",
+    heading: "Compared with just holding",
     intro:
-      "What a position in this range would be worth compared with holding the two tokens, at each price. Exact arithmetic rather than an estimate — but it counts price movement and nothing else. It says nothing about the fees a position would earn, and fees are precisely what a liquidity provider is paid for this difference.",
-    price: "Price",
-    loss: "Versus holding",
+      "What a position in this range would be worth compared with simply holding the two tokens, at each price. Exact arithmetic rather than an estimate — but it counts price movement and nothing else. It says nothing about the fees a position would earn, and fees are precisely what a liquidity provider is paid for this difference.",
+    price: (base: string) => `Price of ${base}`,
+    loss: "Position against holding",
     entryRow: "The price this is measured from — the pool's current price.",
     impermanentNote:
       "This is what is usually called impermanent loss. It is only impermanent if price comes back: a position closed at a price other than the one it opened at has realised it.",
@@ -277,7 +266,7 @@ const en = {
     onV3: "On Uniswap v3",
     onV4: "On Uniswap v4",
     v4Intro: (pair: string) =>
-      `The v4 pools that trade ${pair} — the same two contracts. A v4 pair can be many pools: the fee is any number, the tick spacing is free, and every hook makes another.`,
+      `The v4 pools that trade ${pair} — the same two contracts. A v4 pair can be many pools: the fee is any number, the price step is free, and every hook makes another.`,
     v4None: (pair: string) => `No Uniswap v4 pool trades ${pair} with these two contracts.`,
     v4OnlyThis: (pair: string) => `On v4, ${pair} trades at only this pool.`,
     v3Intro: (pair: string) => `The v3 pools that trade ${pair} — the same two token contracts, at each fee tier.`,
@@ -290,7 +279,7 @@ const en = {
     hook: "hook",
     noHook: "no hook",
     hookAltersSwaps: "may change what a swap costs",
-    tickSpacing: (spacing: string) => `spacing ${spacing}`,
+    priceStep: (step: string) => `step ${step}`,
     v4Ordering:
       "Ordered by depth at the current price — the pool's active liquidity and price, read from the PoolManager's storage — because a v4 pair is mostly pools somebody initialised and left, and depth is what tells those apart. It says how much a swap can draw on, and nothing about which pool is better: a deeper pool is a larger crowd sharing the same fees.",
     moreNotShown: (count: string) => `${count} more are not shown; they are shallower than these.`,
@@ -301,11 +290,21 @@ const en = {
   parameters: {
     heading: "Change the range",
     apply: "Recalculate",
+    /*
+     * The same words label the figures in "how this range was drawn", so a
+     * reader changing one can see which number they are changing.
+     */
+    horizonLabel: "How far ahead",
+    widthLabel: "How wide",
     days: (days: string) => `${days} days`,
     sigma: (value: string) => `${value}σ`,
-    note: "The horizon says how far the measured movement is laid forward. It does not change the measurement: volatility always comes from the last 30 completed days, whichever horizon is chosen. A larger multiplier makes the range wider, and is not a confidence level.",
+    /** A word for the offered widths; a width typed into the URL gets none. */
+    widthChoice: (sigma: string, word: string | null) =>
+      word === null ? sigma : `${word} (${sigma})`,
+    widthWords: { tight: "Tight", medium: "Medium", wide: "Wide", veryWide: "Very wide" },
+    note: "The horizon says how far the measured movement is laid forward. It does not change the measurement: volatility always comes from the last 30 completed days, whichever horizon is chosen. The width multiplies that movement; a wider range is left less often, and it is not a confidence level.",
     fellBack:
-      "Part of what was asked for could not be read, so the default was used where that happened. The horizon and multiplier actually used are shown above.",
+      "Part of what was asked for could not be read, so the default was used where that happened. The horizon and width actually used are shown above.",
   },
 
   holdings: {
@@ -351,16 +350,16 @@ const en = {
   v4: {
     heading: "A Uniswap v4 pool",
     intro:
-      "What this pool is, read from its own key. A v4 pool is not a contract of its own: it lives inside one PoolManager and is named by a hash of the five things that define it — the two currencies, the fee, the tick spacing, and the hook.",
+      "What this pool is, read from its own key. A v4 pool is not a contract of its own: it lives inside one PoolManager and is named by a hash of the five things that define it — the two currencies, the fee, the price step, and the hook.",
     poolId: "Pool id",
     pair: "Currencies",
     fee: "Fee",
     dynamicFee: "Set by the hook, per swap",
     dynamicFeeNote:
       "This pool's key carries the dynamic-fee flag instead of a fee, so what a swap costs is decided by the hook at the moment it happens. This read did not observe one, and there is no fee here to report.",
-    tickSpacing: "Tick spacing",
-    tickSpacingNote:
-      "Part of the pool's key in v4, so unlike v3 it needs no separate contract call.",
+    priceStep: "Price step",
+    priceStepNote: (spacing: string) =>
+      `The finest step at which a position's edges can be placed in this pool — its tick spacing of ${spacing}. Part of the pool's key in v4, so unlike v3 it needs no separate contract call.`,
     nativeCurrency: "Native ether",
     nativeCurrencyNote:
       "The zero address here is not a missing field. v4 lets a pool hold the chain's own ether rather than a wrapped token, and that is what this is.",
@@ -385,7 +384,7 @@ const en = {
      * are the part a hook can move.
      */
     analysisScope:
-      "Below is the range analysis. The band and the ticks come from prices that already happened, so they hold here exactly as they do for a pool with no hook — a hook cannot retroactively change where price went. What a hook can change is what a swap costs, so the rate this pool charged is measured from what it collected rather than taken from the fee above.",
+      "Below is the range analysis. The range comes from prices that already happened, so it holds here exactly as it does for a pool with no hook — a hook cannot retroactively change where price went. What a hook can change is what a swap costs, so the rate this pool charged is measured from what it collected rather than taken from the fee above.",
     unavailableHeading: "This pool could not be read",
     invalidId:
       "That is not a v4 pool id. A v4 pool is named by a 32-byte hash — 0x followed by 64 hexadecimal characters — not by a contract address.",
@@ -488,82 +487,114 @@ const en = {
       pool: "reading the pool's configuration",
       snapshot: "reading the pool's current market state",
       history: "reading the pool's daily price history",
-      volatility: "measuring historical volatility",
+      volatility: "measuring how much the price has moved",
       band: "building the price band",
-      range: "aligning the band onto the pool's tick grid",
+      range: "snapping the band onto the prices this pool can express",
       divergence: "comparing that range against holding the two tokens",
       activity: "reading what the pool did over the measured window",
     },
     noRangeHeading: "No range for this pool",
     stoppedWhile: (step: string) => `This stopped while ${step}.`,
-    poolSummary: (protocol: string, feeTier: string, tickSpacing: string) =>
-      `Uniswap ${protocol} on Ethereum mainnet · ${feeTier} fee tier · tick spacing ${tickSpacing}`,
-    /** Stands where a fee tier would, for a v4 pool whose hook sets one per swap. */
-    noDeclaredFee: "no fixed",
+    poolSummary: (protocol: string, fee: string) =>
+      `Uniswap ${protocol} · Ethereum mainnet · ${fee}`,
+    feePerSwap: (fee: string) => `${fee} fee on every swap`,
+    /** Stands where the fee would, for a v4 pool whose hook sets one per swap. */
+    noDeclaredFee: "fee set by its hook on every swap",
     caveatsHeading: (count: number) =>
       count === 1 ? "One caveat applies to these figures." : `${count} caveats apply to these figures.`,
     caveatsAriaLabel: "Caveats",
 
-    rangeHeading: "Suggested tick range",
+    /*
+     * The range, as two prices. Every price on the page is written the way
+     * round that makes it at least one — one unit of the dearer token, priced
+     * in the cheaper — and the intro says which token that is, so the figures
+     * under it can be read without a second thought. The ticks those prices
+     * encode are in the technical details at the end, where a reader who
+     * wants to check them can, and a reader who does not is never made to.
+     */
+    rangeHeading: "Suggested price range",
+    rangeIntro: (base: string, quote: string) =>
+      `Where a position in this pool would be active, as the price of one ${base} in ${quote}.`,
+    rangeValue: (lower: string, upper: string, quote: string, base: string) =>
+      `${lower} – ${upper} ${quote} per ${base}`,
+    rangeDistances: (down: string, up: string) =>
+      `${down} below and ${up} above the current price.`,
+    rangeMeaning:
+      "Between these two prices a position earns its share of the pool's swap fees. Outside them it holds a single token and earns nothing until the price comes back.",
+    priceSentence: (base: string, price: string, quote: string) => `1 ${base} = ${price} ${quote}`,
+    currentPrice: "Current price",
+    inRangeYes: "The current price is inside this range.",
+    inRangeNo: "The current price is outside this range.",
+    inRangeYesNote: "A position opened here would be active straight away.",
+    inRangeNoNote:
+      "A position opened here would hold a single token and earn nothing until the price comes back inside.",
+    beyondEdges: (below: string, above: string) =>
+      `If the price falls below the range, the position ends up holding only ${below}; if it rises above it, only ${above}.`,
+    lowerTruncatedNote:
+      "The lower edge stops at the lowest price this pool can express, short of where the band would have put it.",
+    upperTruncatedNote:
+      "The upper edge stops at the highest price this pool can express, short of where the band would have put it.",
+    barLabel: "The range and the current price, drawn to scale",
+
+    /*
+     * Where the range came from, in the words a reader has: how much the price
+     * moves on a typical day, and what that comes to over the horizon. The
+     * standard deviation is named in the notes, not in the labels.
+     */
+    basisHeading: "How this range was drawn",
+    basisIntro: (base: string, days: string) =>
+      `From how much the price of ${base} actually moved over the last ${days} completed days — not from a forecast of where it goes next.`,
+    dailyMove: "Typical daily move",
+    dailyMoveNote: "The standard deviation of one day's price change, over the window.",
+    horizonMove: (days: string) => `Over ${days} days`,
+    horizonMoveNote:
+      "The same movement stretched over the horizon chosen below: one standard deviation, either way.",
+    widthValue: (multiplier: string) => `${multiplier}× that, each way`,
+    widthNote:
+      "Chosen below. A wider range is left less often, and the same deposit spread over it is thinner at any one price.",
+    measuredOver: "Measured over",
+    measuredOverNote: (returns: string) => `${returns} daily changes went into it.`,
+    epilogue:
+      "The range is centred on today's price and drawn the same distance up and down in ratio terms — halving and doubling are the same move — which is why the two percentages differ. It describes how far the price has moved, not where it will go: it is not a forecast, and the width is not a confidence level. Nothing here sizes a position or says how much of either token to deposit.",
+  },
+
+  /*
+   * Everything a reader checking the page against the chain would want, and
+   * nothing a reader opening a position needs: the ticks the prices encode,
+   * the blocks the figures were read at, the figures in the pool's own
+   * direction. Folded away at the end of the report.
+   */
+  technical: {
+    heading: "Technical details",
+    summary: "The ticks, blocks and figures the page above is checked against.",
     lowerTick: "Lower tick",
     upperTick: "Upper tick",
-    priceAt: (price: string, quote: string, base: string) =>
-      `Price ${price} ${quote} per ${base}`,
-    width: "Width",
-    widthValue: (ticks: string) => `${ticks} ticks`,
-    widthNote: (spacings: string, tickSpacing: string) =>
-      `${spacings} spacings of ${tickSpacing}`,
-    inRange: "Currently in range",
-    yes: "Yes",
-    no: "No",
-    inRangeNote: "The pool's current tick sits inside these bounds.",
-    outOfRangeNote:
-      "A position here would hold a single token and earn nothing until price returns.",
-    lowerEdge: "Lower edge",
-    upperEdge: "Upper edge",
-    truncated: "Truncated",
-    asAsked: "As asked",
-    lowerTruncatedNote: "Stopped at the lowest tick this pool accepts.",
-    upperTruncatedNote: "Stopped at the highest tick this pool accepts.",
-
-    currentStateHeading: "Current state",
-    tokenPrice: (symbol: string) => `${symbol} price`,
-    quotePerBase: (quote: string, base: string) => `${quote} per ${base}`,
     currentTick: "Current tick",
     sourceReportedTick: (tick: string) => `Source reported ${tick}.`,
     noSourceTick:
       "The source reported no tick of its own, so this conversion is unverified.",
-    tvl: "Total value locked",
+    tickSpacing: "Tick spacing",
+    tickSpacingNote: (step: string) => `A price step of ${step} between usable edges.`,
+    width: "Width",
+    widthValue: (ticks: string, spacings: string) => `${ticks} ticks · ${spacings} spacings`,
+    poolPrice: "Price as the pool quotes it",
+    quotePerBase: (quote: string, base: string) => `${quote} per ${base}`,
+    bandLower: "Band lower bound",
+    bandUpper: "Band upper bound",
+    bandNote: "Before snapping to the tick grid, in the pool's own direction.",
+    annualised: "Annualised volatility",
+    annualisedNote:
+      "Sample standard deviation of daily log returns, scaled by sqrt(365).",
+    coverage: "Coverage",
+    coverageNote: "How much of the window had consecutive daily prices behind it.",
     sourceBlock: "Source block",
     noBlockTime: "No block time reported.",
     fetchedAt: "Fetched at",
     fetchedAtNote: "When the response arrived, not what it describes.",
-
-    volatilityHeading: "Historical volatility",
-    annualised: "Annualised",
-    annualisedNote:
-      "Sample standard deviation of daily log returns, scaled by sqrt(365).",
-    daily: "Daily",
-    window: "Window",
-    windowNote: (returns: string) => `${returns} usable daily returns.`,
-    coverage: "Coverage",
-    coverageNote: "How much of the window had consecutive daily prices behind it.",
-
-    bandHeading: "Price band this range came from",
-    horizon: "Horizon",
-    horizonValue: (days: string) => `${days} days`,
-    horizonNote: "How far ahead the band is scaled.",
-    multiplier: "Multiplier",
-    multiplierNote: "Horizon standard deviations, not a confidence level.",
-    lowerBound: "Lower bound",
-    upperBound: "Upper bound",
-    downside: "Downside",
-    downsideNote: "Distance from the current price to the lower bound.",
-    upside: "Upside",
-    upsideNote: "Distance from the current price to the upper bound.",
-
-    epilogue:
-      "The band is symmetric in log space, which makes it deliberately asymmetric in percentage terms: a move down to half price and a move up to double price are the same distance in logs, and only one of them is “50%”. It assumes no expected return, describes how far price has moved historically, and is not a forecast. The multiplier is not a confidence level. Nothing here sizes a position or says how much of either token to deposit.",
+    lowerEdge: "Lower edge",
+    upperEdge: "Upper edge",
+    truncated: "Truncated",
+    asAsked: "As asked",
   },
 
   explanation: {
@@ -660,13 +691,13 @@ const en = {
       "range-invalid-input":
         "The pool, price band and snapshot supplied for this range are not valid, or they do not all describe the same pool and the same observation.",
       "range-price-unrepresentable":
-        "This pool's current price lies outside the range Uniswap can express as a tick, so no position range can be built from it.",
+        "This pool's current price lies outside the range Uniswap can express, so no position range can be built from it.",
       "range-tick-disagreement":
-        "The source's own tick for this pool does not match the tick its price implies for these token decimals, so no range is published.",
+        "The price the source reports for this pool and the state it reports do not describe the same moment, so no range is published.",
       "range-too-narrow":
-        "The price band is narrower than one tick spacing on this pool, so it does not describe two distinct position boundaries.",
+        "The price band is narrower than the smallest step this pool allows between two edges, so it does not describe two distinct position boundaries.",
       "range-unverifiable":
-        "The tick range calculation produced a result this application cannot verify.",
+        "The range calculation produced a result this application cannot verify.",
       "divergence-unverifiable":
         "The comparison against holding produced a result this application cannot verify.",
       "activity-unverifiable":
@@ -712,14 +743,20 @@ const en = {
         "The current price source did not report a block time, so how current it is could not be independently verified.",
       "band-volatility-block-time-unreported":
         "The volatility source did not report a block time, so how current it is could not be independently verified.",
+      /*
+       * Neither names an edge. The codes name the pool's edges, and the page
+       * writes its prices the reader's way round, which can be the other way —
+       * so the sentence points at the range panel, which says which edge in
+       * the direction shown.
+       */
       "range-lower-edge-truncated":
-        "The lower edge stops at the lowest tick this pool accepts, so the range does not reach as far down as the band.",
+        "One edge of the range stops where the prices this pool can express end — the edge at which the pool's first token is cheapest — so the range does not reach as far as the band would. The range panel says which edge that is in the direction shown.",
       "range-upper-edge-truncated":
-        "The upper edge stops at the highest tick this pool accepts, so the range does not reach as far up as the band.",
+        "One edge of the range stops where the prices this pool can express end — the edge at which the pool's first token is dearest — so the range does not reach as far as the band would. The range panel says which edge that is in the direction shown.",
       "range-tick-unverified":
-        "The price source did not report the pool's own tick, so the converted tick could not be checked against it.",
+        "The price source did not report the pool's own state, so the price it implies could not be checked against it.",
       "range-excludes-current-price":
-        "The pool's current tick lies outside this range, so a position built from it would hold a single token and earn nothing until price returns.",
+        "The pool's current price lies outside this range, so a position built from it would hold a single token and earn nothing until price returns.",
     } satisfies Record<DataWarningNotice, string>,
   },
 
@@ -748,7 +785,7 @@ const tr: Dictionary = {
       "Bir Ethereum adresinde bulunan tokenlar ve girebilecekleri Uniswap v3 havuzları.",
     poolTitle: "Havuz aralığı analizi · Uniswap Strateji Danışmanı",
     poolDescription:
-      "Bir Ethereum mainnet Uniswap v3 havuzu için tarihsel volatiliteye dayalı fiyat bandı, havuzun tick ızgarasına hizalanmış hâliyle.",
+      "Bir Ethereum mainnet Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
   },
 
   preferences: {
@@ -774,19 +811,19 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da havuzun adresini yapıştır. Doğrulanmış yapılandırmasını ve güncel piyasa durumunu, tamamlanmış son 30 günün kapanış fiyatlarını, tarihsel volatiliteyi, log-simetrik bir fiyat bandını ve o bandın hizalandığı Uniswap tick aralığını gör — sonra hepsinin gündelik dille açıklamasını oku, Türkçe ya da İngilizce. Bu sayıların hiçbirine yapay zekâ dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metni yazan modelin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da havuzun adresini yapıştır. Doğrulanmış yapılandırmasını ve güncel piyasa durumunu, tamamlanmış son 30 günün kapanış fiyatlarını, fiyatının ne kadar hareket ettiğini ve bir pozisyonun kullanacağı fiyat aralığını gör — sonra hepsinin gündelik dille açıklamasını oku, Türkçe ya da İngilizce. Bu sayıların hiçbirine yapay zekâ dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metni yazan modelin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
       {
         step: "Doğrulanmış veri",
         detail:
-          "Havuz bilgileri Uniswap subgraph'larından çekilir ve zincirden okunur, asla varsayılmaz. Fiyat, havuzun kendisi için bildirdiği tick'e karşı çapraz doğrulanır.",
+          "Havuz bilgileri Uniswap subgraph'larından çekilir ve zincirden okunur, asla varsayılmaz. Fiyat, havuzun kendisi için bildirdiği duruma karşı çapraz doğrulanır.",
       },
       {
         step: "Deterministik hesap",
         detail:
-          "Volatilite, fiyat bandı ve tick aralığı düz TypeScript ile hesaplanır; aynı havuz her zaman aynı sayıları verir.",
+          "Volatilite, fiyat bandı ve pozisyon aralığı düz TypeScript ile hesaplanır; aynı havuz her zaman aynı sayıları verir.",
       },
       {
         step: "Yapay zekâ yorumu",
@@ -855,18 +892,17 @@ const tr: Dictionary = {
     volume30d: "Hacim, 30g",
     fees30d: "Alınan komisyon, 30g",
     feesNote: "Havuzun tamamının; likiditesi aktif olan herkes arasında paylaşılır.",
-    occupancyHeading: "Bu günler aralığa göre nerede durdu",
-    fullyInside: "Tamamen içeride geçen gün",
-    fullyOutside: "Tamamen dışarıda geçen gün",
-    undetermined: "Bir kenarı geçen gün",
+    tvl: "Kilitli toplam değer",
+    occupancySentence: (days: string, inside: string, outside: string, crossed: string) =>
+      `Son ${days} günün ${inside} tanesi tamamen bu aralığın içinde kaldı, ${outside} tanesi tamamen dışındaydı, ${crossed} tanesi bir kenarı geçti.`,
     undeterminedNote:
-      "Kaynak günlük en yüksek ve en düşüğü yayımlıyor; bu yüzden bir kısmını içeride geçiren bir gün, çekmediğimiz gün içi veri olmadan bölünemez.",
+      "Bir kenarı geçen gün, bir kısmını içeride bir kısmını dışarıda geçirdi; kaynağın günlük en yüksek ve en düşüğü ne kadarının hangisi olduğunu söyleyemez.",
     feesWhileInside: "Tamamen içeride geçen günlerde alınan komisyon",
     feesWithheld: "Bu havuz için gösterilmiyor",
     feesWithheldNote:
       "Bu havuzun hook'u takastan pay almaya izinli ve kaynak, hook'un payını likidite sağlayıcılarınkinden ayırmıyor. Yukarıdaki komisyonlar havuzun aldığı tutar — bu bir olgu; ama onun bir kısmını bu aralığa bağlamak, kimsenin doğrulayamayacağı bir pozisyon iddiası olurdu.",
     inSample:
-      "Bunlar, aralığın kendisinden ölçüldüğü günlerin ta kendisi; yani bu, bandın nasıl oturtulduğunu anlatır, ne kadar tuttuğunu sınamaz. Aralık ayrıca bugünkü fiyata göre ortalanmış — bir ay önce kimse onu açamazdı. Bir geriye dönük test olarak değil, havuzun son dönem hareketinin önerilen aralığa göre nerede durduğu olarak oku.",
+      "Bunlar aralığın çizildiği günlerin ta kendisi; yani nasıl oturtulduğunu gösterirler, ne kadar tuttuğunu sınamazlar — üstelik aralık bugünkü fiyata ortalanmış, bir ay önce kimse onu açamazdı. Geriye dönük bir test olarak değil, havuzun son dönem hareketinin aralığa göre nerede durduğu olarak oku.",
     notYourEarnings:
       "Bunların hiçbiri bir pozisyonun kazanacağı miktar değil. O, bu komisyonların, takaslar olurken aralıkta aktif olan likiditedeki payınla çarpımı olurdu — bu uygulamanın okumadığı bir pay, ve büyüklüğünü belirlemeyeceği bir yatırım için. Burada bilerek bir getiri rakamı yok.",
   },
@@ -874,16 +910,16 @@ const tr: Dictionary = {
   realizedFee: {
     heading: "Gerçekte ne kadar aldı",
     intro:
-      "Yukarıdaki oran, havuzun beyan ettiği oran. Buradaki ise takas yapanların ödediği oran: yukarıdaki sayıların ölçüldüğü aynı günlerden geri bölünerek çıkarıldı — bir günün komisyonu, o günün hacmine. Fazladan hiçbir istek götürmüyor ve hook hakkında hiçbir şey bilmesi gerekmiyor.",
-    declared: "Beyan edilen oran",
+      "Havuzun beyan ettiği komisyon tek bir sayı. Buradaki ise takas yapanların gerçekte ödediği: yukarıdaki sayılarla aynı günlerden geri bölünerek çıkarıldı — bir günün komisyonu, o günün hacmine. Fazladan istek götürmüyor, hook'tan bir şey beklemiyor.",
+    declared: "Beyan edilen komisyon",
     noDeclared: "Yok",
     noDeclaredNote: "Bu havuzun anahtarında komisyon yok. Oranı hook'u her takasta belirliyor.",
-    median: "Ortanca gün",
-    spread: "En ucuz ve en pahalı gün",
+    median: "Tipik gün",
+    spread: "En düşük ve en yüksek gün",
     spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
-    aggregate: "Pencerenin tamamında",
+    aggregate: "Pencerenin tamamı",
     aggregateNote:
-      "Pencerenin komisyonu, pencerenin hacmine bölündü; yani yüz kat fazla işlem gören bir günün yüz kat sözü var.",
+      "Pencerenin komisyonu pencerenin hacmine bölündü; yani yoğun bir gün, sakin bir günden daha çok söz sahibi.",
     daysMeasured: "Ölçülen gün",
     daysMeasuredNote: (skipped: string) =>
       `Pencerede ${skipped} gün daha var ama hiç işlem görmemiş ya da bir sayısı eksik; bu yüzden onlardan bir oran bölünüp çıkarılamadı.`,
@@ -899,7 +935,8 @@ const tr: Dictionary = {
   },
 
   outOfSample: {
-    heading: "Aynı yöntem, hiç görmediği günlerde",
+    heading: "Hiç görmediği günlerde sınandı",
+    showFolds: "Katları tek tek göster",
     intro: (horizon: string) =>
       `Yukarıdaki her rakam, anlattığı günlere oturtulmuştur. Bunlar öyle değil. Yöntem ${horizon} geriye alındı, yalnızca o noktadan önceki fiyatlarla yeniden çalıştırıldı ve o andaki fiyata ortalandı — orada duran birinin gerçekten göreceği bir fiyata. Sonra sonrasında gelen günlerin üzerine serildi, ve bu işlem geçmişte yer buldukça geriye doğru tekrarlandı.`,
     folds: "Kat sayısı",
@@ -925,8 +962,8 @@ const tr: Dictionary = {
     heading: "Sadece tutmaya kıyasla",
     intro:
       "Bu aralıktaki bir pozisyonun, iki tokenı sadece tutmaya kıyasla her fiyatta ne edeceği. Tahmin değil, kesin aritmetik — ama yalnızca fiyat hareketini sayar. Pozisyonun kazanacağı komisyon hakkında hiçbir şey söylemez; oysa likidite sağlayıcıya bu farkın karşılığında ödenen şey tam olarak komisyondur.",
-    price: "Fiyat",
-    loss: "Tutmaya kıyasla",
+    price: (base: string) => `${base} fiyatı`,
+    loss: "Pozisyon, tutmaya kıyasla",
     entryRow: "Bunun ölçüldüğü fiyat — havuzun güncel fiyatı.",
     impermanentNote:
       "Buna genelde geçici kayıp denir. Yalnızca fiyat geri gelirse geçicidir: açıldığı fiyattan farklı bir fiyatta kapatılan bir pozisyon onu gerçekleştirmiş olur.",
@@ -952,7 +989,7 @@ const tr: Dictionary = {
     onV3: "Uniswap v3'te",
     onV4: "Uniswap v4'te",
     v4Intro: (pair: string) =>
-      `${pair} işlem gören v4 havuzları — aynı iki sözleşme. Bir v4 paritesi pek çok havuz olabilir: komisyon herhangi bir sayı, tick adımı serbest, ve her hook bir havuz daha demek.`,
+      `${pair} işlem gören v4 havuzları — aynı iki sözleşme. Bir v4 paritesi pek çok havuz olabilir: komisyon herhangi bir sayı, fiyat adımı serbest, ve her hook bir havuz daha demek.`,
     v4None: (pair: string) => `Bu iki sözleşmeyle ${pair} işlem gören bir Uniswap v4 havuzu yok.`,
     v4OnlyThis: (pair: string) => `v4'te ${pair} yalnızca bu havuzda işlem görüyor.`,
     v3Intro: (pair: string) => `${pair} işlem gören v3 havuzları — aynı iki token sözleşmesi, her komisyon kademesinde.`,
@@ -965,7 +1002,7 @@ const tr: Dictionary = {
     hook: "hook",
     noHook: "hook yok",
     hookAltersSwaps: "bir takasın neye mal olduğunu değiştirebilir",
-    tickSpacing: (spacing: string) => `adım ${spacing}`,
+    priceStep: (step: string) => `adım ${step}`,
     v4Ordering:
       "Güncel fiyattaki derinliğe göre sıralı — havuzun aktif likiditesi ve fiyatı, PoolManager'ın depolamasından okunmuş — çünkü bir v4 paritesi çoğunlukla birinin kurup bıraktığı havuzlardan oluşur ve onları ayıran şey derinliktir. Bir takasın ne kadar çekebileceğini söyler; hangi havuzun daha iyi olduğunu değil: daha derin bir havuz, aynı komisyonları paylaşan daha kalabalık bir gruptur.",
     moreNotShown: (count: string) => `${count} tanesi daha gösterilmiyor; bunlardan daha sığlar.`,
@@ -976,11 +1013,16 @@ const tr: Dictionary = {
   parameters: {
     heading: "Aralığı değiştir",
     apply: "Yeniden hesapla",
+    horizonLabel: "Ne kadar ileriye",
+    widthLabel: "Ne kadar geniş",
     days: (days: string) => `${days} gün`,
     sigma: (value: string) => `${value}σ`,
-    note: "Ufuk, ölçülen hareketin ne kadar ileriye taşındığını söyler. Ölçümün kendisini değiştirmez: hangi ufuk seçilirse seçilsin volatilite her zaman tamamlanmış son 30 günden gelir. Daha büyük bir çarpan aralığı genişletir; bir güven düzeyi değildir.",
+    widthChoice: (sigma: string, word: string | null) =>
+      word === null ? sigma : `${word} (${sigma})`,
+    widthWords: { tight: "Dar", medium: "Orta", wide: "Geniş", veryWide: "Çok geniş" },
+    note: "Ufuk, ölçülen hareketin ne kadar ileriye taşındığını söyler. Ölçümün kendisini değiştirmez: hangi ufuk seçilirse seçilsin volatilite her zaman tamamlanmış son 30 günden gelir. Genişlik o hareketi çarpar; daha geniş bir aralık daha seyrek terk edilir ve bir güven düzeyi değildir.",
     fellBack:
-      "İstenenlerin bir kısmı okunamadı, o alanda varsayılan kullanıldı. Gerçekten kullanılan ufuk ve çarpan yukarıda yazıyor.",
+      "İstenenlerin bir kısmı okunamadı, o alanda varsayılan kullanıldı. Gerçekten kullanılan ufuk ve genişlik yukarıda yazıyor.",
   },
 
   holdings: {
@@ -1016,16 +1058,16 @@ const tr: Dictionary = {
   v4: {
     heading: "Bir Uniswap v4 havuzu",
     intro:
-      "Bu havuzun ne olduğu, kendi anahtarından okundu. Bir v4 havuzu kendine ait bir sözleşme değildir: tek bir PoolManager'ın içinde yaşar ve onu tanımlayan beş şeyin özetiyle adlandırılır — iki para birimi, komisyon, tick adımı ve hook.",
+      "Bu havuzun ne olduğu, kendi anahtarından okundu. Bir v4 havuzu kendine ait bir sözleşme değildir: tek bir PoolManager'ın içinde yaşar ve onu tanımlayan beş şeyin özetiyle adlandırılır — iki para birimi, komisyon, fiyat adımı ve hook.",
     poolId: "Havuz kimliği",
     pair: "Para birimleri",
     fee: "Komisyon",
     dynamicFee: "Hook belirliyor, her takasta",
     dynamicFeeNote:
       "Bu havuzun anahtarı komisyon yerine dinamik komisyon bayrağını taşıyor; yani bir takasın ne tutacağına, olduğu anda hook karar veriyor. Bu okuma bir tanesini gözlemlemedi ve burada bildirilecek bir komisyon yok.",
-    tickSpacing: "Tick adımı",
-    tickSpacingNote:
-      "v4'te havuzun anahtarının parçası; yani v3'ten farklı olarak ayrı bir sözleşme çağrısı gerektirmiyor.",
+    priceStep: "Fiyat adımı",
+    priceStepNote: (spacing: string) =>
+      `Bu havuzda bir pozisyonun kenarlarının yerleştirilebildiği en ince adım — tick adımı ${spacing}. v4'te havuzun anahtarının parçası; yani v3'ten farklı olarak ayrı bir sözleşme çağrısı gerektirmiyor.`,
     nativeCurrency: "Yerli ether",
     nativeCurrencyNote:
       "Buradaki sıfır adres eksik bir alan değil. v4, bir havuzun sarmalanmış token yerine zincirin kendi ether'ini tutmasına izin veriyor; bu da o.",
@@ -1039,7 +1081,7 @@ const tr: Dictionary = {
     alterSwapWarning:
       "Bu hook, bir takasın ne tutacağını ya da ne ödeyeceğini değiştirmeye izinli. Fiyat geçmişinden türeyen her rakam — önerilen aralık, komisyon kademesi, sadece tutmaya kıyaslama — havuzun söylediği komisyonu aldığını ve eğrinin söylediğini ödediğini varsayar. Burada iki varsayım da güvenli değil, ve bunların hiçbiri bir fiyat serisinde görünmez.",
     analysisScope:
-      "Aşağıda aralık analizi var. Bant ve tick'ler, zaten gerçekleşmiş fiyatlardan çıkıyor; bu yüzden burada, hook'u olmayan bir havuzdaki kadar geçerliler — bir hook, fiyatın geçmişte nereye gittiğini geriye dönük değiştiremez. Hook'un değiştirebildiği şey, bir takasın neye mal olduğu; bu yüzden bu havuzun aldığı oran, yukarıdaki komisyondan alınmıyor, topladığı tutardan ölçülüyor.",
+      "Aşağıda aralık analizi var. Aralık, zaten gerçekleşmiş fiyatlardan çıkıyor; bu yüzden burada, hook'u olmayan bir havuzdaki kadar geçerli — bir hook, fiyatın geçmişte nereye gittiğini geriye dönük değiştiremez. Hook'un değiştirebildiği şey, bir takasın neye mal olduğu; bu yüzden bu havuzun aldığı oran, yukarıdaki komisyondan alınmıyor, topladığı tutardan ölçülüyor.",
     unavailableHeading: "Bu havuz okunamadı",
     invalidId:
       "Bu bir v4 havuz kimliği değil. Bir v4 havuzu 32 baytlık bir özetle adlandırılır — 0x ve ardından 64 onaltılık karakter — bir sözleşme adresiyle değil.",
@@ -1124,89 +1166,96 @@ const tr: Dictionary = {
       pool: "havuzun yapılandırması okunurken",
       snapshot: "havuzun güncel piyasa durumu okunurken",
       history: "havuzun günlük fiyat geçmişi okunurken",
-      volatility: "tarihsel volatilite ölçülürken",
+      volatility: "fiyatın ne kadar hareket ettiği ölçülürken",
       band: "fiyat bandı kurulurken",
-      range: "bant havuzun tick ızgarasına hizalanırken",
+      range: "bant havuzun ifade edebildiği fiyatlara oturtulurken",
       divergence: "o aralık iki tokenı tutmakla karşılaştırılırken",
       activity: "havuzun ölçüm penceresinde ne yaptığı okunurken",
     },
     noRangeHeading: "Bu havuz için aralık yok",
     stoppedWhile: (step: string) => `İşlem ${step} durdu.`,
-    /*
-     * "adım", not "aralık". The suggested range is headed "Önerilen tick
-     * aralığı" a few lines below, and one page calling two different things by
-     * one name is a page that cannot be read carefully — a model writing about
-     * it produced "the pool's fine tick aralığı, a few tick aralığı wide".
-     */
-    poolSummary: (protocol: string, feeTier: string, tickSpacing: string) =>
-      `Ethereum mainnet üzerinde Uniswap ${protocol} · ${feeTier} komisyon kademesi · tick adımı ${tickSpacing}`,
-    noDeclaredFee: "sabit olmayan",
+    poolSummary: (protocol: string, fee: string) =>
+      `Uniswap ${protocol} · Ethereum mainnet · ${fee}`,
+    feePerSwap: (fee: string) => `her takasta ${fee} komisyon`,
+    noDeclaredFee: "komisyonu her takasta hook'u belirliyor",
     caveatsHeading: (count: number) =>
       count === 1
         ? "Bu sayılar için bir çekince geçerli."
         : `Bu sayılar için ${count} çekince geçerli.`,
     caveatsAriaLabel: "Çekinceler",
 
-    rangeHeading: "Önerilen tick aralığı",
+    rangeHeading: "Önerilen fiyat aralığı",
+    rangeIntro: (base: string, quote: string) =>
+      `Bu havuzdaki bir pozisyonun aktif olacağı fiyatlar; ${base} fiyatı ${quote} cinsinden yazıldı.`,
+    rangeValue: (lower: string, upper: string, quote: string, base: string) =>
+      `${base} başına ${lower} – ${upper} ${quote}`,
+    rangeDistances: (down: string, up: string) =>
+      `Güncel fiyatın ${down} altından ${up} üstüne.`,
+    rangeMeaning:
+      "Bu iki fiyatın arasında pozisyon, havuzun takas komisyonlarından payını alır. Dışında tek bir token tutar ve fiyat geri dönene kadar hiçbir şey kazanmaz.",
+    priceSentence: (base: string, price: string, quote: string) => `1 ${base} = ${price} ${quote}`,
+    currentPrice: "Güncel fiyat",
+    inRangeYes: "Güncel fiyat bu aralığın içinde.",
+    inRangeNo: "Güncel fiyat bu aralığın dışında.",
+    inRangeYesNote: "Burada açılan bir pozisyon hemen aktif olur.",
+    inRangeNoNote:
+      "Burada açılan bir pozisyon tek bir token tutar ve fiyat aralığa geri dönene kadar hiçbir şey kazanmaz.",
+    beyondEdges: (below: string, above: string) =>
+      `Fiyat aralığın altına düşerse pozisyonun elinde yalnızca ${below} kalır; üstüne çıkarsa yalnızca ${above}.`,
+    lowerTruncatedNote:
+      "Alt kenar bu havuzun ifade edebildiği en düşük fiyatta durdu; bandın koyacağı yere ulaşmıyor.",
+    upperTruncatedNote:
+      "Üst kenar bu havuzun ifade edebildiği en yüksek fiyatta durdu; bandın koyacağı yere ulaşmıyor.",
+    barLabel: "Aralık ve güncel fiyat, ölçekli çizim",
+
+    basisHeading: "Bu aralık nasıl çizildi",
+    basisIntro: (base: string, days: string) =>
+      `${base} fiyatının tamamlanmış son ${days} günde gerçekte ne kadar hareket ettiğinden — bundan sonra nereye gideceğine dair bir tahminden değil.`,
+    dailyMove: "Tipik günlük hareket",
+    dailyMoveNote: "Pencere boyunca bir günlük fiyat değişiminin standart sapması.",
+    horizonMove: (days: string) => `${days} günde`,
+    horizonMoveNote:
+      "Aynı hareket, aşağıda seçilen ufka yayılmış hâliyle: her iki yöne bir standart sapma.",
+    widthValue: (multiplier: string) => `bunun ${multiplier} katı, her yöne`,
+    widthNote:
+      "Aşağıdan seçilir. Daha geniş bir aralık daha seyrek terk edilir; aynı yatırım daha geniş bir aralığa yayılınca her fiyatta daha incedir.",
+    measuredOver: "Ölçüm penceresi",
+    measuredOverNote: (returns: string) => `${returns} günlük değişim kullanıldı.`,
+    epilogue:
+      "Aralık bugünkü fiyata ortalanır ve oran olarak aşağı ve yukarı aynı mesafede çizilir — yarıya inmekle iki katına çıkmak aynı harekettir — iki yüzdenin farklı olması bundandır. Fiyatın ne kadar hareket ettiğini anlatır, nereye gideceğini değil: bir tahmin değildir, genişliği de bir güven düzeyi değildir. Buradaki hiçbir şey pozisyon büyüklüğü belirlemez, hangi tokendan ne kadar yatırılacağını söylemez.",
+  },
+
+  technical: {
+    heading: "Teknik ayrıntılar",
+    summary: "Yukarıdaki sayfanın karşısında doğrulandığı tick'ler, bloklar ve rakamlar.",
     lowerTick: "Alt tick",
     upperTick: "Üst tick",
-    priceAt: (price: string, quote: string, base: string) =>
-      `Fiyat: ${base} başına ${price} ${quote}`,
-    width: "Genişlik",
-    widthValue: (ticks: string) => `${ticks} tick`,
-    widthNote: (spacings: string, tickSpacing: string) =>
-      `${tickSpacing}'lik ${spacings} adım`,
-    inRange: "Şu an aralık içinde",
-    yes: "Evet",
-    no: "Hayır",
-    inRangeNote: "Havuzun güncel tick'i bu sınırların içinde.",
-    outOfRangeNote:
-      "Burada kurulan bir pozisyon tek token tutar ve fiyat dönene kadar hiçbir şey kazanmaz.",
-    lowerEdge: "Alt kenar",
-    upperEdge: "Üst kenar",
-    truncated: "Kırpıldı",
-    asAsked: "İstendiği gibi",
-    lowerTruncatedNote: "Bu havuzun kabul ettiği en düşük tick'te durdu.",
-    upperTruncatedNote: "Bu havuzun kabul ettiği en yüksek tick'te durdu.",
-
-    currentStateHeading: "Güncel durum",
-    tokenPrice: (symbol: string) => `${symbol} fiyatı`,
-    quotePerBase: (quote: string, base: string) => `${base} başına ${quote}`,
     currentTick: "Güncel tick",
     sourceReportedTick: (tick: string) => `Kaynak ${tick} bildirdi.`,
     noSourceTick:
       "Kaynak kendi tick'ini bildirmedi, bu yüzden bu dönüşüm doğrulanmadı.",
-    tvl: "Kilitli toplam değer",
+    tickSpacing: "Tick adımı",
+    tickSpacingNote: (step: string) => `Kullanılabilir kenarlar arasında ${step} fiyat adımı.`,
+    width: "Genişlik",
+    widthValue: (ticks: string, spacings: string) => `${ticks} tick · ${spacings} adım`,
+    poolPrice: "Havuzun kendi yönünde fiyat",
+    quotePerBase: (quote: string, base: string) => `${base} başına ${quote}`,
+    bandLower: "Bant alt sınırı",
+    bandUpper: "Bant üst sınırı",
+    bandNote: "Tick ızgarasına oturtulmadan önce, havuzun kendi yönünde.",
+    annualised: "Yıllıklandırılmış volatilite",
+    annualisedNote:
+      "Günlük log getirilerinin örneklem standart sapması, sqrt(365) ile ölçeklenmiş.",
+    coverage: "Kapsama",
+    coverageNote: "Pencerenin ne kadarının ardışık günlük fiyatlarla desteklendiği.",
     sourceBlock: "Kaynak blok",
     noBlockTime: "Blok zamanı bildirilmedi.",
     fetchedAt: "Çekilme zamanı",
     fetchedAtNote: "Yanıtın geldiği an — anlattığı an değil.",
-
-    volatilityHeading: "Tarihsel volatilite",
-    annualised: "Yıllıklandırılmış",
-    annualisedNote:
-      "Günlük log getirilerinin örneklem standart sapması, sqrt(365) ile ölçeklenmiş.",
-    daily: "Günlük",
-    window: "Pencere",
-    windowNote: (returns: string) => `${returns} kullanılabilir günlük getiri.`,
-    coverage: "Kapsama",
-    coverageNote: "Pencerenin ne kadarının ardışık günlük fiyatlarla desteklendiği.",
-
-    bandHeading: "Bu aralığın türediği fiyat bandı",
-    horizon: "Ufuk",
-    horizonValue: (days: string) => `${days} gün`,
-    horizonNote: "Bandın ne kadar ileriye ölçeklendiği.",
-    multiplier: "Çarpan",
-    multiplierNote: "Ufuk standart sapması sayısı — güven düzeyi değil.",
-    lowerBound: "Alt sınır",
-    upperBound: "Üst sınır",
-    downside: "Aşağı yön",
-    downsideNote: "Güncel fiyattan alt sınıra olan mesafe.",
-    upside: "Yukarı yön",
-    upsideNote: "Güncel fiyattan üst sınıra olan mesafe.",
-
-    epilogue:
-      "Bant log uzayında simetriktir; bu da onu yüzde cinsinden bilerek asimetrik yapar: fiyatın yarıya inmesiyle iki katına çıkması logaritmik olarak aynı mesafedir ve bunlardan yalnızca biri “%50”'dir. Bant beklenen getiriyi sıfır varsayar, fiyatın geçmişte ne kadar hareket ettiğini anlatır ve bir tahmin değildir. Çarpan bir güven düzeyi değildir. Buradaki hiçbir şey pozisyon büyüklüğü belirlemez, hangi tokendan ne kadar yatırılacağını söylemez.",
+    lowerEdge: "Alt kenar",
+    upperEdge: "Üst kenar",
+    truncated: "Kırpıldı",
+    asAsked: "İstendiği gibi",
   },
 
   explanation: {
@@ -1288,13 +1337,13 @@ const tr: Dictionary = {
       "range-invalid-input":
         "Bu aralık için verilen havuz, fiyat bandı ve anlık durum geçerli değil ya da hepsi aynı havuzu ve aynı gözlemi anlatmıyor.",
       "range-price-unrepresentable":
-        "Bu havuzun güncel fiyatı, Uniswap'ın tick olarak ifade edebildiği aralığın dışında; bu yüzden ondan bir pozisyon aralığı kurulamıyor.",
+        "Bu havuzun güncel fiyatı, Uniswap'ın ifade edebildiği aralığın dışında; bu yüzden ondan bir pozisyon aralığı kurulamıyor.",
       "range-tick-disagreement":
-        "Kaynağın bu havuz için bildirdiği tick, fiyatının bu token ondalıklarıyla ima ettiği tick ile uyuşmuyor; bu yüzden aralık yayımlanmıyor.",
+        "Kaynağın bu havuz için bildirdiği fiyat ile bildirdiği durum aynı anı anlatmıyor; bu yüzden aralık yayımlanmıyor.",
       "range-too-narrow":
-        "Fiyat bandı bu havuzun bir tick adımından dar, bu yüzden iki ayrı pozisyon sınırı tanımlamıyor.",
+        "Fiyat bandı bu havuzun iki kenar arasında izin verdiği en küçük adımdan dar, bu yüzden iki ayrı pozisyon sınırı tanımlamıyor.",
       "range-unverifiable":
-        "Tick aralığı hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+        "Aralık hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "divergence-unverifiable":
         "Tutmaya kıyaslama hesabı, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "activity-unverifiable":
@@ -1341,13 +1390,13 @@ const tr: Dictionary = {
       "band-volatility-block-time-unreported":
         "Volatilite kaynağı bir blok zamanı bildirmedi, bu yüzden ne kadar güncel olduğu bağımsız olarak doğrulanamadı.",
       "range-lower-edge-truncated":
-        "Alt kenar bu havuzun kabul ettiği en düşük tick'te duruyor, bu yüzden aralık aşağıda bandın indiği kadar inmiyor.",
+        "Aralığın bir kenarı, bu havuzun ifade edebildiği fiyatların bittiği yerde duruyor — havuzun ilk tokenının en ucuz olduğu kenar — bu yüzden aralık bandın uzandığı kadar uzanmıyor. Gösterilen yönde hangi kenar olduğu aralık panelinde yazıyor.",
       "range-upper-edge-truncated":
-        "Üst kenar bu havuzun kabul ettiği en yüksek tick'te duruyor, bu yüzden aralık yukarıda bandın çıktığı kadar çıkmıyor.",
+        "Aralığın bir kenarı, bu havuzun ifade edebildiği fiyatların bittiği yerde duruyor — havuzun ilk tokenının en pahalı olduğu kenar — bu yüzden aralık bandın uzandığı kadar uzanmıyor. Gösterilen yönde hangi kenar olduğu aralık panelinde yazıyor.",
       "range-tick-unverified":
-        "Fiyat kaynağı havuzun kendi tick'ini bildirmedi, bu yüzden dönüştürülen tick ona karşı kontrol edilemedi.",
+        "Fiyat kaynağı havuzun kendi durumunu bildirmedi, bu yüzden fiyatın ima ettiği durum ona karşı kontrol edilemedi.",
       "range-excludes-current-price":
-        "Havuzun güncel tick'i bu aralığın dışında; burada kurulacak bir pozisyon tek token tutar ve fiyat dönene kadar hiçbir şey kazanmaz.",
+        "Havuzun güncel fiyatı bu aralığın dışında; burada kurulacak bir pozisyon tek token tutar ve fiyat dönene kadar hiçbir şey kazanmaz.",
     } satisfies Record<DataWarningNotice, string>,
   },
 

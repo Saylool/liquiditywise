@@ -4,6 +4,12 @@ import { describe, expect, it } from "vitest";
 import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../schemas";
 import { analysePoolRange, DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
 import { formatPercent, formatPrice } from "../lib/format/displayFormats";
+import {
+  choosePriceQuote,
+  edgeDistances,
+  quotedInterval,
+  quotedPrice,
+} from "../lib/format/priceQuote";
 import { getDictionary } from "../lib/i18n/dictionaries";
 import { PoolRangeReport } from "./PoolRangeReport";
 
@@ -101,19 +107,132 @@ const render = (result: ReturnType<typeof analysePoolRange>, locale: "en" | "tr"
 describe("PoolRangeReport", () => {
   const markup = render(analyse());
 
-  it("names the pair, the fee tier and the spacing", () => {
+  it("names the pair, the fee and the id", () => {
     expect(markup).toContain("USDC");
     expect(markup).toContain("WETH");
-    expect(markup).toContain("0.30%");
+    expect(markup).toContain("0.30% fee on every swap");
     expect(markup).toContain(POOL_ID);
   });
 
-  it("shows the two ticks a position would use", () => {
+  /*
+   * The pool quotes ether in dollars — 0.000333 WETH per USDC — and a reader
+   * is told the reverse: one WETH is worth three thousand USDC. Every price
+   * on the page follows, including the range's two edges.
+   */
+  it("writes every price as one unit of the dearer token in the cheaper", () => {
     const result = analyse();
     if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const { band, range } = result.data;
+    const quote = choosePriceQuote(result.data.pool, band.currentPrice);
+    const edges = quotedInterval(quote, { lower: range.lowerPrice, upper: range.upperPrice });
 
+    expect(quote.inverted).toBe(true);
+    expect(markup).toContain("1 WETH = 3,000 USDC");
+    expect(markup).toContain(
+      `${formatPrice(edges.lower)} – ${formatPrice(edges.upper)} USDC per WETH`,
+    );
+    expect(edges.lower).toBeLessThan(3000);
+    expect(edges.upper).toBeGreaterThan(3000);
+  });
+
+  it("says how far the price would have to move to leave, in the shown direction", () => {
+    const result = analyse();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const { band, range } = result.data;
+    const quote = choosePriceQuote(result.data.pool, band.currentPrice);
+    const distances = edgeDistances(
+      quotedPrice(quote, band.currentPrice),
+      quotedInterval(quote, { lower: range.lowerPrice, upper: range.upperPrice }),
+    );
+
+    expect(markup).toContain(
+      `${formatPercent(distances.down)} below and ${formatPercent(distances.up)} above the current price.`,
+    );
+  });
+
+  /* As ether falls the position finishes in ether; as it rises, in dollars. */
+  it("names the token a position is left with beyond each edge, the reader's way round", () => {
+    expect(markup).toContain(
+      "the position ends up holding only WETH; if it rises above it, only USDC.",
+    );
+  });
+
+  /*
+   * The pool's price can go no higher exactly where the reader's can go no
+   * lower, so the pool's truncated top is reported as the reader's cut-short
+   * bottom — and nothing is drawn, because a bar with a price forty orders of
+   * magnitude away on it would put everything else in one pixel.
+   */
+  it("reports a truncated edge on the edge the reader sees, and draws no bar", () => {
+    const result = analyse({ parameters: { horizonDays: 365, standardDeviationMultiplier: 400 } });
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    expect(result.data.range.upperBoundTruncated).toBe(true);
+    expect(result.data.range.lowerBoundTruncated).toBe(false);
+
+    const truncated = render(result);
+    expect(truncated).toContain(
+      "The lower edge stops at the lowest price this pool can express, short of where the band would have put it.",
+    );
+    expect(truncated).not.toContain("The upper edge stops at the highest price");
+    expect(truncated).not.toContain('role="img"');
+    // The caveat from the data layer names no edge: its code is the pool's edge, not the reader's.
+    expect(truncated).toContain("The range panel says which edge that is in the direction shown.");
+    expect(truncated).not.toMatch(/upper edge stops/i);
+  });
+
+  /* The form that changes the range sits under the figures it changes, not after the whole report. */
+  it("places the controls directly under how the range was drawn", () => {
+    const withControls = renderToStaticMarkup(
+      <PoolRangeReport
+        result={analyse()}
+        poolId={POOL_ID}
+        controls={<form id="controls" />}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+    const controls = withControls.indexOf('<form id="controls">');
+
+    expect(controls).toBeGreaterThan(withControls.indexOf("How this range was drawn"));
+    expect(controls).toBeLessThan(withControls.indexOf("What the pool actually did"));
+  });
+
+  it("still shows the controls when there is no analysis to show", () => {
+    const failed = renderToStaticMarkup(
+      <PoolRangeReport
+        result={{ status: "unavailable", step: "history", reason: "network-error", notice: "market-data-unreachable" }}
+        poolId={POOL_ID}
+        controls={<form id="controls" />}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+    expect(failed).toContain('<form id="controls">');
+  });
+
+  it("draws the range and the current price to scale", () => {
+    expect(markup).toContain('role="img" aria-label="The range and the current price, drawn to scale"');
+    // Three positions on the bar, every one of them a percentage of its width.
+    expect(markup.match(/style="left:\d+(\.\d+)?%/g)?.length).toBeGreaterThanOrEqual(3);
+  });
+
+  /*
+   * The ticks are still on the page — a reader checking it against the chain
+   * needs them — but nowhere before the technical details at the end. A
+   * reader who never opens that section never meets the word.
+   */
+  it("keeps every tick behind the technical details", () => {
+    const result = analyse();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const technical = markup.indexOf("Technical details");
+
+    expect(technical).toBeGreaterThan(0);
+    expect(markup.toLowerCase().indexOf("tick")).toBeGreaterThan(technical);
     expect(markup).toContain(result.data.range.lowerTick.toLocaleString("en-US"));
     expect(markup).toContain(result.data.range.upperTick.toLocaleString("en-US"));
+    // And the pool's own direction, likewise: after the fold, not before it.
+    expect(markup.indexOf("WETH per USDC")).toBeGreaterThan(technical);
   });
 
   it("keeps a small price readable rather than rounding it away", () => {
@@ -129,21 +248,16 @@ describe("PoolRangeReport", () => {
     expect(markup).not.toContain("[object Object]");
   });
 
-  it("says the position is currently in range", () => {
-    expect(markup).toContain("Currently in range");
-    // The answer itself, not only the sentence underneath it.
-    expect(markup).toContain(">Yes<");
-    expect(markup).toContain("The pool&#x27;s current tick sits inside these bounds.");
+  it("says the current price is inside the range, in a sentence", () => {
+    expect(markup).toContain("The current price is inside this range.");
+    expect(markup).toContain("would be active straight away");
+    expect(markup).not.toContain("is outside this range");
   });
 
-  it("prices each edge from its own tick", () => {
-    const result = analyse();
-    if (result.status === "unavailable") throw new Error("fixture should analyse");
-
-    const { lowerPrice, upperPrice } = result.data.range;
-    expect(formatPrice(lowerPrice)).not.toBe(formatPrice(upperPrice));
-    expect(markup).toContain(`Price ${formatPrice(lowerPrice)} WETH per USDC`);
-    expect(markup).toContain(`Price ${formatPrice(upperPrice)} WETH per USDC`);
+  it("explains what the range means without a term of art", () => {
+    expect(markup).toContain("Between these two prices a position earns its share");
+    expect(markup).toContain("Typical daily move");
+    expect(markup).toContain("How this range was drawn");
   });
 
   it("shows volatility as a percentage, not as a bare ratio", () => {
@@ -218,29 +332,26 @@ describe("PoolRangeReport in Turkish", () => {
   const markup = render(analyse(), "tr");
 
   it("translates the labels", () => {
-    expect(markup).toContain("Önerilen tick aralığı");
-    expect(markup).toContain("Alt tick");
-    expect(markup).toContain("Güncel durum");
-    expect(markup).toContain("Tarihsel volatilite");
-    expect(markup).not.toContain("Suggested tick range");
-    expect(markup).not.toContain("Current state");
+    expect(markup).toContain("Önerilen fiyat aralığı");
+    expect(markup).toContain("Bu aralık nasıl çizildi");
+    expect(markup).toContain("Havuz gerçekte ne yaptı");
+    expect(markup).toContain("Teknik ayrıntılar");
+    expect(markup).not.toContain("Suggested price range");
+    expect(markup).not.toContain("How this range was drawn");
   });
 
-  /*
-   * "tick aralığı" is the heading over the suggested range. It used to name the
-   * spacing as well, one line above it, which left the page calling two
-   * different things by one name — visible in prose written about it: "the
-   * pool's fine tick aralığı, a few tick aralığı wide".
-   */
-  it("does not call the spacing and the range the same thing", () => {
-    expect(markup).toContain("tick adımı");
-    expect(markup).toContain("Önerilen tick aralığı");
-    expect(markup).not.toContain("tick aralığı 60");
+  it("keeps every tick behind the technical details, in Turkish too", () => {
+    const technical = markup.indexOf("Teknik ayrıntılar");
+
+    expect(technical).toBeGreaterThan(0);
+    expect(markup.toLowerCase().indexOf("tick")).toBeGreaterThan(technical);
+    expect(markup).toContain("Alt tick");
   });
 
   it("writes the numbers the way Turkish writes them", () => {
-    // Half a translation would keep "0.30%" and "0.000333333" here.
-    expect(markup).toContain("%0,30"); // the fixture pool's 3000 ppm fee tier
+    // Half a translation would keep "0.30%", "3,000" and "0.000333333" here.
+    expect(markup).toContain("%0,30"); // the fixture pool's 3000 ppm fee
+    expect(markup).toContain("1 WETH = 3.000 USDC");
     expect(markup).toContain("0,000333333");
   });
 
@@ -298,8 +409,8 @@ describe("PoolRangeReport when there is nothing to show", () => {
       notice: "market-data-not-configured",
     });
 
-    expect(failed).not.toContain("Suggested tick range");
-    expect(failed).not.toContain("Historical volatility");
+    expect(failed).not.toContain("Suggested price range");
+    expect(failed).not.toContain("How this range was drawn");
   });
 });
 
@@ -312,8 +423,25 @@ describe("PoolRangeReport against simply holding", () => {
   const markup = render(analyse());
 
   it("shows a row for each price the comparison was made at", () => {
-    expect(markup).toContain("Against simply holding");
-    expect(markup).toContain("Versus holding");
+    expect(markup).toContain("Compared with just holding");
+    expect(markup).toContain("Position against holding");
+    expect(markup).toContain("Price of WETH");
+  });
+
+  /* The same direction as every other price on the page, and still ascending. */
+  it("prices the rows the reader's way round, lowest first", () => {
+    const result = analyse();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const { divergence, band, pool } = result.data;
+    const quote = choosePriceQuote(pool, band.currentPrice);
+    const shown = divergence.points.map((point) => quotedPrice(quote, point.price)).sort((a, b) => a - b);
+
+    // Within the panel: the current price is also printed higher up the page.
+    const panel = markup.slice(markup.indexOf("Compared with just holding"));
+    const positions = shown.map((value) => panel.indexOf(`${formatPrice(value)} USDC<`));
+    expect(positions.every((position) => position > 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    expect(shown[0]).toBeLessThan(3000);
   });
 
   it("reports no divergence at the price it was measured from", () => {
@@ -344,9 +472,9 @@ describe("PoolRangeReport against simply holding", () => {
     const turkish = render(analyse(), "tr");
 
     expect(turkish).toContain("Sadece tutmaya kıyasla");
-    expect(turkish).toContain("Tutmaya kıyasla");
+    expect(turkish).toContain("Pozisyon, tutmaya kıyasla");
     expect(turkish).toContain("geçici kayıp");
-    expect(turkish).not.toContain("Against simply holding");
+    expect(turkish).not.toContain("Compared with just holding");
   });
 });
 

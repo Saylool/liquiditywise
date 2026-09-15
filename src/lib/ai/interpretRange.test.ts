@@ -168,7 +168,7 @@ describe("interpretRange", () => {
 
     expect(seen.system).toContain("NEVER STATE A FIGURE");
     expect(seen.user).toContain("USDC / WETH");
-    expect(seen.user).toContain("Lower tick");
+    expect(seen.user).toContain("Lower edge");
   });
 
   it("writes in the reader's language", async () => {

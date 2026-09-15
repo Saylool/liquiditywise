@@ -17,23 +17,44 @@ import {
   formatUtcMinute,
   formatWhole,
 } from "../lib/format/displayFormats";
+import {
+  choosePriceQuote,
+  edgeDistances,
+  heldAboveRange,
+  heldBelowRange,
+  quotedEnds,
+  quotedInterval,
+  quotedPrice,
+} from "../lib/format/priceQuote";
+import { priceStepRatio } from "../lib/format/priceStep";
+import { layoutRangeBar } from "../lib/format/rangeBarLayout";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
+import { PriceRangeBar } from "./PriceRangeBar";
 
 /**
- * Renders one pool's tick-range analysis.
+ * Renders one pool's range analysis, for someone who has never heard of a tick.
  *
  * Presentational only: it fetches nothing, computes nothing, and holds no
  * credential. Every figure comes from the result it is handed, and every figure
- * it cannot show is shown as absent rather than as a zero.
+ * it cannot show is shown as absent rather than as a zero. The one thing it
+ * decides is how a figure is *read*: every price on the page is written the way
+ * round that makes it at least one — one unit of the dearer token, priced in
+ * the cheaper — because that is how a person thinks of a price, and the pool's
+ * own direction is how a contract does. The reciprocal is arithmetic on a
+ * verified figure, not a new one; see `priceQuote.ts`.
+ *
+ * The page leads with what a reader would act on — two prices, whether the
+ * current price sits between them, and how far it has to move to leave — and
+ * ends with what a reader would check it against: the ticks those prices
+ * encode, the blocks they were read at, the pool's own direction. The second
+ * half is folded away, not removed. Nothing is hidden; it is ordered.
  *
  * Both the words and the numbers follow the reader's language — a translated
  * page that still writes "0.30%" to a Turkish reader is only half translated.
  *
- * The warnings are the exception. They arrive from the data layer as fixed
- * sentences and are rendered as they come, in English, because making them
- * translatable means turning them into codes down there rather than text up
- * here.
+ * The warnings are the exception. They arrive from the data layer as codes and
+ * are rendered through the dictionary like everything else.
  */
 
 function Figure({
@@ -54,22 +75,7 @@ function Figure({
   );
 }
 
-/** A titled panel of `Figure`s. Its children are description-list entries. */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Panel title={title}>
-      <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
-    </Panel>
-  );
-}
-
-/**
- * The same panel without the description list.
- *
- * Extracted because two sections carry prose alongside their figures, and a
- * paragraph is not a valid child of `<dl>` — which is what they were until the
- * markup was read back.
- */
+/** A titled panel. A `<dl>` inside it is the caller's, so prose can sit beside it. */
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
@@ -78,6 +84,9 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     </section>
   );
 }
+
+/** The grid the figures sit in, everywhere they sit in one. */
+const FIGURE_GRID = "grid gap-5 sm:grid-cols-2 lg:grid-cols-3";
 
 /**
  * What the pool actually charged, beside what it says it charges.
@@ -115,9 +124,18 @@ function RealizedFeePanel({
 
   return (
     <Panel title={t.realizedFee.heading}>
-      <p className="text-sm leading-relaxed text-muted">{t.realizedFee.intro}</p>
+      <p className="text-sm leading-relaxed">
+        {verdict.kind === "matches"
+          ? t.realizedFee.verdictMatches
+          : verdict.kind === "none-declared"
+            ? t.realizedFee.verdictNoneDeclared
+            : t.realizedFee.verdictDiffers(
+                formatWhole(verdict.daysDiffering, locale),
+                formatWhole(rate.daysMeasured, locale),
+              )}
+      </p>
 
-      <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className={FIGURE_GRID}>
         <Figure
           label={t.realizedFee.declared}
           value={
@@ -158,16 +176,7 @@ function RealizedFeePanel({
         />
       </dl>
 
-      <p className="text-sm leading-relaxed">
-        {verdict.kind === "matches"
-          ? t.realizedFee.verdictMatches
-          : verdict.kind === "none-declared"
-            ? t.realizedFee.verdictNoneDeclared
-            : t.realizedFee.verdictDiffers(
-                formatWhole(verdict.daysDiffering, locale),
-                formatWhole(rate.daysMeasured, locale),
-              )}
-      </p>
+      <p className="text-xs leading-relaxed text-muted">{t.realizedFee.intro}</p>
 
       {/* Only where it is true. A pool with no such hook is not owed the caveat. */}
       {hookMayAlterSwaps ? (
@@ -180,12 +189,20 @@ function RealizedFeePanel({
 export function PoolRangeReport({
   result,
   poolId,
+  controls,
   t,
   locale,
 }: {
   result: PoolRangeAnalysisResult;
   /** A v3 pool address or a v4 PoolId; shown only when there is no analysis. */
   poolId: string;
+  /**
+   * The form that changes the range, rendered directly under the figures it
+   * changes — the horizon and the width — rather than after the whole report.
+   * A slot rather than a component, because the page knows where the form
+   * submits and this does not.
+   */
+  controls?: React.ReactNode;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -193,16 +210,19 @@ export function PoolRangeReport({
     const step: PoolRangeAnalysisStep = result.step;
 
     return (
-      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
-          {t.report.noRangeHeading}
-        </h2>
-        <p className="text-sm leading-relaxed">{t.report.stoppedWhile(t.report.steps[step])}</p>
-        <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
-        <p className="font-mono text-xs text-muted">
-          {poolId} · {result.reason}
-        </p>
-      </section>
+      <div className="flex flex-col gap-6">
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+            {t.report.noRangeHeading}
+          </h2>
+          <p className="text-sm leading-relaxed">{t.report.stoppedWhile(t.report.steps[step])}</p>
+          <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
+          <p className="font-mono text-xs text-muted">
+            {poolId} · {result.reason}
+          </p>
+        </section>
+        {controls}
+      </div>
     );
   }
 
@@ -221,25 +241,63 @@ export function PoolRangeReport({
   const disclosure = feeDisclosureFor(pool);
   const warnings = result.status === "partial" ? result.warnings : [];
 
-  const base = pool.token0.symbol;
-  const quote = pool.token1.symbol;
+  /*
+   * One direction for every price on the page, chosen once from the current
+   * price. Everything below that shows a price shows it this way round, and
+   * the technical details at the end show the pool's own.
+   */
+  const quote = choosePriceQuote(pool, band.currentPrice);
+  const base = quote.base.symbol;
+  const counter = quote.quote.symbol;
+  const current = quotedPrice(quote, band.currentPrice);
+  const edges = quotedInterval(quote, { lower: range.lowerPrice, upper: range.upperPrice });
+  const distances = edgeDistances(current, edges);
+  /*
+   * Which of the *shown* edges was cut short. The flags name the pool's
+   * edges, and inverting the quote renames them: where the pool's price can
+   * go no higher is where the reader's can go no lower.
+   */
+  const truncated = quotedEnds(quote, {
+    lower: range.lowerBoundTruncated,
+    upper: range.upperBoundTruncated,
+  });
+  /*
+   * Not drawn when an edge was truncated. A truncated edge is the end of what
+   * the pool can express — a price forty orders of magnitude away — and a bar
+   * with that on it would put the range and the current price in the same
+   * pixel. The note under the range says what happened instead.
+   */
+  const bar =
+    truncated.lower || truncated.upper
+      ? null
+      : layoutRangeBar({ lower: edges.lower, upper: edges.upper, current });
+  /* The comparison table, in the same direction, still ascending. */
+  const divergencePoints = divergence.points.map((point) => ({
+    price: quotedPrice(quote, point.price),
+    lossRatio: point.lossRatio,
+  }));
+  if (quote.inverted) divergencePoints.reverse();
+
+  const price = (value: number) => formatPrice(value, locale);
+  const percent = (ratio: number) => formatPercent(ratio, locale);
+  const whole = (value: number) => formatWhole(value, locale);
+  const widthInTicks = range.upperTick - range.lowerTick;
 
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight">
-          {base} / {quote}
+          {pool.token0.symbol} / {pool.token1.symbol}
         </h1>
-        <p className="font-mono text-xs text-muted">{pool.id}</p>
         <p className="text-sm leading-relaxed text-muted">
           {t.report.poolSummary(
             pool.protocolVersion,
             disclosure.declaredPpm === null
               ? t.report.noDeclaredFee
-              : formatFeePpm(disclosure.declaredPpm, locale),
-            formatWhole(pool.tickSpacing, locale),
+              : t.report.feePerSwap(formatFeePpm(disclosure.declaredPpm, locale)),
           )}
         </p>
+        <p className="break-all font-mono text-xs text-muted">{pool.id}</p>
       </header>
 
       {warnings.length === 0 ? null : (
@@ -258,125 +316,113 @@ export function PoolRangeReport({
         </aside>
       )}
 
-      <Section title={t.report.rangeHeading}>
-        <Figure
-          label={t.report.lowerTick}
-          value={formatTick(range.lowerTick, locale)}
-          note={t.report.priceAt(formatPrice(range.lowerPrice, locale), quote, base)}
-        />
-        <Figure
-          label={t.report.upperTick}
-          value={formatTick(range.upperTick, locale)}
-          note={t.report.priceAt(formatPrice(range.upperPrice, locale), quote, base)}
-        />
-        <Figure
-          label={t.report.width}
-          value={t.report.widthValue(formatWhole(range.upperTick - range.lowerTick, locale))}
-          note={t.report.widthNote(
-            formatWhole((range.upperTick - range.lowerTick) / pool.tickSpacing, locale),
-            formatWhole(pool.tickSpacing, locale),
-          )}
-        />
-        <Figure
-          label={t.report.inRange}
-          value={range.containsCurrentPrice ? t.report.yes : t.report.no}
-          note={range.containsCurrentPrice ? t.report.inRangeNote : t.report.outOfRangeNote}
-        />
-        <Figure
-          label={t.report.lowerEdge}
-          value={range.lowerBoundTruncated ? t.report.truncated : t.report.asAsked}
-          {...(range.lowerBoundTruncated ? { note: t.report.lowerTruncatedNote } : {})}
-        />
-        <Figure
-          label={t.report.upperEdge}
-          value={range.upperBoundTruncated ? t.report.truncated : t.report.asAsked}
-          {...(range.upperBoundTruncated ? { note: t.report.upperTruncatedNote } : {})}
-        />
-      </Section>
+      {/*
+       * The range, as two prices, first. It is what a reader came for and what
+       * they would type into a position; everything after it says where it
+       * came from and what it is not.
+       */}
+      <Panel title={t.report.rangeHeading}>
+        <p className="text-sm leading-relaxed text-muted">{t.report.rangeIntro(base, counter)}</p>
+        <p className="font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
+          {t.report.rangeValue(price(edges.lower), price(edges.upper), counter, base)}
+        </p>
+        {/*
+         * Only while the price is between the edges. "Minus two percent below"
+         * is not a sentence, and the box beneath already says the price is
+         * outside.
+         */}
+        {range.containsCurrentPrice ? (
+          <p className="text-sm leading-relaxed">
+            {t.report.rangeDistances(percent(distances.down), percent(distances.up))}
+          </p>
+        ) : null}
 
-      <Section title={t.report.currentStateHeading}>
-        <Figure
-          label={t.report.tokenPrice(base)}
-          value={formatPrice(band.currentPrice, locale)}
-          note={t.report.quotePerBase(quote, base)}
-        />
-        <Figure
-          label={t.report.currentTick}
-          value={formatTick(range.currentTick, locale)}
-          note={
-            range.chainReportedTick === null
-              ? t.report.noSourceTick
-              : t.report.sourceReportedTick(formatTick(range.chainReportedTick, locale))
+        {bar === null ? null : (
+          <PriceRangeBar
+            layout={bar}
+            lowerLabel={price(edges.lower)}
+            upperLabel={price(edges.upper)}
+            currentLabel={price(current)}
+            label={t.report.barLabel}
+          />
+        )}
+
+        <div
+          className={
+            range.containsCurrentPrice
+              ? "flex flex-col gap-1 rounded-md border border-border bg-background px-4 py-3 text-sm"
+              : "flex flex-col gap-1 rounded-md border border-warning-border bg-warning-surface px-4 py-3 text-sm text-warning-foreground"
           }
-        />
-        <Figure label={t.report.tvl} value={formatUsd(snapshot.tvlUsd, locale)} />
-        <Figure
-          label={t.report.sourceBlock}
-          value={snapshot.sourceBlockNumber ?? ABSENT}
-          note={
-            snapshot.sourceBlockTimestamp === null
-              ? t.report.noBlockTime
-              : formatUtcMinute(snapshot.sourceBlockTimestamp)
-          }
-        />
-        <Figure
-          label={t.report.fetchedAt}
-          value={formatUtcMinute(snapshot.fetchedAt)}
-          note={t.report.fetchedAtNote}
-        />
-      </Section>
+        >
+          <p>
+            <span className="text-muted">{t.report.currentPrice}</span>{" "}
+            <span className="font-mono font-medium">
+              {t.report.priceSentence(base, price(current), counter)}
+            </span>
+          </p>
+          <p className="leading-relaxed">
+            {range.containsCurrentPrice ? t.report.inRangeYes : t.report.inRangeNo}{" "}
+            {range.containsCurrentPrice ? t.report.inRangeYesNote : t.report.inRangeNoNote}
+          </p>
+        </div>
 
-      <Section title={t.report.volatilityHeading}>
-        <Figure
-          label={t.report.annualised}
-          value={formatPercent(volatility.annualizedVolatility, locale)}
-          note={t.report.annualisedNote}
-        />
-        <Figure
-          label={t.report.daily}
-          value={formatPercent(volatility.dailyVolatility, locale)}
-        />
-        <Figure
-          label={t.report.window}
-          value={`${formatUtcDate(volatility.rangeStart)} → ${formatUtcDate(volatility.rangeEndExclusive)}`}
-          note={t.report.windowNote(formatWhole(volatility.usableReturnCount, locale))}
-        />
-        <Figure
-          label={t.report.coverage}
-          value={formatPercent(volatility.returnCoverageRatio, locale)}
-          note={t.report.coverageNote}
-        />
-      </Section>
+        <p className="text-sm leading-relaxed">{t.report.rangeMeaning}</p>
+        <p className="text-sm leading-relaxed">
+          {t.report.beyondEdges(heldBelowRange(quote).symbol, heldAboveRange(quote).symbol)}
+        </p>
+        {truncated.lower ? (
+          <p className="text-xs leading-relaxed text-muted">{t.report.lowerTruncatedNote}</p>
+        ) : null}
+        {truncated.upper ? (
+          <p className="text-xs leading-relaxed text-muted">{t.report.upperTruncatedNote}</p>
+        ) : null}
+      </Panel>
 
-      <Section title={t.report.bandHeading}>
-        <Figure
-          label={t.report.horizon}
-          value={t.report.horizonValue(formatWhole(parameters.horizonDays, locale))}
-          note={t.report.horizonNote}
-        />
-        <Figure
-          label={t.report.multiplier}
-          value={`${formatMultiplier(parameters.standardDeviationMultiplier, locale)}σ`}
-          note={t.report.multiplierNote}
-        />
-        <Figure label={t.report.lowerBound} value={formatPrice(band.lowerPrice, locale)} />
-        <Figure label={t.report.upperBound} value={formatPrice(band.upperPrice, locale)} />
-        <Figure
-          label={t.report.downside}
-          value={formatPercent(band.downsideDistanceRatio, locale)}
-          note={t.report.downsideNote}
-        />
-        <Figure
-          label={t.report.upside}
-          value={formatPercent(band.upsideDistanceRatio, locale)}
-          note={t.report.upsideNote}
-        />
-      </Section>
+      {/*
+       * Where it came from, in the words a reader has. The labels of the two
+       * knobs are the labels of the form below, so a reader changing one can
+       * see which figure they are changing.
+       */}
+      <Panel title={t.report.basisHeading}>
+        <p className="text-sm leading-relaxed text-muted">
+          {t.report.basisIntro(base, whole(volatility.expectedReturnCount))}
+        </p>
+        <dl className={FIGURE_GRID}>
+          <Figure
+            label={t.report.dailyMove}
+            value={percent(volatility.dailyVolatility)}
+            note={t.report.dailyMoveNote}
+          />
+          <Figure
+            label={t.parameters.horizonLabel}
+            value={t.parameters.days(whole(parameters.horizonDays))}
+          />
+          <Figure
+            label={t.report.horizonMove(whole(parameters.horizonDays))}
+            value={percent(band.horizonVolatility)}
+            note={t.report.horizonMoveNote}
+          />
+          <Figure
+            label={t.parameters.widthLabel}
+            value={t.report.widthValue(
+              formatMultiplier(parameters.standardDeviationMultiplier, locale),
+            )}
+            note={t.report.widthNote}
+          />
+          <Figure
+            label={t.report.measuredOver}
+            value={`${formatUtcDate(volatility.rangeStart)} → ${formatUtcDate(volatility.rangeEndExclusive)}`}
+            note={t.report.measuredOverNote(whole(volatility.usableReturnCount))}
+          />
+        </dl>
+        <p className="text-sm leading-relaxed text-muted">{t.report.epilogue}</p>
+      </Panel>
 
-      <p className="text-sm leading-relaxed text-muted">{t.report.epilogue}</p>
+      {controls}
 
       <Panel title={t.activity.heading}>
-        <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <dl className={FIGURE_GRID}>
+          <Figure label={t.activity.tvl} value={formatUsd(snapshot.tvlUsd, locale)} />
           <Figure label={t.activity.volume24h} value={formatUsd(activity.volume24hUsd, locale)} />
           <Figure label={t.activity.volume7d} value={formatUsd(activity.volume7dUsd, locale)} />
           <Figure label={t.activity.volume30d} value={formatUsd(activity.volume30dUsd, locale)} />
@@ -384,19 +430,6 @@ export function PoolRangeReport({
             label={t.activity.fees30d}
             value={formatUsd(activity.fees30dUsd, locale)}
             note={t.activity.feesNote}
-          />
-          <Figure
-            label={t.activity.fullyInside}
-            value={formatWhole(activity.occupancy.fullyInside, locale)}
-          />
-          <Figure
-            label={t.activity.fullyOutside}
-            value={formatWhole(activity.occupancy.fullyOutside, locale)}
-          />
-          <Figure
-            label={t.activity.undetermined}
-            value={formatWhole(activity.occupancy.undetermined, locale)}
-            note={t.activity.undeterminedNote}
           />
           {/*
            * Withheld rather than shown when the pool's hook may take a share of
@@ -418,6 +451,17 @@ export function PoolRangeReport({
           />
         </dl>
 
+        <p className="text-sm leading-relaxed">
+          {t.activity.occupancySentence(
+            whole(activity.daysMeasured),
+            whole(activity.occupancy.fullyInside),
+            whole(activity.occupancy.fullyOutside),
+            whole(activity.occupancy.undetermined),
+          )}
+        </p>
+        {activity.occupancy.undetermined === 0 ? null : (
+          <p className="text-xs leading-relaxed text-muted">{t.activity.undeterminedNote}</p>
+        )}
         <p className="text-xs leading-relaxed text-muted">{t.activity.inSample}</p>
         <p className="text-sm leading-relaxed">{t.activity.notYourEarnings}</p>
       </Panel>
@@ -435,14 +479,9 @@ export function PoolRangeReport({
       />
 
       {/*
-       * Directly under the in-sample figures, because the contrast is the whole
-       * point: the same three buckets, counted over days the bands were not
-       * drawn from. Read apart, either one is a number; read together, they say
-       * how much of the picture above was the fitting.
-       *
-       * The totals lead and the folds follow. A reader who wants the headline
-       * gets it in one line; one who wants to know whether it rests on a single
-       * lucky month can count the rows.
+       * The check that does test something, after the figures that do not. The
+       * verdict leads; the rows behind it are folded away for a reader who
+       * wants to know whether the total rests on a single lucky month.
        */}
       {outOfSample.status !== "success" ? (
         <Panel title={t.outOfSample.heading}>
@@ -454,65 +493,67 @@ export function PoolRangeReport({
       ) : (
         <Panel title={t.outOfSample.heading}>
           <p className="text-sm leading-relaxed">
-            {t.outOfSample.intro(
-              t.parameters.days(formatWhole(outOfSample.data.horizonDays, locale)),
+            {t.outOfSample.verdict(
+              whole(outOfSample.data.occupancy.fullyInside),
+              whole(outOfSample.data.daysMeasured),
+              whole(outOfSample.data.folds.length),
             )}
+          </p>
+          <p className="text-sm leading-relaxed text-muted">
+            {t.outOfSample.intro(t.parameters.days(whole(outOfSample.data.horizonDays)))}
           </p>
 
           <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Figure
               label={t.outOfSample.folds}
-              value={formatWhole(outOfSample.data.folds.length, locale)}
+              value={whole(outOfSample.data.folds.length)}
               note={t.outOfSample.foldsNote}
             />
             <Figure
               label={t.outOfSample.fullyInside}
-              value={formatWhole(outOfSample.data.occupancy.fullyInside, locale)}
+              value={whole(outOfSample.data.occupancy.fullyInside)}
             />
             <Figure
               label={t.outOfSample.fullyOutside}
-              value={formatWhole(outOfSample.data.occupancy.fullyOutside, locale)}
+              value={whole(outOfSample.data.occupancy.fullyOutside)}
             />
             <Figure
               label={t.outOfSample.undetermined}
-              value={formatWhole(outOfSample.data.occupancy.undetermined, locale)}
+              value={whole(outOfSample.data.occupancy.undetermined)}
             />
           </dl>
 
-          <p className="text-sm leading-relaxed">
-            {t.outOfSample.verdict(
-              formatWhole(outOfSample.data.occupancy.fullyInside, locale),
-              formatWhole(outOfSample.data.daysMeasured, locale),
-              formatWhole(outOfSample.data.folds.length, locale),
-            )}
-          </p>
-
-          {/* One row per fold, oldest first, so a run of them can be scanned. */}
-          <div className="flex flex-col gap-1 overflow-x-auto">
-            <div className="flex min-w-max justify-between gap-6 text-xs uppercase tracking-widest text-muted">
-              <span>{t.outOfSample.foldPeriod}</span>
-              <span>{t.outOfSample.foldVolatility}</span>
-              <span>{t.outOfSample.foldVerdict}</span>
-            </div>
-            {outOfSample.data.folds.map((fold) => (
-              <div
-                key={fold.measuredRangeStart}
-                className="flex min-w-max justify-between gap-6 font-mono text-sm"
-              >
-                <span>
-                  {formatUtcDate(fold.measuredRangeStart)} → {formatUtcDate(fold.measuredRangeEndExclusive)}
-                </span>
-                <span className="text-muted">{formatPercent(fold.annualizedVolatility, locale)}</span>
-                <span>
-                  {formatWhole(fold.occupancy.fullyInside, locale)} /{" "}
-                  {formatWhole(fold.occupancy.fullyOutside, locale)} /{" "}
-                  {formatWhole(fold.occupancy.undetermined, locale)}
-                </span>
+          <details className="flex flex-col gap-2">
+            <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">
+              {t.outOfSample.showFolds}
+            </summary>
+            {/* One row per fold, oldest first, so a run of them can be scanned. */}
+            <div className="mt-3 flex flex-col gap-1 overflow-x-auto">
+              <div className="flex min-w-max justify-between gap-6 text-xs uppercase tracking-widest text-muted">
+                <span>{t.outOfSample.foldPeriod}</span>
+                <span>{t.outOfSample.foldVolatility}</span>
+                <span>{t.outOfSample.foldVerdict}</span>
               </div>
-            ))}
-          </div>
+              {outOfSample.data.folds.map((fold) => (
+                <div
+                  key={fold.measuredRangeStart}
+                  className="flex min-w-max justify-between gap-6 font-mono text-sm"
+                >
+                  <span>
+                    {formatUtcDate(fold.measuredRangeStart)} →{" "}
+                    {formatUtcDate(fold.measuredRangeEndExclusive)}
+                  </span>
+                  <span className="text-muted">{percent(fold.annualizedVolatility)}</span>
+                  <span>
+                    {whole(fold.occupancy.fullyInside)} / {whole(fold.occupancy.fullyOutside)} /{" "}
+                    {whole(fold.occupancy.undetermined)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted">{t.outOfSample.foldColumns}</p>
+          </details>
 
-          <p className="text-xs leading-relaxed text-muted">{t.outOfSample.foldColumns}</p>
           <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notHeld}</p>
           <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notIndependent}</p>
         </Panel>
@@ -523,13 +564,15 @@ export function PoolRangeReport({
 
         <div className="flex flex-col gap-1">
           <div className="flex justify-between gap-4 text-xs uppercase tracking-widest text-muted">
-            <span>{t.divergence.price}</span>
+            <span>{t.divergence.price(base)}</span>
             <span>{t.divergence.loss}</span>
           </div>
-          {divergence.points.map((point) => (
+          {divergencePoints.map((point) => (
             <div key={point.price} className="flex justify-between gap-4 font-mono text-sm">
-              <span>{formatPrice(point.price, locale)}</span>
-              <span>{formatPercent(point.lossRatio, locale)}</span>
+              <span>
+                {price(point.price)} {counter}
+              </span>
+              <span>{percent(point.lossRatio)}</span>
             </div>
           ))}
         </div>
@@ -537,6 +580,86 @@ export function PoolRangeReport({
         <p className="text-xs leading-relaxed text-muted">{t.divergence.entryRow}</p>
         <p className="text-xs leading-relaxed text-muted">{t.divergence.impermanentNote}</p>
       </Panel>
+
+      {/*
+       * Everything a reader checking the page would want, folded away at the
+       * end: the ticks the prices above encode, the pool's own direction, the
+       * blocks the figures were read at.
+       */}
+      <details className="rounded-lg border border-border bg-surface p-5">
+        <summary className="cursor-pointer text-sm font-semibold uppercase tracking-widest text-muted">
+          {t.technical.heading}
+        </summary>
+        <p className="mt-3 text-sm leading-relaxed text-muted">{t.technical.summary}</p>
+        <dl className={`mt-4 ${FIGURE_GRID}`}>
+          <Figure label={t.technical.lowerTick} value={formatTick(range.lowerTick, locale)} />
+          <Figure label={t.technical.upperTick} value={formatTick(range.upperTick, locale)} />
+          <Figure
+            label={t.technical.currentTick}
+            value={formatTick(range.currentTick, locale)}
+            note={
+              range.chainReportedTick === null
+                ? t.technical.noSourceTick
+                : t.technical.sourceReportedTick(formatTick(range.chainReportedTick, locale))
+            }
+          />
+          <Figure
+            label={t.technical.tickSpacing}
+            value={whole(pool.tickSpacing)}
+            note={t.technical.tickSpacingNote(percent(priceStepRatio(pool.tickSpacing)))}
+          />
+          <Figure
+            label={t.technical.width}
+            value={t.technical.widthValue(
+              whole(widthInTicks),
+              whole(widthInTicks / pool.tickSpacing),
+            )}
+          />
+          <Figure
+            label={t.technical.poolPrice}
+            value={price(band.currentPrice)}
+            note={t.technical.quotePerBase(pool.token1.symbol, pool.token0.symbol)}
+          />
+          <Figure
+            label={t.technical.bandLower}
+            value={price(band.lowerPrice)}
+            note={t.technical.bandNote}
+          />
+          <Figure label={t.technical.bandUpper} value={price(band.upperPrice)} />
+          <Figure
+            label={t.technical.annualised}
+            value={percent(volatility.annualizedVolatility)}
+            note={t.technical.annualisedNote}
+          />
+          <Figure
+            label={t.technical.coverage}
+            value={percent(volatility.returnCoverageRatio)}
+            note={t.technical.coverageNote}
+          />
+          <Figure
+            label={t.technical.sourceBlock}
+            value={snapshot.sourceBlockNumber ?? ABSENT}
+            note={
+              snapshot.sourceBlockTimestamp === null
+                ? t.technical.noBlockTime
+                : formatUtcMinute(snapshot.sourceBlockTimestamp)
+            }
+          />
+          <Figure
+            label={t.technical.fetchedAt}
+            value={formatUtcMinute(snapshot.fetchedAt)}
+            note={t.technical.fetchedAtNote}
+          />
+          <Figure
+            label={t.technical.lowerEdge}
+            value={range.lowerBoundTruncated ? t.technical.truncated : t.technical.asAsked}
+          />
+          <Figure
+            label={t.technical.upperEdge}
+            value={range.upperBoundTruncated ? t.technical.truncated : t.technical.asAsked}
+          />
+        </dl>
+      </details>
     </div>
   );
 }

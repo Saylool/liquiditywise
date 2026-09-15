@@ -21,6 +21,10 @@ import type { PriceBandParameters } from "../schemas";
  * A plain GET form that resubmits the pool address alongside them, so a chosen
  * band lives in the URL like everything else here: linkable, reloadable, and
  * comparable by opening two of them.
+ *
+ * Labelled in the reader's terms — how far ahead, how wide — and the same
+ * labels sit on the figures in "how this range was drawn", so a reader
+ * changing one can see which number they are changing.
  */
 
 /**
@@ -34,6 +38,25 @@ import type { PriceBandParameters } from "../schemas";
  */
 const optionsIncluding = (offered: readonly number[], current: number): readonly number[] =>
   offered.includes(current) ? offered : [...offered, current].sort((a, b) => a - b);
+
+/**
+ * A word for each offered width, in the order the widths are offered.
+ *
+ * "1σ" means nothing to most people; "tight" means something, and the sigma
+ * stays beside it for the reader it does mean something to. The words are
+ * relative to each other and to nothing else — none of them is a
+ * recommendation, and the note under the form says the width is not a
+ * confidence level. A width typed into the URL gets no word, because the
+ * words were chosen for the offered widths and would mislead beside another.
+ */
+const WIDTH_WORDS = ["tight", "medium", "wide", "veryWide"] as const satisfies readonly (keyof Dictionary["parameters"]["widthWords"])[];
+
+const widthWord = (value: number, t: Dictionary): string | null => {
+  const index = (MULTIPLIER_CHOICES as readonly number[]).indexOf(value);
+  const key = WIDTH_WORDS[index];
+
+  return key === undefined ? null : t.parameters.widthWords[key];
+};
 
 const Choice = ({
   name,
@@ -107,17 +130,22 @@ export function BandParametersForm({
       <div className="flex flex-wrap items-end gap-4">
         <Choice
           name={HORIZON_PARAMETER}
-          label={t.report.horizon}
+          label={t.parameters.horizonLabel}
           current={parameters.horizonDays}
           options={optionsIncluding(HORIZON_CHOICES, parameters.horizonDays)}
           format={(value) => t.parameters.days(formatWhole(value, locale))}
         />
         <Choice
           name={MULTIPLIER_PARAMETER}
-          label={t.report.multiplier}
+          label={t.parameters.widthLabel}
           current={parameters.standardDeviationMultiplier}
           options={optionsIncluding(MULTIPLIER_CHOICES, parameters.standardDeviationMultiplier)}
-          format={(value) => t.parameters.sigma(formatMultiplier(value, locale))}
+          format={(value) =>
+            t.parameters.widthChoice(
+              t.parameters.sigma(formatMultiplier(value, locale)),
+              widthWord(value, t),
+            )
+          }
         />
         <button
           type="submit"

@@ -28,11 +28,14 @@ import type { PriceBandParameters } from "@/schemas";
 export async function V4PoolSection({
   poolId,
   parameters,
+  controls,
   locale,
   t,
 }: {
   poolId: string;
   parameters: PriceBandParameters;
+  /** The form that changes the range; the report places it under the figures it changes. */
+  controls: React.ReactNode;
   locale: Locale;
   t: Dictionary;
 }) {
@@ -51,7 +54,13 @@ export async function V4PoolSection({
        */}
       {pool.status === "unavailable" ? null : (
         <Suspense fallback={<V4RangePending t={t} />}>
-          <V4RangeReport analysis={analysis} poolId={poolId} t={t} locale={locale} />
+          <V4RangeReport
+            analysis={analysis}
+            poolId={poolId}
+            controls={controls}
+            t={t}
+            locale={locale}
+          />
         </Suspense>
       )}
     </>
@@ -65,11 +74,13 @@ export async function V4PoolSection({
 async function V4RangeReport({
   analysis,
   poolId,
+  controls,
   t,
   locale,
 }: {
   analysis: Promise<PoolRangeAnalysisResult>;
   poolId: string;
+  controls: React.ReactNode;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -77,7 +88,13 @@ async function V4RangeReport({
 
   return (
     <>
-      <PoolRangeReport result={result} poolId={poolId} t={t} locale={locale} />
+      <PoolRangeReport
+        result={result}
+        poolId={poolId}
+        controls={controls}
+        t={t}
+        locale={locale}
+      />
       {/*
        * The same explanation the v3 page streams in behind its figures, and
        * not awaited here either: the numbers are sent the moment they exist,

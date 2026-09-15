@@ -13,6 +13,8 @@ import {
   DEFAULT_PRICE_BAND_PARAMETERS,
   type PoolRangeAnalysis,
 } from "../../advisor/poolRangeAnalysis";
+import { formatPrice } from "../../format/displayFormats";
+import { choosePriceQuote, quotedInterval } from "../../format/priceQuote";
 import { BASE_INSTRUCTION } from "./base";
 import { buildRangeInterpretationPrompt } from "./rangeInterpretation";
 
@@ -197,21 +199,34 @@ describe("buildRangeInterpretationPrompt", () => {
        * has to stop the word standing for the rate.
        */
       "Declared fee",
-      "Tick spacing",
+      "Price step between the edges a position may use",
       "Current price",
-      "Current tick",
-      "Annualised volatility",
+      "Typical daily move",
+      "Horizon",
+      "The same movement over the horizon",
+      "Range width, in multiples of that, each way",
       "Measured over",
       "Window coverage",
-      "Band lower bound",
-      "Lower tick",
-      "Price at the lower tick",
-      "Width in tick spacings",
+      "Lower edge",
+      "Upper edge",
+      "Distance down to the lower edge",
       "Current price inside the range",
     ]) {
       expect(user).toContain(label);
     }
     expect(user).toContain("USDC / WETH");
+  });
+
+  /*
+   * The page shows the range as two prices and folds the ticks away, so a
+   * tick handed to the model would be a coordinate the reader has not seen.
+   */
+  it("hands over prices and never a tick", () => {
+    const { user, system } = build();
+
+    expect(user).not.toMatch(/tick/i);
+    expect(user).toContain("SUGGESTED PRICE RANGE");
+    expect(system).toContain("PRICES, NOT TICKS");
   });
 
   /*
@@ -240,12 +255,14 @@ describe("buildRangeInterpretationPrompt", () => {
   });
 
   it("shows the model the same strings the reader sees", () => {
-    // A model reasoning over "70.50%" while the page shows "%70,50" is reasoning
+    // A model reasoning over "70.50%" while the page shows "%70,50", or over
+    // "0.000333333" while the page shows "1 WETH = 3,000 USDC", is reasoning
     // about a different-looking page than the one being read.
     expect(build("en").user).toContain("0.30%");
     expect(build("tr").user).toContain("%0,30");
-    expect(build("en").user).toContain("0.000333333");
-    expect(build("tr").user).toContain("0,000333333");
+    expect(build("en").user).toContain("1 WETH = 3,000 USDC");
+    expect(build("tr").user).toContain("1 WETH = 3.000 USDC");
+    expect(build("en").user).not.toContain("0.000333333");
   });
 
   it("passes the caveats through, and says so when there are none", () => {
@@ -328,30 +345,57 @@ describe("buildRangeInterpretationPrompt", () => {
     return buildRangeInterpretationPrompt({ analysis: result.data, locale: "en", warnings: [] });
   };
 
-  it("reports each edge on its own", () => {
+  it("reports each edge on its own, in the reader's direction", () => {
     /*
      * This pool trades at a positive tick, so a widening band runs past the top
-     * of TickMath well before the bottom. Each edge is pinned separately —
-     * a single "truncated" match would pass with the other one broken.
+     * of TickMath well before the bottom. The page prices ether in dollars, so
+     * the pool's top is the reader's bottom: the *lower* edge is the one that
+     * stops short. Each edge is pinned separately — a single "truncated" match
+     * would pass with the other one broken, and with both on the wrong edge.
      */
     const { user } = promptForMultiplier(400);
 
-    expect(user).toContain("Lower edge: placed where the band asked");
-    expect(user).toContain("Upper edge: truncated at the highest tick this pool accepts");
+    expect(user).toContain("Lower edge placement: truncated at the lowest price this pool can express");
+    expect(user).toContain("Upper edge placement: placed where the band asked");
+  });
+
+  /* The values themselves, the reader's way round: below and above three thousand. */
+  it("prices the edges the page's way round", () => {
+    const { user } = build();
+    const edges = quotedInterval(
+      choosePriceQuote(analysis.pool, analysis.band.currentPrice),
+      { lower: analysis.range.lowerPrice, upper: analysis.range.upperPrice },
+    );
+
+    expect(edges.lower).toBeLessThan(3000);
+    expect(edges.upper).toBeGreaterThan(3000);
+    expect(user).toContain(`- Lower edge: ${formatPrice(edges.lower)} USDC per WETH`);
+    expect(user).toContain(`- Upper edge: ${formatPrice(edges.upper)} USDC per WETH`);
+  });
+
+  it("lists the comparison against holding lowest price first, the page's way round", () => {
+    const { user } = build();
+    const prices = [...user.matchAll(/- Against holding, at ([\d,.]+) USDC/g)].map((match) =>
+      Number((match[1] ?? "").replace(/,/g, "")),
+    );
+
+    expect(prices.length).toBe(analysis.divergence.points.length);
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+    expect(prices[0]).toBeLessThan(3000);
   });
 
   it("tells the model when neither edge could be placed", () => {
     const { user } = promptForMultiplier(600);
 
-    expect(user).toContain("Lower edge: truncated at the lowest tick this pool accepts");
-    expect(user).toContain("Upper edge: truncated at the highest tick this pool accepts");
+    expect(user).toContain("Lower edge placement: truncated at the lowest price this pool can express");
+    expect(user).toContain("Upper edge placement: truncated at the highest price this pool can express");
   });
 
   it("says when each edge went where the band asked", () => {
     const { user } = build();
 
-    expect(user).toContain("Lower edge: placed where the band asked");
-    expect(user).toContain("Upper edge: placed where the band asked");
+    expect(user).toContain("Lower edge placement: placed where the band asked");
+    expect(user).toContain("Upper edge placement: placed where the band asked");
   });
 });
 
@@ -360,51 +404,77 @@ describe("buildRangeInterpretationPrompt", () => {
  * the time: it called a price quoted in WETH per USDC "WETH başına USDC" —
  * Turkish for the exact opposite — and named the wrong token at each edge of the
  * range for one pool while naming the right one for the next. Both facts are
- * fixed by the protocol and by the pool's own token order, so both are stated in
- * the prompt now instead of being left for a model to work out.
+ * fixed by the protocol and by the direction the page writes its prices in, so
+ * both are stated in the prompt now instead of being left for a model to work
+ * out.
+ *
+ * That direction is the page's: one unit of the dearer token, priced in the
+ * cheaper. The fixture pool quotes ether in dollars, at a third of a
+ * thousandth, and the page — and so the prompt — turns it round.
  */
 describe("directional facts the model is not asked to derive", () => {
-  it("says what a price figure means in a sentence, not a per-pair", () => {
+  it("says what a price figure means in a sentence, the page's way round", () => {
     const { user } = build();
 
     expect(user).toContain(
-      "- What every price figure on the page means: how much WETH one USDC is worth",
+      "- What every price figure on the page means: how much USDC one WETH is worth",
     );
+    expect(user).toContain("- Current price: 1 WETH = 3,000 USDC");
     // The short form is the one that inverts under translation.
     expect(user).not.toContain("WETH per USDC");
   });
 
+  /* As ether falls the position finishes in ether; as it rises, in dollars. */
   it("names the token a position holds at each edge, and they differ", () => {
     const { user } = build();
 
-    expect(user).toContain("- If price falls below the range, a position holds only: USDC");
-    expect(user).toContain("- If price rises above the range, a position holds only: WETH");
+    expect(user).toContain("- If price falls below the range, a position holds only: WETH");
+    expect(user).toContain("- If price rises above the range, a position holds only: USDC");
   });
 
-  it("follows the pool's token order rather than a fixed pair of names", () => {
+  it("follows the price rather than the pool's token order", () => {
     /*
-     * Only the symbols are swapped. Decimals drive the tick maths and the
-     * chain cross-check, so a fixture that swapped those would fail to analyse
-     * for reasons that have nothing to do with what this test is about.
+     * The same shape of pool with its price above one — the pool's own
+     * direction is then the readable one, and nothing is turned round. The
+     * history is rebuilt from the new price so the fixture still analyses,
+     * and the source's tick is dropped so the cross-check has nothing to
+     * disagree with.
      */
+    const dearToken0 = 3000;
+    let price = dearToken0;
+    const points = history().points.map((point, day) => {
+      if (day > 0) price *= day % 2 === 0 ? 1.01 : 1 / 1.01;
+      return { ...point, price };
+    });
+    const result = analysePoolRange({
+      pool: ok({
+        ...pool,
+        token0: { ...pool.token0, symbol: "WBTC", decimals: 8 },
+        token1: { ...pool.token1, symbol: "USDC", decimals: 6 },
+      } as V3Pool),
+      snapshot: ok({
+        ...snapshot,
+        token0PriceInToken1: dearToken0,
+        token1PriceInToken0: 1 / dearToken0,
+        tick: null,
+      } as PoolMarketSnapshot),
+      history: ok({ ...history(), points } as PoolDailyPriceHistory),
+      parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    });
+    if (result.status === "unavailable") throw new Error(`fixture should analyse: ${result.notice}`);
+
     const { user } = buildRangeInterpretationPrompt({
-      analysis: {
-        ...analysis,
-        pool: {
-          ...analysis.pool,
-          token0: { ...analysis.pool.token0, symbol: "WETH" },
-          token1: { ...analysis.pool.token1, symbol: "USDC" },
-        },
-      },
+      analysis: result.data,
       locale: "en",
       warnings: [],
     });
 
-    expect(user).toContain("- If price falls below the range, a position holds only: WETH");
+    expect(user).toContain("- If price falls below the range, a position holds only: WBTC");
     expect(user).toContain("- If price rises above the range, a position holds only: USDC");
     expect(user).toContain(
-      "- What every price figure on the page means: how much USDC one WETH is worth",
+      "- What every price figure on the page means: how much USDC one WBTC is worth",
     );
+    expect(user).toContain("- Current price: 1 WBTC = 3,000 USDC");
   });
 
   it("carries the rules that put those facts beyond debate", () => {
@@ -429,9 +499,9 @@ describe("terminology", () => {
     expect(user).toContain('gas: "gas", never "gaz"');
     // Written as "volatility" in Turkish prose until the list said otherwise.
     expect(user).toContain('volatility: "volatilite"');
-    // The two the interface itself had to stop conflating.
-    expect(user).toContain('tick spacing: "tick adımı"');
-    expect(user).toContain('the suggested tick range: "tick aralığı"');
+    // The page's own words for the two things it used to call by one name.
+    expect(user).toContain('the price step between usable edges: "fiyat adımı"');
+    expect(user).toContain('the suggested range: "aralık"');
   });
 
   it("leaves English alone, where the interface already uses the model's words", () => {

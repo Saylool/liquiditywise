@@ -48,10 +48,12 @@ const render = (result: DataResult<V4PairPools>, locale: Locale = "en") =>
   );
 
 describe("V4PairPoolList", () => {
-  it("shows each sibling's fee, spacing, hook and depth", () => {
+  it("shows each sibling's fee, price step, hook and depth", () => {
     const markup = render(found([entry(1, "20"), entry(2, "10", SWAP_HOOK)]));
 
-    expect(markup).toContain("0.025% · spacing 10");
+    // The spacing as what it means: how finely a position's edges can be placed.
+    expect(markup).toContain("0.025% · step 0.10%");
+    expect(markup).not.toContain("spacing 10");
     expect(markup).toContain("Depth at the current price");
     expect(markup).toContain("no hook");
     expect(markup).toContain(`hook ${SWAP_HOOK} · may change what a swap costs`);
@@ -118,7 +120,7 @@ describe("V4PairPoolList", () => {
     const markup = render(found([entry(1, "20"), entry(2, "10")]), "tr");
 
     expect(markup).toContain("Güncel fiyattaki derinlik");
-    expect(markup).toContain("%0,025 · adım 10");
+    expect(markup).toContain("%0,025 · adım %0,10");
     expect(markup).toContain("Şu an bunu okuyorsun");
   });
 });

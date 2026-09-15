@@ -114,20 +114,27 @@ export default async function PoolRangePage({
     return (
       <Shell locale={locale} t={t}>
         <PoolLookupForm t={t} value={address.data} />
-        <PoolRangeReport result={result} poolId={address.data} t={t} locale={locale} />
-        {/*
-         * Below the figures it changes, so the horizon and multiplier the
-         * analysis actually used are on screen above the control that sets them
-         * — which is what the fallback message points at.
-         */}
-        <BandParametersForm
-          action="/pool"
-          poolParameter="address"
+        <PoolRangeReport
+          result={result}
           poolId={address.data}
-          parameters={requested.parameters}
-          fellBack={requested.fellBack}
           t={t}
           locale={locale}
+          /*
+           * Directly below the figures it changes, so the horizon and width
+           * the analysis actually used are on screen above the control that
+           * sets them — which is what the fallback message points at.
+           */
+          controls={
+            <BandParametersForm
+              action="/pool"
+              poolParameter="address"
+              poolId={address.data}
+              parameters={requested.parameters}
+              fellBack={requested.fellBack}
+              t={t}
+              locale={locale}
+            />
+          }
         />
         {result.status === "unavailable" ? null : (
           /*

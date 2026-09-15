@@ -104,22 +104,24 @@ export default async function V4PoolPage({
           parameters={band.parameters}
           locale={locale}
           t={t}
+          /*
+           * Rendered by the report directly below the figures it changes, as
+           * on the v3 page: the horizon and the width the analysis actually
+           * used are on screen above the control that sets them.
+           */
+          controls={
+            <BandParametersForm
+              action="/v4"
+              poolParameter="id"
+              poolId={poolId.data}
+              parameters={band.parameters}
+              fellBack={band.fellBack}
+              t={t}
+              locale={locale}
+            />
+          }
         />
       </Suspense>
-      {/*
-       * Below the figures it changes, as on the v3 page: the horizon and the
-       * multiplier the analysis actually used are on screen above the control
-       * that sets them.
-       */}
-      <BandParametersForm
-        action="/v4"
-        poolParameter="id"
-        poolId={poolId.data}
-        parameters={band.parameters}
-        fellBack={band.fellBack}
-        t={t}
-        locale={locale}
-      />
     </Shell>
   );
 }

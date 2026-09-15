@@ -1,7 +1,13 @@
 import Link from "next/link";
 
 import { v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
-import { formatEtherAmount, formatFeePpm, formatWhole } from "../lib/format/displayFormats";
+import {
+  formatEtherAmount,
+  formatFeePpm,
+  formatPercent,
+  formatWhole,
+} from "../lib/format/displayFormats";
+import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import {
@@ -57,7 +63,7 @@ const PoolRow = ({
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="font-mono text-base font-medium">
-          {fee} · {t.feeTiers.tickSpacing(formatWhole(pool.tickSpacing, locale))}
+          {fee} · {t.feeTiers.priceStep(formatPercent(priceStepRatio(pool.tickSpacing), locale))}
         </span>
         {current ? (
           <span className="text-xs uppercase tracking-widest text-muted">{t.feeTiers.thisOne}</span>

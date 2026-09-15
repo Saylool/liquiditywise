@@ -5,11 +5,21 @@ import {
   formatMultiplier,
   formatPercent,
   formatPrice,
-  formatTick,
   formatUsd,
   formatUtcDate,
   formatWhole,
 } from "../../format/displayFormats";
+import {
+  choosePriceQuote,
+  edgeDistances,
+  heldAboveRange,
+  heldBelowRange,
+  type PriceQuote,
+  quotedEnds,
+  quotedInterval,
+  quotedPrice,
+} from "../../format/priceQuote";
+import { priceStepRatio } from "../../format/priceStep";
 import { getDictionary } from "../../i18n/dictionaries";
 import type { Locale } from "../../i18n/locales";
 import type { PoolRangeAnalysis } from "../../advisor/poolRangeAnalysis";
@@ -35,12 +45,19 @@ import { BASE_INSTRUCTION } from "./base";
  * prompt injection to arrive through the data.
  *
  * The figures are rendered with the *interface's own formatters*, in the
- * reader's language. The model is told not to repeat them, but it will refer to
- * them, and a model reasoning over "%70,50" while the page shows "70.50%" is
- * reasoning about a different-looking page than the one being read.
+ * reader's language, and every price the same way round the page writes it —
+ * one unit of the dearer token, priced in the cheaper. The model is told not
+ * to repeat them, but it will refer to them, and a model reasoning over
+ * "%70,50" while the page shows "70.50%", or over ether priced in dollars
+ * while the page prices dollars in ether, is reasoning about a different page
+ * than the one being read.
  *
  * Anything directional is stated here as a finished sentence rather than left
  * for the model to work out. See {@link describeRange}.
+ *
+ * No tick reaches the prompt. The page shows the range as two prices and
+ * folds the ticks away, and a model handed a coordinate the reader has not
+ * seen would explain it to them.
  */
 
 const LANGUAGE_NAMES: Record<Locale, string> = {
@@ -72,8 +89,8 @@ const TERMINOLOGY: Record<Locale, readonly string[]> = {
     'swap: "takas"',
     'gas: "gas", never "gaz"',
     'impermanent loss: "geçici kayıp"',
-    'tick spacing: "tick adımı" — the step between usable ticks',
-    'the suggested tick range: "tick aralığı", or just "aralık"',
+    'the price step between usable edges: "fiyat adımı"',
+    'the suggested range: "aralık"',
     'the price band it was derived from: "bant"',
   ],
 };
@@ -81,9 +98,17 @@ const TERMINOLOGY: Record<Locale, readonly string[]> = {
 /** One labelled figure. A list of these is easier for a model to hold than JSON. */
 const line = (label: string, value: string): string => `- ${label}: ${value}`;
 
+/**
+ * The direction every price in the prompt is written in: the page's, chosen
+ * from the current price exactly as the page chooses it.
+ */
+const quoteFor = (analysis: PoolRangeAnalysis): PriceQuote =>
+  choosePriceQuote(analysis.pool, analysis.band.currentPrice);
+
 const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
   const { pool } = analysis;
   const { declaredPpm } = feeDisclosureFor(pool);
+  const quote = quoteFor(analysis);
 
   return [
     line("Pair", `${pool.token0.symbol} / ${pool.token1.symbol}`),
@@ -99,7 +124,11 @@ const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly str
         ? "none; this pool's hook sets the fee on each swap"
         : formatFeePpm(declaredPpm, locale),
     ),
-    line("Tick spacing", formatWhole(pool.tickSpacing, locale)),
+    /* As the page says it: a percentage, not a tick count. */
+    line(
+      "Price step between the edges a position may use",
+      formatPercent(priceStepRatio(pool.tickSpacing), locale),
+    ),
     /*
      * Spelled out rather than given as "token1 per token0". The short form is
      * the one that inverts: a model handed "WETH per USDC" wrote "WETH başına
@@ -109,7 +138,7 @@ const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly str
      */
     line(
       "What every price figure on the page means",
-      `how much ${pool.token1.symbol} one ${pool.token0.symbol} is worth`,
+      `how much ${quote.quote.symbol} one ${quote.base.symbol} is worth`,
     ),
   ];
 };
@@ -150,78 +179,97 @@ const describeHook = (analysis: PoolRangeAnalysis): readonly string[] | null => 
   ];
 };
 
+/** A price as the page writes it: "1 WETH = 3,412 USDC". */
+const priceSentence = (quote: PriceQuote, token0PriceInToken1: number, locale: Locale): string =>
+  `1 ${quote.base.symbol} = ${formatPrice(quotedPrice(quote, token0PriceInToken1), locale)} ${quote.quote.symbol}`;
+
 const describeMarket = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
-  const { snapshot, band, range } = analysis;
+  const { snapshot, band } = analysis;
 
   return [
-    line("Current price", formatPrice(band.currentPrice, locale)),
-    line("Current tick", formatTick(range.currentTick, locale)),
+    line("Current price", priceSentence(quoteFor(analysis), band.currentPrice, locale)),
     line("Total value locked", formatUsd(snapshot.tvlUsd, locale)),
   ];
 };
 
-const describeVolatility = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
-  const { volatility } = analysis;
+/**
+ * Where the range came from, in the page's words: how much the price moves on
+ * a typical day, what that comes to over the horizon, and how many of those
+ * the range is wide. The standard deviation is named once, so the model can
+ * explain the term if it chooses to and is not made to.
+ */
+const describeBasis = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
+  const { volatility, band, parameters } = analysis;
 
   return [
-    line("Annualised volatility", formatPercent(volatility.annualizedVolatility, locale)),
-    line("Daily volatility", formatPercent(volatility.dailyVolatility, locale)),
+    line(
+      "Typical daily move, one standard deviation",
+      formatPercent(volatility.dailyVolatility, locale),
+    ),
+    line("Horizon", `${formatWhole(parameters.horizonDays, locale)} days`),
+    line("The same movement over the horizon", formatPercent(band.horizonVolatility, locale)),
+    line(
+      "Range width, in multiples of that, each way",
+      formatMultiplier(parameters.standardDeviationMultiplier, locale),
+    ),
     line(
       "Measured over",
       `${formatUtcDate(volatility.rangeStart)} to ${formatUtcDate(volatility.rangeEndExclusive)}`,
     ),
-    line("Usable daily returns", formatWhole(volatility.usableReturnCount, locale)),
+    line("Usable daily changes", formatWhole(volatility.usableReturnCount, locale)),
     line("Window coverage", formatPercent(volatility.returnCoverageRatio, locale)),
   ];
 };
 
-const describeBand = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
-  const { band, parameters } = analysis;
-
-  return [
-    line("Horizon", `${formatWhole(parameters.horizonDays, locale)} days`),
-    line(
-      "Standard deviation multiplier",
-      formatMultiplier(parameters.standardDeviationMultiplier, locale),
-    ),
-    line("Band lower bound", formatPrice(band.lowerPrice, locale)),
-    line("Band upper bound", formatPrice(band.upperPrice, locale)),
-    line("Distance down to the lower bound", formatPercent(band.downsideDistanceRatio, locale)),
-    line("Distance up to the upper bound", formatPercent(band.upsideDistanceRatio, locale)),
-  ];
-};
-
 const describeRange = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
-  const { range, pool } = analysis;
-  const spacings = (range.upperTick - range.lowerTick) / pool.tickSpacing;
+  const { range, band } = analysis;
+  const quote = quoteFor(analysis);
+  const edges = quotedInterval(quote, { lower: range.lowerPrice, upper: range.upperPrice });
+  const distances = edgeDistances(quotedPrice(quote, band.currentPrice), edges);
+  /* The flags name the pool's edges; the prices above name the reader's. */
+  const truncated = quotedEnds(quote, {
+    lower: range.lowerBoundTruncated,
+    upper: range.upperBoundTruncated,
+  });
+  const unit = `${quote.quote.symbol} per ${quote.base.symbol}`;
 
   return [
-    line("Lower tick", formatTick(range.lowerTick, locale)),
-    line("Price at the lower tick", formatPrice(range.lowerPrice, locale)),
-    line("Upper tick", formatTick(range.upperTick, locale)),
-    line("Price at the upper tick", formatPrice(range.upperPrice, locale)),
-    line("Width in tick spacings", formatWhole(spacings, locale)),
+    line("Lower edge", `${formatPrice(edges.lower, locale)} ${unit}`),
+    line("Upper edge", `${formatPrice(edges.upper, locale)} ${unit}`),
+    /*
+     * The distances only while the price is between the edges, as on the page:
+     * a negative distance below is not a distance, and the line after says the
+     * price is outside.
+     */
+    ...(range.containsCurrentPrice
+      ? [
+          line("Distance down to the lower edge", formatPercent(distances.down, locale)),
+          line("Distance up to the upper edge", formatPercent(distances.up, locale)),
+        ]
+      : []),
     line("Current price inside the range", range.containsCurrentPrice ? "yes" : "no"),
     /*
      * Which token a position is left holding at each edge is fixed by the
-     * protocol — below the range it is all token0, above it all token1 — so it
-     * is stated here rather than re-derived per request. Asked to work it out,
-     * a model got it right for one pool and backwards for the next, in the one
-     * paragraph whose whole subject is what happens at the edges. Something
-     * this deterministic has no business being inferred.
+     * protocol — below the range it is all token0, above it all token1 — and
+     * stated here in the direction the prices are written in, where the two
+     * inversions cancel: the position finishes in the base as the base gets
+     * cheaper. Asked to work it out, a model got it right for one pool and
+     * backwards for the next, in the one paragraph whose whole subject is what
+     * happens at the edges. Something this deterministic has no business being
+     * inferred.
      */
-    line("If price falls below the range, a position holds only", pool.token0.symbol),
-    line("If price rises above the range, a position holds only", pool.token1.symbol),
+    line("If price falls below the range, a position holds only", heldBelowRange(quote).symbol),
+    line("If price rises above the range, a position holds only", heldAboveRange(quote).symbol),
     line(
-      "Lower edge",
-      range.lowerBoundTruncated
-        ? "truncated at the lowest tick this pool accepts"
+      "Lower edge placement",
+      truncated.lower
+        ? "truncated at the lowest price this pool can express"
         : "placed where the band asked",
     ),
     line(
-      "Upper edge",
-      range.upperBoundTruncated
-        ? "truncated at the highest tick this pool accepts"
+      "Upper edge placement",
+      truncated.upper
+        ? "truncated at the highest price this pool can express"
         : "placed where the band asked",
     ),
   ];
@@ -236,12 +284,19 @@ const describeRange = (analysis: PoolRangeAnalysis, locale: Locale): readonly st
  */
 const describeDivergence = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
   const { divergence } = analysis;
+  const quote = quoteFor(analysis);
+  /* In the page's direction, and in the page's order: ascending. */
+  const points = divergence.points.map((point) => ({
+    price: quotedPrice(quote, point.price),
+    lossRatio: point.lossRatio,
+  }));
+  if (quote.inverted) points.reverse();
 
   return [
-    line("Measured from", formatPrice(divergence.entryPrice, locale)),
-    ...divergence.points.map((point) =>
+    line("Measured from", priceSentence(quote, divergence.entryPrice, locale)),
+    ...points.map((point) =>
       line(
-        `Against holding, at ${formatPrice(point.price, locale)}`,
+        `Against holding, at ${formatPrice(point.price, locale)} ${quote.quote.symbol}`,
         formatPercent(point.lossRatio, locale),
       ),
     ),
@@ -426,9 +481,8 @@ export const buildRangeInterpretationPrompt = (
     section("POOL", describePool(analysis, locale)),
     hookLines === null ? null : section("HOOK", hookLines),
     section("CURRENT STATE", describeMarket(analysis, locale)),
-    section("HISTORICAL VOLATILITY", describeVolatility(analysis, locale)),
-    section("PRICE BAND", describeBand(analysis, locale)),
-    section("SUGGESTED TICK RANGE", describeRange(analysis, locale)),
+    section("HOW THE RANGE WAS DRAWN", describeBasis(analysis, locale)),
+    section("SUGGESTED PRICE RANGE", describeRange(analysis, locale)),
     section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
     section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
     section("WHAT IT ACTUALLY CHARGED", describeRealizedFee(analysis, locale)),
