@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { V4_PAIR_POOL_FETCH_LIMIT } from "../../schemas";
 import { fetchEthereumV4PairPools, V4_PAIR_POOLS_QUERY } from "./ethereumV4PairPools";
+import { MULTICALL3_ADDRESS } from "./multicall3";
+import { answerRpc, decodeAggregate3Calls } from "./testing/multicall3Endpoint";
 import type { FetchLike } from "./v3SubgraphTransport";
 import { EXTSLOAD_SELECTOR } from "./v4PoolStateSlots";
 
@@ -36,17 +38,14 @@ const word = (value: bigint) => `0x${value.toString(16).padStart(64, "0")}`;
 const bothEndpoints = (): FetchLike =>
   vi.fn(async (url, init) => {
     if (url === RPC_URL) {
-      const calls = JSON.parse(String(init.body)) as { id: number; method: string }[];
       return new Response(
         JSON.stringify(
-          calls.map((call, index) => ({
-            jsonrpc: "2.0",
-            id: call.id,
-            result:
-              call.method === "eth_getLogs"
-                ? []
-                : word(index % 2 === 0 ? (250n << 208n) | (198_320n << 160n) | 1584563250285286751870879006n : 5n),
-          })),
+          answerRpc(String(init.body), {
+            call: (_question, index) => ({
+              success: true,
+              data: word(index % 2 === 0 ? (250n << 208n) | (198_320n << 160n) | 1584563250285286751870879006n : 5n),
+            }),
+          }),
         ),
         { status: 200 },
       );
@@ -95,10 +94,13 @@ describe("fetchEthereumV4PairPools", () => {
       .mock.calls.slice(1)
       .flatMap(([, init]) => JSON.parse(String(init.body)) as { method: string; params: [{ to?: string; data?: string; address?: string }] }[]);
     const calls = requests.filter((request) => request.method === "eth_call");
+    const questions = calls.flatMap((call) => decodeAggregate3Calls(call.params[0].data ?? ""));
 
-    expect(calls.length).toBeGreaterThan(0);
-    expect(calls.every((call) => call.params[0].to === POOL_MANAGER)).toBe(true);
-    expect(calls.every((call) => call.params[0].data?.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
+    expect(calls.length).toBe(1);
+    expect(calls[0]?.params[0].to).toBe(MULTICALL3_ADDRESS);
+    expect(questions.length).toBeGreaterThan(0);
+    expect(questions.every((question) => question.to === POOL_MANAGER)).toBe(true);
+    expect(questions.every((question) => question.data.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
   });
 
   /*

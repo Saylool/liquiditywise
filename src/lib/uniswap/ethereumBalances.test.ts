@@ -3,51 +3,22 @@ import { describe, expect, it, vi } from "vitest";
 import { fetchEthereumBalances, MAX_UNREADABLE_SHARE } from "./ethereumBalances";
 import { AGGREGATE3_SELECTOR, GET_ETH_BALANCE_SELECTOR, MULTICALL3_ADDRESS } from "./multicall3";
 import { MULTICALL3_RUNTIME_CODE } from "./multicall3RuntimeCode";
+import { decodeAggregate3Calls, encodeAggregate3Results, rpcEndpoint } from "./testing/multicall3Endpoint";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 const RPC_URL = "https://rpc.test.invalid/key-that-must-never-leak";
 const HOLDER = `0x${"a".repeat(40)}`;
 const NATIVE = `0x${"0".repeat(40)}`;
 const token = (index: number) => `0x${index.toString(16).padStart(40, "0")}`;
-
-const w = (value: bigint) => value.toString(16).padStart(64, "0");
-const word = (amount: bigint) => `0x${w(amount)}`;
+const word = (amount: bigint) => `0x${amount.toString(16).padStart(64, "0")}`;
 
 type Entry = { id: number; method: string; params: [{ to?: string; data?: string } | string, string] };
 
-/** The targets an `aggregate3` calldata names, in order: the element layout is fixed for 36-byte calls. */
-const targetsOf = (data: string): string[] => {
-  const hex = data.slice(10);
-  const wordAt = (byte: number) => hex.slice(byte * 2, byte * 2 + 64);
-  const count = Number(BigInt(`0x${wordAt(32)}`));
+/** The targets the aggregated call names, in order. */
+const targetsOf = (data: string): string[] => decodeAggregate3Calls(data).map((call) => call.to);
 
-  return Array.from({ length: count }, (_u, index) => `0x${wordAt(64 + 32 * count + 192 * index).slice(24)}`);
-};
-
-/** The one selector each call carries: `balanceOf` for a token, `getEthBalance` for ether. */
-const selectorsOf = (data: string): string[] => {
-  const hex = data.slice(10);
-  const wordAt = (byte: number) => hex.slice(byte * 2, byte * 2 + 64);
-  const count = Number(BigInt(`0x${wordAt(32)}`));
-
-  return Array.from({ length: count }, (_u, index) => `0x${wordAt(64 + 32 * count + 192 * index + 128).slice(0, 8)}`);
-};
-
-/** `Result[]` as Multicall3 returns it. */
-const encodeResults = (results: readonly { success: boolean; data: string }[]) => {
-  const elements = results.map(({ success, data }) => {
-    const hex = data.replace(/^0x/, "");
-    const length = hex.length / 2;
-    return `${w(success ? 1n : 0n)}${w(64n)}${w(BigInt(length))}${hex.padEnd(Math.ceil(length / 32) * 64, "0")}`;
-  });
-  let offsets = "";
-  let next = BigInt(results.length * 32);
-  for (const element of elements) {
-    offsets += w(next);
-    next += BigInt(element.length / 2);
-  }
-  return `0x${w(32n)}${w(BigInt(results.length))}${offsets}${elements.join("")}`;
-};
+/** The one selector each question carries: `balanceOf` for a token, `getEthBalance` for ether. */
+const selectorsOf = (data: string): string[] => decodeAggregate3Calls(data).map((call) => call.data.slice(0, 10));
 
 type Endpoint = {
   /** A token's balance, or `null` for a call that reverts. */
@@ -56,31 +27,22 @@ type Endpoint = {
   readonly ether?: bigint | null;
   /** What `eth_getCode` says lives at Multicall3's address. */
   readonly code?: string;
-  /** Overrides the whole aggregated answer: a refusal, or something that is not one. */
-  readonly aggregate?: { error: unknown } | { result: unknown };
+  /** Overrides the whole aggregated answer: `null` refuses it, a string stands in for it. */
+  readonly aggregate?: string | null;
 };
 
-/** A batching endpoint playing Multicall3 and the node. */
+/** The node and Multicall3, answering by token. */
 const endpoint = ({ amountFor = () => 0n, ether = 0n, code = MULTICALL3_RUNTIME_CODE, aggregate }: Endpoint = {}): FetchLike =>
-  vi.fn(async (_url, init) => {
-    const entries = JSON.parse(String(init.body)) as Entry[];
-
-    return new Response(
-      JSON.stringify(
-        entries.map((entry) => {
-          if (entry.method === "eth_getCode") return { jsonrpc: "2.0", id: entry.id, result: code };
-          const call = entry.params[0] as { to: string; data: string };
-          if (aggregate !== undefined) return { jsonrpc: "2.0", id: entry.id, ...aggregate };
-          const results = targetsOf(call.data).map((to) => {
-            const amount = to === MULTICALL3_ADDRESS ? ether : amountFor(to);
-            return amount === null ? { success: false, data: "0x" } : { success: true, data: word(amount) };
-          });
-          return { jsonrpc: "2.0", id: entry.id, result: encodeResults(results) };
-        }),
-      ),
-      { status: 200 },
-    );
-  });
+  vi.fn(
+    rpcEndpoint({
+      code,
+      ...(aggregate === undefined ? {} : { aggregate }),
+      call: (question) => {
+        const amount = question.to === MULTICALL3_ADDRESS ? ether : amountFor(question.to);
+        return amount === null ? { success: false, data: "0x" } : { success: true, data: word(amount) };
+      },
+    }),
+  );
 
 const run = (overrides: Partial<Parameters<typeof fetchEthereumBalances>[0]> = {}) =>
   fetchEthereumBalances({
@@ -183,20 +145,20 @@ describe("fetchEthereumBalances", () => {
    * nothing" — a definite-looking answer to a question nobody answered.
    */
   it("refuses rather than reporting an unread sweep as an empty one", async () => {
-    const result = await run({ fetchImpl: endpoint({ aggregate: { error: { code: 429, message: "slow down" } } }) });
+    const result = await run({ fetchImpl: endpoint({ aggregate: null }) });
 
     expect(result.status).toBe("unavailable");
     expect(result.status === "unavailable" && result.notice).toBe("chain-data-unreadable");
   });
 
   it("refuses an aggregated answer it cannot decode", async () => {
-    const result = await run({ fetchImpl: endpoint({ aggregate: { result: "0x1234" } }) });
+    const result = await run({ fetchImpl: endpoint({ aggregate: "0x1234" }) });
 
     expect(result.status === "unavailable" && result.notice).toBe("chain-data-malformed");
   });
 
   it("refuses an answer for a different number of currencies", async () => {
-    const result = await run({ fetchImpl: endpoint({ aggregate: { result: encodeResults([{ success: true, data: word(1n) }]) } }) });
+    const result = await run({ fetchImpl: endpoint({ aggregate: encodeAggregate3Results([{ success: true, data: word(1n) }]) }) });
 
     expect(result.status === "unavailable" && result.notice).toBe("chain-data-malformed");
   });
@@ -243,7 +205,7 @@ describe("fetchEthereumBalances", () => {
     const answers = tokens.map((_token, index) =>
       index === 0 ? { success: true, data: "0x01" } : { success: true, data: word(index === 1 ? 3n : 0n) },
     );
-    const result = await run({ tokenAddresses: tokens, fetchImpl: endpoint({ aggregate: { result: encodeResults(answers) } }) });
+    const result = await run({ tokenAddresses: tokens, fetchImpl: endpoint({ aggregate: encodeAggregate3Results(answers) }) });
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
@@ -258,7 +220,7 @@ describe("fetchEthereumBalances", () => {
   it("does not read a reverted call's answer as a balance, whatever its shape", async () => {
     const tokens = Array.from({ length: 20 }, (_unused, index) => token(index + 1));
     const answers = tokens.map((_token, index) => ({ success: index !== 0, data: word(index === 0 ? 5n : 0n) }));
-    const result = await run({ tokenAddresses: tokens, fetchImpl: endpoint({ aggregate: { result: encodeResults(answers) } }) });
+    const result = await run({ tokenAddresses: tokens, fetchImpl: endpoint({ aggregate: encodeAggregate3Results(answers) }) });
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;

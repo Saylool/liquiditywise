@@ -248,8 +248,8 @@ outside the window and never reach the ordering at all — and the list states t
 limit rather than leaving it to be discovered.
 
 A search is streamed into a `<Suspense>` boundary, because reading what each
-candidate holds is several batched calls and the box somebody just typed into
-should come back immediately.
+candidate holds is a round trip to the chain and the box somebody just typed
+into should come back immediately.
 
 **A list is the one place a single bad entry need not sink the answer.**
 Everywhere else a visitor asked about one pool and the only honest replies were

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { fetchEthereumV4PoolStates } from "./ethereumV4PoolState";
-import { ETH_CALL_BATCH_SIZE } from "./ethereumRpcTransport";
+import { fetchEthereumV4PoolFees, fetchEthereumV4PoolStates } from "./ethereumV4PoolState";
+import { MULTICALL3_ADDRESS } from "./multicall3";
+import { MULTICALL3_RUNTIME_CODE } from "./multicall3RuntimeCode";
+import { decodeAggregate3Calls, rpcEndpoint } from "./testing/multicall3Endpoint";
 import type { FetchLike } from "./v3SubgraphTransport";
 import { EXTSLOAD_SELECTOR, LIQUIDITY_OFFSET, poolStateSlot, SLOT0_OFFSET } from "./v4PoolStateSlots";
 
@@ -12,34 +14,24 @@ const poolId = (index: number) => `0x${index.toString(16).padStart(64, "0")}`;
 const word = (value: bigint) => `0x${value.toString(16).padStart(64, "0")}`;
 
 const SQRT_PRICE = 3916044149203074036022610n;
-const packedSlot0 = (sqrtPrice: bigint, tick = -198322) =>
-  (BigInt(tick + 0x1000000) << 160n) | sqrtPrice;
+const packedSlot0 = (sqrtPrice: bigint, { tick = -198322, lpFee = 0n, protocolFee = 0n } = {}) =>
+  (lpFee << 208n) | (protocolFee << 184n) | (BigInt(tick + 0x1000000) << 160n) | sqrtPrice;
 
 /**
- * A PoolManager that answers `extsload` by slot. `answer` maps a slot to the
- * word stored there, or to `null` for a call the endpoint refuses.
+ * A PoolManager that answers `extsload` by slot, inside the aggregate. `answer`
+ * maps a slot to the word stored there, or to `null` for a question that
+ * reverts.
  */
-const endpoint = (answer: (slot: string, to: string) => bigint | null): FetchLike =>
-  vi.fn(async (_url, init) => {
-    const calls = JSON.parse(String(init.body)) as {
-      id: number;
-      params: [{ to: string; data: string }, string];
-    }[];
-
-    return new Response(
-      JSON.stringify(
-        calls.map((call) => {
-          const slot = `0x${call.params[0].data.slice(EXTSLOAD_SELECTOR.length)}`;
-          const stored = answer(slot, call.params[0].to);
-
-          return stored === null
-            ? { jsonrpc: "2.0", id: call.id, error: { code: 429, message: "slow down" } }
-            : { jsonrpc: "2.0", id: call.id, result: word(stored) };
-        }),
-      ),
-      { status: 200 },
-    );
-  });
+const endpoint = (answer: (slot: string, to: string) => bigint | null, code = MULTICALL3_RUNTIME_CODE): FetchLike =>
+  vi.fn(
+    rpcEndpoint({
+      code,
+      call: (question) => {
+        const stored = answer(`0x${question.data.slice(EXTSLOAD_SELECTOR.length)}`, question.to);
+        return stored === null ? { success: false, data: "0x" } : { success: true, data: word(stored) };
+      },
+    }),
+  );
 
 /** A manager holding every requested pool at one liquidity and one price. */
 const holding = (liquidity: bigint, sqrtPrice = SQRT_PRICE) =>
@@ -50,6 +42,15 @@ const holding = (liquidity: bigint, sqrtPrice = SQRT_PRICE) =>
     }
     return 0n;
   });
+
+const questionsSent = (fetchImpl: FetchLike) => {
+  const entries = JSON.parse(String(vi.mocked(fetchImpl).mock.calls[0]?.[1].body)) as {
+    method: string;
+    params: [{ to: string; data: string } | string];
+  }[];
+  const aggregate = entries.find((entry) => entry.method === "eth_call")?.params[0] as { to: string; data: string };
+  return { outer: aggregate, questions: decodeAggregate3Calls(aggregate.data) };
+};
 
 const run = (overrides: Partial<Parameters<typeof fetchEthereumV4PoolStates>[0]> = {}) =>
   fetchEthereumV4PoolStates({
@@ -71,15 +72,16 @@ describe("fetchEthereumV4PoolStates", () => {
     expect(states.size).toBe(2);
   });
 
-  it("asks the PoolManager the source named, and nothing else", async () => {
+  /* Every question inside one call to Multicall3, each asked of the manager the source named. */
+  it("asks the PoolManager the source named, and nothing else, inside one aggregated call", async () => {
     const fetchImpl = holding(1n);
     await run({ fetchImpl });
+    const { outer, questions } = questionsSent(fetchImpl);
 
-    const calls = JSON.parse(String(vi.mocked(fetchImpl).mock.calls[0]?.[1].body)) as {
-      params: [{ to: string; data: string }];
-    }[];
-    expect(calls.every((call) => call.params[0].to === POOL_MANAGER)).toBe(true);
-    expect(calls.every((call) => call.params[0].data.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
+    expect(outer.to).toBe(MULTICALL3_ADDRESS);
+    expect(questions).toHaveLength(4);
+    expect(questions.every((question) => question.to === POOL_MANAGER)).toBe(true);
+    expect(questions.every((question) => question.data.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
   });
 
   /*
@@ -90,6 +92,20 @@ describe("fetchEthereumV4PoolStates", () => {
     const fetchImpl = endpoint((slot) =>
       slot === poolStateSlot(poolId(2), LIQUIDITY_OFFSET) ? null : packedSlot0(SQRT_PRICE),
     );
+    const states = await run({ fetchImpl });
+
+    expect(states.has(poolId(1))).toBe(true);
+    expect(states.has(poolId(2))).toBe(false);
+  });
+
+  /* A question that reverted may still return thirty-two bytes; those bytes are not a word of state. */
+  it("does not read a reverted question's bytes as a word, whatever their shape", async () => {
+    const fetchImpl: FetchLike = rpcEndpoint({
+      call: (question) =>
+        question.data.endsWith(poolStateSlot(poolId(2), LIQUIDITY_OFFSET)?.slice(2) ?? "")
+          ? { success: false, data: word(5n) }
+          : { success: true, data: word(packedSlot0(SQRT_PRICE)) },
+    });
     const states = await run({ fetchImpl });
 
     expect(states.has(poolId(1))).toBe(true);
@@ -109,9 +125,9 @@ describe("fetchEthereumV4PoolStates", () => {
     expect(states.get(poolId(1))?.liquidity).toBe("0");
   });
 
-  it("answers with nothing, not a failure, when no endpoint is configured", async () => {
+  it.each([undefined, "", "   "])("answers with nothing, not a failure, when the endpoint is %j", async (rpcUrl) => {
     const fetchImpl = holding(1n);
-    const states = await run({ rpcUrl: undefined, fetchImpl });
+    const states = await run({ rpcUrl, fetchImpl });
 
     expect(states.size).toBe(0);
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -128,45 +144,92 @@ describe("fetchEthereumV4PoolStates", () => {
     },
   );
 
-  it("skips an id that is not a pool id rather than refusing the batch", async () => {
+  it("skips an id that is not a pool id rather than refusing the call", async () => {
     const states = await run({ poolIds: [`0x${"a".repeat(40)}`, poolId(1)] });
 
     expect(states.size).toBe(1);
     expect(states.has(poolId(1))).toBe(true);
   });
 
-  /* Two words per pool, split into the batches the endpoint will compute at once. */
-  it("splits a large sweep into batches", async () => {
+  /* Two words per pool, all in one request, however many pools. */
+  it("asks for every pool in one request", async () => {
     const fetchImpl = holding(1n);
-    const poolIds = Array.from({ length: ETH_CALL_BATCH_SIZE }, (_u, index) => poolId(index + 1));
+    const poolIds = Array.from({ length: 50 }, (_u, index) => poolId(index + 1));
     const states = await run({ poolIds, fetchImpl });
 
-    expect(states.size).toBe(ETH_CALL_BATCH_SIZE);
-    expect(vi.mocked(fetchImpl).mock.calls.length).toBe(2);
+    expect(states.size).toBe(50);
+    expect(vi.mocked(fetchImpl).mock.calls).toHaveLength(1);
+    expect(questionsSent(fetchImpl).questions).toHaveLength(100);
   });
 
-  /* A refused batch costs its pools their state, and the other batches stand. */
-  it("keeps what the other batches answered when one is refused", async () => {
-    const answering = holding(1n);
-    let call = 0;
-    const flaky: FetchLike = async (url, init) => {
-      call += 1;
-      return call === 1 ? new Response("nope", { status: 429 }) : answering(url, init);
-    };
-    const poolIds = Array.from({ length: ETH_CALL_BATCH_SIZE }, (_u, index) => poolId(index + 1));
-    const states = await run({ poolIds, fetchImpl: flaky });
+  /* One call carries every question, so a refused call is every pool unread — and unread is not empty. */
+  it("answers with nothing when the aggregated call is refused", async () => {
+    const states = await run({ fetchImpl: vi.fn(rpcEndpoint({ aggregate: null })) });
 
-    // Two words per pool: the first batch held the first twelve pools and half of the thirteenth.
-    expect(states.size).toBe(ETH_CALL_BATCH_SIZE - Math.ceil(ETH_CALL_BATCH_SIZE / 2));
-    expect(states.has(poolId(1))).toBe(false);
-    expect(states.has(poolId(ETH_CALL_BATCH_SIZE))).toBe(true);
+    expect(states.size).toBe(0);
   });
 
-  it("answers with nothing when every batch fails", async () => {
+  it("answers with nothing when the helper's code is not Multicall3's", async () => {
+    const states = await run({ fetchImpl: endpoint(() => packedSlot0(SQRT_PRICE), "0x") });
+
+    expect(states.size).toBe(0);
+  });
+
+  it("answers with nothing when the request fails", async () => {
     const states = await run({
       fetchImpl: vi.fn(async () => new Response("nope", { status: 500 })),
     });
 
     expect(states.size).toBe(0);
+  });
+});
+
+/*
+ * The fees alone, for pools a page shows without ordering them: one word per
+ * pool, the same word the state read unpacks, through the same aggregate.
+ */
+describe("fetchEthereumV4PoolFees", () => {
+  const charging = endpoint((slot) => {
+    for (let index = 0; index < 100; index += 1) {
+      if (slot === poolStateSlot(poolId(index), SLOT0_OFFSET)) {
+        return packedSlot0(SQRT_PRICE, { lpFee: 500n, protocolFee: 125n | (125n << 12n) });
+      }
+    }
+    return 0n;
+  });
+
+  const runFees = (overrides: Partial<Parameters<typeof fetchEthereumV4PoolFees>[0]> = {}) =>
+    fetchEthereumV4PoolFees({
+      poolIds: [poolId(1), poolId(2)],
+      poolManager: POOL_MANAGER,
+      rpcUrl: RPC_URL,
+      fetchImpl: charging,
+      ...overrides,
+    });
+
+  it("reads each pool's fees out of its price word, one question per pool", async () => {
+    const fetchImpl = charging;
+    const fees = await runFees({ fetchImpl });
+
+    expect(fees.get(poolId(1))).toEqual({ lpFeePpm: 500, protocolFee: { zeroForOnePpm: 125, oneForZeroPpm: 125 } });
+    expect(fees.size).toBe(2);
+    expect(questionsSent(fetchImpl).questions).toHaveLength(2);
+  });
+
+  it("leaves a pool out when its price word is zero", async () => {
+    const fees = await runFees({ fetchImpl: holding(1n, 0n) });
+
+    expect(fees.size).toBe(0);
+  });
+
+  it("answers with nothing when the aggregated call is refused", async () => {
+    const fees = await runFees({ fetchImpl: vi.fn(rpcEndpoint({ aggregate: null })) });
+
+    expect(fees.size).toBe(0);
+  });
+
+  it("reads nothing without an endpoint or a manager", async () => {
+    expect((await runFees({ rpcUrl: undefined })).size).toBe(0);
+    expect((await runFees({ poolManager: null })).size).toBe(0);
   });
 });

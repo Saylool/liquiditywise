@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ETH_CALL_BATCH_PAUSE_MS, ethGetCodeEntry, postEthCallBatch } from "./ethereumRpcTransport";
+import { ETH_CALL_BATCH_PAUSE_MS, ethCallEntry, ethGetCodeEntry, postRpcBatch } from "./ethereumRpcTransport";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 const RPC_URL = "https://rpc.test.invalid/key-that-must-never-leak";
@@ -19,14 +19,14 @@ const recording = (arrivals: number[], status = 200): FetchLike =>
   });
 
 const send = (fetchImpl: FetchLike) =>
-  postEthCallBatch({ rpcUrl: RPC_URL, calls: [CALL], fetchImpl, timeoutMs: 1_000 });
+  postRpcBatch({ rpcUrl: RPC_URL, requests: [ethCallEntry(CALL)], fetchImpl, timeoutMs: 1_000 });
 
 /*
  * The pacing is the transport's, so two callers that know nothing of each other
  * still send a sequence rather than a burst. Real time passes here — a quarter
  * of a second — because the thing under test is the interval itself.
  */
-describe("postEthCallBatch pacing", () => {
+describe("postRpcBatch pacing", () => {
   it("spaces batches from concurrent callers by the pause", async () => {
     const arrivals: number[] = [];
     const fetchImpl = recording(arrivals);

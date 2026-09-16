@@ -1,10 +1,7 @@
 import type { V3PoolMetadata } from "../../schemas";
 import { balanceOfCalldata, readBalanceWord } from "./erc20BalanceAdapter";
-import {
-  DEFAULT_RPC_TIMEOUT_MS,
-  ETH_CALL_BATCH_SIZE,
-  postEthCallBatch,
-} from "./ethereumRpcTransport";
+import { postAggregatedCalls } from "./ethereumAggregatedCalls";
+import { DEFAULT_RPC_TIMEOUT_MS } from "./ethereumRpcTransport";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 /*
@@ -18,8 +15,8 @@ import type { FetchLike } from "./v3SubgraphTransport";
  * therefore wrong by the same factor. A pool's balance is not something an
  * indexer has to accumulate; it is something a token contract can be asked.
  *
- * Read-only, like everything else on this path: the transport can issue
- * `eth_call` and nothing else.
+ * Read-only, like everything else on this path: the aggregate beneath can
+ * issue `eth_call` and `eth_getCode` and nothing else.
  */
 
 /** A pool's two balances, in each token's own base units. */
@@ -37,7 +34,7 @@ export type EthereumV3PoolReservesRequest = {
 };
 
 /**
- * Reads both balances for each pool, in as few requests as possible.
+ * Reads both balances for each pool, in one call.
  *
  * Returns a map rather than a result, and omits what it could not read rather
  * than failing: these reserves are context beside a list of fee tiers, and a
@@ -54,31 +51,27 @@ export const fetchEthereumV3PoolReserves = async ({
   const endpoint = rpcUrl?.trim();
   if (endpoint === undefined || endpoint === "" || pools.length === 0) return new Map();
 
-  /* Two calls per pool, both asking a token what this pool address holds. */
+  /* Two questions per pool, both asking a token what this pool address holds. */
   const calls = pools.flatMap((pool) => [
     { to: pool.token0.address, data: balanceOfCalldata(pool.id) },
     { to: pool.token1.address, data: balanceOfCalldata(pool.id) },
   ]);
 
-  const answers: (string | null)[] = [];
-  for (let at = 0; at < calls.length; at += ETH_CALL_BATCH_SIZE) {
-    const batch = await postEthCallBatch({
-      rpcUrl: endpoint,
-      calls: calls.slice(at, at + ETH_CALL_BATCH_SIZE),
-      fetchImpl,
-      timeoutMs: timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-    });
-    if (!batch.ok) return new Map();
+  const aggregated = await postAggregatedCalls({
+    rpcUrl: endpoint,
+    calls,
+    fetchImpl,
+    timeoutMs: timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
+  });
+  if (!aggregated.ok) return new Map();
 
-    for (const result of batch.results) {
-      if (!result.ok) {
-        answers.push(null);
-        continue;
-      }
-      const balance = readBalanceWord({ result: result.result });
-      answers.push(balance.ok ? balance.amount : null);
-    }
-  }
+  /* A question that reverted, or answered with something other than a word, is one unread balance. */
+  const answers = aggregated.results.map((result) => {
+    if (!result.success) return null;
+    const balance = readBalanceWord({ result: result.data });
+
+    return balance.ok ? balance.amount : null;
+  });
 
   const reserves = new Map<string, PoolReserves>();
   pools.forEach((pool, index) => {

@@ -1,10 +1,7 @@
 import { nonZeroEvmAddress } from "../../schemas";
 import type { V4PoolChainFees } from "./v4PoolChainReading";
-import {
-  DEFAULT_RPC_TIMEOUT_MS,
-  ETH_CALL_BATCH_SIZE,
-  postEthCallBatch,
-} from "./ethereumRpcTransport";
+import { postAggregatedCalls } from "./ethereumAggregatedCalls";
+import { DEFAULT_RPC_TIMEOUT_MS } from "./ethereumRpcTransport";
 import type { FetchLike } from "./v3SubgraphTransport";
 import {
   extsloadCalldata,
@@ -51,68 +48,73 @@ export type EthereumV4PoolStateRequest = {
 };
 
 /**
- * Reads price and liquidity for each pool, in as few requests as possible.
+ * The storage words asked for, one aggregated call, read back in order.
+ *
+ * `null` for a word that was refused or reverted, and every word `null` when
+ * the call itself failed: a chain that would not answer costs the reader the
+ * figures, never the list, and an unread word must stay unread rather than
+ * become a zero. What both readers below share.
+ */
+const readStorageWords = async (
+  request: EthereumV4PoolStateRequest,
+  manager: string,
+  slots: readonly string[],
+): Promise<readonly (bigint | null)[]> => {
+  const endpoint = request.rpcUrl?.trim() ?? "";
+  const aggregated = await postAggregatedCalls({
+    rpcUrl: endpoint,
+    calls: slots.map((slot) => ({ to: manager, data: extsloadCalldata(slot) })),
+    fetchImpl: request.fetchImpl,
+    timeoutMs: request.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
+  });
+  if (!aggregated.ok) return slots.map(() => null);
+
+  return aggregated.results.map((result) => (result.success ? readStorageWord(result.data) : null));
+};
+
+/** Whether the endpoint and the manager are there to ask at all. */
+const readable = (request: EthereumV4PoolStateRequest): string | null => {
+  const endpoint = request.rpcUrl?.trim();
+  const manager = PoolManagerAddressSchema.safeParse(request.poolManager);
+
+  return endpoint === undefined || endpoint === "" || !manager.success || request.poolIds.length === 0
+    ? null
+    : manager.data;
+};
+
+/**
+ * Reads price and liquidity for each pool, in one call.
  *
  * Returns a map and omits what it could not read, like the v3 reserves read: a
- * chain that would not answer should cost the reader a figure, not the list —
- * and a batch it refused costs the pools in that batch their figure, not the
- * pools in every other batch theirs. What must never happen is an unread pool
- * being ordered as an empty one, and that is why a missing entry stays
- * missing rather than becoming zeros.
+ * chain that would not answer should cost the reader a figure, not the list.
+ * What must never happen is an unread pool being ordered as an empty one, and
+ * that is why a missing entry stays missing rather than becoming zeros.
  *
  * A price of zero is treated as unread too. An initialised pool's price is never
  * zero, so a zero word is a slot nobody wrote — a pool the PoolManager does not
  * have — and the honest thing to say about it is nothing.
  */
-export const fetchEthereumV4PoolStates = async ({
-  poolIds,
-  poolManager,
-  rpcUrl,
-  fetchImpl,
-  timeoutMs,
-}: EthereumV4PoolStateRequest): Promise<ReadonlyMap<string, V4PoolState>> => {
-  const endpoint = rpcUrl?.trim();
-  const manager = PoolManagerAddressSchema.safeParse(poolManager);
-  if (endpoint === undefined || endpoint === "" || !manager.success || poolIds.length === 0) {
-    return new Map();
-  }
+export const fetchEthereumV4PoolStates = async (
+  request: EthereumV4PoolStateRequest,
+): Promise<ReadonlyMap<string, V4PoolState>> => {
+  const manager = readable(request);
+  if (manager === null) return new Map();
 
-  /* Two calls per pool: the packed price word, then the liquidity word. */
-  const calls: { to: string; data: string }[] = [];
-  const readable: string[] = [];
-  for (const poolId of poolIds) {
+  /* Two words per pool: the packed price word, then the liquidity word. */
+  const slots: string[] = [];
+  const poolIds: string[] = [];
+  for (const poolId of request.poolIds) {
     const slot0 = poolStateSlot(poolId, SLOT0_OFFSET);
     const liquidity = poolStateSlot(poolId, LIQUIDITY_OFFSET);
     if (slot0 === null || liquidity === null) continue;
-    readable.push(poolId);
-    calls.push(
-      { to: manager.data, data: extsloadCalldata(slot0) },
-      { to: manager.data, data: extsloadCalldata(liquidity) },
-    );
+    poolIds.push(poolId);
+    slots.push(slot0, liquidity);
   }
 
-  const words: (bigint | null)[] = [];
-  for (let at = 0; at < calls.length; at += ETH_CALL_BATCH_SIZE) {
-    const slice = calls.slice(at, at + ETH_CALL_BATCH_SIZE);
-    const batch = await postEthCallBatch({
-      rpcUrl: endpoint,
-      calls: slice,
-      fetchImpl,
-      timeoutMs: timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-    });
-    /* A refused batch is so many unread words; the other batches stand. */
-    if (!batch.ok) {
-      words.push(...slice.map(() => null));
-      continue;
-    }
-
-    for (const result of batch.results) {
-      words.push(result.ok ? readStorageWord(result.result) : null);
-    }
-  }
+  const words = await readStorageWords(request, manager, slots);
 
   const states = new Map<string, V4PoolState>();
-  readable.forEach((poolId, index) => {
+  poolIds.forEach((poolId, index) => {
     const slot0 = words[index * 2];
     const liquidity = words[index * 2 + 1];
     // Both or neither: half a pool's state cannot be valued.
@@ -137,48 +139,32 @@ export const fetchEthereumV4PoolStates = async ({
  * being ordered by depth: the handful a holdings lookup is about to show. Same
  * endpoint rules, same omission of what could not be read.
  */
-export const fetchEthereumV4PoolFees = async ({
-  poolIds,
-  poolManager,
-  rpcUrl,
-  fetchImpl,
-  timeoutMs,
-}: EthereumV4PoolStateRequest): Promise<ReadonlyMap<string, V4PoolChainFees>> => {
-  const endpoint = rpcUrl?.trim();
-  const manager = PoolManagerAddressSchema.safeParse(poolManager);
-  if (endpoint === undefined || endpoint === "" || !manager.success || poolIds.length === 0) {
-    return new Map();
-  }
+export const fetchEthereumV4PoolFees = async (
+  request: EthereumV4PoolStateRequest,
+): Promise<ReadonlyMap<string, V4PoolChainFees>> => {
+  const manager = readable(request);
+  if (manager === null) return new Map();
 
-  const calls: { to: string; data: string }[] = [];
-  const readable: string[] = [];
-  for (const poolId of poolIds) {
+  const slots: string[] = [];
+  const poolIds: string[] = [];
+  for (const poolId of request.poolIds) {
     const slot0 = poolStateSlot(poolId, SLOT0_OFFSET);
     if (slot0 === null) continue;
-    readable.push(poolId);
-    calls.push({ to: manager.data, data: extsloadCalldata(slot0) });
+    poolIds.push(poolId);
+    slots.push(slot0);
   }
+
+  const words = await readStorageWords(request, manager, slots);
 
   const fees = new Map<string, V4PoolChainFees>();
-  for (let at = 0; at < calls.length; at += ETH_CALL_BATCH_SIZE) {
-    const batch = await postEthCallBatch({
-      rpcUrl: endpoint,
-      calls: calls.slice(at, at + ETH_CALL_BATCH_SIZE),
-      fetchImpl,
-      timeoutMs: timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-    });
-    if (!batch.ok) continue;
+  poolIds.forEach((poolId, index) => {
+    const word = words[index];
+    if (word == null) return;
 
-    batch.results.forEach((result, index) => {
-      const poolId = readable[at + index];
-      const word = result.ok ? readStorageWord(result.result) : null;
-      if (poolId === undefined || word === null) return;
-
-      const { sqrtPriceX96, lpFeePpm, protocolFee } = unpackSlot0(word);
-      if (sqrtPriceX96 === 0n) return;
-      fees.set(poolId, { lpFeePpm, protocolFee });
-    });
-  }
+    const { sqrtPriceX96, lpFeePpm, protocolFee } = unpackSlot0(word);
+    if (sqrtPriceX96 === 0n) return;
+    fees.set(poolId, { lpFeePpm, protocolFee });
+  });
 
   return fees;
 };

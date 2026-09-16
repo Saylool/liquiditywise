@@ -5,20 +5,9 @@ import {
   ZERO_ADDRESS,
 } from "../../schemas";
 import { balanceOfCalldata, readBalanceWord } from "./erc20BalanceAdapter";
-import {
-  DEFAULT_RPC_TIMEOUT_MS,
-  ethCallEntry,
-  ethGetCodeEntry,
-  postRpcBatch,
-} from "./ethereumRpcTransport";
-import {
-  type Aggregate3Call,
-  decodeAggregate3,
-  encodeAggregate3,
-  getEthBalanceCalldata,
-  isMulticall3Code,
-  MULTICALL3_ADDRESS,
-} from "./multicall3";
+import { postAggregatedCalls } from "./ethereumAggregatedCalls";
+import { DEFAULT_RPC_TIMEOUT_MS } from "./ethereumRpcTransport";
+import { type Aggregate3Call, getEthBalanceCalldata, MULTICALL3_ADDRESS } from "./multicall3";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 /*
@@ -42,8 +31,6 @@ import type { FetchLike } from "./v3SubgraphTransport";
 const INVALID_ADDRESS = "invalid-pool-address";
 const NOT_CONFIGURED = "chain-data-not-configured";
 const UNREADABLE = "chain-data-unreadable";
-const MALFORMED = "chain-data-malformed";
-const AGGREGATOR_UNVERIFIED = "chain-aggregator-unverified";
 
 /**
  * How much of a sweep may go unread before the answer is refused instead of
@@ -101,10 +88,9 @@ const HolderSchema = nonZeroEvmAddress(INVALID_ADDRESS);
 /**
  * Asks every currency what the holder holds, in one call.
  *
- * One `eth_call` to Multicall3 carries every `balanceOf` and the ether
- * question, and the node's answer for the code at Multicall3's address travels
- * in the same batch: the balances are believed only if that code is the one
- * this application knows, byte for byte. See `multicall3.ts` for why.
+ * One aggregated call carries every `balanceOf` and the ether question — asked
+ * of Multicall3 itself — and the balances are believed only once the helper's
+ * code has been checked beside them; see `ethereumAggregatedCalls.ts`.
  *
  * Measured against the live endpoint on 2026-09-16: 289 currencies in 0.6
  * seconds. The same sweep as twelve paced batches of direct calls had the
@@ -151,39 +137,23 @@ export const fetchEthereumBalances = async (
       : { to: address, data },
   );
 
-  const batch = await postRpcBatch({
+  /*
+   * The sweep is one call, so a refusal is the whole sweep unread — and an
+   * unread sweep is not an empty one: the read says it could not answer.
+   */
+  const aggregated = await postAggregatedCalls({
     rpcUrl,
-    requests: [
-      ethCallEntry({ to: MULTICALL3_ADDRESS, data: encodeAggregate3(calls) }),
-      ethGetCodeEntry(MULTICALL3_ADDRESS),
-    ],
+    calls,
     fetchImpl: request.fetchImpl,
     timeoutMs: request.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
   });
-  if (!batch.ok) return { status: "unavailable", reason: batch.reason, notice: batch.notice };
-
-  /* The proof first: an answer from a contract that is not Multicall3 is not an answer. */
-  const [answers, code] = batch.results;
-  if (code === undefined || !code.ok || !isMulticall3Code(code.result)) {
-    return { status: "unavailable", reason: "configuration-error", notice: AGGREGATOR_UNVERIFIED };
-  }
-
-  /*
-   * The sweep is one call, so a refusal is the whole sweep unread — and an
-   * unread sweep is not an empty one. The same for an answer that does not
-   * decode: publishing a guess at it would pair balances with the wrong names.
-   */
-  if (answers === undefined || !answers.ok) {
-    return { status: "unavailable", reason: "invalid-response", notice: UNREADABLE };
-  }
-  const results = decodeAggregate3(answers.result, calls.length);
-  if (results === null) {
-    return { status: "unavailable", reason: "invalid-response", notice: MALFORMED };
+  if (!aggregated.ok) {
+    return { status: "unavailable", reason: aggregated.reason, notice: aggregated.notice };
   }
 
   const held: TokenBalance[] = [];
   let unreadable = 0;
-  results.forEach((result, index) => {
+  aggregated.results.forEach((result, index) => {
     const address = currencies[index];
     if (address === undefined) return;
 

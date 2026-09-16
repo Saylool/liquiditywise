@@ -119,17 +119,6 @@ export const postEthCall = async ({
 };
 
 /**
- * How many calls travel in one batch.
- *
- * Measured against the live endpoint. A batch of 25 answers every call; a batch
- * of 175 comes back with nine of them refused for exceeding the provider's
- * compute units per second, and the refusals are per call rather than per
- * request — so the size is a property of what the endpoint will compute at once,
- * not of what it will accept.
- */
-export const ETH_CALL_BATCH_SIZE = 25;
-
-/**
  * A pause between batches, so a sweep is a sequence rather than a burst.
  *
  * Also measured: reading 175 tokens as seven spaced batches answered all 175
@@ -298,23 +287,6 @@ export const postRpcBatch = async ({
   }
 };
 
-export type EthCallBatchRequest = {
-  readonly rpcUrl: string;
-  /** One `{ to, data }` per call, answered in the same order. */
-  readonly calls: readonly { readonly to: string; readonly data: string }[];
-  readonly fetchImpl: FetchLike;
-  readonly timeoutMs: number;
-};
-
-/** One call's answer: the raw word, or the fact that this one was refused. */
-export type BatchedCallResult =
-  | { readonly ok: true; readonly result: string }
-  | { readonly ok: false };
-
-export type EthCallBatchResult =
-  | { readonly ok: true; readonly results: readonly BatchedCallResult[] }
-  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
-
 /** The `eth_call` request for one contract read, against the latest block. */
 export const ethCallEntry = (call: { readonly to: string; readonly data: string }): RpcBatchEntry => ({
   method: "eth_call",
@@ -326,34 +298,6 @@ export const ethGetCodeEntry = (address: string): RpcBatchEntry => ({
   method: "eth_getCode",
   params: [address, "latest"],
 });
-
-/**
- * Performs many `eth_call`s in one HTTP request. A call's answer is a hex
- * string; anything else the endpoint sends for it is reported as a refusal.
- */
-export const postEthCallBatch = async ({
-  rpcUrl,
-  calls,
-  fetchImpl,
-  timeoutMs,
-}: EthCallBatchRequest): Promise<EthCallBatchResult> => {
-  const batch = await postRpcBatch({
-    rpcUrl,
-    requests: calls.map(ethCallEntry),
-    fetchImpl,
-    timeoutMs,
-  });
-  if (!batch.ok) return batch;
-
-  return {
-    ok: true,
-    results: batch.results.map((result) =>
-      result.ok && typeof result.result === "string"
-        ? { ok: true, result: result.result }
-        : { ok: false },
-    ),
-  };
-};
 
 /** A log filter, as `eth_getLogs` takes one. Block tags are hex quantities. */
 export type LogFilter = {

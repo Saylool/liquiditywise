@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { fetchEthereumV4PoolSearch } from "./ethereumV4PoolSearch";
 import { tradedWindowStart, V4_TRADED_POOL_DAYS_LIMIT, V4_TRADED_POOLS_QUERY } from "./ethereumV4TradedPools";
+import { MULTICALL3_ADDRESS } from "./multicall3";
+import { answerRpc, decodeAggregate3Calls } from "./testing/multicall3Endpoint";
 import type { FetchLike } from "./v3SubgraphTransport";
 import { DYNAMIC_FEE_FLAG, INITIALIZE_TOPIC } from "./v4PoolKey";
 import { EXTSLOAD_SELECTOR } from "./v4PoolStateSlots";
@@ -90,23 +92,21 @@ const initializeLog = {
 
 /**
  * One fetch that plays both parts: the gateway for the GraphQL request, and the
- * PoolManager for the batched `eth_getLogs` and `eth_call`s that follow it.
+ * node for the `eth_getLogs` batch and the aggregated storage reads after it.
  */
 const bothEndpoints = (): FetchLike =>
   vi.fn(async (url, init) => {
     if (url === RPC_URL) {
-      const calls = JSON.parse(String(init.body)) as { id: number; method: string }[];
       return new Response(
         JSON.stringify(
-          calls.map((call, index) => ({
-            jsonrpc: "2.0",
-            id: call.id,
-            result:
-              call.method === "eth_getLogs"
-                ? [initializeLog]
-                : // First word of each pair is slot0, second is liquidity.
-                  word(index % 2 === 0 ? ((198_320n) << 160n) | SQRT_PRICE : 642_953_328_768_594_464n),
-          })),
+          answerRpc(String(init.body), {
+            logs: () => [initializeLog],
+            // First word of each pair is slot0, second is liquidity.
+            call: (_question, index) => ({
+              success: true,
+              data: word(index % 2 === 0 ? ((198_320n) << 160n) | SQRT_PRICE : 642_953_328_768_594_464n),
+            }),
+          }),
         ),
         { status: 200 },
       );
@@ -223,9 +223,13 @@ describe("fetchEthereumV4PoolSearch", () => {
     );
     const calls = requests.filter((request) => request.method === "eth_call");
     const logs = requests.filter((request) => request.method === "eth_getLogs");
-    expect(calls.length).toBe(2);
-    expect(calls.every((call) => call.params[0].to === POOL_MANAGER)).toBe(true);
-    expect(calls.every((call) => call.params[0].data?.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
+    // One aggregated call, to Multicall3, carrying the two storage words of the one matching pool.
+    expect(calls.length).toBe(1);
+    expect(calls[0]?.params[0].to).toBe(MULTICALL3_ADDRESS);
+    const questions = decodeAggregate3Calls(calls[0]?.params[0].data ?? "");
+    expect(questions).toHaveLength(2);
+    expect(questions.every((question) => question.to === POOL_MANAGER)).toBe(true);
+    expect(questions.every((question) => question.data.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
     expect(logs).toHaveLength(1);
     expect(logs[0]?.params[0]).toEqual({
       address: POOL_MANAGER,
@@ -240,11 +244,12 @@ describe("fetchEthereumV4PoolSearch", () => {
     const fetchImpl = bothEndpoints();
     const result = await run({ fetchImpl, terms: ["wbtc", "dai"] });
     const [, ...chain] = requestsMade(fetchImpl);
-    const requests = chain.flatMap((request) => request.body as { method: string }[]);
+    const requests = chain.flatMap((request) => request.body as { method: string; params: [{ data?: string }] }[]);
+    const aggregate = requests.find((request) => request.method === "eth_call");
 
     expect(result.status === "success" && result.data.matches.map((match) => match.pool.id)).toEqual([OTHER_POOL_ID]);
     expect(result.status === "success" && result.data.matches[0]?.state).not.toBeNull();
-    expect(requests.filter((request) => request.method === "eth_call")).toHaveLength(2);
+    expect(decodeAggregate3Calls(aggregate?.params[0].data ?? "")).toHaveLength(2);
     expect(requests.filter((request) => request.method === "eth_getLogs")).toHaveLength(0);
   });
 
