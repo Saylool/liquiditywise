@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { StatedSwapFee } from "./uniswap";
+
 /*
  * What a pool actually charged, measured rather than declared.
  *
@@ -143,28 +145,35 @@ export const RealizedFeeRateSchema = z
 export type RealizedFeeRate = z.infer<typeof RealizedFeeRateSchema>;
 
 /**
- * What the measurement says about the rate the pool declares.
+ * What the measurement says about the rate the pool states.
+ *
+ * The stated rate is what a swap pays by the pool's own terms — for a v4 pool
+ * the key's fee and the protocol's cut combined, as the chain combines them,
+ * which is why it is a range: the cut may differ by direction. It is compared
+ * against because it is what the measured rate is a measurement *of*: the
+ * indexer's fees are the total a swapper paid, providers' share and protocol's
+ * together.
  *
  * A verdict rather than a boolean, because the three cases call for three
  * different sentences and collapsing them would lose the one that matters. A
- * pool with no declared rate at all — v4's dynamic fee, where the PoolKey
+ * pool with no stated rate at all — v4's dynamic fee, where the PoolKey
  * carries a sentinel instead of a number — is not a pool that "disagrees": there
  * is nothing to disagree with, and the measurement is the only rate there is.
  */
-export type DeclaredFeeVerdict =
+export type StatedFeeVerdict =
   | {
-      /** Every measured day matched the declared rate. */
+      /** Every measured day fell within the stated rate. */
       readonly kind: "matches";
-      readonly declaredPpm: number;
+      readonly stated: StatedSwapFee;
     }
   | {
-      /** At least one day did not. The declared rate is not what swappers paid. */
+      /** At least one day did not. The stated rate is not what swappers paid. */
       readonly kind: "differs";
-      readonly declaredPpm: number;
+      readonly stated: StatedSwapFee;
       /** How many of the measured days departed from it. */
       readonly daysDiffering: number;
     }
   | {
-      /** The pool declares no fixed rate; its hook sets one per swap. */
-      readonly kind: "none-declared";
+      /** The pool states no fixed rate; its hook sets one per swap. */
+      readonly kind: "none-stated";
     };

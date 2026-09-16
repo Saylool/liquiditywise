@@ -1,16 +1,19 @@
 import {
+  Bytes32HexSchema,
   compareV4PairPools,
   type DataFailureNotice,
   type DataResult,
-  EvmAddressSchema,
   type V4PairPool,
   type V4PairPools,
   V4PairPoolsSchema,
-  type V4Pool,
 } from "../../schemas";
+
 import type { V4PoolState } from "./ethereumV4PoolState";
 import { normalizeV4PoolCard } from "./v4PoolCardAdapter";
+import { chainReadingFor } from "./v4PoolChainReading";
+import type { V4PoolKey } from "./v4PoolKey";
 import { V4PairPoolsResponseSchema } from "./v4PoolCardRawResponse";
+import { poolRefs, readPoolManager, type V4PoolRef } from "./v4PoolSearchAdapter";
 import type { PairFeeTiersDiagnostic } from "./v3PairFeeTiersAdapter";
 
 const MALFORMED = "market-data-malformed";
@@ -23,36 +26,28 @@ const unavailable = (notice: DataFailureNotice): DataResult<V4PairPools> => ({
 });
 
 /**
- * The verified pools in a pair payload, and the PoolManager to ask about them.
- *
- * The same card normaliser runs here and again below, so a pool the chain was
- * asked about is exactly a pool that can appear in the answer.
+ * The pools a pair payload names — id and creation block — and the PoolManager
+ * to ask about them. Only that much is read here, because a pool cannot be
+ * verified until the chain has answered for its key.
  */
 export const readV4PairPools = (
   payload: unknown,
-): { readonly pools: readonly V4Pool[]; readonly poolManager: string | null } => {
+): { readonly pools: readonly V4PoolRef[]; readonly poolManager: string | null } => {
   const parsed = V4PairPoolsResponseSchema.safeParse(payload);
   if (!parsed.success || parsed.data.data == null) return { pools: [], poolManager: null };
 
-  const pools: V4Pool[] = [];
-  const seen = new Set<string>();
-  for (const raw of parsed.data.data.pools) {
-    const card = normalizeV4PoolCard(raw);
-    if (card !== null && !seen.has(card.pool.id)) {
-      seen.add(card.pool.id);
-      pools.push(card.pool);
-    }
-  }
-  /* Validated rather than trusted: it decides whose storage the next request reads. */
-  const manager = EvmAddressSchema.safeParse(parsed.data.data.poolManagers[0]?.id);
-
-  return { pools, poolManager: manager.success ? manager.data : null };
+  return {
+    pools: poolRefs(parsed.data.data.pools),
+    poolManager: readPoolManager(parsed.data.data.poolManagers),
+  };
 };
 
 export type NormalizeV4PairPoolsInput = {
   readonly payload: unknown;
-  /** Each pool's liquidity and price from the PoolManager, keyed by pool id. */
+  /** Each pool's liquidity, price and fees from the PoolManager, keyed by pool id. */
   readonly states: ReadonlyMap<string, V4PoolState>;
+  /** Each pool's key from its Initialize log, keyed by pool id. Decides the fee. */
+  readonly keys: ReadonlyMap<string, V4PoolKey>;
   /** The v4 pool being read, or `null` when this list sits beside a v3 pool's page. */
   readonly analysedPoolId: string | null;
   readonly fetchedAt: string;
@@ -70,6 +65,7 @@ export type NormalizeV4PairPoolsInput = {
 export const normalizeV4PairPools = ({
   payload,
   states,
+  keys,
   analysedPoolId,
   fetchedAt,
   onDiagnostic,
@@ -85,15 +81,22 @@ export const normalizeV4PairPools = ({
   const byId = new Map<string, V4PairPool>();
   let dropped = 0;
   for (const raw of data.pools) {
-    const card = normalizeV4PoolCard(raw);
+    const id = Bytes32HexSchema.safeParse(raw.id);
+    const card = id.success
+      ? normalizeV4PoolCard(raw, chainReadingFor(id.data, keys, states))
+      : null;
     if (card === null) {
       dropped += 1;
       continue;
     }
     if (!byId.has(card.pool.id)) {
+      const state = states.get(card.pool.id);
       byId.set(card.pool.id, {
         pool: card.pool,
-        state: states.get(card.pool.id) ?? null,
+        state:
+          state === undefined
+            ? null
+            : { liquidity: state.liquidity, sqrtPriceX96: state.sqrtPriceX96 },
         ethPrice: card.ethPrice,
       });
     }

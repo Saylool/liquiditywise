@@ -64,7 +64,7 @@ describe("fetchEthereumV4PoolStates", () => {
   it("reads each pool's liquidity and price out of the PoolManager's storage", async () => {
     const states = await run();
 
-    expect(states.get(poolId(1))).toEqual({
+    expect(states.get(poolId(1))).toMatchObject({
       liquidity: "871594992723282798",
       sqrtPriceX96: SQRT_PRICE.toString(),
     });
@@ -145,7 +145,24 @@ describe("fetchEthereumV4PoolStates", () => {
     expect(vi.mocked(fetchImpl).mock.calls.length).toBe(2);
   });
 
-  it("answers with nothing when a batch as a whole fails", async () => {
+  /* A refused batch costs its pools their state, and the other batches stand. */
+  it("keeps what the other batches answered when one is refused", async () => {
+    const answering = holding(1n);
+    let call = 0;
+    const flaky: FetchLike = async (url, init) => {
+      call += 1;
+      return call === 1 ? new Response("nope", { status: 429 }) : answering(url, init);
+    };
+    const poolIds = Array.from({ length: ETH_CALL_BATCH_SIZE }, (_u, index) => poolId(index + 1));
+    const states = await run({ poolIds, fetchImpl: flaky });
+
+    // Two words per pool: the first batch held the first twelve pools and half of the thirteenth.
+    expect(states.size).toBe(ETH_CALL_BATCH_SIZE - Math.ceil(ETH_CALL_BATCH_SIZE / 2));
+    expect(states.has(poolId(1))).toBe(false);
+    expect(states.has(poolId(ETH_CALL_BATCH_SIZE))).toBe(true);
+  });
+
+  it("answers with nothing when every batch fails", async () => {
     const states = await run({
       fetchImpl: vi.fn(async () => new Response("nope", { status: 500 })),
     });

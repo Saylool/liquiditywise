@@ -22,6 +22,7 @@ export const getEthereumV4Pool = async (poolId: string): Promise<DataResult<V4Po
       poolId,
       apiKey: process.env.THE_GRAPH_API_KEY,
       subgraphId: process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID,
+      rpcUrl: process.env.ETHEREUM_RPC_URL,
       fetchImpl: loggingFetch(LABEL),
     }),
   );

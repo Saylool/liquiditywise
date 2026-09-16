@@ -169,6 +169,9 @@ const en = {
     intro:
       "The fee the pool states is one number. This is what swappers actually paid, divided back out of the same days as the figures above: a day's fees over that day's volume. It needs no extra request and nothing from the hook.",
     declared: "Stated fee",
+    /** How a stated fee was arrived at, where the protocol takes a cut on top. */
+    statedNote: (lp: string, protocol: string) =>
+      `${lp} to liquidity providers and ${protocol} to the protocol, combined the way the PoolManager charges them — which is what a swapper pays, and what the fees above are made of.`,
     noDeclared: "None",
     noDeclaredNote: "This pool's key carries no fee. Its hook sets one per swap.",
     median: "Typical day",
@@ -354,9 +357,32 @@ const en = {
     poolId: "Pool id",
     pair: "Currencies",
     fee: "Fee",
+    /*
+     * Read from the pool's own key on the chain — the log that created it —
+     * and never from the indexer, whose figure was measured to be the total
+     * fee of the latest swap rather than the key's fee.
+     */
+    feeNote: (swap: string, lp: string, protocol: string) =>
+      `Read from the pool's own key on the chain. A swap pays ${swap}: this ${lp} to liquidity providers, and ${protocol} to the protocol on top.`,
+    feeNoteNoProtocol:
+      "Read from the pool's own key on the chain. The protocol takes nothing on top, so this is what a swap pays.",
     dynamicFee: "Set by the hook, per swap",
     dynamicFeeNote:
       "This pool's key carries the dynamic-fee flag instead of a fee, so what a swap costs is decided by the hook at the moment it happens. This read did not observe one, and there is no fee here to report.",
+    /*
+     * A list row for a pool whose key the chain did not answer for. The fee is
+     * a fact about the pool that this read does not have, and nothing else —
+     * not the indexer's figure — stands in for it.
+     */
+    feeUnread: "fee not read",
+    feeUnreadNote:
+      "The pool's fee lives in the key it was created with, on the chain, and this read could not fetch it. Nothing else is a substitute for it.",
+    protocolFee: "Protocol fee",
+    protocolFeeNone: "None",
+    protocolFeeNote:
+      "Taken by the protocol on top of the pool's fee, on every swap. Set by governance, and read from the pool's state on the chain.",
+    protocolFeeByDirection: (token0: string, token1: string) =>
+      `Differs by direction: the first when ${token0} is sold, the second when ${token1} is.`,
     priceStep: "Price step",
     priceStepNote: (spacing: string) =>
       `The finest step at which a position's edges can be placed in this pool — its tick spacing of ${spacing}. Part of the pool's key in v4, so unlike v3 it needs no separate contract call.`,
@@ -471,6 +497,9 @@ const en = {
     moreNotShown: (count: string) =>
       `${count} more are not shown. The ones above are the most traded of them, in the order the data source reports — which is a claim about how busy a pool is and about nothing else.`,
     analyse: "Analyse this pool",
+    /** Under the v4 list: where each row's fee came from, and why the row can say it was not read. */
+    v4FeeNote:
+      "Each pool's fee is read from the key it was created with, on the chain, rather than from the data source — whose fee figure was measured to be the total a swap last paid, protocol cut included, and not the pool's own fee. A row whose key could not be read says so.",
 
     unavailableHeading: "The search could not be run",
     rejected: {
@@ -498,6 +527,9 @@ const en = {
     poolSummary: (protocol: string, fee: string) =>
       `Uniswap ${protocol} · Ethereum mainnet · ${fee}`,
     feePerSwap: (fee: string) => `${fee} fee on every swap`,
+    /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
+    feePlusProtocol: (fee: string, protocol: string) =>
+      `${fee} fee on every swap, plus ${protocol} to the protocol`,
     /** Stands where the fee would, for a v4 pool whose hook sets one per swap. */
     noDeclaredFee: "fee set by its hook on every swap",
     caveatsHeading: (count: number) =>
@@ -912,6 +944,8 @@ const tr: Dictionary = {
     intro:
       "Havuzun beyan ettiği komisyon tek bir sayı. Buradaki ise takas yapanların gerçekte ödediği: yukarıdaki sayılarla aynı günlerden geri bölünerek çıkarıldı — bir günün komisyonu, o günün hacmine. Fazladan istek götürmüyor, hook'tan bir şey beklemiyor.",
     declared: "Beyan edilen komisyon",
+    statedNote: (lp: string, protocol: string) =>
+      `Likidite sağlayıcılarına ${lp}, protokole ${protocol}; PoolManager'ın topladığı şekilde birleştirildi — takas yapanın ödediği bu, yukarıdaki komisyonlar da bundan oluşuyor.`,
     noDeclared: "Yok",
     noDeclaredNote: "Bu havuzun anahtarında komisyon yok. Oranı hook'u her takasta belirliyor.",
     median: "Tipik gün",
@@ -1062,9 +1096,22 @@ const tr: Dictionary = {
     poolId: "Havuz kimliği",
     pair: "Para birimleri",
     fee: "Komisyon",
+    feeNote: (swap: string, lp: string, protocol: string) =>
+      `Havuzun zincirdeki kendi anahtarından okundu. Bir takas ${swap} öder: bu ${lp} likidite sağlayıcılarına, üstüne ${protocol} protokole.`,
+    feeNoteNoProtocol:
+      "Havuzun zincirdeki kendi anahtarından okundu. Protokol üstüne bir şey almıyor; yani bir takasın ödediği tam olarak bu.",
     dynamicFee: "Hook belirliyor, her takasta",
     dynamicFeeNote:
       "Bu havuzun anahtarı komisyon yerine dinamik komisyon bayrağını taşıyor; yani bir takasın ne tutacağına, olduğu anda hook karar veriyor. Bu okuma bir tanesini gözlemlemedi ve burada bildirilecek bir komisyon yok.",
+    feeUnread: "komisyon okunamadı",
+    feeUnreadNote:
+      "Havuzun komisyonu, oluşturulduğu anahtarın içinde, zincirde duruyor; bu okuma onu getiremedi. Başka hiçbir şey onun yerini tutmaz.",
+    protocolFee: "Protokol komisyonu",
+    protocolFeeNone: "Yok",
+    protocolFeeNote:
+      "Protokol tarafından havuzun komisyonunun üstüne, her takasta alınır. Yönetişim belirler; havuzun zincirdeki durumundan okundu.",
+    protocolFeeByDirection: (token0: string, token1: string) =>
+      `Yöne göre değişiyor: ilki ${token0} satılırken, ikincisi ${token1} satılırken.`,
     priceStep: "Fiyat adımı",
     priceStepNote: (spacing: string) =>
       `Bu havuzda bir pozisyonun kenarlarının yerleştirilebildiği en ince adım — tick adımı ${spacing}. v4'te havuzun anahtarının parçası; yani v3'ten farklı olarak ayrı bir sözleşme çağrısı gerektirmiyor.`,
@@ -1150,6 +1197,8 @@ const tr: Dictionary = {
     moreNotShown: (count: string) =>
       `${count} tanesi daha gösterilmiyor. Yukarıdakiler bunların en çok işlem görenleri, veri kaynağının bildirdiği sırayla — bu, bir havuzun ne kadar yoğun olduğuna dair bir iddiadır ve başka hiçbir şeye dair değildir.`,
     analyse: "Bu havuzu analiz et",
+    v4FeeNote:
+      "Her havuzun komisyonu, veri kaynağından değil, havuzun oluşturulduğu anahtardan zincirde okundu — kaynağın komisyon rakamı ölçüldüğünde, havuzun kendi komisyonu değil, bir takasın en son ödediği toplam (protokol payı dahil) çıktı. Anahtarı okunamayan satır bunu söylüyor.",
 
     unavailableHeading: "Arama yapılamadı",
     rejected: {
@@ -1177,6 +1226,8 @@ const tr: Dictionary = {
     poolSummary: (protocol: string, fee: string) =>
       `Uniswap ${protocol} · Ethereum mainnet · ${fee}`,
     feePerSwap: (fee: string) => `her takasta ${fee} komisyon`,
+    feePlusProtocol: (fee: string, protocol: string) =>
+      `her takasta ${fee} komisyon, artı protokole ${protocol}`,
     noDeclaredFee: "komisyonu her takasta hook'u belirliyor",
     caveatsHeading: (count: number) =>
       count === 1

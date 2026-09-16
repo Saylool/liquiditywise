@@ -37,6 +37,7 @@ const match = ({
     token1: { chainId: 1, address: WETH, symbol: symbols[1], decimals: 18 },
     tickSpacing: 10,
     fee: { kind: "static", feePpm: 250 },
+    protocolFee: null,
     hookAddress: null,
   },
   /* USDC per WETH ≈ 2500: sqrt(1/2500 · 10^12) · 2^96. */

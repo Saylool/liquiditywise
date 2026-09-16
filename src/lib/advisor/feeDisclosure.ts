@@ -1,4 +1,11 @@
-import { alterSwapEconomics, declaredFeePpm, type Pool } from "../../schemas";
+import {
+  alterSwapEconomics,
+  lpFeePpm,
+  type Pool,
+  statedSwapFee,
+  type StatedSwapFee,
+  type V4ProtocolFee,
+} from "../../schemas";
 
 /*
  * What this application is willing to say about a pool's fees.
@@ -10,8 +17,18 @@ import { alterSwapEconomics, declaredFeePpm, type Pool } from "../../schemas";
  */
 
 export type FeeDisclosure = {
-  /** The rate the pool states, or `null` when its hook sets one per swap. */
-  readonly declaredPpm: number | null;
+  /** The fee that goes to liquidity providers, or `null` when nothing fixed says. */
+  readonly lpFeePpm: number | null;
+  /**
+   * The protocol's cut on top of it, per direction, or `null` where there is
+   * none to speak of: every v3 pool, and a v4 pool whose state was not read.
+   */
+  readonly protocolFee: V4ProtocolFee | null;
+  /**
+   * What a swap pays by the pool's own terms — the two combined the way the
+   * chain combines them — or `null` when its hook sets the fee per swap.
+   */
+  readonly statedSwapFee: StatedSwapFee | null;
   /**
    * Whether this pool's hook holds a permission that lets it change what a swap
    * costs or pays.
@@ -50,7 +67,9 @@ export const feeDisclosureFor = (pool: Pool): FeeDisclosure => {
     pool.protocolVersion === "v4" && alterSwapEconomics(pool.hookAddress);
 
   return {
-    declaredPpm: declaredFeePpm(pool),
+    lpFeePpm: lpFeePpm(pool),
+    protocolFee: pool.protocolVersion === "v4" ? pool.protocolFee : null,
+    statedSwapFee: statedSwapFee(pool),
     hookMayAlterSwaps,
     mayAttributeFeesToRange: !hookMayAlterSwaps,
   };

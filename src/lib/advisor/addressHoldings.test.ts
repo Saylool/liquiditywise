@@ -6,7 +6,7 @@ import type {
   V4PoolCandidateList,
 } from "../../schemas";
 import type { AddressBalances } from "../uniswap/ethereumBalances";
-import { composeAddressHoldings } from "./addressHoldings";
+import { composeAddressHoldings, displayedV4Pools, withV4ChainReadings } from "./addressHoldings";
 
 const ADDRESS = `0x${"a".repeat(40)}`;
 const FETCHED_AT = "2026-09-15T12:00:00.000Z";
@@ -40,6 +40,7 @@ const v4Pool = (id: string, hookAddress: string | null = null) => ({
   token1: USDC,
   tickSpacing: 10,
   fee: { kind: "static" as const, feePpm: 625 },
+  protocolFee: null,
   hookAddress,
 });
 
@@ -54,7 +55,13 @@ const v3List = (): DataResult<PoolCandidateList> => ({
 
 const v4List = (): DataResult<V4PoolCandidateList> => ({
   status: "success",
-  data: { pools: [v4Pool(V4_A)], fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" },
+  data: {
+    pools: [v4Pool(V4_A)],
+    poolManager: null,
+    createdAtBlockNumbers: { [V4_A]: "21688329" },
+    fetchedAt: FETCHED_AT,
+    source: "uniswap-v4-subgraph",
+  },
 });
 
 const unavailable = <T,>(): DataResult<T> => ({
@@ -194,5 +201,69 @@ describe("composeAddressHoldings", () => {
 
   it("carries the count of currencies checked, for the page to state", () => {
     expect(answered(compose({ balances: balances([], 177) })).tokensChecked).toBe(177);
+  });
+});
+
+/*
+ * The chain, read after the fact for the v4 pools a page will show. The
+ * candidate list carries every fee unread; these two are how the shown pools
+ * get theirs.
+ */
+describe("displayedV4Pools", () => {
+  const entry = (id: string, heldSides: "both" | "token0" | "token1", hookAddress: string | null = null) => ({
+    pool: v4Pool(id, hookAddress),
+    heldSides,
+  });
+  const holdingsWith = (pools: ReturnType<typeof entry>[]) =>
+    ({ ...answered(compose()), pools }) as ReturnType<typeof answered>;
+
+  it("names every pool held on both sides, and the one-sided ones up to the display cut", () => {
+    const both = [entry(`0x${"01".repeat(32)}`, "both"), entry(`0x${"02".repeat(32)}`, "both")];
+    const one = Array.from({ length: 15 }, (_u, index) => entry(`0x${(index + 16).toString(16).padStart(64, "0")}`, "token0"));
+    const shown = displayedV4Pools(holdingsWith([...both, ...one]));
+
+    expect(shown.map((pool) => pool.id)).toEqual([...both, ...one.slice(0, 12)].map((e) => e.pool.id));
+  });
+
+  it("leaves v3 pools out, which the chain is not asked about here", () => {
+    const shown = displayedV4Pools(answered(compose()));
+
+    expect(shown.every((pool) => pool.protocolVersion === "v4")).toBe(true);
+    expect(shown.map((pool) => pool.id)).toEqual([V4_A]);
+  });
+});
+
+describe("withV4ChainReadings", () => {
+  const cut = (ppm: number) => ({ zeroForOnePpm: ppm, oneForZeroPpm: ppm });
+
+  it("settles a hookless pool's fee from its state", () => {
+    const applied = withV4ChainReadings(answered(compose()), new Map([[V4_A, { key: null, fees: { lpFeePpm: 500, protocolFee: cut(125) } }]]));
+
+    const pool = applied?.pools.find((entry) => entry.pool.id === V4_A)?.pool;
+    expect(pool?.protocolVersion === "v4" && pool.fee).toEqual({ kind: "static", feePpm: 500 });
+    expect(pool?.protocolVersion === "v4" && pool.protocolFee).toEqual(cut(125));
+  });
+
+  it("leaves a pool the chain answered nothing for as it was", () => {
+    const before = answered(compose());
+
+    expect(withV4ChainReadings(before, new Map())).toEqual(before);
+  });
+
+  /* A reading that contradicts the indexer's record drops the pool, as it would from any list. */
+  it("drops a pool whose key is not its own", () => {
+    const key = { currency0: ETH.address, currency1: USDC.address, fee: 500, tickSpacing: 60, hooks: `0x${"0".repeat(40)}` };
+    const applied = withV4ChainReadings(answered(compose()), new Map([[V4_A, { key, fees: null }]]));
+
+    expect(applied?.pools.some((entry) => entry.pool.id === V4_A)).toBe(false);
+  });
+
+  it("keeps the v3 pools untouched", () => {
+    const before = answered(compose());
+    const applied = withV4ChainReadings(before, new Map([[V4_A, { key: null, fees: { lpFeePpm: 500, protocolFee: cut(0) } }]]));
+
+    expect(applied?.pools.filter((entry) => entry.pool.protocolVersion === "v3")).toEqual(
+      before.pools.filter((entry) => entry.pool.protocolVersion === "v3"),
+    );
   });
 });

@@ -56,7 +56,11 @@ const PairRow = ({ match, t, locale }: { match: V4PoolSearchMatch; t: Dictionary
           </span>
           <span className="font-mono text-xs text-muted">
             {t.search.feeTier}{" "}
-            {pool.fee.kind === "static" ? formatFeePpm(pool.fee.feePpm, locale) : t.v4.dynamicFee}
+            {pool.fee.kind === "static"
+              ? formatFeePpm(pool.fee.feePpm, locale)
+              : pool.fee.kind === "dynamic"
+                ? t.v4.dynamicFee
+                : t.v4.feeUnread}
           </span>
         </div>
 
@@ -134,6 +138,7 @@ export function V4PoolSearchResults({
             <p>{t.search.symbolWarning}</p>
             <p>{t.search.v4Ordering}</p>
             <p>{t.search.v4DepthNote}</p>
+            <p>{t.search.v4FeeNote}</p>
             <p>{t.search.windowing}</p>
           </div>
         </>

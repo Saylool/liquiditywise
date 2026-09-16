@@ -20,6 +20,7 @@ const v4Pool = {
   token1: USDC,
   tickSpacing: 10,
   fee: { kind: "static", feePpm: 625 },
+  protocolFee: null,
   hookAddress: null,
 };
 
@@ -86,22 +87,22 @@ describe("AddressHoldingsSchema", () => {
 describe("V4PoolCandidateListSchema", () => {
   it("accepts a list of verified v4 pools from the v4 subgraph", () => {
     expect(
-      V4PoolCandidateListSchema.safeParse({ pools: [v4Pool], fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" }).success,
+      V4PoolCandidateListSchema.safeParse({ pools: [v4Pool], poolManager: null, createdAtBlockNumbers: {}, fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" }).success,
     ).toBe(true);
   });
 
   it("refuses the v3 source and an empty list", () => {
     expect(
-      V4PoolCandidateListSchema.safeParse({ pools: [v4Pool], fetchedAt: FETCHED_AT, source: "uniswap-v3-subgraph" }).success,
+      V4PoolCandidateListSchema.safeParse({ pools: [v4Pool], poolManager: null, createdAtBlockNumbers: {}, fetchedAt: FETCHED_AT, source: "uniswap-v3-subgraph" }).success,
     ).toBe(false);
     expect(
-      V4PoolCandidateListSchema.safeParse({ pools: [], fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" }).success,
+      V4PoolCandidateListSchema.safeParse({ pools: [], poolManager: null, createdAtBlockNumbers: {}, fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" }).success,
     ).toBe(false);
   });
 
   it("refuses the same pool twice", () => {
     expect(
-      V4PoolCandidateListSchema.safeParse({ pools: [v4Pool, v4Pool], fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" }).success,
+      V4PoolCandidateListSchema.safeParse({ pools: [v4Pool, v4Pool], poolManager: null, createdAtBlockNumbers: {}, fetchedAt: FETCHED_AT, source: "uniswap-v4-subgraph" }).success,
     ).toBe(false);
   });
 });

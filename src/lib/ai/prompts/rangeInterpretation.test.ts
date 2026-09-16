@@ -149,13 +149,14 @@ const V4_REF = { protocolVersion: "v4", chainId: 1, id: V4_ID } as const;
 const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
 const LIQUIDITY_HOOK = `0x${"1".repeat(36)}0800`;
 
-const v4Analysis = (hookAddress: string | null): PoolRangeAnalysis => {
+const v4Analysis = (hookAddress: string | null, protocolPpm = 0): PoolRangeAnalysis => {
   const v4Pool = {
     ...V4_REF,
     token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
     token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
     tickSpacing: 60,
     fee: { kind: "static", feePpm: 250 },
+    protocolFee: { zeroForOnePpm: protocolPpm, oneForZeroPpm: protocolPpm },
     hookAddress,
   } as unknown as V4Pool;
   const result = analysePoolRange({
@@ -194,11 +195,12 @@ describe("buildRangeInterpretationPrompt", () => {
     for (const label of [
       "Pair",
       /*
-       * "Declared fee", not "fee tier". A v4 pool's tier is what it was created
-       * with and its hook may charge something else on every swap, so the label
-       * has to stop the word standing for the rate.
+       * Named for who receives it, not "fee tier": a v4 pool's key fee is what
+       * providers get, the protocol's cut sits on top, and a hook may charge
+       * something else on every swap.
        */
-      "Declared fee",
+      "Fee to liquidity providers",
+      "What a swap pays, by the pool's own terms",
       "Price step between the edges a position may use",
       "Current price",
       "Typical daily move",
@@ -239,7 +241,7 @@ describe("buildRangeInterpretationPrompt", () => {
 
     expect(user).toContain("WHAT IT ACTUALLY CHARGED");
     expect(user).toContain("Rate actually charged, median day: 0.05%");
-    expect(user).toContain("Against the declared rate: different on");
+    expect(user).toContain("Against what the pool says a swap pays: different on");
   });
 
   /*
@@ -310,7 +312,8 @@ describe("buildRangeInterpretationPrompt", () => {
     const { user } = build();
 
     expect(user).not.toContain(POOL_ID);
-    expect(user).not.toContain("liquidity");
+    // The snapshot's raw liquidity figure, under any label.
+    expect(user).not.toMatch(/liquidity:/i);
     expect(user).not.toContain("987654321");
     expect(user).not.toContain("{");
   });
@@ -587,6 +590,33 @@ describe("the out-of-sample check, as the model is told about it", () => {
  * the address, the page prints the same list — and nothing about what the hook
  * does, who wrote it, or where it lives.
  */
+describe("buildRangeInterpretationPrompt and the fee", () => {
+  it("tells the model who receives the fee, what the protocol takes on top, and what a swap pays", () => {
+    const { user } = buildRangeInterpretationPrompt({ analysis: v4Analysis(null, 125), locale: "en", warnings: [] });
+
+    expect(user).toContain("- Fee to liquidity providers: 0.025%");
+    expect(user).toContain("- Fee to the protocol, taken on top: 0.0125%");
+    expect(user).toContain("- What a swap pays, by the pool's own terms: 0.0375%");
+  });
+
+  it("leaves the protocol's line out where it takes nothing", () => {
+    expect(buildV4(null).user).not.toContain("Fee to the protocol");
+    expect(build().user).not.toContain("Fee to the protocol");
+  });
+
+  it("says a dynamic pool's fee is the hook's to decide", () => {
+    const dynamic = v4Analysis(SWAP_HOOK);
+    const { user } = buildRangeInterpretationPrompt({
+      analysis: { ...dynamic, pool: { ...dynamic.pool, fee: { kind: "dynamic", currentFeePpm: null } } as PoolRangeAnalysis["pool"] },
+      locale: "en",
+      warnings: [],
+    });
+
+    expect(user).toContain("- Fee to liquidity providers: none fixed; this pool's hook sets the fee on each swap");
+    expect(user).toContain("- What a swap pays, by the pool's own terms: decided per swap by the hook");
+  });
+});
+
 describe("buildRangeInterpretationPrompt and the hook", () => {
   it("names the protocol", () => {
     expect(buildV4(null).user).toContain("Protocol: Uniswap v4");

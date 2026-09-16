@@ -1,10 +1,11 @@
 import {
   type DataFailureNotice,
   DECLARED_FEE_TOLERANCE,
-  type DeclaredFeeVerdict,
   type HistoricalPricePoint,
   type RealizedFeeRate,
   RealizedFeeRateSchema,
+  type StatedFeeVerdict,
+  type StatedSwapFee,
 } from "../../schemas";
 
 /*
@@ -23,7 +24,7 @@ export type RealizedFeeRateResult =
   | {
       readonly status: "success";
       readonly rate: RealizedFeeRate;
-      readonly verdict: DeclaredFeeVerdict;
+      readonly verdict: StatedFeeVerdict;
     }
   | { readonly status: "unavailable"; readonly notice: DataFailureNotice };
 
@@ -31,11 +32,13 @@ export type RealizedFeeRateInput = {
   /** The days to measure over. The caller decides the window. */
   readonly points: readonly HistoricalPricePoint[];
   /**
-   * The rate the pool says it charges, or `null` when it says nothing — which
-   * for a v4 dynamic-fee pool is the literal truth: the PoolKey carries a
-   * sentinel where the fee would be, and the hook decides per swap.
+   * What a swap pays by the pool's own terms — the LP fee and the protocol's
+   * cut combined as the chain combines them, a range when the cut differs by
+   * direction — or `null` when the pool says nothing, which for a v4
+   * dynamic-fee pool is the literal truth: the PoolKey carries a sentinel
+   * where the fee would be, and the hook decides per swap.
    */
-  readonly declaredPpm: number | null;
+  readonly stated: StatedSwapFee | null;
 };
 
 /**
@@ -72,11 +75,13 @@ const median = (ascending: readonly number[]): number => {
 
 /**
  * Relative comparison, so the tolerance means the same thing at 1 ppm and at
- * 10000 ppm. A declared rate of zero — which v4 permits — compares absolutely,
- * since there is no magnitude to scale by.
+ * 10000 ppm. A stated rate of zero — which v4 permits — compares absolutely,
+ * since there is no magnitude to scale by. Inside the stated range is a match:
+ * the range is one figure wide unless the protocol's cut differs by direction.
  */
-const matchesDeclared = (measuredPpm: number, declaredPpm: number): boolean =>
-  Math.abs(measuredPpm - declaredPpm) <= DECLARED_FEE_TOLERANCE * Math.max(1, declaredPpm);
+const matchesStated = (measuredPpm: number, stated: StatedSwapFee): boolean =>
+  measuredPpm >= stated.lowestPpm - DECLARED_FEE_TOLERANCE * Math.max(1, stated.lowestPpm) &&
+  measuredPpm <= stated.highestPpm + DECLARED_FEE_TOLERANCE * Math.max(1, stated.highestPpm);
 
 /**
  * Measures what a pool actually charged over the days given, and says whether
@@ -88,7 +93,7 @@ const matchesDeclared = (measuredPpm: number, declaredPpm: number): boolean =>
  */
 export const calculateRealizedFeeRate = ({
   points,
-  declaredPpm,
+  stated,
 }: RealizedFeeRateInput): RealizedFeeRateResult => {
   const rates: number[] = [];
   let totalVolumeUsd = 0;
@@ -134,18 +139,18 @@ export const calculateRealizedFeeRate = ({
   const verified = RealizedFeeRateSchema.safeParse(candidate);
   if (!verified.success) return { status: "unavailable", notice: UNMEASURABLE };
 
-  if (declaredPpm === null) {
-    return { status: "success", rate: verified.data, verdict: { kind: "none-declared" } };
+  if (stated === null) {
+    return { status: "success", rate: verified.data, verdict: { kind: "none-stated" } };
   }
 
-  const daysDiffering = rates.filter((rate) => !matchesDeclared(rate, declaredPpm)).length;
+  const daysDiffering = rates.filter((rate) => !matchesStated(rate, stated)).length;
 
   return {
     status: "success",
     rate: verified.data,
     verdict:
       daysDiffering === 0
-        ? { kind: "matches", declaredPpm }
-        : { kind: "differs", declaredPpm, daysDiffering },
+        ? { kind: "matches", stated }
+        : { kind: "differs", stated, daysDiffering },
   };
 };

@@ -5,9 +5,11 @@ import {
   V4_PAIR_POOL_FETCH_LIMIT,
   type V4PairPools,
 } from "../../schemas";
+import { fetchEthereumV4PoolKeys } from "./ethereumV4PoolKeys";
 import { fetchEthereumV4PoolStates } from "./ethereumV4PoolState";
 import { V4_POOL_CARD_FRAGMENT } from "./v4PoolCardRawResponse";
 import { normalizeV4PairPools, readV4PairPools } from "./v4PairPoolsAdapter";
+import { hookedRefs } from "./v4PoolSearchAdapter";
 import type { PairFeeTiersDiagnostic } from "./v3PairFeeTiersAdapter";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
@@ -100,18 +102,30 @@ export const fetchEthereumV4PairPools = async (
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
+  /* The key decides each pool's fee; the state decides the order. Read together. */
   const { pools, poolManager } = readV4PairPools(transport.payload);
-  const states = await fetchEthereumV4PoolStates({
-    poolIds: pools.map((pool) => pool.id),
+  const chain = {
     poolManager,
     rpcUrl: request.rpcUrl,
     fetchImpl: request.fetchImpl,
     timeoutMs: request.timeoutMs,
-  });
+  };
+  /*
+   * The creation log is read for hooked pools only. A pool with no hook cannot
+   * be dynamic, so the fee its state stores is its key's — and the state is
+   * read for every pool anyway, for the depth. Logs are the costly read on the
+   * endpoint's budget, and this keeps them to the pools whose fee kind they
+   * alone can settle.
+   */
+  const [keys, states] = await Promise.all([
+    fetchEthereumV4PoolKeys({ pools: hookedRefs(pools), ...chain }),
+    fetchEthereumV4PoolStates({ poolIds: pools.map((pool) => pool.id), ...chain }),
+  ]);
 
   return normalizeV4PairPools({
     payload: transport.payload,
     states,
+    keys,
     analysedPoolId: analysed.data,
     fetchedAt: request.now().toISOString(),
     onDiagnostic: request.onDiagnostic,

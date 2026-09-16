@@ -94,7 +94,7 @@ const analyse = async (poolId: string) => {
 
   const [pool, snapshot, history] = await Promise.all([
     protocolVersion === "v4"
-      ? fetchEthereumV4Pool({ ...graph, poolId })
+      ? fetchEthereumV4Pool({ ...graph, poolId, rpcUrl: process.env.ETHEREUM_RPC_URL })
       : fetchEthereumV3Pool({ ...graph, poolAddress: poolId, rpcUrl: process.env.ETHEREUM_RPC_URL }),
     fetchEthereumPoolMarketSnapshot(shared),
     fetchEthereumDailyPriceHistory(shared),

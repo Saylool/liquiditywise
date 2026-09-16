@@ -6,9 +6,58 @@ import {
   alterSwapEconomics,
   type DataResult,
   hookPermissionsOf,
+  swapFeePpm,
   type V4Pool,
+  type V4ProtocolFee,
   ZERO_ADDRESS,
 } from "../schemas";
+
+/** The protocol's cut as one figure, or two when it differs by direction. */
+const formatProtocolFee = (fee: V4ProtocolFee, locale: Locale): string =>
+  fee.zeroForOnePpm === fee.oneForZeroPpm
+    ? formatFeePpm(fee.zeroForOnePpm, locale)
+    : `${formatFeePpm(fee.zeroForOnePpm, locale)} / ${formatFeePpm(fee.oneForZeroPpm, locale)}`;
+
+/** What a swap pays, likewise: the key's fee and the cut combined per direction. */
+const formatSwapFee = (lpFee: number, fee: V4ProtocolFee, locale: Locale): string => {
+  const zeroForOne = swapFeePpm(lpFee, fee.zeroForOnePpm);
+  const oneForZero = swapFeePpm(lpFee, fee.oneForZeroPpm);
+
+  return zeroForOne === oneForZero
+    ? formatFeePpm(zeroForOne, locale)
+    : `${formatFeePpm(zeroForOne, locale)} / ${formatFeePpm(oneForZero, locale)}`;
+};
+
+/**
+ * The fee figure and its note, for the three states a key can be in.
+ *
+ * Static: the key's fee, and what a swap pays once the protocol's cut is on
+ * top. Dynamic: the hook decides, and nothing is shown as current. Unread: the
+ * chain did not answer, and nothing stands in — never the indexer's figure.
+ */
+const feeFigure = (
+  pool: V4Pool,
+  t: Dictionary,
+  locale: Locale,
+): { readonly value: string; readonly note: string } => {
+  const { fee, protocolFee } = pool;
+  if (fee.kind === "dynamic") return { value: t.v4.dynamicFee, note: t.v4.dynamicFeeNote };
+  if (fee.kind === "unread") return { value: t.v4.feeUnread, note: t.v4.feeUnreadNote };
+
+  const value = formatFeePpm(fee.feePpm, locale);
+  if (protocolFee === null || (protocolFee.zeroForOnePpm === 0 && protocolFee.oneForZeroPpm === 0)) {
+    return { value, note: t.v4.feeNoteNoProtocol };
+  }
+
+  return {
+    value,
+    note: t.v4.feeNote(
+      formatSwapFee(fee.feePpm, protocolFee, locale),
+      value,
+      formatProtocolFee(protocolFee, locale),
+    ),
+  };
+};
 
 /**
  * What a v4 pool is, and what its hook is permitted to do.
@@ -75,15 +124,27 @@ export function V4PoolIdentity({
 
         <dl className="grid gap-5 sm:grid-cols-2">
           <Figure label={t.v4.poolId} value={pool.id} />
-          <Figure
-            label={t.v4.fee}
-            value={
-              pool.fee.kind === "dynamic"
-                ? t.v4.dynamicFee
-                : formatFeePpm(pool.fee.feePpm, locale)
-            }
-            {...(pool.fee.kind === "dynamic" ? { note: t.v4.dynamicFeeNote } : {})}
-          />
+          <Figure label={t.v4.fee} {...feeFigure(pool, t, locale)} />
+          {/*
+           * The protocol's cut is its own figure, because it is its own fact:
+           * governance sets it, the key does not carry it, and it is what turns
+           * a 0.05% pool into a 0.0625% swap.
+           */}
+          {pool.protocolFee === null ? null : (
+            <Figure
+              label={t.v4.protocolFee}
+              value={
+                pool.protocolFee.zeroForOnePpm === 0 && pool.protocolFee.oneForZeroPpm === 0
+                  ? t.v4.protocolFeeNone
+                  : formatProtocolFee(pool.protocolFee, locale)
+              }
+              note={
+                pool.protocolFee.zeroForOnePpm === pool.protocolFee.oneForZeroPpm
+                  ? t.v4.protocolFeeNote
+                  : `${t.v4.protocolFeeNote} ${t.v4.protocolFeeByDirection(pool.token0.symbol, pool.token1.symbol)}`
+              }
+            />
+          )}
           {/*
            * As a percentage, which is what the spacing means to a person: how
            * finely a position's edges can be placed. The tick count is in the

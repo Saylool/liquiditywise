@@ -33,8 +33,13 @@ const measured = (result: RealizedFeeRateResult) => {
   return result;
 };
 
-const rateOf = (points: readonly HistoricalPricePoint[], declaredPpm: number | null = null) =>
-  measured(calculateRealizedFeeRate({ points, declaredPpm }));
+/** A stated fee that is one figure: the protocol's cut the same in both directions. */
+const statedAt = (ppm: number) => ({ lowestPpm: ppm, highestPpm: ppm });
+
+const rateOf = (points: readonly HistoricalPricePoint[], statedPpm: number | null = null) =>
+  measured(
+    calculateRealizedFeeRate({ points, stated: statedPpm === null ? null : statedAt(statedPpm) }),
+  );
 
 describe("calculateRealizedFeeRate", () => {
   it("divides the rate out of a day's fees and volume", () => {
@@ -114,21 +119,21 @@ describe("calculateRealizedFeeRate", () => {
   });
 
   it("says nothing rather than zero when no day can be measured", () => {
-    const result = calculateRealizedFeeRate({ points: [day(0, 0, 0)], declaredPpm: 500 });
+    const result = calculateRealizedFeeRate({ points: [day(0, 0, 0)], stated: statedAt(500) });
 
     expect(result.status).toBe("unavailable");
     expect(result.status === "unavailable" && result.notice).toBe("fee-rate-unmeasurable");
   });
 
   it("says nothing when there are no days at all", () => {
-    expect(calculateRealizedFeeRate({ points: [], declaredPpm: 500 }).status).toBe("unavailable");
+    expect(calculateRealizedFeeRate({ points: [], stated: statedAt(500) }).status).toBe("unavailable");
   });
 
   describe("against the rate the pool declares", () => {
     it("confirms a pool that charged exactly what it says", () => {
       const { verdict } = rateOf([atRate(0, 500), atRate(1, 500)], 500);
 
-      expect(verdict).toEqual({ kind: "matches", declaredPpm: 500 });
+      expect(verdict).toEqual({ kind: "matches", stated: statedAt(500) });
     });
 
     /*
@@ -146,7 +151,7 @@ describe("calculateRealizedFeeRate", () => {
     it("counts the days that departed from the declared rate", () => {
       const { verdict } = rateOf([atRate(0, 500), atRate(1, 25), atRate(2, 230)], 500);
 
-      expect(verdict).toEqual({ kind: "differs", declaredPpm: 500, daysDiffering: 2 });
+      expect(verdict).toEqual({ kind: "differs", stated: statedAt(500), daysDiffering: 2 });
     });
 
     /*
@@ -166,7 +171,7 @@ describe("calculateRealizedFeeRate", () => {
      * with, and the measurement is the only rate there is.
      */
     it("reports no comparison when the pool declares no rate", () => {
-      expect(rateOf([atRate(0, 700)], null).verdict).toEqual({ kind: "none-declared" });
+      expect(rateOf([atRate(0, 700)], null).verdict).toEqual({ kind: "none-stated" });
     });
 
     /*

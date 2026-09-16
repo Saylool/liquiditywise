@@ -1,5 +1,6 @@
 import { Bytes32HexSchema, type DataResult, type V4Pool } from "../../schemas";
-import { normalizeV4Pool } from "./v4PoolAdapter";
+import { fetchEthereumV4PoolChain } from "./ethereumV4PoolChain";
+import { normalizeV4Pool, readV4PoolEnvelope } from "./v4PoolAdapter";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
@@ -7,12 +8,14 @@ import {
 } from "./v3SubgraphTransport";
 
 /**
- * One Uniswap v4 pool, by its PoolId.
+ * One Uniswap v4 pool, by its PoolId: the indexer's record of it, and then
+ * the chain's.
  *
- * Shorter than the v3 equivalent by one whole read. A v3 pool's tick spacing
- * appears in no subgraph and has to come from the pool contract; a v4 pool's is
- * part of the PoolKey the id is derived from, so it arrives with everything
- * else. There is no `eth_call` on this path at all.
+ * The indexer is asked for the pool's identity and where it was created; the
+ * chain is asked for the key the pool was created with and the fees its state
+ * holds. The fee is not asked of the indexer at all — its `feeTier` was
+ * measured to be the total fee of the latest swap rather than the key's fee —
+ * so, like the v3 read, this one is two sources reconciled into one pool.
  *
  * `hooks` is the field that has no v3 counterpart, and it is the one that
  * changes what the rest of an analysis can claim.
@@ -20,7 +23,7 @@ import {
 export const V4_POOL_QUERY = `query V4Pool($poolId: ID!) {
   pool(id: $poolId) {
     id
-    feeTier
+    createdAtBlockNumber
     tickSpacing
     hooks
     token0 {
@@ -36,6 +39,9 @@ export const V4_POOL_QUERY = `query V4Pool($poolId: ID!) {
       decimals
     }
   }
+  poolManagers(first: 1) {
+    id
+  }
   _meta {
     hasIndexingErrors
   }
@@ -50,20 +56,25 @@ export type EthereumV4PoolRequest = {
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
+  /** Ethereum JSON-RPC endpoint, for the key and the fees. */
+  readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs?: number;
 };
 
 /**
- * Reads one Ethereum mainnet Uniswap v4 pool's fixed configuration.
+ * Reads one Ethereum mainnet Uniswap v4 pool's configuration from both sources.
  *
  * No clock is injected, because nothing here is time-dependent: a PoolKey is
- * settled when the pool is initialised and never changes. What a *hook* does may
- * change at any moment — but what it is permitted to do is fixed in its address,
- * and that is the only claim this read makes about it.
+ * settled when the pool is initialised and never changes, and the protocol's
+ * cut changes only when governance moves it. What a *hook* does may change at
+ * any moment — but what it is permitted to do is fixed in its address, and
+ * that is the only claim this read makes about it.
  *
  * Validation order matches every other reader: caller input first, then server
- * configuration, and neither reaches the network.
+ * configuration, and neither reaches the network. The chain is asked after the
+ * indexer rather than alongside it, because the indexer says which block to
+ * ask about.
  */
 export const fetchEthereumV4Pool = async (
   request: EthereumV4PoolRequest,
@@ -92,5 +103,18 @@ export const fetchEthereumV4Pool = async (
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
-  return normalizeV4Pool({ payload: transport.payload, poolId: poolId.data });
+  const envelope = readV4PoolEnvelope(transport.payload);
+  if (!envelope.ok) return envelope.result;
+
+  const chain = await fetchEthereumV4PoolChain({
+    poolId: poolId.data,
+    createdAtBlockNumber: envelope.raw.createdAtBlockNumber,
+    poolManager: envelope.poolManager,
+    rpcUrl: request.rpcUrl,
+    fetchImpl: request.fetchImpl,
+    timeoutMs: request.timeoutMs,
+  });
+  if (chain.status === "unavailable") return chain;
+
+  return normalizeV4Pool({ payload: transport.payload, poolId: poolId.data, chain: chain.data });
 };

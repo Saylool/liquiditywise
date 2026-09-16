@@ -12,13 +12,14 @@ const body = {
     pools: [
       {
         id: `0x${"e5".repeat(32)}`,
-        feeTier: "625",
+        createdAtBlockNumber: "21688329",
         tickSpacing: "10",
         hooks: `0x${"0".repeat(40)}`,
         token0: { id: `0x${"0".repeat(40)}`, symbol: "ETH", name: "Ether", decimals: "18", derivedETH: "1" },
         token1: { id: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", symbol: "USDC", name: "USD Coin", decimals: "6", derivedETH: "0.0004" },
       },
     ],
+    poolManagers: [{ id: "0x000000000004444c5dc75cb358380d2e3de08a90" }],
     _meta: { hasIndexingErrors: false },
   },
 };
@@ -40,6 +41,19 @@ describe("fetchEthereumV4TradedPools", () => {
     if (result.status !== "success") return;
     expect(result.data.pools[0]?.token0.symbol).toBe("ETH");
     expect(result.data.fetchedAt).toBe(NOW.toISOString());
+  });
+
+  /* The chain is not asked here: every fee is unread, and the manager travels with the list for whoever asks later. */
+  it("publishes every fee unread, with the manager and the creation blocks for a later read", async () => {
+    const fetchImpl = vi.fn<FetchLike>(async () => new Response(JSON.stringify(body), { status: 200 }));
+    const result = await run({ fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.pools[0]?.fee).toEqual({ kind: "unread" });
+    expect(result.data.poolManager).toBe("0x000000000004444c5dc75cb358380d2e3de08a90");
+    expect(result.data.createdAtBlockNumbers).toEqual({ [`0x${"e5".repeat(32)}`]: "21688329" });
   });
 
   /* The same net width as the v3 list, by construction rather than by copying the numbers. */

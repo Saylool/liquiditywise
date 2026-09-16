@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { V4PoolState } from "./ethereumV4PoolState";
+import type { V4PoolKey } from "./v4PoolKey";
 import { normalizeV4PairPools, readV4PairPools } from "./v4PairPoolsAdapter";
 
 const FETCHED_AT = "2026-09-15T12:00:00.000Z";
@@ -13,7 +14,7 @@ const SQRT_PRICE = "1584563250285286751870879006";
 const rawToken = (id: string, symbol: string, decimals: string) => ({ id, symbol, name: symbol, decimals, derivedETH: "1" });
 const rawPool = (index: number, overrides: Record<string, unknown> = {}) => ({
   id: poolId(index),
-  feeTier: "250",
+  createdAtBlockNumber: "21688329",
   tickSpacing: "10",
   hooks: `0x${"0".repeat(40)}`,
   token0: rawToken(USDC, "USDC", "6"),
@@ -25,11 +26,31 @@ const payload = (pools: readonly unknown[], poolManagers: readonly unknown[] = [
   data: { pools, poolManagers, _meta: { hasIndexingErrors: false } },
 });
 
-const statesFor = (liquidity: Record<number, string>): ReadonlyMap<string, V4PoolState> =>
-  new Map(Object.entries(liquidity).map(([id, value]) => [poolId(Number(id)), { liquidity: value, sqrtPriceX96: SQRT_PRICE }]));
+const NO_CUT = { zeroForOnePpm: 0, oneForZeroPpm: 0 };
 
-const normalize = (body: unknown, states = statesFor({}), analysedPoolId: string | null = poolId(1)) =>
-  normalizeV4PairPools({ payload: body, states, analysedPoolId, fetchedAt: FETCHED_AT });
+const statesFor = (liquidity: Record<number, string>): ReadonlyMap<string, V4PoolState> =>
+  new Map(
+    Object.entries(liquidity).map(([id, value]) => [
+      poolId(Number(id)),
+      { liquidity: value, sqrtPriceX96: SQRT_PRICE, lpFeePpm: 250, protocolFee: NO_CUT },
+    ]),
+  );
+
+/** The key the chain would hold for a fixture pool. */
+const keyFor = (raw: ReturnType<typeof rawPool>, fee = 250): V4PoolKey => ({
+  currency0: raw.token0.id,
+  currency1: raw.token1.id,
+  fee,
+  tickSpacing: Number(raw.tickSpacing),
+  hooks: raw.hooks,
+});
+
+const normalize = (
+  body: unknown,
+  states = statesFor({}),
+  analysedPoolId: string | null = poolId(1),
+  keys: ReadonlyMap<string, V4PoolKey> = new Map(),
+) => normalizeV4PairPools({ payload: body, states, keys, analysedPoolId, fetchedAt: FETCHED_AT });
 
 const poolsOf = (result: ReturnType<typeof normalize>) => {
   if (result.status !== "success") throw new Error(`expected success, got ${result.status}`);
@@ -37,6 +58,23 @@ const poolsOf = (result: ReturnType<typeof normalize>) => {
 };
 
 describe("normalizeV4PairPools", () => {
+  it("takes each pool's fee from its key, or from its state when it has no hook, or marks it unread", () => {
+    const raw = rawPool(1);
+    const pools = poolsOf(normalize(payload([raw, rawPool(2), rawPool(3)]), statesFor({ 1: "1", 2: "1" }), poolId(1), new Map([[raw.id, keyFor(raw)]])));
+
+    expect(pools.find((entry) => entry.pool.id === poolId(1))?.pool.fee).toEqual({ kind: "static", feePpm: 250 });
+    expect(pools.find((entry) => entry.pool.id === poolId(2))?.pool.fee).toEqual({ kind: "static", feePpm: 250 });
+    expect(pools.find((entry) => entry.pool.id === poolId(3))?.pool.fee).toEqual({ kind: "unread" });
+  });
+
+  /* A key that says one fee beside a state that stores another is not one pool's, and the pool is refused. */
+  it("drops a pool whose key and state disagree about the fee", () => {
+    const raw = rawPool(1);
+    const pools = poolsOf(normalize(payload([raw, rawPool(2)]), statesFor({ 1: "1", 2: "1" }), poolId(2), new Map([[raw.id, keyFor(raw, 500)]])));
+
+    expect(pools.map((entry) => entry.pool.id)).toEqual([poolId(2)]);
+  });
+
   it("orders the pair's pools by depth, deepest first", () => {
     const pools = poolsOf(normalize(payload([rawPool(1), rawPool(2), rawPool(3)]), statesFor({ 1: "10", 2: "1000", 3: "100" })));
 
@@ -78,6 +116,7 @@ describe("normalizeV4PairPools", () => {
     const result = normalizeV4PairPools({
       payload: payload([rawPool(1), rawPool(2, { tickSpacing: "0" })]),
       states: statesFor({}),
+      keys: new Map(),
       analysedPoolId: poolId(1),
       fetchedAt: FETCHED_AT,
       onDiagnostic,

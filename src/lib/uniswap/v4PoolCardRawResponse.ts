@@ -7,18 +7,19 @@ import { z } from "zod";
  * reason the v3 card's do: they are a single decision written twice, and two
  * files is what lets them drift.
  *
- * A v4 entry carries more than a v3 one, because it can. A v3 list entry stops
- * at metadata — tick spacing lives on chain and costs a call per pool — while
- * everything a v4 pool *is* comes back in one query, so the list carries the
- * whole pool, hook and all. That matters here more than anywhere: a list is the
- * one place a reader meets a hooked pool they did not go looking for.
+ * A v4 entry carries the pool's identity, hook and all, and the block its key
+ * can be read at. The fee is not asked for: the indexer's `feeTier` is the
+ * total fee of the latest swap rather than the key's fee, so the key is read
+ * from the chain for every listed pool. That matters here more than anywhere:
+ * a list is the one place a reader meets a hooked pool they did not go looking
+ * for, and the row is where they should learn what its fee is — or is not.
  *
  * Non-strict objects, as with every subgraph boundary.
  */
 
 export const V4_POOL_CARD_FRAGMENT = `fragment V4PoolCard on Pool {
   id
-  feeTier
+  createdAtBlockNumber
   tickSpacing
   hooks
   token0 {
@@ -50,9 +51,9 @@ const RawV4CardTokenSchema = z.object({
 export const RawV4PoolCardSchema = z.object({
   /** A `PoolId`: keccak256 of the PoolKey, not a contract address. */
   id: z.string(),
-  /** `BigInt!`: a fee in hundredths of a bip, or the dynamic-fee sentinel. */
-  feeTier: z.string(),
-  /** `BigInt!`: in the PoolKey, so no contract call is needed. */
+  /** `BigInt!`: where the pool's Initialize log — and so its key — is read from. */
+  createdAtBlockNumber: z.string(),
+  /** `BigInt!`: in the PoolKey; checked against the key the log carries. */
   tickSpacing: z.string(),
   /** The hook contract, or the zero address for none. */
   hooks: z.string(),
@@ -100,6 +101,7 @@ export const V4PoolListResponseSchema = z.object({
   data: z
     .object({
       pools: z.array(RawV4PoolCardSchema),
+      poolManagers: z.array(z.object({ id: z.string() })),
       _meta: RawMetaSchema.nullable(),
     })
     .nullish(),

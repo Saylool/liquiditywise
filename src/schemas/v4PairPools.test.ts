@@ -28,6 +28,7 @@ const entry = ({
     token1: { chainId: 1, address: token1, symbol: "WETH", decimals: 18 },
     tickSpacing: 10,
     fee: { kind: "static", feePpm: 250 },
+    protocolFee: null,
     hookAddress: null,
   },
   state: read ? { liquidity, sqrtPriceX96: SQRT_PRICE } : null,

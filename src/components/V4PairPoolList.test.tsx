@@ -31,6 +31,7 @@ const entry = (index: number, liquidity: string, hookAddress: string | null = nu
     token1: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 },
     tickSpacing: 10,
     fee: { kind: "static", feePpm: 250 },
+    protocolFee: null,
     hookAddress,
   },
   state: { liquidity, sqrtPriceX96: SQRT_PRICE },
@@ -57,6 +58,13 @@ describe("V4PairPoolList", () => {
     expect(markup).toContain("Depth at the current price");
     expect(markup).toContain("no hook");
     expect(markup).toContain(`hook ${SWAP_HOOK} · may change what a swap costs`);
+  });
+
+  it("says when a sibling's fee was not read", () => {
+    const unread = entry(2, "10");
+    const markup = render(found([entry(1, "20"), { ...unread, pool: { ...unread.pool, fee: { kind: "unread" } } }]));
+
+    expect(markup).toContain("fee not read · step 0.10%");
   });
 
   it("marks the pool being read and does not link it", () => {

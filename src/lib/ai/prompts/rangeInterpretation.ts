@@ -105,24 +105,54 @@ const line = (label: string, value: string): string => `- ${label}: ${value}`;
 const quoteFor = (analysis: PoolRangeAnalysis): PriceQuote =>
   choosePriceQuote(analysis.pool, analysis.band.currentPrice);
 
+/** A stated swap fee as one figure, or two when the protocol's cut differs by direction. */
+const formatStatedFee = (stated: { readonly lowestPpm: number; readonly highestPpm: number }, locale: Locale): string =>
+  stated.lowestPpm === stated.highestPpm
+    ? formatFeePpm(stated.lowestPpm, locale)
+    : `${formatFeePpm(stated.lowestPpm, locale)} to ${formatFeePpm(stated.highestPpm, locale)}`;
+
 const describePool = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
   const { pool } = analysis;
-  const { declaredPpm } = feeDisclosureFor(pool);
+  const { lpFeePpm, protocolFee, statedSwapFee } = feeDisclosureFor(pool);
   const quote = quoteFor(analysis);
+  const protocolTakes =
+    protocolFee !== null && (protocolFee.zeroForOnePpm > 0 || protocolFee.oneForZeroPpm > 0);
 
   return [
     line("Pair", `${pool.token0.symbol} / ${pool.token1.symbol}`),
     line("Protocol", `Uniswap ${pool.protocolVersion}`),
     /*
-     * "Declared", not "fee tier". A v4 pool's tier is what it was created with,
-     * and a hook may charge something else on every swap — so the label has to
-     * stop the word standing for the rate, and the measured rate follows below.
+     * The pool's own fee, read from its key on the chain, and what a swap pays
+     * once the protocol's cut is on top. Named for who receives it rather than
+     * as a "tier", because a hook may charge something else on every swap —
+     * the measured rate follows below — and because on v4 the two figures are
+     * not the same number.
      */
     line(
-      "Declared fee",
-      declaredPpm === null
-        ? "none; this pool's hook sets the fee on each swap"
-        : formatFeePpm(declaredPpm, locale),
+      "Fee to liquidity providers",
+      lpFeePpm === null
+        ? "none fixed; this pool's hook sets the fee on each swap"
+        : formatFeePpm(lpFeePpm, locale),
+    ),
+    ...(protocolTakes
+      ? [
+          line(
+            "Fee to the protocol, taken on top",
+            formatStatedFee(
+              {
+                lowestPpm: Math.min(protocolFee.zeroForOnePpm, protocolFee.oneForZeroPpm),
+                highestPpm: Math.max(protocolFee.zeroForOnePpm, protocolFee.oneForZeroPpm),
+              },
+              locale,
+            ),
+          ),
+        ]
+      : []),
+    line(
+      "What a swap pays, by the pool's own terms",
+      statedSwapFee === null
+        ? "decided per swap by the hook"
+        : formatStatedFee(statedSwapFee, locale),
     ),
     /* As the page says it: a percentage, not a tick count. */
     line(
@@ -369,11 +399,11 @@ const describeRealizedFee = (
       `${formatMeasuredFeePpm(rate.lowestPpm, locale)} to ${formatMeasuredFeePpm(rate.highestPpm, locale)}`,
     ),
     line(
-      "Against the declared rate",
+      "Against what the pool says a swap pays",
       verdict.kind === "matches"
         ? "the same on every measured day"
-        : verdict.kind === "none-declared"
-          ? "nothing to compare; this pool declares no rate"
+        : verdict.kind === "none-stated"
+          ? "nothing to compare; this pool states no rate"
           : `different on ${formatWhole(verdict.daysDiffering, locale)} of ${formatWhole(rate.daysMeasured, locale)} measured days`,
     ),
   ];

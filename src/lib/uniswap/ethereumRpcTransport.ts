@@ -11,11 +11,13 @@ import type { FetchLike } from "./v3SubgraphTransport";
  * treated as a secret in its own right and never appears in a message, a warning
  * or a thrown error.
  *
- * Read-only by construction: this module can issue `eth_call` and
- * `eth_getBalance` and nothing else. There is no signing, no
+ * Read-only by construction: this module can issue `eth_call`, `eth_getBalance`
+ * and `eth_getLogs` and nothing else. There is no signing, no
  * `eth_sendTransaction`, no account access. The second method exists for one
  * reason — a v4 pool may hold the chain's own ether, and no token contract can
- * be asked how much of that an address has.
+ * be asked how much of that an address has. The third exists for another: a v4
+ * pool's key is written once, in the event that created it, and reading that
+ * event is the only way to learn what the pool's fee is.
  */
 
 export const DEFAULT_RPC_TIMEOUT_MS = 10_000;
@@ -229,47 +231,61 @@ const paced = <T,>(send: () => Promise<T>): Promise<T> => {
   return turn;
 };
 
-export type EthCallBatchRequest = {
+/**
+ * The only methods a batch may carry. A type rather than a runtime list, so a
+ * request for anything else is a compile error here rather than a refusal at
+ * the endpoint — and so the read-only claim at the top of this file can be
+ * checked by reading this line.
+ */
+export type ReadOnlyRpcMethod = "eth_call" | "eth_getLogs";
+
+export type RpcBatchEntry = {
+  readonly method: ReadOnlyRpcMethod;
+  readonly params: readonly unknown[];
+};
+
+export type RpcBatchRequest = {
   readonly rpcUrl: string;
-  /** One `{ to, data }` per call, answered in the same order. */
-  readonly calls: readonly { readonly to: string; readonly data: string }[];
+  /** Answered in the same order, whatever order the endpoint returns them in. */
+  readonly requests: readonly RpcBatchEntry[];
   readonly fetchImpl: FetchLike;
   readonly timeoutMs: number;
 };
 
-/** One call's answer: the raw word, or the fact that this one was refused. */
-export type BatchedCallResult =
-  | { readonly ok: true; readonly result: string }
+/** One request's answer: whatever the endpoint returned, or the fact that it was refused. */
+export type BatchedRpcResult =
+  | { readonly ok: true; readonly result: unknown }
   | { readonly ok: false };
 
-export type EthCallBatchResult =
-  | { readonly ok: true; readonly results: readonly BatchedCallResult[] }
+export type RpcBatchResult =
+  | { readonly ok: true; readonly results: readonly BatchedRpcResult[] }
   | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
 
+const batchFailure = (
+  reason: DataFailureReason,
+  notice: DataFailureNotice,
+): RpcBatchResult => ({ ok: false, reason, notice });
+
 /**
- * Performs many `eth_call`s in one HTTP request.
+ * Performs many read-only requests in one HTTP request.
  *
  * JSON-RPC's own batch form rather than an aggregating contract: a batch needs
  * no address, and shipping a contract address asserted from memory is the thing
- * this project refuses everywhere else.
+ * this project refuses everywhere else. The methods may be mixed — a pool's
+ * creation log and its current state can travel together.
  *
  * Answers are matched by `id` rather than by position. The specification permits
  * a server to return them in any order, and a sweep that silently paired one
  * token's balance with another token's identity would be wrong in a way nothing
  * downstream could detect.
  */
-const batchFailure = (
-  reason: DataFailureReason,
-  notice: DataFailureNotice,
-): EthCallBatchResult => ({ ok: false, reason, notice });
-
-export const postEthCallBatch = async ({
+export const postRpcBatch = async ({
   rpcUrl,
-  calls,
+  requests,
   fetchImpl,
   timeoutMs,
-}: EthCallBatchRequest): Promise<EthCallBatchResult> => {
-  if (calls.length === 0) return { ok: true, results: [] };
+}: RpcBatchRequest): Promise<RpcBatchResult> => {
+  if (requests.length === 0) return { ok: true, results: [] };
 
   const controller = new AbortController();
   let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -290,11 +306,11 @@ export const postEthCallBatch = async ({
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         body: JSON.stringify(
-          calls.map((call, index) => ({
+          requests.map((request, index) => ({
             jsonrpc: "2.0",
             id: index,
-            method: "eth_call",
-            params: [{ to: call.to, data: call.data }, "latest"],
+            method: request.method,
+            params: request.params,
           })),
         ),
         signal: controller.signal,
@@ -327,11 +343,11 @@ export const postEthCallBatch = async ({
 
     return {
       ok: true,
-      results: calls.map((_call, index) => {
-        const result = byId.get(index);
-
-        return typeof result === "string" ? { ok: true, result } : { ok: false };
-      }),
+      results: requests.map((_request, index) =>
+        byId.has(index) && byId.get(index) !== undefined && byId.get(index) !== null
+          ? { ok: true, result: byId.get(index) }
+          : { ok: false },
+      ),
     };
   } catch {
     return controller.signal.aborted
@@ -340,4 +356,112 @@ export const postEthCallBatch = async ({
   } finally {
     clearTimeout(timeout);
   }
+};
+
+export type EthCallBatchRequest = {
+  readonly rpcUrl: string;
+  /** One `{ to, data }` per call, answered in the same order. */
+  readonly calls: readonly { readonly to: string; readonly data: string }[];
+  readonly fetchImpl: FetchLike;
+  readonly timeoutMs: number;
+};
+
+/** One call's answer: the raw word, or the fact that this one was refused. */
+export type BatchedCallResult =
+  | { readonly ok: true; readonly result: string }
+  | { readonly ok: false };
+
+export type EthCallBatchResult =
+  | { readonly ok: true; readonly results: readonly BatchedCallResult[] }
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
+
+/** The `eth_call` request for one contract read, against the latest block. */
+export const ethCallEntry = (call: { readonly to: string; readonly data: string }): RpcBatchEntry => ({
+  method: "eth_call",
+  params: [{ to: call.to, data: call.data }, "latest"],
+});
+
+/**
+ * Performs many `eth_call`s in one HTTP request. A call's answer is a hex
+ * string; anything else the endpoint sends for it is reported as a refusal.
+ */
+export const postEthCallBatch = async ({
+  rpcUrl,
+  calls,
+  fetchImpl,
+  timeoutMs,
+}: EthCallBatchRequest): Promise<EthCallBatchResult> => {
+  const batch = await postRpcBatch({
+    rpcUrl,
+    requests: calls.map(ethCallEntry),
+    fetchImpl,
+    timeoutMs,
+  });
+  if (!batch.ok) return batch;
+
+  return {
+    ok: true,
+    results: batch.results.map((result) =>
+      result.ok && typeof result.result === "string"
+        ? { ok: true, result: result.result }
+        : { ok: false },
+    ),
+  };
+};
+
+/** A log filter, as `eth_getLogs` takes one. Block tags are hex quantities. */
+export type LogFilter = {
+  readonly address: string;
+  readonly fromBlock: string;
+  readonly toBlock: string;
+  readonly topics: readonly (string | null)[];
+};
+
+/** The `eth_getLogs` request for one filter. */
+export const ethGetLogsEntry = (filter: LogFilter): RpcBatchEntry => ({
+  method: "eth_getLogs",
+  params: [filter],
+});
+
+/** One filter's answer: the logs it matched, or the fact that it was refused. */
+export type BatchedLogsResult =
+  | { readonly ok: true; readonly logs: readonly unknown[] }
+  | { readonly ok: false };
+
+export type EthGetLogsBatchResult =
+  | { readonly ok: true; readonly results: readonly BatchedLogsResult[] }
+  | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
+
+/**
+ * Performs many `eth_getLogs` in one HTTP request. A filter's answer is an
+ * array of logs — empty when nothing matched, which is an answer and not a
+ * refusal; a refusal is anything that is not an array.
+ */
+export const postEthGetLogsBatch = async ({
+  rpcUrl,
+  filters,
+  fetchImpl,
+  timeoutMs,
+}: {
+  readonly rpcUrl: string;
+  readonly filters: readonly LogFilter[];
+  readonly fetchImpl: FetchLike;
+  readonly timeoutMs: number;
+}): Promise<EthGetLogsBatchResult> => {
+  const batch = await postRpcBatch({
+    rpcUrl,
+    requests: filters.map(ethGetLogsEntry),
+    fetchImpl,
+    timeoutMs,
+  });
+  if (!batch.ok) return batch;
+
+  return {
+    ok: true,
+    results: batch.results.map((result) =>
+      result.ok && Array.isArray(result.result)
+        ? { ok: true, logs: result.result }
+        : { ok: false },
+    ),
+  };
 };

@@ -30,7 +30,14 @@ const v3Pool = (feePpm: number): Pool => ({
   tickSpacing: 60,
 });
 
-const v4Pool = (fee: V4FeeConfiguration, hookAddress: string | null): Pool => ({
+/** The protocol's cut, the same in both directions, as on every mainnet pool read. */
+const protocol = (ppm: number) => ({ zeroForOnePpm: ppm, oneForZeroPpm: ppm });
+
+const v4Pool = (
+  fee: V4FeeConfiguration,
+  hookAddress: string | null,
+  protocolFee: { zeroForOnePpm: number; oneForZeroPpm: number } | null = protocol(0),
+): Pool => ({
   protocolVersion: "v4",
   chainId: 1,
   id: `0x${"d".repeat(64)}`,
@@ -38,26 +45,64 @@ const v4Pool = (fee: V4FeeConfiguration, hookAddress: string | null): Pool => ({
   token1: TOKEN1,
   tickSpacing: 10,
   fee,
+  protocolFee,
   hookAddress,
 });
 
 describe("feeDisclosureFor", () => {
-  it("reads a v3 pool's tier, which nothing can rewrite", () => {
+  it("reads a v3 pool's tier, which nothing can rewrite and nothing sits on top of", () => {
     expect(feeDisclosureFor(v3Pool(3000))).toEqual({
-      declaredPpm: 3000,
+      lpFeePpm: 3000,
+      protocolFee: null,
+      statedSwapFee: { lowestPpm: 3000, highestPpm: 3000 },
       hookMayAlterSwaps: false,
       mayAttributeFeesToRange: true,
     });
   });
 
-  it("reads a hookless v4 pool's fee the same way", () => {
+  it("reads a hookless v4 pool's fee the same way when the protocol takes nothing", () => {
     const pool = v4Pool({ kind: "static", feePpm: 125 }, null);
 
     expect(feeDisclosureFor(pool)).toEqual({
-      declaredPpm: 125,
+      lpFeePpm: 125,
+      protocolFee: protocol(0),
+      statedSwapFee: { lowestPpm: 125, highestPpm: 125 },
       hookMayAlterSwaps: false,
       mayAttributeFeesToRange: true,
     });
+  });
+
+  /*
+   * The ETH/USDC pool as the chain held it: 500 ppm to providers, 125 ppm to
+   * the protocol on top, 625 ppm paid by a swap — and 625 is what the indexer
+   * had been calling the fee tier.
+   */
+  it("combines the protocol's cut into what a swap pays", () => {
+    const pool = v4Pool({ kind: "static", feePpm: 500 }, null, protocol(125));
+
+    expect(feeDisclosureFor(pool).lpFeePpm).toBe(500);
+    expect(feeDisclosureFor(pool).protocolFee).toEqual(protocol(125));
+    expect(feeDisclosureFor(pool).statedSwapFee).toEqual({ lowestPpm: 625, highestPpm: 625 });
+  });
+
+  it("states a range when the cut differs by direction", () => {
+    const pool = v4Pool({ kind: "static", feePpm: 500 }, null, { zeroForOnePpm: 100, oneForZeroPpm: 125 });
+
+    expect(feeDisclosureFor(pool).statedSwapFee).toEqual({ lowestPpm: 600, highestPpm: 625 });
+  });
+
+  it("states nothing when the pool's state was not read", () => {
+    const pool = v4Pool({ kind: "static", feePpm: 500 }, null, null);
+
+    expect(feeDisclosureFor(pool).lpFeePpm).toBe(500);
+    expect(feeDisclosureFor(pool).statedSwapFee).toBeNull();
+  });
+
+  it("states nothing for a pool whose key was not read", () => {
+    const pool = v4Pool({ kind: "unread" }, null);
+
+    expect(feeDisclosureFor(pool).lpFeePpm).toBeNull();
+    expect(feeDisclosureFor(pool).statedSwapFee).toBeNull();
   });
 
   /*
@@ -70,7 +115,8 @@ describe("feeDisclosureFor", () => {
       hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP),
     );
 
-    expect(feeDisclosureFor(pool).declaredPpm).toBeNull();
+    expect(feeDisclosureFor(pool).lpFeePpm).toBeNull();
+    expect(feeDisclosureFor(pool).statedSwapFee).toBeNull();
   });
 
   /*
@@ -84,7 +130,7 @@ describe("feeDisclosureFor", () => {
       hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP),
     );
 
-    expect(feeDisclosureFor(pool).declaredPpm).toBeNull();
+    expect(feeDisclosureFor(pool).lpFeePpm).toBeNull();
   });
 
   describe("what may be attributed to the range", () => {
@@ -134,7 +180,7 @@ describe("feeDisclosureFor", () => {
         hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP),
       );
 
-      expect(feeDisclosureFor(pool).declaredPpm).toBe(250);
+      expect(feeDisclosureFor(pool).lpFeePpm).toBe(250);
     });
   });
 });

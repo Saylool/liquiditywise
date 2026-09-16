@@ -6,7 +6,9 @@ import {
   V4PoolCandidateListSchema,
 } from "../../schemas";
 import { normalizeV4PoolCard } from "./v4PoolCardAdapter";
+import { UNREAD_CHAIN } from "./v4PoolChainReading";
 import { V4PoolListResponseSchema } from "./v4PoolCardRawResponse";
+import { readPoolManager } from "./v4PoolSearchAdapter";
 
 const MALFORMED = "market-data-malformed";
 const INDEXING_ERRORS = "market-data-indexing-errors";
@@ -23,7 +25,8 @@ const unavailable = (notice: DataFailureNotice): DataResult<V4PoolCandidateList>
  * A net rather than a ranking, like the v3 list. What this application adds is
  * that every entry went through the same card normaliser the v4 search uses, so
  * a candidate cannot enter on easier terms than a pool a reader searched for —
- * a dynamic fee still needs a hook, a return-delta bit still needs its callback.
+ * a return-delta bit still needs its callback. The fee is unread on every
+ * entry: the chain is asked for it later, for the pools a lookup shows.
  *
  * Pure: no clock, no network, no environment.
  */
@@ -43,16 +46,21 @@ export const normalizeV4TradedPools = ({
   if (data._meta?.hasIndexingErrors === true) return unavailable(INDEXING_ERRORS);
 
   const pools: V4Pool[] = [];
+  const createdAtBlockNumbers: Record<string, string> = {};
   const seen = new Set<string>();
   for (const raw of data.pools) {
-    const card = normalizeV4PoolCard(raw);
+    /* Every fee unread: the chain is asked later, for the pools that are shown. */
+    const card = normalizeV4PoolCard(raw, UNREAD_CHAIN);
     if (card === null || seen.has(card.pool.id)) continue;
     seen.add(card.pool.id);
     pools.push(card.pool);
+    createdAtBlockNumbers[card.pool.id] = raw.createdAtBlockNumber;
   }
 
   const result = V4PoolCandidateListSchema.safeParse({
     pools,
+    poolManager: readPoolManager(data.poolManagers),
+    createdAtBlockNumbers,
     fetchedAt,
     source: "uniswap-v4-subgraph",
   });

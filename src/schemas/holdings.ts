@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { DataSourceSchema } from "./dataSource";
 import {
+  EvmAddressSchema,
   IsoTimestampSchema,
   nonZeroEvmAddress,
   UnsignedIntegerStringSchema,
@@ -65,6 +66,17 @@ export const V4PoolCandidateListSchema = z
     pools: z.array(V4PoolSchema).min(1, {
       error: "A candidate list with no pools in it can answer nothing.",
     }),
+    /**
+     * The PoolManager the source indexes, or `null` when it named none. Carried
+     * so a lookup can ask the chain about the pools it shows: their fee is
+     * unread on this list, which is a net and not a page.
+     */
+    poolManager: EvmAddressSchema.nullable(),
+    /**
+     * Where each pool's creation log is, by pool id, for the same reason: the
+     * log is where a hooked pool's fee kind is read from.
+     */
+    createdAtBlockNumbers: z.record(z.string(), UnsignedIntegerStringSchema),
     fetchedAt: IsoTimestampSchema,
     source: DataSourceSchema.extract(["uniswap-v4-subgraph"]),
   })
@@ -269,3 +281,14 @@ export const AddressHoldingsSchema = z
   });
 
 export type AddressHoldings = z.infer<typeof AddressHoldingsSchema>;
+
+/**
+ * How many of the one-sided pools a holdings page shows.
+ *
+ * The same count the search publishes, for the same reason: enough that the
+ * useful ones are there, few enough that the list is read rather than
+ * scrolled. Declared here rather than in the component because the data layer
+ * needs it too — it asks the chain about the pools that will be shown, and
+ * only those.
+ */
+export const ONE_SIDED_SHOWN = 12;

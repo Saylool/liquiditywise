@@ -7,11 +7,15 @@ import {
   type HeldSides,
   type HoldingPool,
   type HoldingsSource,
+  ONE_SIDED_SHOWN,
   type PoolCandidateList,
   type Token,
   type TokenHolding,
+  type V4Pool,
   type V4PoolCandidateList,
 } from "../../schemas";
+import { applyV4ChainReading } from "../uniswap/v4PoolAdapter";
+import type { V4PoolChainReading } from "../uniswap/v4PoolChainReading";
 import type { AddressBalances } from "../uniswap/ethereumBalances";
 
 /*
@@ -156,4 +160,54 @@ export const composeAddressHoldings = (
   if (!verified.success) return unavailable("invalid-response", HOLDINGS_UNVERIFIABLE);
 
   return { status: "success", data: verified.data };
+};
+
+/**
+ * The v4 pools a holdings page will show: every pool with both sides held,
+ * and the first one-sided ones up to the display cut, in the order they are
+ * shown. These are the pools worth asking the chain about; the candidate list
+ * they came from carries every fee unread, and two hundred and fifty pools is
+ * more than the endpoint's budget answers for.
+ */
+export const displayedV4Pools = (holdings: AddressHoldings): readonly V4Pool[] => {
+  const both = holdings.pools.filter((entry) => entry.heldSides === "both");
+  const one = holdings.pools.filter((entry) => entry.heldSides !== "both").slice(0, ONE_SIDED_SHOWN);
+
+  return [...both, ...one]
+    .map((entry) => entry.pool)
+    .filter((pool): pool is V4Pool => pool.protocolVersion === "v4");
+};
+
+/**
+ * The same holdings with what the chain said about each shown v4 pool
+ * applied: its fee and the protocol's cut. A pool the chain answered nothing
+ * for keeps its fee unread; a pool whose reading contradicts the indexer's
+ * record is dropped, as it would be from any list.
+ *
+ * Pure, and re-verified whole: the result goes back through the schema, and
+ * if that fails the caller keeps the holdings as they were rather than losing
+ * the page over a fee.
+ */
+export const withV4ChainReadings = (
+  holdings: AddressHoldings,
+  readings: ReadonlyMap<string, V4PoolChainReading>,
+): AddressHoldings | null => {
+  const pools: HoldingPool[] = [];
+  for (const entry of holdings.pools) {
+    if (entry.pool.protocolVersion !== "v4") {
+      pools.push(entry);
+      continue;
+    }
+    const reading = readings.get(entry.pool.id);
+    if (reading === undefined) {
+      pools.push(entry);
+      continue;
+    }
+    const applied = applyV4ChainReading(entry.pool, reading);
+    if (applied !== null) pools.push({ ...entry, pool: applied });
+  }
+
+  const verified = AddressHoldingsSchema.safeParse({ ...holdings, pools });
+
+  return verified.success ? verified.data : null;
 };

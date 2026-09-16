@@ -70,6 +70,7 @@ const v4Pool = (id: string, hookAddress: string | null = null) => ({
   token1: USDC,
   tickSpacing: 10,
   fee: { kind: "static" as const, feePpm: 625 },
+  protocolFee: null,
   hookAddress,
 });
 
@@ -240,5 +241,14 @@ describe("AddressHoldings with v4 pools", () => {
     );
 
     expect(markup).toContain("Uniswap v4 havuzları aranmadı");
+  });
+});
+
+describe("AddressHoldings and a v4 pool whose fee was not read", () => {
+  it("says so on the row rather than showing another figure", () => {
+    const unread = { ...v4Pool(`0x${"e6".repeat(32)}`), fee: { kind: "unread" as const } };
+    const markup = render(holdings({ pools: [{ pool: unread, heldSides: "both" }] }));
+
+    expect(markup).toContain("v4 · fee not read");
   });
 });

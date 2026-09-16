@@ -1,4 +1,5 @@
 import {
+  Bytes32HexSchema,
   countExactSymbolMatches,
   type DataFailureNotice,
   type DataResult,
@@ -6,13 +7,16 @@ import {
   EvmAddressSchema,
   type PoolSearchTerms,
   V4_POOL_SEARCH_RESULT_LIMIT,
-  type V4Pool,
   type V4PoolSearchMatch,
   type V4PoolSearchResults,
   V4PoolSearchResultsSchema,
 } from "../../schemas";
+import type { V4PoolKeyRequest } from "./ethereumV4PoolKeys";
+import { ZERO_ADDRESS } from "../../schemas";
 import type { V4PoolState } from "./ethereumV4PoolState";
 import { normalizeV4PoolCard } from "./v4PoolCardAdapter";
+import { chainReadingFor } from "./v4PoolChainReading";
+import type { V4PoolKey } from "./v4PoolKey";
 import { type RawV4PoolCard, V4PoolSearchResponseSchema } from "./v4PoolCardRawResponse";
 import type { PoolSearchDiagnostic } from "./v3PoolSearchAdapter";
 
@@ -30,20 +34,27 @@ const unavailable = (notice: DataFailureNotice): DataResult<V4PoolSearchResults>
  *
  * Verifying the pool is the card's job; a search adds the one field the card
  * knows nothing about, which is how well this pool answers what was typed, and
- * attaches what the chain said about it.
+ * attaches what the chain said about it — the key and fees into the pool, the
+ * liquidity and price beside it, where the order is decided.
  */
 const normalizeMatch = (
   raw: RawV4PoolCard,
   terms: PoolSearchTerms,
   states: ReadonlyMap<string, V4PoolState>,
+  keys: ReadonlyMap<string, V4PoolKey>,
 ): V4PoolSearchMatch | null => {
-  const card = normalizeV4PoolCard(raw);
+  const id = Bytes32HexSchema.safeParse(raw.id);
+  if (!id.success) return null;
+
+  const card = normalizeV4PoolCard(raw, chainReadingFor(id.data, keys, states));
   if (card === null) return null;
+
+  const state = states.get(card.pool.id);
 
   return {
     pool: card.pool,
     ethPrice: card.ethPrice,
-    state: states.get(card.pool.id) ?? null,
+    state: state === undefined ? null : { liquidity: state.liquidity, sqrtPriceX96: state.sqrtPriceX96 },
     exactSymbolMatches: countExactSymbolMatches(terms, [
       card.pool.token0.symbol,
       card.pool.token1.symbol,
@@ -52,28 +63,58 @@ const normalizeMatch = (
 };
 
 /**
- * The verified pools in a search payload, and the PoolManager to ask about them.
+ * A pool as a list names it before the chain is asked: its id, where it was
+ * created, and whether a hook is attached — which decides whether its
+ * creation log has to be read at all.
+ */
+export type V4PoolRef = V4PoolKeyRequest & { readonly hooked: boolean };
+
+/**
+ * The pools a search payload names, and the PoolManager to ask about them.
  *
- * The same card normaliser runs here and again below, so a pool the chain was
- * asked about is exactly a pool that can appear in the results. The manager's
- * address is validated here rather than trusted, because it decides which
- * contract's storage the next request reads.
+ * Only the id, the block and the hook are read here, because the chain has to
+ * be asked before a pool can be verified at all: its fee comes from the chain.
+ * The manager's address is validated rather than trusted, because it decides
+ * which contract's storage and logs the next request reads.
  */
 export const readV4SearchPools = (
   payload: unknown,
-): { readonly pools: readonly V4Pool[]; readonly poolManager: string | null } => {
+): { readonly pools: readonly V4PoolRef[]; readonly poolManager: string | null } => {
   const parsed = V4PoolSearchResponseSchema.safeParse(payload);
   if (!parsed.success || parsed.data.data == null) return { pools: [], poolManager: null };
 
-  const pools = new Map<string, V4Pool>();
-  for (const raw of [...parsed.data.data.forward, ...parsed.data.data.reverse]) {
-    const card = normalizeV4PoolCard(raw);
-    if (card !== null) pools.set(card.pool.id, card.pool);
+  return {
+    pools: poolRefs([...parsed.data.data.forward, ...parsed.data.data.reverse]),
+    poolManager: readPoolManager(parsed.data.data.poolManagers),
+  };
+};
+
+/** The ids that are ids, each once, with where the indexer says it was created and whether it is hooked. */
+export const poolRefs = (raws: readonly RawV4PoolCard[]): readonly V4PoolRef[] => {
+  const refs = new Map<string, V4PoolRef>();
+  for (const raw of raws) {
+    const id = Bytes32HexSchema.safeParse(raw.id);
+    if (id.success && !refs.has(id.data)) {
+      refs.set(id.data, {
+        id: id.data,
+        createdAtBlockNumber: raw.createdAtBlockNumber,
+        hooked: raw.hooks.toLowerCase() !== ZERO_ADDRESS,
+      });
+    }
   }
 
-  const manager = EvmAddressSchema.safeParse(parsed.data.data.poolManagers[0]?.id);
+  return [...refs.values()];
+};
 
-  return { pools: [...pools.values()], poolManager: manager.success ? manager.data : null };
+/** The pools whose creation log must be read: the ones a hook is attached to. */
+export const hookedRefs = (refs: readonly V4PoolRef[]): readonly V4PoolKeyRequest[] =>
+  refs.filter((ref) => ref.hooked).map(({ id, createdAtBlockNumber }) => ({ id, createdAtBlockNumber }));
+
+/** The manager the source named, validated rather than trusted. */
+export const readPoolManager = (managers: readonly { readonly id: string }[]): string | null => {
+  const manager = EvmAddressSchema.safeParse(managers[0]?.id);
+
+  return manager.success ? manager.data : null;
 };
 
 /**
@@ -108,6 +149,8 @@ export type NormalizeV4PoolSearchInput = {
    * the schema exists to check.
    */
   readonly states: ReadonlyMap<string, V4PoolState>;
+  /** Each pool's key from its Initialize log, keyed by pool id. Decides the fee. */
+  readonly keys: ReadonlyMap<string, V4PoolKey>;
   /** The terms this search was run with, already validated. */
   readonly terms: PoolSearchTerms;
   /** When the request was made, from the reader's injected clock. */
@@ -127,6 +170,7 @@ export type NormalizeV4PoolSearchInput = {
 export const normalizeV4PoolSearch = ({
   payload,
   states,
+  keys,
   terms,
   fetchedAt,
   onDiagnostic,
@@ -143,7 +187,7 @@ export const normalizeV4PoolSearch = ({
   let dropped = 0;
 
   for (const raw of [...data.forward, ...data.reverse]) {
-    const match = normalizeMatch(raw, terms, states);
+    const match = normalizeMatch(raw, terms, states, keys);
     if (match === null) {
       dropped += 1;
       continue;

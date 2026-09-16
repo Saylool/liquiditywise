@@ -20,6 +20,9 @@ import {
  * pool may hold it as a currency, under the zero address, and an address that
  * holds ether — every address that has ever paid for gas — has a side of every
  * such pool already.
+ *
+ * `poolManagers` is asked for so the holdings lookup knows whose logs and
+ * storage to read for the pools it shows.
  */
 export const V4_TRADED_POOLS_QUERY = `query V4TradedPools($minTxCount: BigInt!, $limit: Int!) {
   pools(
@@ -29,6 +32,9 @@ export const V4_TRADED_POOLS_QUERY = `query V4TradedPools($minTxCount: BigInt!, 
     first: $limit
   ) {
     ...V4PoolCard
+  }
+  poolManagers(first: 1) {
+    id
   }
   _meta {
     hasIndexingErrors
@@ -70,6 +76,13 @@ export const fetchEthereumV4TradedPools = async (
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
+  /*
+   * The chain is not asked here. Two hundred and fifty pools is more than the
+   * endpoint's budget will answer for in one go, and this list is a net rather
+   * than a page: a holdings lookup reads the chain for the few pools it will
+   * actually show, once it knows which those are. Every pool here is published
+   * with its fee unread, and the manager to ask travels with the list.
+   */
   return normalizeV4TradedPools({
     payload: transport.payload,
     fetchedAt: request.now().toISOString(),

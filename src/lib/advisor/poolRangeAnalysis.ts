@@ -8,7 +8,7 @@ import {
   type DivergenceLoss,
   type PoolActivity,
   type DataWarningNotice,
-  declaredFeePpm,
+  statedSwapFee,
   type HistoricalVolatility,
   type Pool,
   type V3Pool,
@@ -329,7 +329,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
    */
   const realizedFee = calculateRealizedFeeRate({
     points: history.value.points.slice(-ACTIVITY_WINDOW_DAYS),
-    declaredPpm: declaredFeePpm(pool.value),
+    stated: statedSwapFee(pool.value),
   });
 
   const data: PoolRangeAnalysis = {

@@ -18,7 +18,7 @@ const subgraphBody = {
     pools: [
       {
         id: POOL_ID,
-        feeTier: "250",
+        createdAtBlockNumber: "21688329",
         tickSpacing: "10",
         hooks: `0x${"0".repeat(40)}`,
         token0: { id: USDC, symbol: "USDC", name: "USD Coin", decimals: "6", derivedETH: "0.0004" },
@@ -32,16 +32,20 @@ const subgraphBody = {
 
 const word = (value: bigint) => `0x${value.toString(16).padStart(64, "0")}`;
 
+/** The chain: no log for this fixture id, which is not a real hash, and a state for it. */
 const bothEndpoints = (): FetchLike =>
   vi.fn(async (url, init) => {
     if (url === RPC_URL) {
-      const calls = JSON.parse(String(init.body)) as { id: number }[];
+      const calls = JSON.parse(String(init.body)) as { id: number; method: string }[];
       return new Response(
         JSON.stringify(
           calls.map((call, index) => ({
             jsonrpc: "2.0",
             id: call.id,
-            result: word(index % 2 === 0 ? (198_320n << 160n) | 1584563250285286751870879006n : 5n),
+            result:
+              call.method === "eth_getLogs"
+                ? []
+                : word(index % 2 === 0 ? (250n << 208n) | (198_320n << 160n) | 1584563250285286751870879006n : 5n),
           })),
         ),
         { status: 200 },
@@ -83,13 +87,35 @@ describe("fetchEthereumV4PairPools", () => {
     expect(body.query).not.toContain(USDC);
   });
 
-  it("reads the manager the source named", async () => {
+  it("reads the manager the source named, for its logs and its storage", async () => {
     const fetchImpl = bothEndpoints();
     await run({ fetchImpl });
-    const chain = JSON.parse(String(vi.mocked(fetchImpl).mock.calls[1]?.[1].body)) as { params: [{ to: string; data: string }] }[];
+    const requests = vi
+      .mocked(fetchImpl)
+      .mock.calls.slice(1)
+      .flatMap(([, init]) => JSON.parse(String(init.body)) as { method: string; params: [{ to?: string; data?: string; address?: string }] }[]);
+    const calls = requests.filter((request) => request.method === "eth_call");
 
-    expect(chain.every((call) => call.params[0].to === POOL_MANAGER)).toBe(true);
-    expect(chain.every((call) => call.params[0].data.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.every((call) => call.params[0].to === POOL_MANAGER)).toBe(true);
+    expect(calls.every((call) => call.params[0].data?.startsWith(EXTSLOAD_SELECTOR))).toBe(true);
+  });
+
+  /*
+   * The fixture pool has no hook, so its stored fee is its key's and no log is
+   * asked for at all: the costly read is spent on hooked pools alone.
+   */
+  it("settles a hookless pool's fee from its state, without reading its log", async () => {
+    const fetchImpl = bothEndpoints();
+    const result = await run({ fetchImpl });
+    const methods = vi
+      .mocked(fetchImpl)
+      .mock.calls.slice(1)
+      .flatMap(([, init]) => (JSON.parse(String(init.body)) as { method: string }[]).map((r) => r.method));
+
+    expect(result.status === "success" && result.data.pools[0]?.pool.fee).toEqual({ kind: "static", feePpm: 250 });
+    expect(methods).not.toContain("eth_getLogs");
+    expect(methods).toContain("eth_call");
   });
 
   it("accepts a pair named from a v3 page, with no analysed pool", async () => {

@@ -19,11 +19,12 @@ const RawV4PoolSchema = z.object({
   /** A v4 pool is a `PoolId` — keccak256 of its PoolKey — not a contract address. */
   id: z.string(),
   /**
-   * `BigInt!`. The PoolKey's fee field, which carries either a fee in
-   * hundredths of a bip or the dynamic-fee sentinel.
+   * `BigInt!`. Where the pool's Initialize log is, which is where its key is
+   * read from. The indexer's own `feeTier` is deliberately not asked for: it
+   * is the total fee of the latest swap, not the key's fee.
    */
-  feeTier: z.string(),
-  /** `BigInt!`. In the PoolKey, so unlike v3 it needs no contract call. */
+  createdAtBlockNumber: z.string(),
+  /** `BigInt!`. In the PoolKey; checked against the key the log carries. */
   tickSpacing: z.string(),
   /** The hook contract, or the zero address when the pool runs without one. */
   hooks: z.string(),
@@ -41,6 +42,8 @@ export const V4PoolResponseSchema = z.object({
   data: z
     .object({
       pool: RawV4PoolSchema.nullable(),
+      /** The contract the pool lives in, asked of the source rather than asserted. */
+      poolManagers: z.array(z.object({ id: z.string() })),
       _meta: RawMetaSchema.nullable(),
     })
     .nullish(),

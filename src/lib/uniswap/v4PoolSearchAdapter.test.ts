@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { HOOK_PERMISSION_FLAGS, type PoolSearchTerms, V4_POOL_SEARCH_RESULT_LIMIT } from "../../schemas";
 import type { V4PoolState } from "./ethereumV4PoolState";
-import { normalizeV4PoolSearch, readV4SearchPools } from "./v4PoolSearchAdapter";
+import type { V4PoolKey } from "./v4PoolKey";
+import { hookedRefs, normalizeV4PoolSearch, readV4SearchPools } from "./v4PoolSearchAdapter";
 
 const FETCHED_AT = "2026-09-15T14:00:00.000Z";
 const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
@@ -35,6 +36,7 @@ const rawPool = ({
   feeTier?: string;
 }) => ({
   id: poolId(id),
+  createdAtBlockNumber: "21688329",
   feeTier,
   tickSpacing: "10",
   hooks,
@@ -51,19 +53,34 @@ const payload = (
 /** USDC per WETH ≈ 2500, as Q64.96 — the price every fixture pool sits at. */
 const SQRT_PRICE = "1584563250285286751870879006";
 
+const NO_CUT = { zeroForOnePpm: 0, oneForZeroPpm: 0 };
+
 const statesFor = (liquidity: Record<number, string>): ReadonlyMap<string, V4PoolState> =>
   new Map(
     Object.entries(liquidity).map(([id, value]) => [
       poolId(Number(id)),
-      { liquidity: value, sqrtPriceX96: SQRT_PRICE },
+      { liquidity: value, sqrtPriceX96: SQRT_PRICE, lpFeePpm: 250, protocolFee: NO_CUT },
     ]),
   );
+
+/** The key the chain would hold for a fixture pool: the pool's own fields, at this fee. */
+const keyFor = (raw: ReturnType<typeof rawPool>, fee = 250): V4PoolKey => ({
+  currency0: raw.token0.id,
+  currency1: raw.token1.id,
+  fee,
+  tickSpacing: Number(raw.tickSpacing),
+  hooks: raw.hooks,
+});
+
+const keysFor = (raws: readonly ReturnType<typeof rawPool>[]): ReadonlyMap<string, V4PoolKey> =>
+  new Map(raws.map((raw) => [raw.id, keyFor(raw)]));
 
 const normalize = (
   body: unknown,
   states: ReadonlyMap<string, V4PoolState> = new Map(),
   terms: PoolSearchTerms = ["usdc", "weth"],
-) => normalizeV4PoolSearch({ payload: body, states, terms, fetchedAt: FETCHED_AT });
+  keys: ReadonlyMap<string, V4PoolKey> = new Map(),
+) => normalizeV4PoolSearch({ payload: body, states, keys, terms, fetchedAt: FETCHED_AT });
 
 const matchesOf = (result: ReturnType<typeof normalize>) => {
   if (result.status !== "success") throw new Error(`expected success, got ${result.status}`);
@@ -78,6 +95,42 @@ describe("normalizeV4PoolSearch", () => {
     expect(matches[0]?.pool.id).toBe(poolId(1));
     expect(matches[0]?.state).toEqual({ liquidity: "1000", sqrtPriceX96: SQRT_PRICE });
     expect(matches[0]?.exactSymbolMatches).toBe(2);
+  });
+
+  /* The fee comes from the key the chain answered with, and from nowhere else. */
+  it("takes each pool's fee from its key", () => {
+    const raw = rawPool({ id: 1 });
+    const matches = matchesOf(normalize(payload([raw]), statesFor({ 1: "1" }), ["usdc", "weth"], keysFor([raw])));
+
+    expect(matches[0]?.pool.fee).toEqual({ kind: "static", feePpm: 250 });
+    expect(matches[0]?.pool.protocolFee).toEqual(NO_CUT);
+  });
+
+  /* A hookless pool cannot be dynamic, so its stored fee is its key's: the state settles it. */
+  it("reads a hookless pool's fee from its state when no key came back", () => {
+    const matches = matchesOf(normalize(payload([rawPool({ id: 1 })]), statesFor({ 1: "1" })));
+
+    expect(matches[0]?.pool.fee).toEqual({ kind: "static", feePpm: 250 });
+  });
+
+  it("marks a hooked pool's fee unread when no key came back", () => {
+    const hooked = rawPool({ id: 1, hooks: hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP) });
+    const matches = matchesOf(normalize(payload([hooked]), statesFor({ 1: "1" })));
+
+    expect(matches[0]?.pool.fee).toEqual({ kind: "unread" });
+  });
+
+  it("marks the fee unread when neither key nor state came back", () => {
+    const matches = matchesOf(normalize(payload([rawPool({ id: 1 })])));
+
+    expect(matches[0]?.pool.fee).toEqual({ kind: "unread" });
+  });
+
+  it("drops a pool whose key the indexer disagrees with", () => {
+    const raw = rawPool({ id: 1 });
+    const keys = new Map([[raw.id, { ...keyFor(raw), tickSpacing: 60 }]]);
+
+    expect(matchesOf(normalize(payload([raw]), new Map(), ["usdc", "weth"], keys))).toEqual([]);
   });
 
   it("stamps the v4 source", () => {
@@ -185,6 +238,7 @@ describe("normalizeV4PoolSearch", () => {
     const result = normalizeV4PoolSearch({
       payload: payload([rawPool({ id: 1 }), bad]),
       states: new Map(),
+      keys: new Map(),
       terms: ["usdc", "weth"],
       fetchedAt: FETCHED_AT,
       onDiagnostic,
@@ -219,16 +273,29 @@ describe("normalizeV4PoolSearch", () => {
 });
 
 describe("readV4SearchPools", () => {
-  it("lists each verified pool once, and names the manager to ask about them", () => {
+  it("lists each pool once, with where it was created, and names the manager to ask about them", () => {
     const pool = rawPool({ id: 1 });
     const { pools, poolManager } = readV4SearchPools(payload([pool, rawPool({ id: 2 })], [pool]));
 
-    expect(pools.map((p) => p.id)).toEqual([poolId(1), poolId(2)]);
+    expect(pools).toEqual([
+      { id: poolId(1), createdAtBlockNumber: "21688329", hooked: false },
+      { id: poolId(2), createdAtBlockNumber: "21688329", hooked: false },
+    ]);
     expect(poolManager).toBe(POOL_MANAGER);
   });
 
-  it("leaves out a pool it cannot verify", () => {
-    const { pools } = readV4SearchPools(payload([{ ...rawPool({ id: 1 }), tickSpacing: "0" }]));
+  /* Whether a hook is attached decides whether the creation log has to be read at all. */
+  it("says which pools are hooked, so only their logs are read", () => {
+    const hooked = rawPool({ id: 3, hooks: hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP) });
+    const { pools } = readV4SearchPools(payload([hooked, rawPool({ id: 4 })]));
+
+    expect(pools.map((pool) => pool.hooked)).toEqual([true, false]);
+    expect(hookedRefs(pools)).toEqual([{ id: poolId(3), createdAtBlockNumber: "21688329" }]);
+  });
+
+  /* Only the id is checked here: a pool cannot be verified until the chain has answered for it. */
+  it("leaves out an entry whose id is not a pool id", () => {
+    const { pools } = readV4SearchPools(payload([{ ...rawPool({ id: 1 }), id: "0xnope" }]));
 
     expect(pools).toEqual([]);
   });

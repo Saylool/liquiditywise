@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { HOOK_PERMISSION_FLAGS } from "../../schemas";
 import { DYNAMIC_FEE_FLAG } from "./v4PoolAdapter";
 import { normalizeV4PoolCard } from "./v4PoolCardAdapter";
+import { UNREAD_CHAIN, type V4PoolChainReading } from "./v4PoolChainReading";
 
 const POOL_ID = `0x${"e5".repeat(32)}`;
 const USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
@@ -22,7 +23,7 @@ const rawToken = (id: string, symbol: string, decimals: string, derivedETH = "1"
 
 const raw = (overrides: Record<string, unknown> = {}) => ({
   id: POOL_ID,
-  feeTier: "250",
+  createdAtBlockNumber: "21688329",
   tickSpacing: "10",
   hooks: NATIVE,
   token0: rawToken(USDC, "USDC", "6", "0.0004"),
@@ -30,8 +31,24 @@ const raw = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const card = (overrides: Record<string, unknown> = {}) => {
-  const result = normalizeV4PoolCard(raw(overrides));
+/** What the chain says, made to agree with a raw pool. `fee` is the key's fee field, flag included. */
+const chainFor = (pool: ReturnType<typeof raw>, fee = 250): V4PoolChainReading => ({
+  key: {
+    currency0: pool.token0.id,
+    currency1: pool.token1.id,
+    fee,
+    tickSpacing: Number(pool.tickSpacing),
+    hooks: pool.hooks,
+  },
+  fees: {
+    lpFeePpm: fee === DYNAMIC_FEE_FLAG ? 0 : fee,
+    protocolFee: { zeroForOnePpm: 0, oneForZeroPpm: 0 },
+  },
+});
+
+const card = (overrides: Record<string, unknown> = {}, fee = 250) => {
+  const pool = raw(overrides);
+  const result = normalizeV4PoolCard(pool, chainFor(pool, fee));
   if (result === null) throw new Error("expected a card");
   return result;
 };
@@ -58,37 +75,36 @@ describe("normalizeV4PoolCard", () => {
   });
 
   it("reads a dynamic fee as a state rather than a number", () => {
-    const { pool } = card({
-      feeTier: String(DYNAMIC_FEE_FLAG),
-      hooks: hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP),
-    });
+    const { pool } = card({ hooks: hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP) }, DYNAMIC_FEE_FLAG);
 
     expect(pool.fee).toEqual({ kind: "dynamic", currentFeePpm: null });
   });
 
-  /* A missing price is not a zero price; the pool stays, its comparability goes. */
+  /* A listed pool the chain did not answer for is still listed, with its fee unread. */
+  it("carries a pool whose key was not read, with the fee marked so", () => {
+    const result = normalizeV4PoolCard(raw(), UNREAD_CHAIN);
+
+    expect(result?.pool.fee).toEqual({ kind: "unread" });
+    expect(result?.pool.protocolFee).toBeNull();
+  });
+
   it("carries no price rather than a zero one when the source's is unusable", () => {
-    expect(card({ token1: rawToken(WETH, "WETH", "18", "not-a-number") }).ethPrice).toBeNull();
+    expect(card({ token0: rawToken(USDC, "USDC", "6", "-1") }).ethPrice).toBeNull();
   });
 
   it("keeps a genuinely zero price, which a worthless token really has", () => {
-    expect(card({ token1: rawToken(WETH, "WETH", "18", "0") }).ethPrice).toEqual({
-      token0: 0.0004,
-      token1: 0,
-    });
+    expect(card({ token0: rawToken(USDC, "USDC", "6", "0") }).ethPrice).toEqual({ token0: 0, token1: 1 });
   });
 
-  /*
-   * The same admission rules as the single-pool read, one of each kind. A pool
-   * failing any of them leaves the list rather than taking it down.
-   */
-  it.each([
-    ["an id that is an address rather than a PoolId", { id: `0x${"c".repeat(40)}` }],
-    ["a dynamic fee with no hook to set it", { feeTier: String(DYNAMIC_FEE_FLAG) }],
-    ["currencies the wrong way round", { token0: rawToken(WETH, "WETH", "18"), token1: rawToken(USDC, "USDC", "6") }],
-    ["a symbol carrying a newline", { token0: rawToken(USDC, "US\nDC", "6") }],
-    ["a tick spacing of zero", { tickSpacing: "0" }],
-  ])("refuses %s", (_label, overrides) => {
-    expect(normalizeV4PoolCard(raw(overrides))).toBeNull();
+  it("refuses a pool the indexer and the key disagree about", () => {
+    const pool = raw({ tickSpacing: "60" });
+
+    expect(normalizeV4PoolCard(pool, chainFor(raw()))).toBeNull();
+  });
+
+  it("refuses a pool it cannot verify", () => {
+    const pool = raw({ tickSpacing: "0" });
+
+    expect(normalizeV4PoolCard(pool, chainFor(pool))).toBeNull();
   });
 });

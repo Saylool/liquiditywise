@@ -3,9 +3,12 @@ import "server-only";
 import type { AddressHoldings, DataResult } from "../../schemas";
 import { logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumBalances } from "../uniswap/ethereumBalances";
+import { fetchEthereumV4PoolKeys } from "../uniswap/ethereumV4PoolKeys";
+import { fetchEthereumV4PoolFees } from "../uniswap/ethereumV4PoolState";
 import { getEthereumV3TradedPools } from "../uniswap/getEthereumV3TradedPools";
 import { getEthereumV4TradedPools } from "../uniswap/getEthereumV4TradedPools";
-import { composeAddressHoldings } from "./addressHoldings";
+import { chainReadingFor } from "../uniswap/v4PoolChainReading";
+import { composeAddressHoldings, displayedV4Pools, withV4ChainReadings } from "./addressHoldings";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "address-holdings";
@@ -66,14 +69,44 @@ export const getAddressHoldings = async (
     fetchImpl: fetch,
   });
 
-  return logUnavailable(
-    LABEL,
-    composeAddressHoldings({
-      address,
-      v3Candidates,
-      v4Candidates,
-      balances,
-      fetchedAt: new Date().toISOString(),
+  const composed = composeAddressHoldings({
+    address,
+    v3Candidates,
+    v4Candidates,
+    balances,
+    fetchedAt: new Date().toISOString(),
+  });
+  if (composed.status === "unavailable" || v4Candidates.status === "unavailable") {
+    return logUnavailable(LABEL, composed);
+  }
+
+  /*
+   * The chain, for the v4 pools that will be shown and no others. The
+   * candidate list carries every fee unread — it is a net of two hundred and
+   * fifty pools, more than the endpoint answers for in one go — so the fee is
+   * read here, for the handful on the page: the stored fee for all of them,
+   * which settles a hookless pool, and the creation log for the hooked ones.
+   */
+  const shown = displayedV4Pools(composed.data);
+  const createdAt = v4Candidates.data.createdAtBlockNumbers;
+  const chain = {
+    poolManager: v4Candidates.data.poolManager,
+    rpcUrl: process.env.ETHEREUM_RPC_URL,
+    fetchImpl: fetch,
+  };
+  const [keys, fees] = await Promise.all([
+    fetchEthereumV4PoolKeys({
+      pools: shown
+        .filter((pool) => pool.hookAddress !== null)
+        .map((pool) => ({ id: pool.id, createdAtBlockNumber: createdAt[pool.id] ?? "" })),
+      ...chain,
     }),
-  );
+    fetchEthereumV4PoolFees({ poolIds: shown.map((pool) => pool.id), ...chain }),
+  ]);
+  const readings = new Map(shown.map((pool) => [pool.id, chainReadingFor(pool.id, keys, fees)]));
+
+  return logUnavailable(LABEL, {
+    status: "success",
+    data: withV4ChainReadings(composed.data, readings) ?? composed.data,
+  });
 };

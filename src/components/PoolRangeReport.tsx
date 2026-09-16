@@ -1,4 +1,4 @@
-import { feeDisclosureFor } from "../lib/advisor/feeDisclosure";
+import { type FeeDisclosure, feeDisclosureFor } from "../lib/advisor/feeDisclosure";
 import type {
   PoolRangeAnalysisResult,
   PoolRangeAnalysisStep,
@@ -30,6 +30,7 @@ import { priceStepRatio } from "../lib/format/priceStep";
 import { layoutRangeBar } from "../lib/format/rangeBarLayout";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
+import type { StatedSwapFee, V4ProtocolFee } from "../schemas";
 import { PriceRangeBar } from "./PriceRangeBar";
 
 /**
@@ -88,6 +89,26 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 /** The grid the figures sit in, everywhere they sit in one. */
 const FIGURE_GRID = "grid gap-5 sm:grid-cols-2 lg:grid-cols-3";
 
+/** A stated swap fee: one figure, or two when the protocol's cut differs by direction. */
+const formatStatedFee = (stated: StatedSwapFee, locale: Locale): string =>
+  stated.lowestPpm === stated.highestPpm
+    ? formatFeePpm(stated.lowestPpm, locale)
+    : `${formatFeePpm(stated.lowestPpm, locale)} – ${formatFeePpm(stated.highestPpm, locale)}`;
+
+/** The protocol's cut, likewise. */
+const formatProtocolFee = (fee: V4ProtocolFee, locale: Locale): string =>
+  formatStatedFee(
+    {
+      lowestPpm: Math.min(fee.zeroForOnePpm, fee.oneForZeroPpm),
+      highestPpm: Math.max(fee.zeroForOnePpm, fee.oneForZeroPpm),
+    },
+    locale,
+  );
+
+/** Whether the protocol takes anything at all, in either direction. */
+const takesProtocolFee = (fee: V4ProtocolFee | null): fee is V4ProtocolFee =>
+  fee !== null && (fee.zeroForOnePpm > 0 || fee.oneForZeroPpm > 0);
+
 /**
  * What the pool actually charged, beside what it says it charges.
  *
@@ -102,12 +123,12 @@ const FIGURE_GRID = "grid gap-5 sm:grid-cols-2 lg:grid-cols-3";
  */
 function RealizedFeePanel({
   result,
-  hookMayAlterSwaps,
+  disclosure,
   t,
   locale,
 }: {
   result: RealizedFeeRateResult;
-  hookMayAlterSwaps: boolean;
+  disclosure: FeeDisclosure;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -127,7 +148,7 @@ function RealizedFeePanel({
       <p className="text-sm leading-relaxed">
         {verdict.kind === "matches"
           ? t.realizedFee.verdictMatches
-          : verdict.kind === "none-declared"
+          : verdict.kind === "none-stated"
             ? t.realizedFee.verdictNoneDeclared
             : t.realizedFee.verdictDiffers(
                 formatWhole(verdict.daysDiffering, locale),
@@ -136,16 +157,29 @@ function RealizedFeePanel({
       </p>
 
       <dl className={FIGURE_GRID}>
+        {/*
+         * What a swap pays by the pool's own terms: on v4 the key's fee and the
+         * protocol's cut combined, which is what the measured rate is a
+         * measurement of. The note says how the figure was arrived at where
+         * there was arithmetic in it.
+         */}
         <Figure
           label={t.realizedFee.declared}
           value={
-            verdict.kind === "none-declared"
+            verdict.kind === "none-stated"
               ? t.realizedFee.noDeclared
-              : formatFeePpm(verdict.declaredPpm, locale)
+              : formatStatedFee(verdict.stated, locale)
           }
-          {...(verdict.kind === "none-declared"
+          {...(verdict.kind === "none-stated"
             ? { note: t.realizedFee.noDeclaredNote }
-            : {})}
+            : disclosure.lpFeePpm !== null && takesProtocolFee(disclosure.protocolFee)
+              ? {
+                  note: t.realizedFee.statedNote(
+                    formatFeePpm(disclosure.lpFeePpm, locale),
+                    formatProtocolFee(disclosure.protocolFee, locale),
+                  ),
+                }
+              : {})}
         />
         <Figure
           label={t.realizedFee.median}
@@ -179,7 +213,7 @@ function RealizedFeePanel({
       <p className="text-xs leading-relaxed text-muted">{t.realizedFee.intro}</p>
 
       {/* Only where it is true. A pool with no such hook is not owed the caveat. */}
-      {hookMayAlterSwaps ? (
+      {disclosure.hookMayAlterSwaps ? (
         <p className="text-sm leading-relaxed">{t.realizedFee.notLpShare}</p>
       ) : null}
     </Panel>
@@ -292,9 +326,14 @@ export function PoolRangeReport({
         <p className="text-sm leading-relaxed text-muted">
           {t.report.poolSummary(
             pool.protocolVersion,
-            disclosure.declaredPpm === null
+            disclosure.lpFeePpm === null
               ? t.report.noDeclaredFee
-              : t.report.feePerSwap(formatFeePpm(disclosure.declaredPpm, locale)),
+              : takesProtocolFee(disclosure.protocolFee)
+                ? t.report.feePlusProtocol(
+                    formatFeePpm(disclosure.lpFeePpm, locale),
+                    formatProtocolFee(disclosure.protocolFee, locale),
+                  )
+                : t.report.feePerSwap(formatFeePpm(disclosure.lpFeePpm, locale)),
           )}
         </p>
         <p className="break-all font-mono text-xs text-muted">{pool.id}</p>
@@ -471,12 +510,7 @@ export function PoolRangeReport({
        * tier already said; in v4 it is often the only place the real rate
        * appears, because the tier and the rate stopped being the same number.
        */}
-      <RealizedFeePanel
-        result={realizedFee}
-        hookMayAlterSwaps={disclosure.hookMayAlterSwaps}
-        t={t}
-        locale={locale}
-      />
+      <RealizedFeePanel result={realizedFee} disclosure={disclosure} t={t} locale={locale} />
 
       {/*
        * The check that does test something, after the figures that do not. The

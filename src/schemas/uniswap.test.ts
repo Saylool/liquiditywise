@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   HOOK_PERMISSION_FLAGS,
   hookPermissionBits,
+  lpFeePpm,
+  statedSwapFee,
+  swapFeePpm,
+  V4_MAX_PROTOCOL_FEE_PPM,
   MAX_TOKEN_NAME_LENGTH,
   MAX_TOKEN_SYMBOL_LENGTH,
   PoolReferenceSchema,
@@ -39,7 +43,7 @@ const v3Pool = {
 const staticFee = { kind: "static", feePpm: 500 };
 const dynamicFee = (currentFeePpm: number | null = null) => ({ kind: "dynamic", currentFeePpm });
 
-const v4PoolWith = (fee: unknown, hookAddress: string | null) => ({
+const v4PoolWith = (fee: unknown, hookAddress: string | null, protocolFee: unknown = null) => ({
   protocolVersion: "v4",
   chainId: 1,
   id: V4_POOL_ID,
@@ -47,6 +51,7 @@ const v4PoolWith = (fee: unknown, hookAddress: string | null) => ({
   token1: tokenB,
   tickSpacing: 60,
   fee,
+  protocolFee,
   hookAddress,
 });
 
@@ -453,5 +458,69 @@ describe("v4 hook validity", () => {
 
   it("leaves v3 pools unaffected by hook rules", () => {
     expect(V3PoolSchema.safeParse(v3Pool).success).toBe(true);
+  });
+});
+
+/*
+ * The fee, as the chain reports it: the key's fee, the protocol's cut on top,
+ * and what a swap pays once the two are combined the way the PoolManager
+ * combines them.
+ */
+describe("the protocol's cut and what a swap pays", () => {
+  const cut = (ppm: number) => ({ zeroForOnePpm: ppm, oneForZeroPpm: ppm });
+
+  it("accepts an unread fee, which a listed pool may carry", () => {
+    expect(V4PoolSchema.safeParse(v4PoolWith({ kind: "unread" }, null)).success).toBe(true);
+    expect(V4PoolSchema.safeParse(v4PoolWith({ kind: "unread" }, hookAddressWithPermissions(0))).success).toBe(true);
+  });
+
+  it("accepts the largest cut the protocol allows, and refuses one above it", () => {
+    expect(V4PoolSchema.safeParse(v4PoolWith(staticFee, null, cut(V4_MAX_PROTOCOL_FEE_PPM))).success).toBe(true);
+    expect(V4PoolSchema.safeParse(v4PoolWith(staticFee, null, cut(V4_MAX_PROTOCOL_FEE_PPM + 1))).success).toBe(false);
+    expect(V4PoolSchema.safeParse(v4PoolWith(staticFee, null, { zeroForOnePpm: -1, oneForZeroPpm: 0 })).success).toBe(false);
+  });
+
+  it("requires the cut to be stated or stated as unread, never absent", () => {
+    const without = Object.fromEntries(Object.entries(v4Pool).filter(([field]) => field !== "protocolFee"));
+
+    expect(V4PoolSchema.safeParse(without).success).toBe(false);
+  });
+
+  /* `ProtocolFeeLibrary.calculateSwapFee`, checked against the chain's own figures. */
+  it("combines the two fees the way the PoolManager does, in integers", () => {
+    expect(swapFeePpm(500, 125)).toBe(625);
+    expect(swapFeePpm(10, 2)).toBe(12);
+    expect(swapFeePpm(3000, 500)).toBe(3499);
+    expect(swapFeePpm(3000, 0)).toBe(3000);
+    expect(swapFeePpm(0, 125)).toBe(125);
+  });
+
+  it("states a v3 pool's tier as what a swap pays", () => {
+    const pool = PoolSchema.parse(v3Pool);
+
+    expect(lpFeePpm(pool)).toBe(3000);
+    expect(statedSwapFee(pool)).toEqual({ lowestPpm: 3000, highestPpm: 3000 });
+  });
+
+  it("states a v4 pool's fee with the cut on top, as a range when the cut differs by direction", () => {
+    const symmetric = V4PoolSchema.parse(v4PoolWith(staticFee, null, cut(125)));
+    const lopsided = V4PoolSchema.parse(v4PoolWith(staticFee, null, { zeroForOnePpm: 100, oneForZeroPpm: 125 }));
+
+    expect(lpFeePpm(symmetric)).toBe(500);
+    expect(statedSwapFee(symmetric)).toEqual({ lowestPpm: 625, highestPpm: 625 });
+    expect(statedSwapFee(lopsided)).toEqual({ lowestPpm: 600, highestPpm: 625 });
+  });
+
+  it("states nothing for a dynamic, an unread, or a state-less pool", () => {
+    const dynamic = V4PoolSchema.parse(v4PoolWith(dynamicFee(), hookAddressWithPermissions(0)));
+    const unread = V4PoolSchema.parse(v4PoolWith({ kind: "unread" }, null));
+    const stateless = V4PoolSchema.parse(v4PoolWith(staticFee, null, null));
+
+    expect(statedSwapFee(dynamic)).toBeNull();
+    expect(lpFeePpm(dynamic)).toBeNull();
+    expect(statedSwapFee(unread)).toBeNull();
+    expect(lpFeePpm(unread)).toBeNull();
+    expect(statedSwapFee(stateless)).toBeNull();
+    expect(lpFeePpm(stateless)).toBe(500);
   });
 });

@@ -4,11 +4,12 @@ import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedPa
 import { formatFeePpm, formatTokenAmount, formatWhole } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
-import type {
-  AddressHoldings as Holdings,
-  DataResult,
-  HoldingPool,
-  PriceBandParameters,
+import {
+  type AddressHoldings as Holdings,
+  type DataResult,
+  type HoldingPool,
+  ONE_SIDED_SHOWN,
+  type PriceBandParameters,
 } from "../schemas";
 
 /**
@@ -30,14 +31,6 @@ import type {
  *     source reports — a second ordering claim, and one that has to be made out
  *     loud rather than left to be inferred from a list that stops.
  */
-
-/**
- * How many of the one-sided pools to show.
- *
- * The same count the search publishes, for the same reason: enough that the
- * useful ones are there, few enough that the list is read rather than scrolled.
- */
-const ONE_SIDED_SHOWN = 12;
 
 /**
  * One pool, of either protocol, linked to its own analysis.
@@ -68,7 +61,9 @@ const TierRow = ({
       ? formatFeePpm(pool.feePpm, locale)
       : pool.fee.kind === "static"
         ? formatFeePpm(pool.fee.feePpm, locale)
-        : t.v4.dynamicFee;
+        : pool.fee.kind === "dynamic"
+          ? t.v4.dynamicFee
+          : t.v4.feeUnread;
   const hooked = pool.protocolVersion === "v4" && pool.hookAddress !== null;
 
   return (

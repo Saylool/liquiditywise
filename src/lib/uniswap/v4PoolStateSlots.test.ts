@@ -82,24 +82,61 @@ describe("unpackSlot0", () => {
     const tick = -198322;
     const word = (BigInt(tick + 0x1000000) << 160n) | sqrtPriceX96;
 
-    expect(unpackSlot0(word)).toEqual({ sqrtPriceX96, tick });
+    expect(unpackSlot0(word)).toMatchObject({ sqrtPriceX96, tick });
   });
 
   it("unpacks a positive tick", () => {
     const word = (198320n << 160n) | 79242101521076757860230726452n;
 
-    expect(unpackSlot0(word)).toEqual({ sqrtPriceX96: 79242101521076757860230726452n, tick: 198320 });
+    expect(unpackSlot0(word)).toMatchObject({ sqrtPriceX96: 79242101521076757860230726452n, tick: 198320 });
   });
 
-  it("ignores the fee fields above the tick", () => {
+  it("keeps the fee fields above the tick out of the tick", () => {
     const word = (3000n << 208n) | (500n << 184n) | (5n << 160n) | 12345n;
 
-    expect(unpackSlot0(word)).toEqual({ sqrtPriceX96: 12345n, tick: 5 });
+    expect(unpackSlot0(word)).toMatchObject({ sqrtPriceX96: 12345n, tick: 5 });
   });
 });
 
 describe("unpackLiquidity", () => {
   it("reads the low 128 bits and nothing above them", () => {
     expect(unpackLiquidity((1n << 200n) | 871594992723282798n)).toBe(871594992723282798n);
+  });
+});
+
+describe("unpackSlot0's fee bits", () => {
+  const packed = (lpFee: bigint, protocolOneForZero: bigint, protocolZeroForOne: bigint, tick = 0n) =>
+    (lpFee << 208n) | (((protocolOneForZero << 12n) | protocolZeroForOne) << 184n) | (tick << 160n) | 1n;
+
+  /*
+   * The ETH/USDC pool at 500 ppm with a 125 ppm protocol fee each way, as the
+   * chain held it on 2026-09-15 — the pool whose indexer feeTier read 625.
+   */
+  it("reads the LP fee and both protocol fees where Slot0 keeps them", () => {
+    const slot0 = unpackSlot0(packed(500n, 125n, 125n));
+
+    expect(slot0.lpFeePpm).toBe(500);
+    expect(slot0.protocolFee).toEqual({ zeroForOnePpm: 125, oneForZeroPpm: 125 });
+  });
+
+  /* The two halves are two fields: swapped, they must read swapped. */
+  it("tells the two directions apart", () => {
+    expect(unpackSlot0(packed(3000n, 7n, 500n)).protocolFee).toEqual({
+      zeroForOnePpm: 500,
+      oneForZeroPpm: 7,
+    });
+  });
+
+  it("keeps the fee bits out of the tick and the tick out of the fee bits", () => {
+    const slot0 = unpackSlot0(packed(0xffffffn, 0xfffn, 0xfffn, BigInt(0x1000000 - 198_322)));
+
+    expect(slot0.tick).toBe(-198_322);
+    expect(slot0.lpFeePpm).toBe(0xffffff);
+    expect(slot0.protocolFee).toEqual({ zeroForOnePpm: 0xfff, oneForZeroPpm: 0xfff });
+    expect(slot0.sqrtPriceX96).toBe(1n);
+  });
+
+  it("reads a dynamic pool's stored zero as zero", () => {
+    expect(unpackSlot0(packed(0n, 0n, 0n)).lpFeePpm).toBe(0);
   });
 });

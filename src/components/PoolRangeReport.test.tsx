@@ -509,18 +509,25 @@ describe("what the pool actually charged", () => {
     } as unknown as PoolDailyPriceHistory;
   };
 
-  const v4Pool = (hookAddress: string | null, feePpm = 3000) =>
+  const v4Pool = (hookAddress: string | null, feePpm = 3000, protocolPpm = 0, protocolOneForZeroPpm = protocolPpm) =>
     ({
       ...V4_REF,
       token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
       token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
       tickSpacing: 60,
       fee: { kind: "static", feePpm },
+      protocolFee: { zeroForOnePpm: protocolPpm, oneForZeroPpm: protocolOneForZeroPpm },
       hookAddress,
     }) as unknown as V3Pool;
 
-  const v4Parts = (hookAddress: string | null, feesPerMillion: number, feePpm = 3000) => ({
-    pool: ok(v4Pool(hookAddress, feePpm)),
+  const v4Parts = (
+    hookAddress: string | null,
+    feesPerMillion: number,
+    feePpm = 3000,
+    protocolPpm = 0,
+    protocolOneForZeroPpm = protocolPpm,
+  ) => ({
+    pool: ok(v4Pool(hookAddress, feePpm, protocolPpm, protocolOneForZeroPpm)),
     snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
     history: ok({
       ...(traded(feesPerMillion) as unknown as Record<string, unknown>),
@@ -533,6 +540,43 @@ describe("what the pool actually charged", () => {
     const markup = render(analyse({ history: ok(traded(3000)) }));
 
     expect(markup).toContain("What it actually charged");
+    expect(markup).toContain("The declared rate is the rate that was charged");
+  });
+
+  /*
+   * The ETH/USDC pool as the chain holds it: 500 ppm to providers, 125 ppm to
+   * the protocol on top, 625 ppm paid by every swap. The stated fee the
+   * measurement is compared against is the 625 — which is what the indexer
+   * had been calling the tier — and the page says how it was arrived at.
+   */
+  it("compares against what a swap pays once the protocol's cut is on top", () => {
+    const markup = render(analyse(v4Parts(null, 625, 500, 125)));
+
+    expect(markup).toContain("0.05% fee on every swap, plus 0.0125% to the protocol");
+    expect(markup).toContain("The declared rate is the rate that was charged");
+    expect(markup).toContain("Stated fee</dt><dd class=\"font-mono text-sm\">0.0625%</dd>");
+    expect(markup).toContain("0.05% to liquidity providers and 0.0125% to the protocol");
+  });
+
+  it("calls a hookless v4 pool that charged only its own fee a disagreement, once the cut is stated", () => {
+    const markup = render(analyse(v4Parts(null, 500, 500, 125)));
+
+    expect(markup).toContain("These do not agree");
+  });
+
+  it("names no cut in the header when the protocol takes none", () => {
+    const markup = render(analyse(v4Parts(null, 3000)));
+
+    expect(markup).toContain("0.30% fee on every swap</p>");
+    expect(markup).not.toContain("to the protocol");
+  });
+
+  /* A cut that differs by direction makes the stated fee a range, and a day inside it agrees. */
+  it("states a range when the cut differs by direction, and accepts a day inside it", () => {
+    const markup = render(analyse(v4Parts(null, 625, 500, 100, 125)));
+
+    expect(markup).toContain("0.05% fee on every swap, plus 0.01% – 0.0125% to the protocol");
+    expect(markup).toContain("Stated fee</dt><dd class=\"font-mono text-sm\">0.06% – 0.0625%</dd>");
     expect(markup).toContain("The declared rate is the rate that was charged");
   });
 

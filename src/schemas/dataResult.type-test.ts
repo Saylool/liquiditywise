@@ -30,7 +30,11 @@ export function readFeePpm(pool: Pool): number | null {
     case "v3":
       return pool.feePpm;
     case "v4":
-      return pool.fee.kind === "static" ? pool.fee.feePpm : pool.fee.currentFeePpm;
+      return pool.fee.kind === "static"
+        ? pool.fee.feePpm
+        : pool.fee.kind === "dynamic"
+          ? pool.fee.currentFeePpm
+          : null;
   }
 }
 

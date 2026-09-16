@@ -211,16 +211,46 @@ export const PoolReferenceSchema = z.discriminatedUnion("protocolVersion", [
 export type PoolReference = z.infer<typeof PoolReferenceSchema>;
 
 /**
- * How a v4 pool charges. A static pool has one fee forever; a dynamic pool lets
- * its hook rewrite the fee per swap, so the current value is only meaningful if we
- * actually observed it — hence `null` rather than a placeholder number.
+ * How a v4 pool charges, read from the pool's own key on the chain.
+ *
+ * A static pool has one fee forever; a dynamic pool lets its hook rewrite the
+ * fee per swap, so the current value is only meaningful if we actually observed
+ * it — hence `null` rather than a placeholder number. The third state is a
+ * pool in a list whose key the chain could not be asked for: the fee is then
+ * unread, which is a fact about this read and not about the pool, and the row
+ * says so rather than showing a number from somewhere else.
+ *
+ * Not the indexer's `feeTier`. Measured on 2026-09-15, that field is the total
+ * fee of the pool's latest swap — LP and protocol fee combined — so it runs a
+ * quarter above the LP fee on every hookless pool and drifts on a hooked one.
  */
 export const V4FeeConfigurationSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("static"), feePpm: V4LpFeePpmSchema }),
   z.strictObject({ kind: z.literal("dynamic"), currentFeePpm: V4LpFeePpmSchema.nullable() }),
+  z.strictObject({ kind: z.literal("unread") }),
 ]);
 
 export type V4FeeConfiguration = z.infer<typeof V4FeeConfigurationSchema>;
+
+/** `ProtocolFeeLibrary.MAX_PROTOCOL_FEE`: a tenth of a percent, in parts-per-million. */
+export const V4_MAX_PROTOCOL_FEE_PPM = 1000;
+
+const V4ProtocolFeePpmSchema = z.int().min(0).max(V4_MAX_PROTOCOL_FEE_PPM);
+
+/**
+ * The protocol's cut of a v4 swap, taken on top of the LP fee, per direction.
+ *
+ * Two figures because the PoolManager stores two, one for swaps selling
+ * token0 and one for swaps selling token1. Governance sets them; on every
+ * mainnet pool read while this was written they were equal, and they are
+ * carried separately because the chain does not require that.
+ */
+export const V4ProtocolFeeSchema = z.strictObject({
+  zeroForOnePpm: V4ProtocolFeePpmSchema,
+  oneForZeroPpm: V4ProtocolFeePpmSchema,
+});
+
+export type V4ProtocolFee = z.infer<typeof V4ProtocolFeeSchema>;
 
 /**
  * A hook contract attached to a v4 pool. The zero address is refused because
@@ -330,6 +360,11 @@ const v4PoolObject = z.strictObject({
   token1: TokenSchema,
   tickSpacing: V4TickSpacingSchema,
   fee: V4FeeConfigurationSchema,
+  /**
+   * The protocol's cut, from the pool's current state on the chain, or `null`
+   * when that state was not read — never a zero standing in for an unread one.
+   */
+  protocolFee: V4ProtocolFeeSchema.nullable(),
   /** `null` states that the pool runs without a hook. */
   hookAddress: HookAddressSchema.nullable(),
 });
@@ -348,7 +383,7 @@ type PoolInvariantInput = {
   | { readonly protocolVersion: "v3" }
   | {
       readonly protocolVersion: "v4";
-      readonly fee: { readonly kind: "static" | "dynamic" };
+      readonly fee: { readonly kind: "static" | "dynamic" | "unread" };
       readonly hookAddress: string | null;
     }
 );
@@ -372,9 +407,12 @@ const tokensCorrectlyOrdered = (pool: PoolInvariantInput): boolean =>
  * No hook means the fee cannot be dynamic — there would be nobody to set it. A
  * hook with no permission bits is only meaningful on a dynamic-fee pool, where
  * rewriting the fee is the whole job.
+ *
+ * A pool whose fee is unread has nothing to check here: the rule is about the
+ * fee mode, and the mode is not known.
  */
 const v4HookMatchesFeeMode = (pool: PoolInvariantInput): boolean => {
-  if (pool.protocolVersion === "v3") return true;
+  if (pool.protocolVersion === "v3" || pool.fee.kind === "unread") return true;
 
   const feeIsDynamic = pool.fee.kind === "dynamic";
   if (pool.hookAddress === null) return !feeIsDynamic;
@@ -455,26 +493,75 @@ export const PoolSchema = withPoolInvariants(
 export type Pool = z.infer<typeof PoolSchema>;
 
 /**
- * The fee a pool itself declares, in parts-per-million, or `null` when it
- * declares none.
+ * The fee that goes to a pool's liquidity providers, in parts-per-million, or
+ * `null` when nothing fixed says.
  *
  * One accessor rather than a `protocolVersion` check at every call site, because
- * the three cases are easy to get subtly wrong and the failure is silent:
+ * the cases are easy to get subtly wrong and the failure is silent:
  *
  *   - A v3 pool's tier is fixed at deployment and is the whole truth.
- *   - A v4 pool with a static fee declares that fee, and its hook may still
- *     rewrite what a swap actually costs. The declaration is real; it is just
+ *   - A v4 pool with a static fee has that fee in its key, and its hook may
+ *     still rewrite what a swap actually costs. The key is real; it is just
  *     not a guarantee.
- *   - A v4 pool with a dynamic fee declares nothing at all. Its PoolKey carries
- *     a sentinel where the number would be, and the hook decides per swap.
+ *   - A v4 pool with a dynamic fee has no fee in its key at all — a sentinel
+ *     where the number would be — and the hook decides per swap.
+ *   - A v4 pool whose key was not read has a fee, and this read does not know it.
  *
  * `currentFeePpm` is deliberately not returned for the dynamic case even when it
  * has been observed. It is one moment's reading, not a declaration, and handing
  * it back here would let a caller compare a month of charged fees against a
  * single instant and report the difference as a disagreement.
  */
-export const declaredFeePpm = (pool: Pool): number | null => {
+export const lpFeePpm = (pool: Pool): number | null => {
   if (pool.protocolVersion === "v3") return pool.feePpm;
 
   return pool.fee.kind === "static" ? pool.fee.feePpm : null;
+};
+
+/**
+ * `ProtocolFeeLibrary.calculateSwapFee`: what one swap pays when the protocol
+ * takes its cut first and the LP fee is charged on what remains.
+ *
+ * Integer arithmetic, as the contract does it, so 3000 ppm to providers with
+ * 500 ppm to the protocol is 3499 and not 3498.5 — the number the chain
+ * charges, and the number the indexer was found to be reporting as the tier.
+ */
+export const swapFeePpm = (lpFee: number, protocolFee: number): number =>
+  protocolFee + lpFee - Math.floor((protocolFee * lpFee) / 1_000_000);
+
+/**
+ * What a swap pays by the pool's own terms, as a range: one figure when the
+ * protocol takes the same cut in both directions, two when it does not.
+ */
+export type StatedSwapFee = {
+  readonly lowestPpm: number;
+  readonly highestPpm: number;
+};
+
+/**
+ * The fee a swap pays according to what the chain says about the pool, or
+ * `null` when nothing fixed says.
+ *
+ * For a v3 pool it is the tier: v3's protocol share, where one is switched on,
+ * is carved out of the tier rather than added to it, so the swapper pays the
+ * tier either way. For a v4 pool it is the key's fee and the protocol's cut
+ * combined the way the PoolManager combines them, per direction — and nothing
+ * at all for a dynamic pool, whose hook decides, or for one whose state was
+ * not read.
+ *
+ * This is the figure a measured rate is compared against. Comparing the
+ * measured total against the LP fee alone would report every hookless v4 pool
+ * on mainnet as charging a quarter more than it says.
+ */
+export const statedSwapFee = (pool: Pool): StatedSwapFee | null => {
+  if (pool.protocolVersion === "v3") return { lowestPpm: pool.feePpm, highestPpm: pool.feePpm };
+  if (pool.fee.kind !== "static" || pool.protocolFee === null) return null;
+
+  const zeroForOne = swapFeePpm(pool.fee.feePpm, pool.protocolFee.zeroForOnePpm);
+  const oneForZero = swapFeePpm(pool.fee.feePpm, pool.protocolFee.oneForZeroPpm);
+
+  return {
+    lowestPpm: Math.min(zeroForOne, oneForZero),
+    highestPpm: Math.max(zeroForOne, oneForZero),
+  };
 };

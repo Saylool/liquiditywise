@@ -57,7 +57,12 @@ const PoolRow = ({
 }) => {
   const { pool } = entry;
   const depth = depthInEth(entry);
-  const fee = pool.fee.kind === "static" ? formatFeePpm(pool.fee.feePpm, locale) : t.v4.dynamicFee;
+  const fee =
+    pool.fee.kind === "static"
+      ? formatFeePpm(pool.fee.feePpm, locale)
+      : pool.fee.kind === "dynamic"
+        ? t.v4.dynamicFee
+        : t.v4.feeUnread;
 
   const body = (
     <>

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { HOOK_PERMISSION_FLAGS } from "../../schemas";
-import { DYNAMIC_FEE_FLAG } from "./v4PoolAdapter";
 import { normalizeV4TradedPools } from "./v4TradedPoolsAdapter";
 
 const FETCHED_AT = "2026-09-15T12:00:00.000Z";
@@ -13,9 +12,11 @@ const hookWith = (...bits: readonly number[]) =>
 
 const rawToken = (id: string, symbol: string, decimals: string) => ({ id, symbol, name: symbol, decimals, derivedETH: "1" });
 
+const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
+
 const rawPool = (index: number, overrides: Record<string, unknown> = {}) => ({
   id: poolId(index),
-  feeTier: "625",
+  createdAtBlockNumber: "21688329",
   tickSpacing: "10",
   hooks: NATIVE,
   token0: rawToken(NATIVE, "ETH", "18"),
@@ -24,7 +25,7 @@ const rawPool = (index: number, overrides: Record<string, unknown> = {}) => ({
 });
 
 const payload = (pools: readonly unknown[], meta: unknown = { hasIndexingErrors: false }) => ({
-  data: { pools, _meta: meta },
+  data: { pools, poolManagers: [{ id: POOL_MANAGER }], _meta: meta },
 });
 
 const normalize = (body: unknown) => normalizeV4TradedPools({ payload: body, fetchedAt: FETCHED_AT });
@@ -45,11 +46,25 @@ describe("normalizeV4TradedPools", () => {
     expect(result.status === "success" && result.data.pools[0]?.token0.address).toBe(NATIVE);
   });
 
-  it("carries a hooked, dynamic-fee pool whole", () => {
-    const hook = hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP);
-    const result = normalize(payload([rawPool(1, { feeTier: String(DYNAMIC_FEE_FLAG), hooks: hook })]));
+  /*
+   * The chain is not asked for this list, so every fee is unread — and the
+   * list carries what a later read needs: the manager, and each pool's block.
+   */
+  it("publishes every fee unread, with the manager and the creation blocks", () => {
+    const result = normalize(payload([rawPool(1, { createdAtBlockNumber: "21700000" }), rawPool(2)]));
 
-    expect(result.status === "success" && result.data.pools[0]?.fee).toEqual({ kind: "dynamic", currentFeePpm: null });
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.pools.map((pool) => pool.fee)).toEqual([{ kind: "unread" }, { kind: "unread" }]);
+    expect(result.data.poolManager).toBe(POOL_MANAGER);
+    expect(result.data.createdAtBlockNumbers).toEqual({ [poolId(1)]: "21700000", [poolId(2)]: "21688329" });
+  });
+
+  it("carries a hooked pool whole, its fee unread like the rest", () => {
+    const hook = hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP);
+    const result = normalize(payload([rawPool(1, { hooks: hook })]));
+
+    expect(result.status === "success" && result.data.pools[0]?.fee).toEqual({ kind: "unread" });
     expect(result.status === "success" && result.data.pools[0]?.hookAddress).toBe(hook);
   });
 

@@ -29,6 +29,7 @@ const match = (
     token1: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 },
     tickSpacing: 10,
     fee: { kind: "static", feePpm: 250 },
+    protocolFee: null,
     hookAddress: overrides.hookAddress ?? null,
   },
   state: { liquidity: overrides.liquidity ?? "642953328768594464", sqrtPriceX96: "1584563250285286751870879006" },
@@ -48,6 +49,19 @@ const render = (result: DataResult<SearchResults>, locale: Locale = "en", terms:
   );
 
 describe("V4PoolSearchResults", () => {
+  /* Never the indexer's figure: a fee the chain did not answer for is said to be unread. */
+  it("says when a pool's fee was not read", () => {
+    const unread = match();
+    const markup = render(found([{ ...unread, pool: { ...unread.pool, fee: { kind: "unread" } } }]));
+
+    expect(markup).toContain("fee not read");
+    expect(markup).not.toContain("0.025%");
+  });
+
+  it("says where each row's fee came from", () => {
+    expect(render(found([match()]))).toContain("read from the key it was created with, on the chain");
+  });
+
   it("shows the pair, the fee and the depth at the current price", () => {
     const markup = render(found([match()]));
 
