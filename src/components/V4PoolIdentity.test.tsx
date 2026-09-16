@@ -8,7 +8,14 @@ import { V4PoolIdentity } from "./V4PoolIdentity";
 
 const USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 const WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-const SWAP_HOOK = `0x${"1".repeat(36)}${HOOK_PERMISSION_FLAGS.BEFORE_SWAP.toString(16).padStart(4, "0")}`;
+/** A hook address carrying exactly the given bits, as v4 mines them into its last four characters. */
+const hookWith = (...bits: readonly number[]) => {
+  const mask = bits.reduce((all, bit) => all | bit, 0);
+  return `0x${"1".repeat(36)}${mask.toString(16).padStart(4, "0")}`;
+};
+const SWAP_HOOK = hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP);
+/** `renderToStaticMarkup` writes an apostrophe as an entity. */
+const escaped = (text: string) => text.replace(/'/g, "&#x27;");
 
 const pool = (
   fee: V4Pool["fee"],
@@ -92,5 +99,102 @@ describe("V4PoolIdentity and the fee", () => {
     expect(markup).toContain("Bir takas %0,0625 öder");
     expect(markup).toContain("Protokol komisyonu");
     expect(markup).not.toContain("A swap pays");
+  });
+});
+
+/*
+ * What the hook may do, for a reader who has never heard of a callback: a
+ * sentence per permission under the moment it runs at, the warnings above,
+ * and the protocol's own names folded away for the reader checking the page
+ * against the address.
+ */
+describe("V4PoolIdentity and the hook", () => {
+  const dynamic = { kind: "dynamic", currentFeePpm: null } as const;
+  const fixed = { kind: "static", feePpm: 500 } as const;
+  const noCut = { zeroForOnePpm: 0, oneForZeroPpm: 0 };
+  const { BEFORE_SWAP, AFTER_SWAP, AFTER_SWAP_RETURNS_DELTA } = HOOK_PERMISSION_FLAGS;
+  const { BEFORE_REMOVE_LIQUIDITY, AFTER_REMOVE_LIQUIDITY, AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA } =
+    HOOK_PERMISSION_FLAGS;
+
+  it("writes what the hook may do in plain words, under the moment it runs at", () => {
+    const markup = render(pool(dynamic, noCut, hookWith(BEFORE_SWAP, AFTER_SWAP, AFTER_SWAP_RETURNS_DELTA)));
+
+    expect(markup).toContain("Around swaps");
+    expect(markup).toContain(
+      "Run before every swap, where it can refuse the swap and, on a pool with a dynamic fee, set what that swap pays.",
+    );
+    expect(markup).toContain("Run after every swap, where it can still refuse the swap.");
+    expect(markup).toContain("Take a share of a swap after the pool has priced it.");
+    expect(markup).not.toContain("Around deposits");
+    expect(markup).not.toContain("Around donations");
+  });
+
+  it("folds the protocol's own names beneath the sentences", () => {
+    const markup = render(pool(dynamic, noCut, hookWith(BEFORE_SWAP)));
+    const names = markup.indexOf(escaped("The protocol's own names for these"));
+
+    expect(names).toBeGreaterThan(markup.indexOf("Run before every swap"));
+    expect(markup.lastIndexOf("<summary", names)).toBeGreaterThan(-1);
+    expect(markup.indexOf("beforeSwap")).toBeGreaterThan(names);
+  });
+
+  it("warns when the hook runs at a withdrawal, because it can refuse one", () => {
+    const markup = render(pool(fixed, noCut, hookWith(BEFORE_REMOVE_LIQUIDITY)));
+
+    expect(markup).toContain(
+      "This hook runs when a provider withdraws, and is permitted to refuse a withdrawal. Whether it ever does is not knowable from here.",
+    );
+    expect(markup).not.toContain("take a share of what is withdrawn");
+    expect(markup).toContain("Around deposits and withdrawals");
+    expect(markup).toContain("Run before every withdrawal, where it can refuse the withdrawal.");
+    expect(markup).not.toContain("change what a swap costs or pays");
+  });
+
+  it("says the hook may also take a share of a withdrawal when it holds that flag", () => {
+    const markup = render(
+      pool(fixed, noCut, hookWith(AFTER_REMOVE_LIQUIDITY, AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA)),
+    );
+
+    expect(markup).toContain(
+      "It is permitted to refuse a withdrawal, and to take a share of what is withdrawn.",
+    );
+    expect(markup).toContain("Take a share of a withdrawal as it is made, or add tokens to it.");
+  });
+
+  it("puts both warnings above the list, the swap one first", () => {
+    const markup = render(pool(dynamic, noCut, hookWith(BEFORE_SWAP, BEFORE_REMOVE_LIQUIDITY)));
+    const swap = markup.indexOf("This hook is permitted to change what a swap costs or pays.");
+    const withdrawal = markup.indexOf("This hook runs when a provider withdraws");
+
+    expect(swap).toBeGreaterThan(-1);
+    expect(withdrawal).toBeGreaterThan(swap);
+    expect(markup.indexOf("What it is permitted to do")).toBeGreaterThan(withdrawal);
+  });
+
+  it("does not warn about withdrawals for a hook that never runs at one", () => {
+    const markup = render(pool(dynamic, noCut, hookWith(BEFORE_SWAP)));
+
+    expect(markup).not.toContain("withdraws");
+    expect(markup).toContain("This hook is permitted to change what a swap costs or pays.");
+  });
+
+  it("says a hook with no permission bits is called at none of those moments", () => {
+    const markup = render(pool(dynamic, noCut, hookWith(0)));
+
+    expect(markup).toContain("the protocol calls it at none of those moments");
+    expect(markup).not.toContain(escaped("The protocol's own names for these"));
+    expect(markup).not.toContain("<li>");
+  });
+
+  it("translates the sentences, the moments, the warning and the fold", () => {
+    const markup = render(pool(fixed, noCut, hookWith(BEFORE_SWAP, BEFORE_REMOVE_LIQUIDITY)), "tr");
+
+    expect(markup).toContain("Takaslarda");
+    expect(markup).toContain("Her takastan önce çalışmak; orada takası reddedebilir");
+    expect(markup).toContain("Yatırma ve çekmelerde");
+    expect(markup).toContain("Her çekmeden önce çalışmak; orada çekmeyi reddedebilir.");
+    expect(markup).toContain("bir çekmeyi reddetmeye izinli");
+    expect(markup).toContain("Bunların protokoldeki adları");
+    expect(markup).not.toContain("Around swaps");
   });
 });

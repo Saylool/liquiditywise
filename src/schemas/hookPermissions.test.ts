@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   alterSwapEconomics,
+  alterWithdrawals,
+  chargeWithdrawals,
+  groupedHookPermissions,
   HOOK_PERMISSION_FLAGS,
   HOOK_PERMISSIONS,
+  HOOK_TOPICS,
   hookPermissionsOf,
 } from "./index";
 
@@ -115,5 +119,103 @@ describe("alterSwapEconomics", () => {
 
   it("is false for a pool with no hook at all", () => {
     expect(alterSwapEconomics(null)).toBe(false);
+  });
+});
+
+describe("groupedHookPermissions", () => {
+  /*
+   * The page lists what a hook may do under the moment a reader can picture:
+   * the swaps that set the price they see, their own deposits and withdrawals,
+   * the pool's creation, donations — in that order, whatever the bit order.
+   */
+  it("groups the permissions by the moment they run at, in reading order", () => {
+    const address = hookWith(
+      HOOK_PERMISSION_FLAGS.AFTER_DONATE,
+      HOOK_PERMISSION_FLAGS.AFTER_SWAP,
+      HOOK_PERMISSION_FLAGS.BEFORE_INITIALIZE,
+      HOOK_PERMISSION_FLAGS.AFTER_ADD_LIQUIDITY,
+      HOOK_PERMISSION_FLAGS.BEFORE_SWAP,
+    );
+
+    expect(groupedHookPermissions(address)).toEqual([
+      { topic: "swaps", permissions: ["beforeSwap", "afterSwap"] },
+      { topic: "liquidity", permissions: ["afterAddLiquidity"] },
+      { topic: "creation", permissions: ["beforeInitialize"] },
+      { topic: "donations", permissions: ["afterDonate"] },
+    ]);
+  });
+
+  /* "Around donations: nothing" would be a sentence about an absence. */
+  it("leaves out a topic the hook claims nothing under", () => {
+    expect(groupedHookPermissions(hookWith(HOOK_PERMISSION_FLAGS.BEFORE_REMOVE_LIQUIDITY))).toEqual([
+      { topic: "liquidity", permissions: ["beforeRemoveLiquidity"] },
+    ]);
+  });
+
+  it("places every permission under exactly one topic, and the topics in their order", () => {
+    const all = Object.values(HOOK_PERMISSION_FLAGS).reduce((mask, bit) => mask | bit, 0);
+    const groups = groupedHookPermissions(hookWith(all));
+
+    expect(groups.map((group) => group.topic)).toEqual([...HOOK_TOPICS]);
+    expect(groups.flatMap((group) => group.permissions)).toEqual([...HOOK_PERMISSIONS]);
+  });
+
+  it("groups nothing for a hook with no bits, or for no hook", () => {
+    expect(groupedHookPermissions(hookWith(0))).toEqual([]);
+    expect(groupedHookPermissions(null)).toEqual([]);
+  });
+});
+
+describe("alterWithdrawals", () => {
+  /*
+   * Every callback the protocol runs as part of a withdrawal can refuse it: a
+   * hook that reverts reverts the withdrawal with it. That is the other side
+   * of the swap warning, for the person holding the position.
+   */
+  it.each([
+    ["before a withdrawal", HOOK_PERMISSION_FLAGS.BEFORE_REMOVE_LIQUIDITY],
+    ["after one", HOOK_PERMISSION_FLAGS.AFTER_REMOVE_LIQUIDITY],
+  ])("is true for a hook that runs %s", (_label, bit) => {
+    expect(alterWithdrawals(hookWith(bit))).toBe(true);
+  });
+
+  it.each([
+    ["only swap callbacks", HOOK_PERMISSION_FLAGS.BEFORE_SWAP],
+    ["only deposits", HOOK_PERMISSION_FLAGS.AFTER_ADD_LIQUIDITY],
+    ["only donations", HOOK_PERMISSION_FLAGS.BEFORE_DONATE],
+  ])("is false for a hook holding %s", (_label, bit) => {
+    expect(alterWithdrawals(hookWith(bit))).toBe(false);
+  });
+
+  it("is false for a pool with no hook at all", () => {
+    expect(alterWithdrawals(null)).toBe(false);
+  });
+});
+
+describe("chargeWithdrawals", () => {
+  /* Refusing is one thing; taking a share needs the returns-delta flag. */
+  it("is true only for a hook permitted to take a share of a withdrawal", () => {
+    expect(
+      chargeWithdrawals(
+        hookWith(
+          HOOK_PERMISSION_FLAGS.AFTER_REMOVE_LIQUIDITY,
+          HOOK_PERMISSION_FLAGS.AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA,
+        ),
+      ),
+    ).toBe(true);
+    expect(chargeWithdrawals(hookWith(HOOK_PERMISSION_FLAGS.AFTER_REMOVE_LIQUIDITY))).toBe(false);
+    expect(chargeWithdrawals(hookWith(HOOK_PERMISSION_FLAGS.BEFORE_REMOVE_LIQUIDITY))).toBe(false);
+  });
+
+  it("does not mistake a share of a deposit for one of a withdrawal", () => {
+    expect(
+      chargeWithdrawals(
+        hookWith(
+          HOOK_PERMISSION_FLAGS.AFTER_ADD_LIQUIDITY,
+          HOOK_PERMISSION_FLAGS.AFTER_ADD_LIQUIDITY_RETURNS_DELTA,
+        ),
+      ),
+    ).toBe(false);
+    expect(chargeWithdrawals(null)).toBe(false);
   });
 });

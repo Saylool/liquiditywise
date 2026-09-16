@@ -148,14 +148,20 @@ const V4_ID = `0x${"d".repeat(64)}`;
 const V4_REF = { protocolVersion: "v4", chainId: 1, id: V4_ID } as const;
 const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
 const LIQUIDITY_HOOK = `0x${"1".repeat(36)}0800`;
+const WITHDRAWAL_HOOK = `0x${"1".repeat(36)}0200`;
+const NO_BITS_HOOK = `0x${"1".repeat(36)}0000`;
 
-const v4Analysis = (hookAddress: string | null, protocolPpm = 0): PoolRangeAnalysis => {
+const v4Analysis = (
+  hookAddress: string | null,
+  protocolPpm = 0,
+  fee: V4Pool["fee"] = { kind: "static", feePpm: 250 },
+): PoolRangeAnalysis => {
   const v4Pool = {
     ...V4_REF,
     token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
     token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
     tickSpacing: 60,
-    fee: { kind: "static", feePpm: 250 },
+    fee,
     protocolFee: { zeroForOnePpm: protocolPpm, oneForZeroPpm: protocolPpm },
     hookAddress,
   } as unknown as V4Pool;
@@ -635,18 +641,62 @@ describe("buildRangeInterpretationPrompt and the hook", () => {
     expect(user).not.toContain("permitted");
   });
 
-  it("lists what a hook is permitted to do, from its address", () => {
+  /*
+   * In the page's own sentences, grouped as the page groups them, and never
+   * in the protocol's names: a model handed `afterSwapReturnsDelta` would
+   * explain the name to a reader who was never shown it.
+   */
+  it("tells the model what the hook may do in the page's sentences, not the protocol's names", () => {
     const user = buildV4(SWAP_HOOK).user;
 
     expect(user).toContain("Hook: present");
-    expect(user).toContain("What it is permitted to do: beforeSwap, afterSwap, afterSwapReturnsDelta");
+    expect(user).toContain(
+      "- What it is permitted to do (Around swaps): Run before every swap, where it can refuse the swap and, on a pool with a dynamic fee, set what that swap pays. Run after every swap, where it can still refuse the swap. Take a share of a swap after the pool has priced it.",
+    );
     expect(user).toContain("May change what a swap costs or pays: yes");
+    expect(user).toContain("May refuse a withdrawal, or take a share of one: no");
+    expect(user).not.toContain("beforeSwap");
+    expect(user).not.toContain("ReturnsDelta");
   });
 
   it("says no when the hook cannot touch a swap", () => {
     const user = buildV4(LIQUIDITY_HOOK).user;
 
-    expect(user).toContain("What it is permitted to do: beforeAddLiquidity");
+    expect(user).toContain(
+      "- What it is permitted to do (Around deposits and withdrawals): Run before every deposit, where it can refuse the deposit.",
+    );
+    expect(user).not.toContain("(Around swaps)");
+    expect(user).toContain("May change what a swap costs or pays: no");
+  });
+
+  it("says yes when the hook runs at a withdrawal", () => {
+    const user = buildV4(WITHDRAWAL_HOOK).user;
+
+    expect(user).toContain("Run before every withdrawal, where it can refuse the withdrawal.");
+    expect(user).toContain("May refuse a withdrawal, or take a share of one: yes");
+  });
+
+  /* The same sentences the Turkish page prints, so the prose and the page agree on their words. */
+  it("gives the sentences in the reader's language", () => {
+    const user = buildV4(SWAP_HOOK, "tr").user;
+
+    expect(user).toContain(
+      "- What it is permitted to do (Takaslarda): Her takastan önce çalışmak; orada takası reddedebilir",
+    );
+    expect(user).not.toContain("Around swaps");
+  });
+
+  /* Only valid on a dynamic-fee pool, where such a hook exists to set the fee. */
+  it("says a hook with no permission bits is called at none of those moments", () => {
+    const { user } = buildRangeInterpretationPrompt({
+      analysis: v4Analysis(NO_BITS_HOOK, 0, { kind: "dynamic", currentFeePpm: null }),
+      locale: "en",
+      warnings: [],
+    });
+
+    expect(user).toContain(
+      "- What it is permitted to do: Nothing around swaps, deposits or donations: the protocol calls it at none of those moments.",
+    );
     expect(user).toContain("May change what a swap costs or pays: no");
   });
 
@@ -658,7 +708,7 @@ describe("buildRangeInterpretationPrompt and the hook", () => {
   it("tells the model what it may and may not say about the hook", () => {
     const user = buildV4(SWAP_HOOK).user;
 
-    expect(user).toContain("never what it does, whether it is safe, or who wrote it");
+    expect(user).toContain("in plain words as the page puts them; never what it does, whether it is safe, or who wrote it");
   });
 
   it("keeps the system instruction identical for v3 and v4", () => {

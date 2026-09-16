@@ -4,7 +4,10 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import {
   alterSwapEconomics,
+  alterWithdrawals,
+  chargeWithdrawals,
   type DataResult,
+  groupedHookPermissions,
   hookPermissionsOf,
   swapFeePpm,
   type V4Pool,
@@ -109,6 +112,7 @@ export function V4PoolIdentity({
 
   const pool = result.data;
   const permissions = hookPermissionsOf(pool.hookAddress);
+  const groups = groupedHookPermissions(pool.hookAddress);
   const holdsNativeEther =
     pool.token0.address === ZERO_ADDRESS || pool.token1.address === ZERO_ADDRESS;
 
@@ -200,12 +204,53 @@ export function V4PoolIdentity({
               </p>
             ) : null}
 
+            {/*
+             * The other side of the same coin: a hook that runs when a
+             * provider withdraws can refuse the withdrawal, and one holding
+             * the returns-delta flag can take a share of it. Above the list
+             * for the same reason.
+             */}
+            {alterWithdrawals(pool.hookAddress) ? (
+              <p className="rounded-md border border-warning-border bg-warning-surface px-4 py-3 text-sm leading-relaxed text-warning-foreground">
+                {t.v4.withdrawalWarning(chargeWithdrawals(pool.hookAddress))}
+              </p>
+            ) : null}
+
             <h3 className="text-xs uppercase tracking-widest text-muted">{t.v4.hookMay}</h3>
-            <ul className="flex flex-col gap-1 font-mono text-sm">
-              {permissions.map((permission) => (
-                <li key={permission}>{permission}</li>
-              ))}
-            </ul>
+            {/*
+             * A sentence per permission, under the moment a reader can picture
+             * it at: swaps, their own deposits and withdrawals, the pool's
+             * creation, donations. The protocol's own names — where in its
+             * code the hook is called — are folded beneath, for the reader
+             * checking the page against the address.
+             */}
+            {groups.length === 0 ? (
+              <p className="text-sm leading-relaxed">{t.v4.noPermissions}</p>
+            ) : (
+              groups.map((group) => (
+                <div key={group.topic} className="flex flex-col gap-1">
+                  <h4 className="text-sm font-medium">{t.v4.permissionTopics[group.topic]}</h4>
+                  <ul className="flex list-disc flex-col gap-1 pl-5 text-sm leading-relaxed">
+                    {group.permissions.map((permission) => (
+                      <li key={permission}>{t.v4.permissionWords[permission]}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            )}
+
+            {permissions.length === 0 ? null : (
+              <details className="flex flex-col gap-2">
+                <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">
+                  {t.v4.permissionNames}
+                </summary>
+                <ul className="mt-2 flex flex-col gap-1 font-mono text-sm">
+                  {permissions.map((permission) => (
+                    <li key={permission}>{permission}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
 
             <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
               {t.v4.hookAddressIsThePermission}

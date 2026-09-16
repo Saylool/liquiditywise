@@ -1,3 +1,4 @@
+import type { HookPermission, HookTopic } from "../../schemas/hookPermissions";
 import type { DataFailureNotice, DataWarningNotice } from "../../schemas/notices";
 import type { Locale } from "./locales";
 
@@ -394,6 +395,55 @@ const en = {
     noHookNote:
       "Nothing runs alongside its swaps or its deposits, so it behaves the way a v3 pool does.",
     hookMay: "What it is permitted to do",
+    /*
+     * One sentence per permission, under the moment a reader can picture it
+     * at, with the protocol's own names folded away beneath. The names say
+     * where in the protocol's code a hook is called; what a reader needs is
+     * what that lets it do to a swap, a deposit or a withdrawal of theirs.
+     * Every sentence is a "may": the address grants the moment, not the act.
+     */
+    permissionTopics: {
+      swaps: "Around swaps",
+      liquidity: "Around deposits and withdrawals",
+      creation: "When the pool was created",
+      donations: "Around donations",
+    } satisfies Record<HookTopic, string>,
+    permissionWords: {
+      beforeSwap:
+        "Run before every swap, where it can refuse the swap and, on a pool with a dynamic fee, set what that swap pays.",
+      afterSwap: "Run after every swap, where it can still refuse the swap.",
+      beforeSwapReturnsDelta:
+        "Take tokens out of a swap, or put its own in, before the pool prices it — so a swap here need not follow the pool's own curve.",
+      afterSwapReturnsDelta: "Take a share of a swap after the pool has priced it.",
+      beforeAddLiquidity: "Run before every deposit, where it can refuse the deposit.",
+      afterAddLiquidity: "Run after every deposit, where it can still refuse the deposit.",
+      afterAddLiquidityReturnsDelta:
+        "Take tokens from a deposit as it is made, or add tokens to it.",
+      beforeRemoveLiquidity: "Run before every withdrawal, where it can refuse the withdrawal.",
+      afterRemoveLiquidity: "Run after every withdrawal, where it can still refuse the withdrawal.",
+      afterRemoveLiquidityReturnsDelta:
+        "Take a share of a withdrawal as it is made, or add tokens to it.",
+      beforeInitialize: "Run once, before the pool was created. That has already happened.",
+      afterInitialize: "Run once, after the pool was created. That has already happened.",
+      beforeDonate:
+        "Run before a donation to the pool's providers, where it can refuse the donation.",
+      afterDonate:
+        "Run after a donation to the pool's providers, where it can still refuse the donation.",
+    } satisfies Record<HookPermission, string>,
+    noPermissions:
+      "Nothing around swaps, deposits or donations: the protocol calls it at none of those moments. What a hook like this can still do is set the fee of a pool whose fee is dynamic.",
+    permissionNames: "The protocol's own names for these",
+    /*
+     * The other side of the swap warning. A hook that runs when a provider
+     * withdraws can refuse the withdrawal — a hook that reverts reverts the
+     * withdrawal with it — and one holding the returns-delta flag can take a
+     * share of what comes out. Said above the list, like the swap warning,
+     * for the reader who stops reading.
+     */
+    withdrawalWarning: (share: boolean): string =>
+      share
+        ? "This hook runs when a provider withdraws. It is permitted to refuse a withdrawal, and to take a share of what is withdrawn. Whether it ever does is not knowable from here."
+        : "This hook runs when a provider withdraws, and is permitted to refuse a withdrawal. Whether it ever does is not knowable from here.",
     /*
      * The sentence this whole page exists to carry. A hook's permissions are not
      * stored anywhere — the address is the permission list — so this is the one
@@ -1132,6 +1182,41 @@ const tr: Dictionary = {
     noHookNote:
       "Takaslarının ya da yatırımlarının yanında hiçbir şey çalışmıyor; yani bir v3 havuzu gibi davranıyor.",
     hookMay: "Neye izinli",
+    permissionTopics: {
+      swaps: "Takaslarda",
+      liquidity: "Yatırma ve çekmelerde",
+      creation: "Havuz oluşturulurken",
+      donations: "Bağışlarda",
+    },
+    permissionWords: {
+      beforeSwap:
+        "Her takastan önce çalışmak; orada takası reddedebilir ve komisyonu dinamik olan bir havuzda o takasın ne ödeyeceğini belirleyebilir.",
+      afterSwap: "Her takastan sonra çalışmak; orada takası yine de reddedebilir.",
+      beforeSwapReturnsDelta:
+        "Havuz fiyatlamadan önce takastan token almak ya da takasa kendi tokenlarını koymak — yani buradaki bir takas havuzun kendi eğrisini izlemek zorunda değil.",
+      afterSwapReturnsDelta: "Havuz fiyatladıktan sonra takastan pay almak.",
+      beforeAddLiquidity: "Her yatırmadan önce çalışmak; orada yatırmayı reddedebilir.",
+      afterAddLiquidity: "Her yatırmadan sonra çalışmak; orada yatırmayı yine de reddedebilir.",
+      afterAddLiquidityReturnsDelta:
+        "Yatırma yapılırken yatırılandan token almak ya da ona token eklemek.",
+      beforeRemoveLiquidity: "Her çekmeden önce çalışmak; orada çekmeyi reddedebilir.",
+      afterRemoveLiquidity: "Her çekmeden sonra çalışmak; orada çekmeyi yine de reddedebilir.",
+      afterRemoveLiquidityReturnsDelta:
+        "Çekme yapılırken çekilenden pay almak ya da ona token eklemek.",
+      beforeInitialize: "Havuz oluşturulmadan önce bir kez çalışmak. Bu çoktan oldu.",
+      afterInitialize: "Havuz oluşturulduktan sonra bir kez çalışmak. Bu çoktan oldu.",
+      beforeDonate:
+        "Havuzun sağlayıcılarına yapılan bir bağıştan önce çalışmak; orada bağışı reddedebilir.",
+      afterDonate:
+        "Havuzun sağlayıcılarına yapılan bir bağıştan sonra çalışmak; orada bağışı yine de reddedebilir.",
+    },
+    noPermissions:
+      "Takaslarda, yatırma ve çekmelerde ya da bağışlarda hiçbir şey: protokol onu bu anların hiçbirinde çağırmıyor. Böyle bir hook'un hâlâ yapabildiği şey, komisyonu dinamik olan bir havuzun komisyonunu belirlemek.",
+    permissionNames: "Bunların protokoldeki adları",
+    withdrawalWarning: (share: boolean) =>
+      share
+        ? "Bu hook, bir sağlayıcı para çektiğinde çalışır. Bir çekmeyi reddetmeye ve çekilenden pay almaya izinli. Bunu gerçekten yapıp yapmadığı buradan bilinemez."
+        : "Bu hook, bir sağlayıcı para çektiğinde çalışır ve bir çekmeyi reddetmeye izinli. Bunu gerçekten yapıp yapmadığı buradan bilinemez.",
     hookAddressIsThePermission:
       "Bunlar hook'un kendi adresinden okundu. v4 bir hook'un izinlerini hiçbir yerde saklamaz: hook, son on dört biti PoolManager'ın hangi geri çağrıları tetikleyeceğini yazan bir adrese kurulur, ve PoolManager sözleşmeye sormak yerine o bitlere bakar. Yani burada yazan, hook'un ne *yapabileceği*; ne yaptığı değil — her takasta komisyonu yeniden yazmaya izinli bir hook hep aynı komisyonu döndürüyor olabilir, ve bu buradan bilinemez.",
     alterSwapWarning:

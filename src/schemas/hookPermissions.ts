@@ -105,5 +105,83 @@ export const alterSwapEconomics = (hookAddress: string | null): boolean =>
       permission === "afterSwapReturnsDelta",
   );
 
+/**
+ * Whether a hook may stand between a provider and their withdrawal.
+ *
+ * Singled out for the same reason as the swap economics, from the other side:
+ * it changes what holding a position means. Every callback the protocol runs as
+ * part of a withdrawal can refuse it — a hook that reverts reverts the
+ * withdrawal with it. The returns-delta flag, which requires the after
+ * callback, additionally lets the hook take a share of what comes out; see
+ * {@link chargeWithdrawals}. None of it shows in a price series, or in a fee.
+ */
+export const alterWithdrawals = (hookAddress: string | null): boolean =>
+  hookPermissionsOf(hookAddress).some(
+    (permission) =>
+      permission === "beforeRemoveLiquidity" || permission === "afterRemoveLiquidity",
+  );
+
+/** Whether a hook may take a share of what a provider withdraws, and not only refuse it. */
+export const chargeWithdrawals = (hookAddress: string | null): boolean =>
+  hookPermissionsOf(hookAddress).includes("afterRemoveLiquidityReturnsDelta");
+
+/**
+ * The moments a reader can picture, for the permissions to be listed under.
+ *
+ * The protocol's names say where in its own code a hook is called. A reader
+ * who has never provided liquidity meets those moments as the swaps that set
+ * the price they see, their own deposits and withdrawals, the pool's creation,
+ * and the donations that occasionally go to a pool's providers — so that is
+ * how the page groups them, in that order.
+ */
+export const HOOK_TOPICS = ["swaps", "liquidity", "creation", "donations"] as const;
+
+export type HookTopic = (typeof HOOK_TOPICS)[number];
+
+/**
+ * `satisfies Record<HookPermission, HookTopic>`: a permission under no topic
+ * fails the build, so none can be added above and go unlisted on the page.
+ */
+const TOPIC_OF = {
+  beforeSwap: "swaps",
+  afterSwap: "swaps",
+  beforeSwapReturnsDelta: "swaps",
+  afterSwapReturnsDelta: "swaps",
+  beforeAddLiquidity: "liquidity",
+  afterAddLiquidity: "liquidity",
+  afterAddLiquidityReturnsDelta: "liquidity",
+  beforeRemoveLiquidity: "liquidity",
+  afterRemoveLiquidity: "liquidity",
+  afterRemoveLiquidityReturnsDelta: "liquidity",
+  beforeInitialize: "creation",
+  afterInitialize: "creation",
+  beforeDonate: "donations",
+  afterDonate: "donations",
+} as const satisfies Record<HookPermission, HookTopic>;
+
+export type HookPermissionGroup = {
+  readonly topic: HookTopic;
+  /** In reading order; never empty. */
+  readonly permissions: readonly HookPermission[];
+};
+
+/**
+ * The permissions a hook claims, grouped by topic in the order above.
+ *
+ * A topic the hook claims nothing under is left out rather than shown empty:
+ * "around donations: nothing" would be a sentence about an absence, and the
+ * list is of what the hook may do.
+ */
+export const groupedHookPermissions = (
+  hookAddress: string | null,
+): readonly HookPermissionGroup[] => {
+  const claimed = hookPermissionsOf(hookAddress);
+
+  return HOOK_TOPICS.flatMap((topic) => {
+    const permissions = claimed.filter((permission) => TOPIC_OF[permission] === topic);
+    return permissions.length === 0 ? [] : [{ topic, permissions }];
+  });
+};
+
 /** Every bit outside the fourteen the protocol defines. Always zero in practice. */
 export const UNDEFINED_HOOK_BITS = ~ALL_HOOK_MASK;
