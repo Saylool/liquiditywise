@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { HOOK_PERMISSION_FLAGS } from "../../schemas";
+import { TRADED_POOL_LIMIT } from "./ethereumV3TradedPools";
 import { normalizeV4TradedPools } from "./v4TradedPoolsAdapter";
 
 const FETCHED_AT = "2026-09-15T12:00:00.000Z";
@@ -24,14 +25,15 @@ const rawPool = (index: number, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+/** The week's pool-days, busiest first; a pool appears once per day it traded. */
 const payload = (pools: readonly unknown[], meta: unknown = { hasIndexingErrors: false }) => ({
-  data: { pools, poolManagers: [{ id: POOL_MANAGER }], _meta: meta },
+  data: { poolDayDatas: pools.map((pool) => ({ pool })), poolManagers: [{ id: POOL_MANAGER }], _meta: meta },
 });
 
 const normalize = (body: unknown) => normalizeV4TradedPools({ payload: body, fetchedAt: FETCHED_AT });
 
 describe("normalizeV4TradedPools", () => {
-  it("keeps the source's order and stamps the v4 source", () => {
+  it("keeps the source's order — busiest day first — and stamps the v4 source", () => {
     const result = normalize(payload([rawPool(2), rawPool(1)]));
 
     expect(result.status).toBe("success");
@@ -74,10 +76,31 @@ describe("normalizeV4TradedPools", () => {
     expect(result.status === "success" && result.data.pools.map((pool) => pool.id)).toEqual([poolId(2)]);
   });
 
-  it("lists a pool once however many times it arrives", () => {
-    const result = normalize(payload([rawPool(1), rawPool(1)]));
+  /* A pool that traded on several days of the week arrives once per day; its busiest day's place is the one it keeps. */
+  it("lists a pool once however many days it traded, where its busiest day put it", () => {
+    const result = normalize(payload([rawPool(2), rawPool(1), rawPool(2)]));
 
+    expect(result.status === "success" && result.data.pools.map((pool) => pool.id)).toEqual([poolId(2), poolId(1)]);
+  });
+
+  /* Ids are folded before comparing, or two spellings of one pool would fail the list's own uniqueness rule. */
+  it("lists a pool once when the source spells its id two ways", () => {
+    const upper = { ...rawPool(0xabcdef), id: poolId(0xabcdef).toUpperCase().replace("0X", "0x") };
+    const result = normalize(payload([rawPool(0xabcdef), upper]));
+
+    expect(result.status).toBe("success");
     expect(result.status === "success" && result.data.pools).toHaveLength(1);
+  });
+
+  /* The same width as the v3 net, by construction: a thousand days fold into at most its limit of pools. */
+  it("keeps at most the v3 net's width, the busiest days first", () => {
+    const many = Array.from({ length: TRADED_POOL_LIMIT + 5 }, (_u, index) => rawPool(index + 1));
+    const result = normalize(payload(many));
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.pools).toHaveLength(TRADED_POOL_LIMIT);
+    expect(result.data.pools.at(-1)?.id).toBe(poolId(TRADED_POOL_LIMIT));
   });
 
   it("refuses a list with nothing verifiable in it", () => {

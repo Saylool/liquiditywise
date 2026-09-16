@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  fetchEthereumV4PoolSearch,
-  V4_POOL_SEARCH_FETCH_LIMIT,
-  V4_POOL_SEARCH_PAIR_QUERY,
-  V4_POOL_SEARCH_SINGLE_QUERY,
-} from "./ethereumV4PoolSearch";
+import { fetchEthereumV4PoolSearch } from "./ethereumV4PoolSearch";
+import { tradedWindowStart, V4_TRADED_POOL_DAYS_LIMIT, V4_TRADED_POOLS_QUERY } from "./ethereumV4TradedPools";
 import type { FetchLike } from "./v3SubgraphTransport";
 import { DYNAMIC_FEE_FLAG, INITIALIZE_TOPIC } from "./v4PoolKey";
 import { EXTSLOAD_SELECTOR } from "./v4PoolStateSlots";
@@ -15,33 +11,56 @@ const SUBGRAPH_ID = "TestStableV4SubgraphId";
 const RPC_URL = "https://rpc.test.invalid/key-that-must-never-leak";
 const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
 const POOL_ID = "0xe500210c7ea6bfd9f69dce044b09ef384ec2b34832f132baec3b418208e3a657";
+const OTHER_POOL_ID = `0x${"4f".repeat(32)}`;
 const NOW = new Date("2026-09-15T14:00:00.000Z");
 
+const usdcWeth = {
+  id: POOL_ID,
+  createdAtBlockNumber: "21688329",
+  tickSpacing: "10",
+  hooks: "0x0000000aa232009084bd71a5797d089aa4edfad4",
+  token0: {
+    id: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: "6",
+    derivedETH: "0.0004",
+  },
+  token1: {
+    id: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    symbol: "WETH",
+    name: "Wrapped Ether",
+    decimals: "18",
+    derivedETH: "1",
+  },
+};
+
+/** A pool of the week that no fixture search asks for, so its chain reads must never happen. */
+const wbtcDai = {
+  id: OTHER_POOL_ID,
+  createdAtBlockNumber: "21700000",
+  tickSpacing: "60",
+  hooks: `0x${"0".repeat(40)}`,
+  token0: {
+    id: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+    symbol: "WBTC",
+    name: "Wrapped BTC",
+    decimals: "8",
+    derivedETH: "30",
+  },
+  token1: {
+    id: "0x6b175474e89094c44da98b954eedeac495271d0f",
+    symbol: "DAI",
+    name: "Dai",
+    decimals: "18",
+    derivedETH: "0.0004",
+  },
+};
+
+/** The week's busiest pool-days: the hooked pool on two of its days, the other on one. */
 const subgraphBody = {
   data: {
-    forward: [
-      {
-        id: POOL_ID,
-        createdAtBlockNumber: "21688329",
-        tickSpacing: "10",
-        hooks: "0x0000000aa232009084bd71a5797d089aa4edfad4",
-        token0: {
-          id: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-          symbol: "USDC",
-          name: "USD Coin",
-          decimals: "6",
-          derivedETH: "0.0004",
-        },
-        token1: {
-          id: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-          symbol: "WETH",
-          name: "Wrapped Ether",
-          decimals: "18",
-          derivedETH: "1",
-        },
-      },
-    ],
-    reverse: [],
+    poolDayDatas: [{ pool: usdcWeth }, { pool: wbtcDai }, { pool: usdcWeth }],
     poolManagers: [{ id: POOL_MANAGER }],
     _meta: { hasIndexingErrors: false },
   },
@@ -113,12 +132,13 @@ const requestsMade = (fetchImpl: FetchLike) =>
   }));
 
 describe("fetchEthereumV4PoolSearch", () => {
-  it("returns the pools the source matched, with their state from the chain", async () => {
+  it("returns the pools of the week that match the terms, with their state from the chain", async () => {
     const result = await run();
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
     expect(result.data.matches).toHaveLength(1);
+    expect(result.data.matches[0]?.pool.id).toBe(POOL_ID);
     expect(result.data.matches[0]?.pool.hookAddress).toBe("0x0000000aa232009084bd71a5797d089aa4edfad4");
     expect(result.data.matches[0]?.state).toEqual({
       liquidity: "642953328768594464",
@@ -150,28 +170,48 @@ describe("fetchEthereumV4PoolSearch", () => {
     expect((graph?.body as { query: string }).query).toContain("createdAtBlockNumber");
   });
 
-  it("asks both ways round for a pair, in one request, with the terms as variables", async () => {
+  /*
+   * The source is not asked for the terms. It cannot answer a search over every
+   * v4 pool before the page stops waiting, so the week's busiest pool-days are
+   * read — the same request the holdings net is read with — and the terms are
+   * matched here. Nothing typed by a visitor travels anywhere.
+   */
+  it("asks for the week's busiest pool-days, and keeps the terms out of the request", async () => {
     const fetchImpl = bothEndpoints();
     await run({ fetchImpl });
     const [graph] = requestsMade(fetchImpl);
     const body = graph?.body as { query: string; variables: Record<string, unknown> };
 
-    expect(body.query).toBe(V4_POOL_SEARCH_PAIR_QUERY);
-    expect(body.variables).toEqual({ first: "usdc", second: "weth", limit: V4_POOL_SEARCH_FETCH_LIMIT });
-    expect(body.query).not.toContain("usdc");
+    expect(body.query).toBe(V4_TRADED_POOLS_QUERY);
+    expect(body.variables).toEqual({ from: tradedWindowStart(NOW), limit: V4_TRADED_POOL_DAYS_LIMIT });
+    expect(JSON.stringify(body)).not.toContain("usdc");
   });
 
-  it("pins one side per selection for a single term", async () => {
+  it("runs a single term over the same window", async () => {
     const fetchImpl = bothEndpoints();
-    await run({ fetchImpl, terms: ["weth"] });
+    const result = await run({ fetchImpl, terms: ["weth"] });
     const body = requestsMade(fetchImpl)[0]?.body as { query: string; variables: unknown };
 
-    expect(body.query).toBe(V4_POOL_SEARCH_SINGLE_QUERY);
-    expect(body.variables).toEqual({ term: "weth", limit: V4_POOL_SEARCH_FETCH_LIMIT });
+    expect(body.query).toBe(V4_TRADED_POOLS_QUERY);
+    expect(body.variables).toEqual({ from: tradedWindowStart(NOW), limit: V4_TRADED_POOL_DAYS_LIMIT });
+    expect(result.status === "success" && result.data.matches.map((match) => match.pool.id)).toEqual([POOL_ID]);
   });
 
-  /* The address the chain reads go to comes from the answer, not from here. */
-  it("asks the source which PoolManager to read, then reads that one's logs and storage", async () => {
+  it("matches a pair the other way round", async () => {
+    const result = await run({ terms: ["weth", "usdc"] });
+
+    expect(result.status === "success" && result.data.matches.map((match) => match.pool.id)).toEqual([POOL_ID]);
+  });
+
+  it("answers with an empty list, which is a real answer, when nothing of the week matches", async () => {
+    const result = await run({ terms: ["pepe"] });
+
+    expect(result.status).toBe("success");
+    expect(result.status === "success" && result.data.matches).toEqual([]);
+  });
+
+  /* The address the chain reads go to comes from the answer, not from here — and only the matching pools are read. */
+  it("asks the source which PoolManager to read, then reads that one's logs and storage for the matches alone", async () => {
     const fetchImpl = bothEndpoints();
     await run({ fetchImpl });
     const [graph, ...chain] = requestsMade(fetchImpl);
@@ -193,6 +233,19 @@ describe("fetchEthereumV4PoolSearch", () => {
       toBlock: "0x14af009",
       topics: [INITIALIZE_TOPIC, POOL_ID],
     });
+  });
+
+  /* The window is cut by the terms before the chain is asked, not by anything fixed. */
+  it("reads the chain for the pools that answer the terms, whichever they are", async () => {
+    const fetchImpl = bothEndpoints();
+    const result = await run({ fetchImpl, terms: ["wbtc", "dai"] });
+    const [, ...chain] = requestsMade(fetchImpl);
+    const requests = chain.flatMap((request) => request.body as { method: string }[]);
+
+    expect(result.status === "success" && result.data.matches.map((match) => match.pool.id)).toEqual([OTHER_POOL_ID]);
+    expect(result.status === "success" && result.data.matches[0]?.state).not.toBeNull();
+    expect(requests.filter((request) => request.method === "eth_call")).toHaveLength(2);
+    expect(requests.filter((request) => request.method === "eth_getLogs")).toHaveLength(0);
   });
 
   it("still answers, with the state and the fee unread, when no endpoint is configured", async () => {

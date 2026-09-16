@@ -69,7 +69,16 @@ const RawMetaSchema = z.object({
 });
 
 /**
- * The two aliased selections, plus the one address the chain read needs.
+ * The untrusted edge of the one query both v4 lists are read from: the busiest
+ * pool-days of the window, each naming its pool, plus the one address the
+ * chain read needs.
+ *
+ * Days rather than pools, because days are what the source can answer for.
+ * Every query that ordered `pools` by volume — the v3 documents against the
+ * v4 subgraph — was refused by the gateway after fifteen seconds on
+ * 2026-09-16, whichever indexer served it; the day table, filtered by date,
+ * came back in under a second. The pools are folded out of the days by the
+ * adapters.
  *
  * `poolManagers` is the subgraph's record of the contract it indexes. Its
  * address is asked for here, in the same request as the pools, rather than
@@ -77,11 +86,10 @@ const RawMetaSchema = z.object({
  * thing this project refuses everywhere, and a list of pools already trusts the
  * source for which pools exist.
  */
-export const V4PoolSearchResponseSchema = z.object({
+export const V4PoolDaysResponseSchema = z.object({
   data: z
     .object({
-      forward: z.array(RawV4PoolCardSchema),
-      reverse: z.array(RawV4PoolCardSchema),
+      poolDayDatas: z.array(z.object({ pool: RawV4PoolCardSchema })),
       poolManagers: z.array(z.object({ id: z.string() })),
       _meta: RawMetaSchema.nullable(),
     })
@@ -90,24 +98,7 @@ export const V4PoolSearchResponseSchema = z.object({
   errors: z.array(z.unknown()).nullish(),
 });
 
-export type V4PoolSearchResponse = z.infer<typeof V4PoolSearchResponseSchema>;
-
-/**
- * The untrusted edge of a query that answers with a plain list of v4 pools —
- * the traded pools a holdings lookup draws its candidates from. One selection
- * is the whole answer, as with the v3 list.
- */
-export const V4PoolListResponseSchema = z.object({
-  data: z
-    .object({
-      pools: z.array(RawV4PoolCardSchema),
-      poolManagers: z.array(z.object({ id: z.string() })),
-      _meta: RawMetaSchema.nullable(),
-    })
-    .nullish(),
-  /** Read only for presence; provider error text is never inspected or forwarded. */
-  errors: z.array(z.unknown()).nullish(),
-});
+export type V4PoolDaysResponse = z.infer<typeof V4PoolDaysResponseSchema>;
 
 /**
  * The untrusted edge of the pair query: one list of pools, plus the manager the

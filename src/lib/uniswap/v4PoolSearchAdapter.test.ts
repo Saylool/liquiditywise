@@ -3,7 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 import { HOOK_PERMISSION_FLAGS, type PoolSearchTerms, V4_POOL_SEARCH_RESULT_LIMIT } from "../../schemas";
 import type { V4PoolState } from "./ethereumV4PoolState";
 import type { V4PoolKey } from "./v4PoolKey";
-import { hookedRefs, normalizeV4PoolSearch, readV4SearchPools } from "./v4PoolSearchAdapter";
+import {
+  cardMatchesTerms,
+  distinctCards,
+  hookedRefs,
+  normalizeV4PoolSearch,
+  readV4SearchPools,
+  searchWindow,
+  V4_POOL_SEARCH_FETCH_LIMIT,
+} from "./v4PoolSearchAdapter";
 
 const FETCHED_AT = "2026-09-15T14:00:00.000Z";
 const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
@@ -44,11 +52,13 @@ const rawPool = ({
   token1: rawToken(WETH, symbols[1], "18", "1"),
 });
 
+/** The week's pool-days, busiest first; a pool appears once per day it traded. */
 const payload = (
-  forward: readonly unknown[],
-  reverse: readonly unknown[] = [],
+  days: readonly unknown[],
   poolManagers: readonly unknown[] = [{ id: POOL_MANAGER }],
-) => ({ data: { forward, reverse, poolManagers, _meta: { hasIndexingErrors: false } } });
+) => ({ data: { poolDayDatas: days.map((pool) => ({ pool })), poolManagers, _meta: { hasIndexingErrors: false } } });
+
+const TERMS: PoolSearchTerms = ["usdc", "weth"];
 
 /** USDC per WETH ≈ 2500, as Q64.96 — the price every fixture pool sits at. */
 const SQRT_PRICE = "1584563250285286751870879006";
@@ -139,26 +149,50 @@ describe("normalizeV4PoolSearch", () => {
     expect(result.status === "success" && result.data.source).toBe("uniswap-v4-subgraph");
   });
 
-  /* A pool matching both terms arrives in both selections; it is published once. */
-  it("merges the two selections without listing a pool twice", () => {
+  /* A pool that traded on two days of the week arrives twice; it is published once. */
+  it("lists a pool that traded on two days once", () => {
     const pool = rawPool({ id: 1 });
-    const matches = matchesOf(normalize(payload([pool], [pool])));
+    const matches = matchesOf(normalize(payload([pool, pool])));
 
     expect(matches).toHaveLength(1);
   });
 
   /*
-   * The two copies are the same pool read the same way, and the first stands —
-   * the rule the v3 adapter documents. Pinned with copies that differ in the one
-   * field the source could plausibly change between two selections, so the rule
-   * is tested rather than just described.
+   * The two copies are the same pool read the same way, and the first — the
+   * busier day's — stands, the rule the v3 adapter documents. Pinned with
+   * copies that differ in the one field the source could plausibly change
+   * between two days, so the rule is tested rather than just described.
    */
   it("keeps the first copy of a pool that arrived twice", () => {
     const first = rawPool({ id: 1 });
     const second = { ...first, token1: rawToken(WETH, "WETH", "18", "2") };
-    const matches = matchesOf(normalize(payload([first], [second])));
+    const matches = matchesOf(normalize(payload([first, second])));
 
     expect(matches[0]?.ethPrice).toEqual({ token0: 0.0004, token1: 1 });
+  });
+
+  /* The terms are matched here, against what the source returned, because the source cannot be asked. */
+  it("publishes only the pools whose currencies answer the terms", () => {
+    const matches = matchesOf(
+      normalize(payload([rawPool({ id: 1, symbols: ["WBTC", "DAI"] }), rawPool({ id: 2 })]), statesFor({ 1: "9", 2: "1" })),
+    );
+
+    expect(matches.map((match) => match.pool.id)).toEqual([poolId(2)]);
+  });
+
+  /*
+   * The window is the source's order — busiest day first — cut at the fetch
+   * limit before the chain decides the order among what is left. A deep pool
+   * past the window's end is not on the page, however deep.
+   */
+  it("takes the busiest matches up to the fetch limit before the chain orders them", () => {
+    const many = Array.from({ length: V4_POOL_SEARCH_FETCH_LIMIT + 1 }, (_u, index) => rawPool({ id: index + 1 }));
+    const deepestLast = statesFor({ [V4_POOL_SEARCH_FETCH_LIMIT + 1]: "999999", 1: "5" });
+    const matches = matchesOf(normalize(payload(many), deepestLast));
+
+    expect(matches).toHaveLength(V4_POOL_SEARCH_RESULT_LIMIT);
+    expect(matches[0]?.pool.id).toBe(poolId(1));
+    expect(matches.map((match) => match.pool.id)).not.toContain(poolId(V4_POOL_SEARCH_FETCH_LIMIT + 1));
   });
 
   it("orders exact symbol matches first", () => {
@@ -231,12 +265,12 @@ describe("normalizeV4PoolSearch", () => {
     expect(matchesOf(normalize(payload(many)))).toHaveLength(V4_POOL_SEARCH_RESULT_LIMIT);
   });
 
-  /* One bad entry leaves the list; it does not take the list down. */
+  /* One bad entry leaves the list; it does not take the list down. The count is of the window, not of the week. */
   it("drops a pool it cannot verify and says so, without naming it", () => {
     const onDiagnostic = vi.fn();
     const bad = { ...rawPool({ id: 2 }), tickSpacing: "0" };
     const result = normalizeV4PoolSearch({
-      payload: payload([rawPool({ id: 1 }), bad]),
+      payload: payload([rawPool({ id: 1 }), bad, rawPool({ id: 3, symbols: ["WBTC", "DAI"] })]),
       states: new Map(),
       keys: new Map(),
       terms: ["usdc", "weth"],
@@ -265,7 +299,7 @@ describe("normalizeV4PoolSearch", () => {
 
   it("refuses a source reporting indexing errors", () => {
     const result = normalize({
-      data: { forward: [], reverse: [], poolManagers: [], _meta: { hasIndexingErrors: true } },
+      data: { poolDayDatas: [], poolManagers: [], _meta: { hasIndexingErrors: true } },
     });
 
     expect(result.status === "unavailable" && result.notice).toBe("market-data-indexing-errors");
@@ -275,7 +309,7 @@ describe("normalizeV4PoolSearch", () => {
 describe("readV4SearchPools", () => {
   it("lists each pool once, with where it was created, and names the manager to ask about them", () => {
     const pool = rawPool({ id: 1 });
-    const { pools, poolManager } = readV4SearchPools(payload([pool, rawPool({ id: 2 })], [pool]));
+    const { pools, poolManager } = readV4SearchPools(payload([pool, rawPool({ id: 2 }), pool]), TERMS);
 
     expect(pools).toEqual([
       { id: poolId(1), createdAtBlockNumber: "21688329", hooked: false },
@@ -287,7 +321,7 @@ describe("readV4SearchPools", () => {
   /* Whether a hook is attached decides whether the creation log has to be read at all. */
   it("says which pools are hooked, so only their logs are read", () => {
     const hooked = rawPool({ id: 3, hooks: hookWith(HOOK_PERMISSION_FLAGS.BEFORE_SWAP) });
-    const { pools } = readV4SearchPools(payload([hooked, rawPool({ id: 4 })]));
+    const { pools } = readV4SearchPools(payload([hooked, rawPool({ id: 4 })]), TERMS);
 
     expect(pools.map((pool) => pool.hooked)).toEqual([true, false]);
     expect(hookedRefs(pools)).toEqual([{ id: poolId(3), createdAtBlockNumber: "21688329" }]);
@@ -295,7 +329,7 @@ describe("readV4SearchPools", () => {
 
   /* Only the id is checked here: a pool cannot be verified until the chain has answered for it. */
   it("leaves out an entry whose id is not a pool id", () => {
-    const { pools } = readV4SearchPools(payload([{ ...rawPool({ id: 1 }), id: "0xnope" }]));
+    const { pools } = readV4SearchPools(payload([{ ...rawPool({ id: 1 }), id: "0xnope" }]), TERMS);
 
     expect(pools).toEqual([]);
   });
@@ -308,12 +342,86 @@ describe("readV4SearchPools", () => {
     ["no manager at all", []],
     ["a manager that is not an address", [{ id: "0x1234" }]],
   ])("names no manager for %s", (_label, poolManagers) => {
-    const { poolManager } = readV4SearchPools(payload([rawPool({ id: 1 })], [], poolManagers));
+    const { poolManager } = readV4SearchPools(payload([rawPool({ id: 1 })], poolManagers), TERMS);
 
     expect(poolManager).toBeNull();
   });
 
   it("answers with nothing for a payload it cannot read", () => {
-    expect(readV4SearchPools("text")).toEqual({ pools: [], poolManager: null });
+    expect(readV4SearchPools("text", TERMS)).toEqual({ pools: [], poolManager: null });
+  });
+
+  /* The chain is asked about the pools that answer the terms, and no others. */
+  it("names only the pools that answer the terms", () => {
+    const { pools } = readV4SearchPools(payload([rawPool({ id: 1, symbols: ["WBTC", "DAI"] }), rawPool({ id: 2 })]), TERMS);
+
+    expect(pools.map((pool) => pool.id)).toEqual([poolId(2)]);
+  });
+});
+
+/*
+ * What the source's `symbol_contains_nocase` filter would have said, decided
+ * here: a case-insensitive substring, one term per side either way round for
+ * a pair, either side for a single term.
+ */
+describe("cardMatchesTerms", () => {
+  it("matches a pair in the pool's own order", () => {
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["usdc", "weth"])).toBe(true);
+  });
+
+  it("matches a pair the other way round", () => {
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["weth", "usdc"])).toBe(true);
+  });
+
+  it("needs both sides of a pair", () => {
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["usdc", "dai"])).toBe(false);
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["usdc", "usdc"])).toBe(false);
+  });
+
+  it("matches a single term on either side", () => {
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["usdc"])).toBe(true);
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["weth"])).toBe(true);
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["dai"])).toBe(false);
+  });
+
+  /* As the source's filter: a substring of the symbol, whatever the case of either. */
+  it("matches a substring of the symbol, ignoring case", () => {
+    expect(cardMatchesTerms(rawPool({ id: 1, symbols: ["aEthUSDC", "WETH"] }), ["usdc", "weth"])).toBe(true);
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["USDC", "wEtH"])).toBe(true);
+    expect(cardMatchesTerms(rawPool({ id: 1 }), ["usdcx"])).toBe(false);
+  });
+});
+
+describe("searchWindow", () => {
+  it("keeps the matching pools in the order they came, up to the fetch limit", () => {
+    const many = Array.from({ length: V4_POOL_SEARCH_FETCH_LIMIT + 3 }, (_u, index) =>
+      rawPool({ id: index + 1, symbols: index === 1 ? ["WBTC", "DAI"] : ["USDC", "WETH"] }),
+    );
+    const window = searchWindow(many, TERMS);
+
+    expect(window).toHaveLength(V4_POOL_SEARCH_FETCH_LIMIT);
+    expect(window[0]?.id).toBe(poolId(1));
+    expect(window[1]?.id).toBe(poolId(3));
+  });
+
+  it("is empty when nothing in the window matches", () => {
+    expect(searchWindow([rawPool({ id: 1 })], ["pepe"])).toEqual([]);
+  });
+});
+
+describe("distinctCards", () => {
+  it("names each pool once, where its first day put it", () => {
+    const first = rawPool({ id: 1 });
+    const later = { ...first, tickSpacing: "60" };
+    const cards = distinctCards([{ pool: rawPool({ id: 2 }) }, { pool: first }, { pool: later }]);
+
+    expect(cards.map((card) => card.id)).toEqual([poolId(2), poolId(1)]);
+    expect(cards[1]?.tickSpacing).toBe("10");
+  });
+
+  it("folds an id's case before comparing", () => {
+    const upper = { ...rawPool({ id: 0xabcdef }), id: poolId(0xabcdef).toUpperCase().replace("0X", "0x") };
+
+    expect(distinctCards([{ pool: rawPool({ id: 0xabcdef }) }, { pool: upper }])).toHaveLength(1);
   });
 });

@@ -1,12 +1,15 @@
 import {
   type DataResult,
   PoolSearchTermsSchema,
-  V4_POOL_SEARCH_RESULT_LIMIT,
   type V4PoolSearchResults,
 } from "../../schemas";
+import {
+  tradedWindowStart,
+  V4_TRADED_POOL_DAYS_LIMIT,
+  V4_TRADED_POOLS_QUERY,
+} from "./ethereumV4TradedPools";
 import { fetchEthereumV4PoolKeys } from "./ethereumV4PoolKeys";
 import { fetchEthereumV4PoolStates } from "./ethereumV4PoolState";
-import { V4_POOL_CARD_FRAGMENT } from "./v4PoolCardRawResponse";
 import { hookedRefs, normalizeV4PoolSearch, readV4SearchPools } from "./v4PoolSearchAdapter";
 import type { PoolSearchDiagnostic } from "./v3PoolSearchAdapter";
 import {
@@ -15,71 +18,23 @@ import {
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
 
-/**
- * The v3 search documents, against the v4 subgraph — which answers them with
- * the same filters and the same aliased selections, verified against the
- * deployed schema rather than assumed.
+/*
+ * The v4 search does not ask the source for the pools matching the terms. It
+ * asks for the week's busiest pool-days — the same request the holdings net
+ * is read with — and matches the terms against the pools those days name.
  *
- * One addition: `poolManagers`. The chain read that follows needs the address
- * of the contract every v4 pool lives in, and it is asked of the source here
- * rather than written into this application. The subgraph indexes exactly one.
+ * Because the source cannot be asked. The v3 search documents, run against the
+ * v4 subgraph, were answered by its gateway with fifteen seconds of silence
+ * and then an error naming both of the subgraph's indexers as bad, on every
+ * attempt of 2026-09-16 — and so was every reshaping of them: a prefix match
+ * instead of a substring, an exact symbol, the token ids looked up first and
+ * the pools asked for by id, the day table filtered through the pool. What the
+ * gateway answered, in under a second, was the day table filtered by date.
+ *
+ * So the window is the week's activity rather than the terms, and the page
+ * says so. The terms are never sent anywhere: they are matched here, against
+ * symbols the source already returned.
  */
-export const V4_POOL_SEARCH_PAIR_QUERY = `query V4PoolSearchPair($first: String!, $second: String!, $limit: Int!) {
-  forward: pools(
-    where: { token0_: { symbol_contains_nocase: $first }, token1_: { symbol_contains_nocase: $second } }
-    orderBy: volumeUSD
-    orderDirection: desc
-    first: $limit
-  ) {
-    ...V4PoolCard
-  }
-  reverse: pools(
-    where: { token0_: { symbol_contains_nocase: $second }, token1_: { symbol_contains_nocase: $first } }
-    orderBy: volumeUSD
-    orderDirection: desc
-    first: $limit
-  ) {
-    ...V4PoolCard
-  }
-  poolManagers(first: 1) {
-    id
-  }
-  _meta {
-    hasIndexingErrors
-  }
-}
-
-${V4_POOL_CARD_FRAGMENT}`;
-
-export const V4_POOL_SEARCH_SINGLE_QUERY = `query V4PoolSearchSingle($term: String!, $limit: Int!) {
-  forward: pools(
-    where: { token0_: { symbol_contains_nocase: $term } }
-    orderBy: volumeUSD
-    orderDirection: desc
-    first: $limit
-  ) {
-    ...V4PoolCard
-  }
-  reverse: pools(
-    where: { token1_: { symbol_contains_nocase: $term } }
-    orderBy: volumeUSD
-    orderDirection: desc
-    first: $limit
-  ) {
-    ...V4PoolCard
-  }
-  poolManagers(first: 1) {
-    id
-  }
-  _meta {
-    hasIndexingErrors
-  }
-}
-
-${V4_POOL_CARD_FRAGMENT}`;
-
-/** Twice what is published, for the reason the v3 window is. */
-export const V4_POOL_SEARCH_FETCH_LIMIT = V4_POOL_SEARCH_RESULT_LIMIT * 2;
 
 const INVALID_TERMS = "invalid-search-terms";
 const NOT_CONFIGURED = "market-data-not-configured";
@@ -97,8 +52,9 @@ export type EthereumV4PoolSearchRequest = {
 };
 
 /**
- * Finds Ethereum mainnet Uniswap v4 pools whose currencies match one or two
- * terms, and asks the PoolManager what each one's liquidity is.
+ * Finds the Ethereum mainnet Uniswap v4 pools among this week's busiest whose
+ * currencies match one or two terms, and asks the PoolManager what each one's
+ * liquidity is.
  *
  * Validation order matches the other readers: caller input first, then server
  * configuration, and neither reaches the network. A deployment with no v4
@@ -118,16 +74,12 @@ export const fetchEthereumV4PoolSearch = async (
     return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
-  const [first, second] = terms.data;
-  const pair = second !== undefined;
-
+  const now = request.now();
   const transport = await postV3SubgraphQuery({
     apiKey,
     subgraphId,
-    query: pair ? V4_POOL_SEARCH_PAIR_QUERY : V4_POOL_SEARCH_SINGLE_QUERY,
-    variables: pair
-      ? { first, second, limit: V4_POOL_SEARCH_FETCH_LIMIT }
-      : { term: first, limit: V4_POOL_SEARCH_FETCH_LIMIT },
+    query: V4_TRADED_POOLS_QUERY,
+    variables: { from: tradedWindowStart(now), limit: V4_TRADED_POOL_DAYS_LIMIT },
     fetchImpl: request.fetchImpl,
     timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
   });
@@ -137,12 +89,13 @@ export const fetchEthereumV4PoolSearch = async (
   }
 
   /*
-   * Which pools exist comes from the indexer; what each one is and how deep it
-   * is come from the chain — the key from the log that created the pool, the
-   * state from the PoolManager's storage. The two reads run together; the
-   * state decides the order and the key decides the fee.
+   * Which pools exist comes from the indexer; which of them answer the terms
+   * is decided here; what each one is and how deep it is come from the chain
+   * — the key from the log that created the pool, the state from the
+   * PoolManager's storage. The two reads run together; the state decides the
+   * order and the key decides the fee.
    */
-  const { pools, poolManager } = readV4SearchPools(transport.payload);
+  const { pools, poolManager } = readV4SearchPools(transport.payload, terms.data);
   const chain = {
     poolManager,
     rpcUrl: request.rpcUrl,
@@ -166,7 +119,7 @@ export const fetchEthereumV4PoolSearch = async (
     states,
     keys,
     terms: terms.data,
-    fetchedAt: request.now().toISOString(),
+    fetchedAt: now.toISOString(),
     onDiagnostic: request.onDiagnostic,
   });
 };

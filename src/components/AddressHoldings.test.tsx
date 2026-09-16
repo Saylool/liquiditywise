@@ -214,7 +214,7 @@ describe("AddressHoldings with v4 pools", () => {
     const markup = render(holdings());
 
     expect(markup).toContain("250 most-traded Uniswap v3 pools");
-    expect(markup).toContain("250 most-traded v4 pools");
+    expect(markup).toContain("250 v4 pools that traded the most over the last seven days");
     expect(markup).not.toContain("were not searched");
   });
 
@@ -228,7 +228,7 @@ describe("AddressHoldings with v4 pools", () => {
     );
 
     expect(markup).toContain("Uniswap v4 pools were not searched");
-    expect(markup).not.toContain("most-traded v4 pools");
+    expect(markup).not.toContain("v4 pools that traded the most");
   });
 
   it("says so in Turkish too", () => {

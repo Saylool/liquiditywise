@@ -157,3 +157,25 @@ describe("V4PoolSearchResults", () => {
     });
   });
 });
+
+/*
+ * The window is not the terms: the source cannot answer a search over every
+ * v4 pool in time, so the search runs over the week's busiest pool-days, and
+ * the page says so rather than letting a reader conclude a pool does not exist.
+ */
+describe("V4PoolSearchResults and the window", () => {
+  it("says which pools the search was run over, and why", () => {
+    const markup = render(found([match()]));
+
+    expect(markup).toContain("traded the most on Ethereum mainnet over the last seven days");
+    expect(markup).toContain("a pool that exists but has not traded this week is not here");
+    expect(markup).not.toContain("most traded for your terms");
+  });
+
+  it("says so in Turkish", () => {
+    const markup = render(found([match()]), "tr");
+
+    expect(markup).toContain("son yedi günde en çok işlem gören v4 havuzlarından");
+    expect(markup).not.toContain("senin terimlerin için en çok işlem gördüğünü");
+  });
+});

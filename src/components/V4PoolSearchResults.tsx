@@ -139,7 +139,7 @@ export function V4PoolSearchResults({
             <p>{t.search.v4Ordering}</p>
             <p>{t.search.v4DepthNote}</p>
             <p>{t.search.v4FeeNote}</p>
-            <p>{t.search.windowing}</p>
+            <p>{t.search.v4Windowing}</p>
           </div>
         </>
       )}
