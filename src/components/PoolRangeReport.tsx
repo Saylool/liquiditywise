@@ -26,12 +26,13 @@ import {
   quotedInterval,
   quotedPrice,
 } from "../lib/format/priceQuote";
+import { ACTIVITY_WINDOW_DAYS } from "../lib/analytics/poolActivity";
+import { chartDays, layoutPriceChart } from "../lib/format/priceChartLayout";
 import { priceStepRatio } from "../lib/format/priceStep";
-import { layoutRangeBar } from "../lib/format/rangeBarLayout";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { StatedSwapFee, V4ProtocolFee } from "../schemas";
-import { PriceRangeBar } from "./PriceRangeBar";
+import { PriceHistoryChart } from "./PriceHistoryChart";
 
 /**
  * Renders one pool's range analysis, for someone who has never heard of a tick.
@@ -263,6 +264,7 @@ export function PoolRangeReport({
   const {
     pool,
     snapshot,
+    history,
     volatility,
     band,
     range,
@@ -296,15 +298,19 @@ export function PoolRangeReport({
     upper: range.upperBoundTruncated,
   });
   /*
-   * Not drawn when an edge was truncated. A truncated edge is the end of what
-   * the pool can express — a price forty orders of magnitude away — and a bar
-   * with that on it would put the range and the current price in the same
-   * pixel. The note under the range says what happened instead.
+   * The last month drawn through the range: the same days the activity
+   * figures are counted over, turned the reader's way round. A truncated
+   * edge is left open — the band runs off the chart on that side, which is
+   * what an edge the pool could not express means — rather than drawn at a
+   * price forty orders of magnitude away.
    */
-  const bar =
-    truncated.lower || truncated.upper
-      ? null
-      : layoutRangeBar({ lower: edges.lower, upper: edges.upper, current });
+  const month = chartDays(history.points.slice(-ACTIVITY_WINDOW_DAYS), quote, range);
+  const chart = layoutPriceChart({
+    days: month,
+    lower: truncated.lower ? null : edges.lower,
+    upper: truncated.upper ? null : edges.upper,
+    current,
+  });
   /* The comparison table, in the same direction, still ascending. */
   const divergencePoints = divergence.points.map((point) => ({
     price: quotedPrice(quote, point.price),
@@ -376,14 +382,23 @@ export function PoolRangeReport({
           </p>
         ) : null}
 
-        {bar === null ? null : (
-          <PriceRangeBar
-            layout={bar}
-            lowerLabel={price(edges.lower)}
-            upperLabel={price(edges.upper)}
-            currentLabel={price(current)}
-            label={t.report.barLabel}
-          />
+        {chart === null ? null : (
+          <figure className="flex flex-col gap-2">
+            <PriceHistoryChart
+              layout={chart}
+              labels={{
+                current: price(current),
+                upper: price(edges.upper),
+                lower: price(edges.lower),
+                first: month[0]?.date ?? "",
+                last: month[month.length - 1]?.date ?? "",
+              }}
+              label={t.report.chartLabel}
+            />
+            <figcaption className="text-xs leading-relaxed text-muted">
+              {t.report.chartCaption(whole(month.length))} {t.report.chartLegend}
+            </figcaption>
+          </figure>
         )}
 
         <div

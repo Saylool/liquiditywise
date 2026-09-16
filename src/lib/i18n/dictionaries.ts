@@ -566,7 +566,16 @@ const en = {
       "The lower edge stops at the lowest price this pool can express, short of where the band would have put it.",
     upperTruncatedNote:
       "The upper edge stops at the highest price this pool can express, short of where the band would have put it.",
-    barLabel: "The range and the current price, drawn to scale",
+    /*
+     * The month drawn through the range. The caption says what each mark is,
+     * once, in the words the page uses for the same things; the day counts a
+     * few panels down are the same days, counted.
+     */
+    chartLabel: "The last month's prices against the suggested range",
+    chartCaption: (days: string) =>
+      `Each of the last ${days} days: its close, and the span from its low to its high. The shaded band is the suggested range; the solid line is today's price.`,
+    chartLegend:
+      "A filled dot is a day that stayed entirely inside the range; a hollow one left it or crossed an edge.",
 
     /*
      * Where the range came from, in the words a reader has: how much the price
@@ -1257,7 +1266,11 @@ const tr: Dictionary = {
       "Alt kenar bu havuzun ifade edebildiği en düşük fiyatta durdu; bandın koyacağı yere ulaşmıyor.",
     upperTruncatedNote:
       "Üst kenar bu havuzun ifade edebildiği en yüksek fiyatta durdu; bandın koyacağı yere ulaşmıyor.",
-    barLabel: "Aralık ve güncel fiyat, ölçekli çizim",
+    chartLabel: "Son bir ayın fiyatları, önerilen aralığa karşı",
+    chartCaption: (days: string) =>
+      `Son ${days} günün her biri: kapanışı, ve en düşüğünden en yükseğine uzanan çizgi. Gölgeli bant önerilen aralık; düz çizgi bugünkü fiyat.`,
+    chartLegend:
+      "Dolu nokta, günü tamamen aralığın içinde geçiren gün; içi boş nokta dışına çıkan ya da bir kenarı geçen gün.",
 
     basisHeading: "Bu aralık nasıl çizildi",
     basisIntro: (base: string, days: string) =>

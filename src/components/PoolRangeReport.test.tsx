@@ -160,10 +160,11 @@ describe("PoolRangeReport", () => {
   /*
    * The pool's price can go no higher exactly where the reader's can go no
    * lower, so the pool's truncated top is reported as the reader's cut-short
-   * bottom — and nothing is drawn, because a bar with a price forty orders of
-   * magnitude away on it would put everything else in one pixel.
+   * bottom — and on the chart that edge is open: the band runs off the
+   * bottom, and no line or figure is drawn for a price forty orders of
+   * magnitude away.
    */
-  it("reports a truncated edge on the edge the reader sees, and draws no bar", () => {
+  it("reports a truncated edge on the edge the reader sees, and leaves it open on the chart", () => {
     const result = analyse({ parameters: { horizonDays: 365, standardDeviationMultiplier: 400 } });
     if (result.status === "unavailable") throw new Error("fixture should analyse");
     expect(result.data.range.upperBoundTruncated).toBe(true);
@@ -174,7 +175,9 @@ describe("PoolRangeReport", () => {
       "The lower edge stops at the lowest price this pool can express, short of where the band would have put it.",
     );
     expect(truncated).not.toContain("The upper edge stops at the highest price");
-    expect(truncated).not.toContain('role="img"');
+    expect(truncated).toContain('role="img"');
+    expect(truncated).not.toContain(">2.9543E-27</text>");
+    expect(truncated.match(/stroke-dasharray="4 4"/g)?.length).toBe(1);
     // The caveat from the data layer names no edge: its code is the pool's edge, not the reader's.
     expect(truncated).toContain("The range panel says which edge that is in the direction shown.");
     expect(truncated).not.toMatch(/upper edge stops/i);
@@ -211,10 +214,15 @@ describe("PoolRangeReport", () => {
     expect(failed).toContain('<form id="controls">');
   });
 
-  it("draws the range and the current price to scale", () => {
-    expect(markup).toContain('role="img" aria-label="The range and the current price, drawn to scale"');
-    // Three positions on the bar, every one of them a percentage of its width.
-    expect(markup.match(/style="left:\d+(\.\d+)?%/g)?.length).toBeGreaterThanOrEqual(3);
+  /* The same thirty days the activity figures count, drawn through the range. */
+  it("draws the last month through the range, a dot per day", () => {
+    const result = analyse();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+
+    expect(markup).toContain('role="img" aria-label="The last month');
+    expect(markup.match(/<circle /g)?.length).toBe(result.data.activity.daysMeasured);
+    expect(markup).toContain("Each of the last 30 days");
+    expect(markup).toContain(">1 WETH = 3,000 USDC<");
   });
 
   /*
