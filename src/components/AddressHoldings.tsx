@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import { GuardedLink } from "./GuardedLink";
 import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatFeePpm, formatTokenAmount, formatWhole } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
@@ -68,7 +68,7 @@ const TierRow = ({
 
   return (
     <li>
-      <Link
+      <GuardedLink
         href={href}
         className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
       >
@@ -82,7 +82,7 @@ const TierRow = ({
           </span>
         </div>
         <p className="text-xs text-accent">{t.holdings.analyse}</p>
-      </Link>
+      </GuardedLink>
     </li>
   );
 };

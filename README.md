@@ -904,6 +904,18 @@ With nothing configured the shared half costs nothing at all — not one
 millisecond — because the decision that there is no store is made before
 anything is awaited.
 
+**Links to counted pages are never prefetched.** The router prefetches every
+link that scrolls into view, and the proxy counts each of those as a request: it
+cannot tell a prefetch from a navigation, because the framework strips the
+router's own headers before the proxy runs. Nor is there anything in the
+prefetch worth paying for — a page rendered per request is prefetched only down
+to its loading skeleton, measured on the deployed application at 379 bytes for
+the holdings page with no lookup in it. Left on, a list of twelve pools cost a
+visitor twelve of their ten requests before they had clicked on one, and the
+click was refused. So every link into a pool, a v4 pool or an address goes
+through one component that turns prefetching off, and the click costs the one
+request it should.
+
 The two windows are not the same shape. The local one starts at a client's first
 request; the shared one is aligned to the clock, which is how instances agree on
 which counter to increment without coordinating. They rarely line up, and a

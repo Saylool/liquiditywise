@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import { GuardedLink } from "./GuardedLink";
 import { v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import {
   formatEtherAmount,
@@ -100,12 +100,12 @@ const PoolRow = ({
       {current ? (
         <div className="flex flex-col gap-2 rounded-md border border-accent bg-background p-4">{body}</div>
       ) : (
-        <Link
+        <GuardedLink
           href={v4PoolAnalysisHref(pool.id, parameters)}
           className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
         >
           {body}
-        </Link>
+        </GuardedLink>
       )}
     </li>
   );

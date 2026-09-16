@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import { GuardedLink } from "./GuardedLink";
 import { formatFeePpm, formatTokenAmount } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -28,7 +28,7 @@ const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; 
 
   return (
     <li>
-      <Link
+      <GuardedLink
         href={`/pool?address=${pool.id}`}
         className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
       >
@@ -72,7 +72,7 @@ const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; 
             {pool.token1.symbol} {pool.token1.address}
           </span>
         </div>
-      </Link>
+      </GuardedLink>
     </li>
   );
 };

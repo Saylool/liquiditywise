@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import { GuardedLink } from "./GuardedLink";
 import { formatEtherAmount, formatFeePpm } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -46,7 +46,7 @@ const PairRow = ({ match, t, locale }: { match: V4PoolSearchMatch; t: Dictionary
 
   return (
     <li>
-      <Link
+      <GuardedLink
         href={`/v4?id=${pool.id}`}
         className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
       >
@@ -91,7 +91,7 @@ const PairRow = ({ match, t, locale }: { match: V4PoolSearchMatch; t: Dictionary
           </span>
           <HookLine match={match} t={t} />
         </div>
-      </Link>
+      </GuardedLink>
     </li>
   );
 };
