@@ -11,13 +11,14 @@ import type { FetchLike } from "./v3SubgraphTransport";
  * treated as a secret in its own right and never appears in a message, a warning
  * or a thrown error.
  *
- * Read-only by construction: this module can issue `eth_call`, `eth_getBalance`
- * and `eth_getLogs` and nothing else. There is no signing, no
+ * Read-only by construction: this module can issue `eth_call`, `eth_getLogs`
+ * and `eth_getCode` and nothing else. There is no signing, no
  * `eth_sendTransaction`, no account access. The second method exists for one
- * reason — a v4 pool may hold the chain's own ether, and no token contract can
- * be asked how much of that an address has. The third exists for another: a v4
- * pool's key is written once, in the event that created it, and reading that
- * event is the only way to learn what the pool's fee is.
+ * reason: a v4 pool's key is written once, in the event that created it, and
+ * reading that event is the only way to learn what the pool's fee is. The
+ * third exists for another: the balance sweep goes through Multicall3, and the
+ * code at that address is read beside every sweep so its answers are believed
+ * only when it is the code this application knows.
  */
 
 export const DEFAULT_RPC_TIMEOUT_MS = 10_000;
@@ -117,67 +118,6 @@ export const postEthCall = async ({
   }
 };
 
-export type EthGetBalanceRequest = {
-  /** Full provider endpoint. Treated as a credential; never logged or returned. */
-  readonly rpcUrl: string;
-  /** The account whose ether balance is asked for. */
-  readonly address: string;
-  readonly fetchImpl: FetchLike;
-  readonly timeoutMs: number;
-};
-
-/**
- * Performs one `eth_getBalance` against the latest block.
- *
- * Its own function rather than a parameter on `postEthCall`, because the two
- * are different questions with different answers: a call returns ABI-encoded
- * return data, a balance query returns a bare quantity. Reading either is the
- * adapter's job; this layer knows transport only.
- */
-export const postEthGetBalance = async ({
-  rpcUrl,
-  address,
-  fetchImpl,
-  timeoutMs,
-}: EthGetBalanceRequest): Promise<RpcTransportResult> => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, timeoutMs);
-
-  try {
-    const response = await fetchImpl(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_getBalance",
-        params: [address, "latest"],
-      }),
-      signal: controller.signal,
-    });
-
-    const statusFailure = classifyStatus(response.status);
-    if (statusFailure !== null) return statusFailure;
-
-    try {
-      return { ok: true, payload: await response.json() };
-    } catch {
-      return controller.signal.aborted
-        ? failure("timeout", TIMED_OUT)
-        : failure("invalid-response", UNREADABLE);
-    }
-  } catch {
-    return controller.signal.aborted
-      ? failure("timeout", TIMED_OUT)
-      : failure("network-error", UNREACHABLE);
-  } finally {
-    clearTimeout(timeout);
-  }
-};
-
 /**
  * How many calls travel in one batch.
  *
@@ -237,7 +177,7 @@ const paced = <T,>(send: () => Promise<T>): Promise<T> => {
  * the endpoint — and so the read-only claim at the top of this file can be
  * checked by reading this line.
  */
-export type ReadOnlyRpcMethod = "eth_call" | "eth_getLogs";
+export type ReadOnlyRpcMethod = "eth_call" | "eth_getLogs" | "eth_getCode";
 
 export type RpcBatchEntry = {
   readonly method: ReadOnlyRpcMethod;
@@ -269,10 +209,10 @@ const batchFailure = (
 /**
  * Performs many read-only requests in one HTTP request.
  *
- * JSON-RPC's own batch form rather than an aggregating contract: a batch needs
- * no address, and shipping a contract address asserted from memory is the thing
- * this project refuses everywhere else. The methods may be mixed — a pool's
- * creation log and its current state can travel together.
+ * JSON-RPC's own batch form, so the methods may be mixed — a pool's creation
+ * log and its current state can travel together, and so can an aggregated call
+ * and the code of the contract that answered it. The one aggregating contract
+ * this project uses is trusted only on that proof; see `multicall3.ts`.
  *
  * Answers are matched by `id` rather than by position. The specification permits
  * a server to return them in any order, and a sweep that silently paired one
@@ -379,6 +319,12 @@ export type EthCallBatchResult =
 export const ethCallEntry = (call: { readonly to: string; readonly data: string }): RpcBatchEntry => ({
   method: "eth_call",
   params: [{ to: call.to, data: call.data }, "latest"],
+});
+
+/** The `eth_getCode` request for one address, against the latest block: what is deployed there, byte for byte. */
+export const ethGetCodeEntry = (address: string): RpcBatchEntry => ({
+  method: "eth_getCode",
+  params: [address, "latest"],
 });
 
 /**

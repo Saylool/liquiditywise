@@ -767,6 +767,8 @@ const en = {
         "The on-chain data source returned an unreadable response.",
       "chain-data-malformed":
         "The on-chain data source returned a response this application cannot verify.",
+      "chain-aggregator-unverified":
+        "Balances are read through a helper contract on the chain, and the code at its address is not the code this application was built to trust, so nothing was read through it.",
       "pool-not-found":
         "No Uniswap v3 pool was found for this address on Ethereum mainnet.",
       "pool-contract-not-found":
@@ -1473,6 +1475,8 @@ const tr: Dictionary = {
         "Zincir üstü veri kaynağı okunamayan bir yanıt döndürdü.",
       "chain-data-malformed":
         "Zincir üstü veri kaynağı, bu uygulamanın doğrulayamadığı bir yanıt döndürdü.",
+      "chain-aggregator-unverified":
+        "Bakiyeler zincirdeki bir yardımcı sözleşme üzerinden okunur; adresindeki kod bu uygulamanın güvenmek üzere yazıldığı kod değildi, bu yüzden onun üzerinden hiçbir şey okunmadı.",
       "pool-not-found":
         "Ethereum mainnet üzerinde bu adrese ait bir Uniswap v3 havuzu bulunamadı.",
       "pool-contract-not-found":

@@ -67,6 +67,7 @@ export const DataFailureNoticeSchema = z.enum([
   "chain-data-rate-limited",
   "chain-data-unreadable",
   "chain-data-malformed",
+  "chain-aggregator-unverified",
 
   /* The pool itself. */
   "pool-not-found",

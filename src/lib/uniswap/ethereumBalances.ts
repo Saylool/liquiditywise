@@ -7,10 +7,18 @@ import {
 import { balanceOfCalldata, readBalanceWord } from "./erc20BalanceAdapter";
 import {
   DEFAULT_RPC_TIMEOUT_MS,
-  ETH_CALL_BATCH_SIZE,
-  postEthCallBatch,
-  postEthGetBalance,
+  ethCallEntry,
+  ethGetCodeEntry,
+  postRpcBatch,
 } from "./ethereumRpcTransport";
+import {
+  type Aggregate3Call,
+  decodeAggregate3,
+  encodeAggregate3,
+  getEthBalanceCalldata,
+  isMulticall3Code,
+  MULTICALL3_ADDRESS,
+} from "./multicall3";
 import type { FetchLike } from "./v3SubgraphTransport";
 
 /*
@@ -22,17 +30,20 @@ import type { FetchLike } from "./v3SubgraphTransport";
  * checked, and this one says how many it checked.
  *
  * One currency has no contract to ask: the chain's own ether, which a v4 pool
- * may hold under the zero address. It is asked of the chain directly, counts as
- * one of the currencies checked, and comes back under that same address so a
- * v4 pool's side and an address's holding meet on one key.
+ * may hold under the zero address. It is asked of the chain in the same call,
+ * counts as one of the currencies checked, and comes back under that same
+ * address so a v4 pool's side and an address's holding meet on one key.
  *
- * Read-only by construction. The transport underneath can issue `eth_call` and
- * `eth_getBalance` and nothing else, so no code path from here can move anything.
+ * Read-only by construction. The transport underneath can issue `eth_call`,
+ * `eth_getLogs` and `eth_getCode` and nothing else, so no code path from here
+ * can move anything.
  */
 
 const INVALID_ADDRESS = "invalid-pool-address";
 const NOT_CONFIGURED = "chain-data-not-configured";
 const UNREADABLE = "chain-data-unreadable";
+const MALFORMED = "chain-data-malformed";
+const AGGREGATOR_UNVERIFIED = "chain-aggregator-unverified";
 
 /**
  * How much of a sweep may go unread before the answer is refused instead of
@@ -60,7 +71,7 @@ export type TokenBalance = {
 export type AddressBalances = {
   /** Only the non-zero ones. A zero balance is an answer, not a holding. */
   readonly held: readonly TokenBalance[];
-  /** How many token contracts were actually asked, for the page to report. */
+  /** How many currencies were actually asked about, for the page to report. */
   readonly checked: number;
   /**
    * How many answered with something unusable.
@@ -88,12 +99,17 @@ export type EthereumBalancesRequest = {
 const HolderSchema = nonZeroEvmAddress(INVALID_ADDRESS);
 
 /**
- * Asks each token what the holder holds, all at once.
+ * Asks every currency what the holder holds, in one call.
  *
- * In parallel because they are independent and the difference is the whole
- * experience: measured against the live endpoint, 176 tokens answered in under
- * 200 milliseconds together, where in sequence they would have taken most of a
- * minute.
+ * One `eth_call` to Multicall3 carries every `balanceOf` and the ether
+ * question, and the node's answer for the code at Multicall3's address travels
+ * in the same batch: the balances are believed only if that code is the one
+ * this application knows, byte for byte. See `multicall3.ts` for why.
+ *
+ * Measured against the live endpoint on 2026-09-16: 289 currencies in 0.6
+ * seconds. The same sweep as twelve paced batches of direct calls had the
+ * provider refuse the last of them, the ether question after them, and every
+ * read the page made next.
  */
 export const fetchEthereumBalances = async (
   request: EthereumBalancesRequest,
@@ -111,7 +127,7 @@ export const fetchEthereumBalances = async (
   /*
    * Validated and deduplicated before any call goes out. A candidate list is
    * assembled from pool data, and one token appearing in twenty pools must not
-   * become twenty identical requests.
+   * become twenty identical questions.
    */
   const requested = new Set(
     request.tokenAddresses
@@ -119,83 +135,72 @@ export const fetchEthereumBalances = async (
       .filter((parsed) => parsed.success)
       .map((parsed) => parsed.data),
   );
-  /* The zero address is not a contract and gets its own question, below. */
+  /* The zero address is not a contract; Multicall3 itself answers for ether. */
   const wantsEther = requested.delete(ZERO_ADDRESS);
   const tokens = [...requested];
   if (tokens.length === 0 && !wantsEther) {
     return { status: "unavailable", reason: "invalid-input", notice: INVALID_ADDRESS };
   }
 
-  /*
-   * One HTTP request per chunk rather than one per token, and a pause between
-   * chunks — the pause is the transport's now, applied to every batch this
-   * process sends, so it is not repeated here.
-   *
-   * Both are measured. All 175 tokens at once cost 175 connections and the
-   * endpoint refused most of them; the same 175 as seven spaced batches were
-   * answered in full, in 4.3 seconds. The provider meters compute units per
-   * second, so what matters is the rate, not the request count.
-   */
+  /* One question per currency, in this order, and the answers come back in it. */
+  const currencies = [...(wantsEther ? [ZERO_ADDRESS] : []), ...tokens];
   const data = balanceOfCalldata(holder.data);
+  const calls: readonly Aggregate3Call[] = currencies.map((address) =>
+    address === ZERO_ADDRESS
+      ? { to: MULTICALL3_ADDRESS, data: getEthBalanceCalldata(holder.data) }
+      : { to: address, data },
+  );
+
+  const batch = await postRpcBatch({
+    rpcUrl,
+    requests: [
+      ethCallEntry({ to: MULTICALL3_ADDRESS, data: encodeAggregate3(calls) }),
+      ethGetCodeEntry(MULTICALL3_ADDRESS),
+    ],
+    fetchImpl: request.fetchImpl,
+    timeoutMs: request.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
+  });
+  if (!batch.ok) return { status: "unavailable", reason: batch.reason, notice: batch.notice };
+
+  /* The proof first: an answer from a contract that is not Multicall3 is not an answer. */
+  const [answers, code] = batch.results;
+  if (code === undefined || !code.ok || !isMulticall3Code(code.result)) {
+    return { status: "unavailable", reason: "configuration-error", notice: AGGREGATOR_UNVERIFIED };
+  }
+
+  /*
+   * The sweep is one call, so a refusal is the whole sweep unread — and an
+   * unread sweep is not an empty one. The same for an answer that does not
+   * decode: publishing a guess at it would pair balances with the wrong names.
+   */
+  if (answers === undefined || !answers.ok) {
+    return { status: "unavailable", reason: "invalid-response", notice: UNREADABLE };
+  }
+  const results = decodeAggregate3(answers.result, calls.length);
+  if (results === null) {
+    return { status: "unavailable", reason: "invalid-response", notice: MALFORMED };
+  }
+
   const held: TokenBalance[] = [];
   let unreadable = 0;
+  results.forEach((result, index) => {
+    const address = currencies[index];
+    if (address === undefined) return;
 
-  for (let at = 0; at < tokens.length; at += ETH_CALL_BATCH_SIZE) {
-    const chunk = tokens.slice(at, at + ETH_CALL_BATCH_SIZE);
-
-    const batch = await postEthCallBatch({
-      rpcUrl,
-      calls: chunk.map((address) => ({ to: address, data })),
-      fetchImpl: request.fetchImpl,
-      timeoutMs: request.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-    });
-
-    /*
-     * A whole chunk lost is a quarter of the sweep unknown at once. Carrying on
-     * would mean publishing a list whose gaps are invisible, so the read stops
-     * and says it could not answer.
-     */
-    if (!batch.ok) return { status: "unavailable", reason: batch.reason, notice: batch.notice };
-
-    batch.results.forEach((result, index) => {
-      const address = chunk[index];
-      if (address === undefined) return;
-      if (!result.ok) {
-        unreadable += 1;
-        return;
-      }
-
-      const balance = readBalanceWord({ result: result.result });
-      if (!balance.ok) {
-        unreadable += 1;
-        return;
-      }
-      if (balance.amount !== "0") held.push({ address, amount: balance.amount });
-    });
-  }
+    /* A call that reverted, or answered with something other than a word, is one unreadable currency. */
+    const balance = result.success ? readBalanceWord({ result: result.data }) : null;
+    if (balance === null || !balance.ok) {
+      unreadable += 1;
+      return;
+    }
+    if (balance.amount !== "0") held.push({ address, amount: balance.amount });
+  });
 
   /*
-   * Ether, asked once and directly. It is one currency of the sweep and is
-   * counted as one: an answer the chain would not give is one unreadable
-   * currency, not a failed lookup.
+   * The rule that keeps a half-answered sweep from being read as an empty one,
+   * applied to losses spread thinly across the list.
    */
-  const checked = tokens.length + (wantsEther ? 1 : 0);
-  if (wantsEther) {
-    const ether = await postEthGetBalance({
-      rpcUrl,
-      address: holder.data,
-      fetchImpl: request.fetchImpl,
-      timeoutMs: request.timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-    });
-    const amount = ether.ok ? readQuantity(ether.payload) : null;
-    if (amount === null) unreadable += 1;
-    else if (amount !== "0") held.push({ address: ZERO_ADDRESS, amount });
-  }
-
-  /*
-   * The same rule as a lost chunk, applied to losses spread thinly enough to
-   * pass the check above one batch at a time.
-   */
+  const checked = currencies.length;
   if (unreadable > checked * MAX_UNREADABLE_SHARE) {
     return { status: "unavailable", reason: "invalid-response", notice: UNREADABLE };
   }
@@ -204,21 +209,4 @@ export const fetchEthereumBalances = async (
     status: "success",
     data: { held, checked, unreadable },
   };
-};
-
-/** A JSON-RPC quantity: `0x` and hex digits with no leading zeros, `0x0` for zero. */
-const QUANTITY = /^0x(?:0|[1-9a-fA-F][0-9a-fA-F]*)$/;
-
-/**
- * Reads a balance out of an `eth_getBalance` response.
- *
- * A quantity, not an ABI word: no padding, and the spec forbids leading zeros,
- * so a padded answer is a provider doing something other than what was asked
- * and is refused rather than read. Stays a decimal string for the reason every
- * balance here does — wei is eighteen decimals past what a double holds.
- */
-const readQuantity = (payload: unknown): string | null => {
-  const result = (payload as { result?: unknown })?.result;
-
-  return typeof result === "string" && QUANTITY.test(result) ? BigInt(result).toString() : null;
 };

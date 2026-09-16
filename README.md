@@ -654,29 +654,41 @@ volume with a floor on transaction count, the first names are USDC, WETH, USDT,
 WBTC, DAI, wstETH. Money that moved is harder to inflate than money claimed to be
 sitting there, and the transaction floor alone removes all four of those.
 
-Four measurements shaped the read, each of which changed the design:
+Five measurements shaped the read, each of which changed the design:
 
-- **250 pools yield 175 distinct tokens.** A wide net is nearly free: a candidate
-  nobody holds costs one call inside a batch; a candidate that is missing costs
-  the reader the token they came to ask about.
+- **250 pools yield 175 distinct tokens; the two nets together yield 289.** A
+  wide net is nearly free: a candidate nobody holds costs one question inside one
+  call; a candidate that is missing costs the reader the token they came to ask
+  about.
 - **175 calls at once are refused** — not for concurrency, since a width of eight
   fails too, but because the provider meters compute units per second.
-- **JSON-RPC's own batch form fixes it**, with no aggregating contract and so no
-  address asserted from memory. A batch of 25 is answered in full; a batch of 175
-  loses nine to the same per-second budget, refused individually.
-- **Seven spaced batches read all 175 with nothing lost, in 4.8 seconds.** The
-  same seven sent back to back lose thirteen.
+- **JSON-RPC's own batch form helped, and then stopped being enough.** Seven
+  spaced batches read 175 tokens with nothing lost, in 4.8 seconds. Twelve read
+  289 and had the last of them refused, then the ether question, then every fee
+  read the page makes after the sweep: the endpoint's budget was spent before
+  the page was done, and it published its v4 pools with every fee unread.
+- **One `eth_call` through Multicall3 reads all 289 in 0.6 seconds**, 65
+  kilobytes out and 46 back, and leaves the budget for the reads that follow.
+- **The contract's address is still not trusted; its code is.** In the same batch
+  as the aggregated call, the sweep reads the code at Multicall3's address and
+  believes the answers only if that code is, byte for byte, the runtime this
+  application was built against — 3,808 bytes read from mainnet and pinned with
+  its hash. A typo would find no code there; another chain finds the same code,
+  because the contract was deployed with CREATE2 from the same bytecode
+  everywhere. Multicall3 has no owner, no upgrade path and no state of its own,
+  so the code it runs is all there is to know about it.
 
-Answers are matched by JSON-RPC `id`, never by position. The specification lets a
-server return them in any order, and pairing one token's balance with another
-token's identity would be wrong in a way nothing downstream could detect.
+Within the call, each token's answer comes back in the order the questions were
+asked, and an answer for a different number of questions is refused whole:
+pairing one token's balance with another token's identity would be wrong in a
+way nothing downstream could detect.
 
 **An unread balance is not a zero balance**, and that is the failure this whole
 read is shaped around. A list built from failed reads renders as "you hold
 nothing", which is a definite-looking answer to a question nobody answered — and
 unlike a dropped search result, which shortens a visible list, a dropped balance
-is invisible. So a lost batch stops the read, and losses spread thinly enough to
-survive that check are counted and refused past a tenth of the sweep. A clean
+is invisible. So a refused sweep stops the read, and losses spread thinly enough
+to survive that check are counted and refused past a tenth of the sweep. A clean
 sweep loses none, which is what makes any material number a signal.
 
 Balances stay base-unit strings from the wire to the formatter, and the formatter
@@ -1128,7 +1140,7 @@ The v3 market-data readers need all three of:
 | --- | --- |
 | `THE_GRAPH_API_KEY` | Sent only as an `Authorization: Bearer` header, never in a URL or body. |
 | `UNISWAP_V3_ETHEREUM_SUBGRAPH_ID` | The stable **Subgraph ID** from The Graph Explorer — not a deployment/IPFS id. The gateway resolves it to the latest sufficiently synced deployment. |
-| `ETHEREUM_RPC_URL` | Mainnet JSON-RPC endpoint for read-only `eth_call`. **Treat the whole URL as a secret** — most providers embed the key in the path. |
+| `ETHEREUM_RPC_URL` | Mainnet JSON-RPC endpoint for read-only `eth_call`, `eth_getLogs` and `eth_getCode`. **Treat the whole URL as a secret** — most providers embed the key in the path. |
 
 Three more are optional, and the application is honest about running without
 each of them:
@@ -1142,7 +1154,8 @@ each of them:
 With the last two absent the limit still applies, counted in each instance's own
 memory, and the shared half costs nothing — see [The rate limit](#the-rate-limit).
 
-Reads are read-only throughout: the RPC path issues `eth_call` and nothing else.
+Reads are read-only throughout: the RPC path issues `eth_call`, `eth_getLogs`
+and `eth_getCode` and nothing else.
 There is no signing, no account access, and no transaction capability anywhere in
 the codebase.
 

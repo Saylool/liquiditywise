@@ -62,9 +62,10 @@ export const getAddressHoldings = async (
     tokenAddresses,
     rpcUrl: process.env.ETHEREUM_RPC_URL,
     /*
-     * Not the logging fetch. One lookup is up to a couple of hundred contract
-     * calls, and a line each would bury every other diagnostic the server
-     * writes — the composed result is logged once below instead.
+     * Not the logging fetch. The sweep is one aggregated call now, but the fee
+     * reads after it are a batch per handful of pools, and a line each would
+     * bury every other diagnostic the server writes — the composed result is
+     * logged once below instead.
      */
     fetchImpl: fetch,
   });
