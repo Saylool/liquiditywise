@@ -348,6 +348,13 @@ describe("PoolRangeReport in Turkish", () => {
     expect(markup).not.toContain("How this range was drawn");
   });
 
+  it("captions the chart in Turkish", () => {
+    expect(markup).toContain('aria-label="Son bir ayın fiyatları, önerilen aralığa karşı"');
+    expect(markup).toContain("Son 30 günün her biri");
+    expect(markup).toContain("Dolu nokta");
+    expect(markup).not.toContain("Each of the last");
+  });
+
   it("keeps every tick behind the technical details, in Turkish too", () => {
     const technical = markup.indexOf("Teknik ayrıntılar");
 
