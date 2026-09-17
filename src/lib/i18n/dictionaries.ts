@@ -58,7 +58,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste the pool's address. Read its verified configuration and current market state, its last 30 completed days of closing prices, how much its price moves, and the price range a position would use — then read a plain-language explanation of all of it, in English or Turkish. No AI touches any of those figures, none of them is estimated to fill a gap, and the model that writes the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, and what each of the other widths would have done instead. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -84,14 +84,14 @@ const en = {
         version: "Uniswap v3",
         features: [
           {
-            name: "Fees and impermanent loss",
+            name: "What a deposit would earn",
             summary:
-              "What a position would earn, and what it would give up by holding through a move. The explanation says plainly that it models neither — which is honest, and is also the question most people arrive with.",
+              "The fees the pool charged are measured and shown; what a particular deposit would take of them is not. That needs a position size and its share of the liquidity active at each price, and this application reads neither.",
           },
           {
-            name: "Fee tier selection",
+            name: "Gas, and the cost of following the price",
             summary:
-              "Comparing the available fee tiers for a pair against how that pair actually trades.",
+              "A range the price has left has to be closed and reopened to follow it, which costs gas and turns a divergence on paper into one that has been realised. None of that is counted anywhere here.",
           },
           {
             name: "Range orders",
@@ -104,14 +104,14 @@ const en = {
         version: "Uniswap v4",
         features: [
           {
+            name: "What a hook actually does",
+            summary:
+              "A v4 page says what a hook is permitted to do, because the protocol enforces that much and it is read out of the hook's own address. Reading the contract to say what it does with those permissions is a different problem, and this application does not attempt it.",
+          },
+          {
             name: "Hook discovery",
             summary:
               "Finding published hooks relevant to a goal, with their limitations stated plainly.",
-          },
-          {
-            name: "Dynamic fee hooks",
-            summary:
-              "Understanding when a fee that responds to market conditions is worth the added complexity.",
           },
           {
             name: "TWAMM-style strategies",
@@ -944,7 +944,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da havuzun adresini yapıştır. Doğrulanmış yapılandırmasını ve güncel piyasa durumunu, tamamlanmış son 30 günün kapanış fiyatlarını, fiyatının ne kadar hareket ettiğini ve bir pozisyonun kullanacağı fiyat aralığını gör — sonra hepsinin gündelik dille açıklamasını oku, Türkçe ya da İngilizce. Bu sayıların hiçbirine yapay zekâ dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metni yazan modelin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, ve diğer genişliklerin her birinin ne yapacağı. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -970,14 +970,14 @@ const tr: Dictionary = {
         version: "Uniswap v3",
         features: [
           {
-            name: "Komisyon ve geçici kayıp",
+            name: "Bir yatırımın ne kazanacağı",
             summary:
-              "Bir pozisyonun ne kazanacağı, ve bir hareketi baştan sona tutmanın neyi feda ettiği. Açıklama ikisini de modellemediğini açıkça söylüyor — bu dürüst, ama çoğu insanın buraya gelirken sorduğu soru da tam bu.",
+              "Havuzun aldığı komisyonlar ölçülüp gösteriliyor; belli bir yatırımın bunlardan ne kadarını alacağı gösterilmiyor. Bunun için bir pozisyon büyüklüğü ve o pozisyonun her fiyatta aktif olan likidite içindeki payı gerekir; bu uygulama ikisini de okumaz.",
           },
           {
-            name: "Komisyon kademesi seçimi",
+            name: "Gas, ve fiyatı takip etmenin maliyeti",
             summary:
-              "Bir parite için mevcut komisyon kademelerini, o paritenin gerçekte nasıl işlem gördüğüyle karşılaştırmak.",
+              "Fiyatın terk ettiği bir aralık, fiyatı takip etmek için kapatılıp yeniden açılmalıdır; bu hem gas harcar hem de kâğıt üstündeki bir sapmayı gerçekleşmiş bir sapmaya çevirir. Bunların hiçbiri burada hesaba katılmıyor.",
           },
           {
             name: "Aralık emirleri",
@@ -990,14 +990,14 @@ const tr: Dictionary = {
         version: "Uniswap v4",
         features: [
           {
+            name: "Bir hook'un gerçekte ne yaptığı",
+            summary:
+              "Bir v4 sayfası, hook'un neye izinli olduğunu söyler; çünkü protokolün zorladığı kısım budur ve hook'un kendi adresinden okunur. O izinlerle ne yaptığını söylemek için sözleşmeyi okumak gerekir, bu ayrı bir problemdir ve bu uygulama ona girişmez.",
+          },
+          {
             name: "Hook keşfi",
             summary:
               "Bir hedefe uygun yayımlanmış hook'ları bulmak ve sınırlarını açıkça belirtmek.",
-          },
-          {
-            name: "Dinamik komisyon hook'ları",
-            summary:
-              "Piyasa koşullarına tepki veren bir komisyonun getirdiği karmaşıklığa ne zaman değdiğini anlamak.",
           },
           {
             name: "TWAMM tarzı stratejiler",
