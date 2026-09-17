@@ -6,6 +6,9 @@ import {
   INTERPRETATION_MODELS,
   isInterpretationModel,
   resolveInterpretationModel,
+  INTERPRETATION_MAX_RETRIES,
+  INTERPRETATION_TIMEOUT_MS,
+  INTERPRETATION_REASONING_EFFORT,
 } from "./interpretationModel";
 
 describe("resolveInterpretationModel", () => {
@@ -71,5 +74,38 @@ describe("the allowlist", () => {
   it("leaves enough room that a normal answer never hits the ceiling", () => {
     // Four sections of at most 700 characters is well under a thousand tokens.
     expect(INTERPRETATION_MAX_TOKENS).toBeGreaterThan(1000);
+  });
+});
+
+/*
+ * The two bounds that decide how long a reader can be left with a pending
+ * panel. The SDK's own defaults — ten minutes, two retries — would be half an
+ * hour of it, so both are set here and this is what keeps them sized together.
+ */
+describe("the explanation's bounds", () => {
+  it("cannot leave a reader waiting more than a minute and a half, however the provider behaves", () => {
+    const worstCaseMs = (INTERPRETATION_MAX_RETRIES + 1) * INTERPRETATION_TIMEOUT_MS;
+
+    expect(worstCaseMs).toBeLessThanOrEqual(90_000);
+  });
+
+  /* Twice over the worst answer measured at this effort, which was under twenty seconds. */
+  it("gives one attempt more than twice the time a measured answer took", () => {
+    expect(INTERPRETATION_TIMEOUT_MS).toBeGreaterThanOrEqual(2 * 20_000);
+  });
+
+  /*
+   * Pinned to what was measured rather than left to taste: at this model's own
+   * default the same answer took a median of 29 seconds against 16.5, and read
+   * no better for it. `minimal` is refused by the model with a 400, and `none`
+   * measured slower than `low`. Changing this should mean measuring again.
+   */
+  it("asks for the effort that was measured faster and no worse", () => {
+    expect(INTERPRETATION_REASONING_EFFORT).toBe("low");
+  });
+
+  it("retries less than the SDK would on its own", () => {
+    expect(INTERPRETATION_MAX_RETRIES).toBeLessThan(2);
+    expect(INTERPRETATION_MAX_RETRIES).toBeGreaterThan(0);
   });
 });

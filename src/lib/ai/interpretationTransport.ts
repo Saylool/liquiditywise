@@ -6,7 +6,11 @@ import {
   RangeInterpretationWireSchema,
 } from "../../schemas";
 import type { RangeInterpretationPrompt } from "./prompts/rangeInterpretation";
-import { INTERPRETATION_MAX_TOKENS, type InterpretationModel } from "./interpretationModel";
+import {
+  INTERPRETATION_MAX_TOKENS,
+  INTERPRETATION_REASONING_EFFORT,
+  type InterpretationModel,
+} from "./interpretationModel";
 
 /*
  * The one call to the model, and the mapping from everything that can go wrong
@@ -56,6 +60,8 @@ export type InterpretationResponse = {
 export type InterpretationRequestParams = {
   readonly model: string;
   readonly max_output_tokens: number;
+  /** How hard to think first, which on this task was most of the wait. */
+  readonly reasoning: { readonly effort: string };
   readonly input: readonly { readonly role: "system" | "user"; readonly content: string }[];
   readonly text: { readonly format: unknown };
 };
@@ -104,9 +110,10 @@ const statusOf = (error: unknown): number | undefined => {
  * Maps a thrown value onto a failure category.
  *
  * A throw without a status never reached the service — no connection, or the
- * request timed out waiting. Both are reported as unreachable: the SDK
- * distinguishes them by class, but the distinction changes nothing a reader or
- * an operator would do differently.
+ * request ran past the budget in `INTERPRETATION_TIMEOUT_MS`. Both are reported
+ * as unreachable: the SDK distinguishes them by class, but the distinction
+ * changes nothing a reader or an operator would do differently, and either way
+ * the page says the explanation is missing rather than guessing at one.
  */
 const classifyThrown = (error: unknown): InterpretationTransportResult => {
   const status = statusOf(error);
@@ -174,6 +181,7 @@ export const requestInterpretation = async (
     const response = await request.createResponse({
       model: request.model,
       max_output_tokens: INTERPRETATION_MAX_TOKENS,
+      reasoning: { effort: INTERPRETATION_REASONING_EFFORT },
       input: [
         { role: "system", content: request.prompt.system },
         { role: "user", content: request.prompt.user },

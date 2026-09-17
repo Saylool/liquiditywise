@@ -97,3 +97,55 @@ export const resolveInterpretationModel = (configured: string | undefined): Inte
  * worst case costs a fraction of a cent at the prices above.
  */
 export const INTERPRETATION_MAX_TOKENS = 4096;
+
+/**
+ * How hard the model is asked to think before it writes.
+ *
+ * These models reason before answering, and on this task the reasoning was
+ * most of the wait. Measured on 2026-09-17 against `gpt-5.6-luna`, the same
+ * pool and the same prompt, three rounds each:
+ *
+ *   default effort   median 29.0 s, worst 39.9 s, 516 to 1034 reasoning tokens
+ *   low effort       median 16.5 s, worst 19.8 s, 275 to  362 reasoning tokens
+ *
+ * The visible answer was the same length either way — about two thousand
+ * characters — and reading them side by side, the low-effort text covered the
+ * same four things and kept to the same rules. So the thinking was buying a
+ * reader nothing and costing them half a minute.
+ *
+ * `minimal` is refused by this model with a 400, and `none` measured *slower*
+ * than `low` in both languages despite spending no reasoning tokens at all,
+ * which is not a thing to design around. `low` is the setting that was both
+ * accepted and measurably faster.
+ *
+ * The job this sits under is narrow by construction: read figures that are
+ * already verified, write four short paragraphs, and never produce a number.
+ * The output contract enforces the last part whatever the effort.
+ */
+export const INTERPRETATION_REASONING_EFFORT = "low";
+
+/**
+ * How long one attempt at an explanation may take.
+ *
+ * The SDK's own default is ten minutes, which is not a budget: a provider
+ * having a bad minute would hold the page's last section open long past the
+ * point where a reader has given up and the platform has killed the function.
+ *
+ * Forty-five seconds is more than twice the worst answer measured at the
+ * effort above. It is longer than any other budget here because this is the
+ * one read whose work is genuinely open-ended, and because the section streams
+ * into a boundary of its own: a slow explanation costs a reader a pending
+ * panel under a page they can already read in full.
+ */
+export const INTERPRETATION_TIMEOUT_MS = 45_000;
+
+/**
+ * How many times one attempt may be repeated.
+ *
+ * The SDK retries twice by default, which is the wrong shape when an attempt
+ * can take forty-five seconds: three of them is over two minutes to arrive at
+ * a failure. One retry is what rescues the case worth rescuing — a rate limit
+ * or a 500 that clears immediately — and the answer is cached for an hour once
+ * it lands, so a reader rarely pays even the first attempt.
+ */
+export const INTERPRETATION_MAX_RETRIES = 1;

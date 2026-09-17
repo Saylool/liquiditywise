@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_INTERPRETATION_MODEL, INTERPRETATION_MAX_TOKENS } from "./interpretationModel";
+import {
+  DEFAULT_INTERPRETATION_MODEL,
+  INTERPRETATION_MAX_TOKENS,
+  INTERPRETATION_REASONING_EFFORT,
+} from "./interpretationModel";
 import {
   type InterpretationRequestParams,
   type InterpretationResponse,
@@ -45,6 +49,8 @@ describe("requestInterpretation", () => {
     const [params] = calls;
     expect(params?.model).toBe(DEFAULT_INTERPRETATION_MODEL);
     expect(params?.max_output_tokens).toBe(INTERPRETATION_MAX_TOKENS);
+    /* Most of the wait on this task was the thinking, and the answer was no better for it. */
+    expect(params?.reasoning).toEqual({ effort: INTERPRETATION_REASONING_EFFORT });
     expect(params?.input).toEqual([
       { role: "system", content: prompt.system },
       { role: "user", content: prompt.user },

@@ -13,7 +13,12 @@ import {
   interpretationCacheKey,
 } from "./interpretationCache";
 import { BASE_INSTRUCTION } from "./prompts/base";
-import { type InterpretationModel, resolveInterpretationModel } from "./interpretationModel";
+import {
+  INTERPRETATION_MAX_RETRIES,
+  INTERPRETATION_TIMEOUT_MS,
+  type InterpretationModel,
+  resolveInterpretationModel,
+} from "./interpretationModel";
 import { interpretRange, type WrittenInterpretation } from "./interpretRange";
 import type { InterpretationOutcome } from "./rangeInterpretationAdapter";
 
@@ -113,9 +118,17 @@ export const getRangeInterpretation = async (
      * than loosening the type every module above it works with.
      */
     createResponse: (params) =>
-      new OpenAI({ apiKey }).responses.create(
-        params as unknown as ResponseCreateParamsNonStreaming,
-      ),
+      /*
+       * Both bounds are set here rather than left to the SDK, whose defaults
+       * are ten minutes and two retries — three attempts of ten minutes each
+       * in front of a page section. See the constants for what they are sized
+       * against.
+       */
+      new OpenAI({
+        apiKey,
+        timeout: INTERPRETATION_TIMEOUT_MS,
+        maxRetries: INTERPRETATION_MAX_RETRIES,
+      }).responses.create(params as unknown as ResponseCreateParamsNonStreaming),
   });
 
   /*
