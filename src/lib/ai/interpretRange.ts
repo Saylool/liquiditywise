@@ -9,7 +9,14 @@ import {
 } from "./rangeInterpretationAdapter";
 import { buildRangeInterpretationPrompt } from "./prompts/rangeInterpretation";
 import type { InterpretationModel } from "./interpretationModel";
-import { type ResponseCreator, requestInterpretation } from "./interpretationTransport";
+import type { SectionKey } from "./interpretationSections";
+import {
+  type InterpretationTransportResult,
+  type ResponseCreator,
+  requestInterpretation,
+  type StreamCreator,
+  streamInterpretation,
+} from "./interpretationTransport";
 
 /*
  * Prompt, call, verify — the whole path from a finished analysis to a checked
@@ -46,22 +53,18 @@ export type InterpretRangeInput = {
   readonly onDiagnostic?: InterpretationDiagnostic | undefined;
 };
 
-export const interpretRange = async (
-  input: InterpretRangeInput,
-): Promise<InterpretationOutcome<WrittenInterpretation>> => {
-  const prompt = buildRangeInterpretationPrompt({
-    analysis: input.analysis,
-    locale: input.locale,
-    warnings: input.warnings,
-  });
-
-  const response = await requestInterpretation({
-    prompt,
-    apiKey: input.apiKey,
-    model: input.model,
-    createResponse: input.createResponse,
-  });
-
+/**
+ * The half both paths share: whatever came back is checked, and only a whole
+ * answer that passes becomes an explanation.
+ *
+ * Streaming changes when a paragraph reaches the page, never whether it was
+ * checked. The early release hands on sections that have each passed the same
+ * rule; this is where the answer as a whole is held to it.
+ */
+const verifyAnswer = (
+  response: InterpretationTransportResult,
+  input: Pick<InterpretRangeInput, "model" | "onDiagnostic">,
+): InterpretationOutcome<WrittenInterpretation> => {
   if (!response.ok) {
     return { status: "unavailable", reason: response.reason, notice: response.notice };
   }
@@ -77,4 +80,50 @@ export const interpretRange = async (
     status: "success",
     data: { interpretation: verified.data, model: response.model ?? input.model },
   };
+};
+
+export const interpretRange = async (
+  input: InterpretRangeInput,
+): Promise<InterpretationOutcome<WrittenInterpretation>> => {
+  const response = await requestInterpretation({
+    prompt: buildRangeInterpretationPrompt({
+      analysis: input.analysis,
+      locale: input.locale,
+      warnings: input.warnings,
+    }),
+    apiKey: input.apiKey,
+    model: input.model,
+    createResponse: input.createResponse,
+  });
+
+  return verifyAnswer(response, input);
+};
+
+export type StreamRangeInput = Omit<InterpretRangeInput, "createResponse"> & {
+  readonly createStream: StreamCreator;
+  /** Handed each paragraph as it finishes, already checked against its own rule. */
+  readonly onSection: (key: SectionKey, prose: string) => void;
+};
+
+/**
+ * The same path, asked for as a stream: identical prompt, identical check on
+ * the way back, and each finished paragraph handed on while the rest is still
+ * being written.
+ */
+export const streamRange = async (
+  input: StreamRangeInput,
+): Promise<InterpretationOutcome<WrittenInterpretation>> => {
+  const response = await streamInterpretation({
+    prompt: buildRangeInterpretationPrompt({
+      analysis: input.analysis,
+      locale: input.locale,
+      warnings: input.warnings,
+    }),
+    apiKey: input.apiKey,
+    model: input.model,
+    createStream: input.createStream,
+    onSection: input.onSection,
+  });
+
+  return verifyAnswer(response, input);
 };

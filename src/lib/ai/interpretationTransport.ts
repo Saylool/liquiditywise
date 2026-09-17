@@ -11,6 +11,7 @@ import {
   INTERPRETATION_REASONING_EFFORT,
   type InterpretationModel,
 } from "./interpretationModel";
+import { newlyFinishedSections, type SectionKey } from "./interpretationSections";
 
 /*
  * The one call to the model, and the mapping from everything that can go wrong
@@ -164,6 +165,102 @@ export type InterpretationRequest = {
   /** Resolved by the caller, so this module never reads the environment. */
   readonly model: InterpretationModel;
   readonly createResponse: ResponseCreator;
+};
+
+/**
+ * One event of a streamed answer, narrowed to what this module reads: the text
+ * deltas that build the JSON object, and the finished response that arrives
+ * with the last of them.
+ */
+export type InterpretationStreamEvent = {
+  readonly type?: string;
+  readonly delta?: string;
+  readonly response?: InterpretationResponse;
+};
+
+/** The event a provider sends for each piece of the answer's text. */
+const TEXT_DELTA = "response.output_text.delta";
+
+/** The streaming half of {@link ResponseCreator}, injected for the same reason. */
+export type StreamCreator = (
+  params: InterpretationRequestParams & { readonly stream: true },
+) => Promise<AsyncIterable<InterpretationStreamEvent>>;
+
+export type StreamedInterpretationRequest = {
+  readonly prompt: RangeInterpretationPrompt;
+  readonly apiKey: string | undefined;
+  readonly model: InterpretationModel;
+  readonly createStream: StreamCreator;
+  /**
+   * Called with each section the moment it has finished arriving and passed
+   * its own rule — the same rule the whole answer is held to when it lands.
+   */
+  readonly onSection: (key: SectionKey, prose: string) => void;
+};
+
+/**
+ * Asks for the explanation as a stream, and hands each finished paragraph on
+ * as it arrives.
+ *
+ * The answer that comes back at the end is the same shape the non-streaming
+ * call returns, and it goes through the same verification: the early release
+ * is an addition to that path, never a replacement for it. A reader is shown a
+ * paragraph early only when it has already passed the check it would face
+ * later anyway.
+ *
+ * A stream that ends without the provider saying it finished is treated as a
+ * connection that dropped, because that is what it is — the accumulated text
+ * would be a truncated object, and publishing half a sentence is the one thing
+ * this path must not do.
+ */
+export const streamInterpretation = async (
+  request: StreamedInterpretationRequest,
+): Promise<InterpretationTransportResult> => {
+  if (request.apiKey === undefined || request.apiKey.trim().length === 0) {
+    return failure("configuration-error", NOT_CONFIGURED);
+  }
+
+  try {
+    const stream = await request.createStream({
+      model: request.model,
+      max_output_tokens: INTERPRETATION_MAX_TOKENS,
+      reasoning: { effort: INTERPRETATION_REASONING_EFFORT },
+      input: [
+        { role: "system", content: request.prompt.system },
+        { role: "user", content: request.prompt.user },
+      ],
+      text: { format: zodTextFormat(RangeInterpretationWireSchema, "range_interpretation") },
+      stream: true,
+    });
+
+    let text = "";
+    let finished: InterpretationResponse | null = null;
+    const delivered = new Set<string>();
+
+    for await (const event of stream) {
+      if (event.type === TEXT_DELTA && typeof event.delta === "string") {
+        text += event.delta;
+        for (const section of newlyFinishedSections(text, delivered)) {
+          delivered.add(section.key);
+          request.onSection(section.key, section.prose);
+        }
+      }
+      if (event.response !== undefined) finished = event.response;
+    }
+
+    if (finished === null) return failure("network-error", UNREACHABLE);
+
+    const answer = finished.output_text ?? (text.length === 0 ? null : text);
+
+    return {
+      ok: true,
+      stopReason: stopReasonOf(finished),
+      text: answer === null || answer.length === 0 ? null : answer,
+      model: finished.model ?? null,
+    };
+  } catch (error) {
+    return classifyThrown(error);
+  }
 };
 
 export const requestInterpretation = async (

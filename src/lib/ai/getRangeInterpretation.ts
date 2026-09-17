@@ -2,7 +2,10 @@ import type { DataWarningNotice } from "../../schemas";
 import "server-only";
 
 import OpenAI from "openai";
-import type { ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
+import type {
+  ResponseCreateParamsNonStreaming,
+  ResponseCreateParamsStreaming,
+} from "openai/resources/responses/responses";
 
 
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
@@ -19,7 +22,14 @@ import {
   type InterpretationModel,
   resolveInterpretationModel,
 } from "./interpretationModel";
-import { interpretRange, type WrittenInterpretation } from "./interpretRange";
+import { interpretRange, streamRange, type WrittenInterpretation } from "./interpretRange";
+import type { InterpretationStreamEvent } from "./interpretationTransport";
+import type { SectionKey } from "./interpretationSections";
+import {
+  createSectionGates,
+  type SectionOutcome,
+  settledSectionGates,
+} from "./sectionGates";
 import type { InterpretationOutcome } from "./rangeInterpretationAdapter";
 
 /*
@@ -148,4 +158,94 @@ export const getRangeInterpretation = async (
   logUnavailable(LABEL, outcome);
 
   return outcome;
+};
+
+/**
+ * An explanation being written, as four things that settle one at a time.
+ *
+ * The page renders a boundary per section and one more for the credit under
+ * them, so the first paragraph reaches a reader while the last is still being
+ * written. Measured against the live model, the first lands at about eight
+ * seconds and the whole answer at about thirteen; the panel used to show
+ * nothing at all until the thirteenth.
+ */
+export type StreamedRangeInterpretation = {
+  readonly sections: Readonly<Record<SectionKey, Promise<SectionOutcome>>>;
+  /** The answer as a whole, verified, cached and logged — the same one as before. */
+  readonly whole: Promise<InterpretationOutcome<WrittenInterpretation>>;
+};
+
+/**
+ * Starts writing the explanation and hands back its parts.
+ *
+ * Deliberately not `async`: the caller needs the promises now, not when the
+ * answer is finished. A cached answer settles all of them immediately, which is
+ * why a second reader of the same pool sees the whole thing at once.
+ */
+export const streamRangeInterpretation = (
+  request: RangeInterpretationRequest,
+): StreamedRangeInterpretation => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const model = interpretationModelInUse();
+
+  const key = interpretationCacheKey({
+    analysis: request.analysis,
+    warnings: request.warnings,
+    locale: request.locale,
+    model,
+    instruction: BASE_INSTRUCTION,
+  });
+
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return {
+      sections: settledSectionGates(cached.interpretation),
+      whole: Promise.resolve({ status: "success", data: cached }),
+    };
+  }
+
+  const gates = createSectionGates();
+  const whole = streamRange({
+    analysis: request.analysis,
+    warnings: request.warnings,
+    locale: request.locale,
+    apiKey,
+    model,
+    onSection: gates.deliver,
+    onDiagnostic: (detail) => {
+      logDetail(LABEL, `answer rejected — ${detail}`);
+    },
+    /*
+     * The streaming twin of the cast below it, at the same boundary and for the
+     * same reason: this application's narrowed request meeting the SDK's own
+     * parameter type, once, where it can be read.
+     */
+    createStream: async (params) =>
+      (await new OpenAI({
+        apiKey,
+        timeout: INTERPRETATION_TIMEOUT_MS,
+        maxRetries: INTERPRETATION_MAX_RETRIES,
+      }).responses.create(
+        params as unknown as ResponseCreateParamsStreaming,
+      )) as unknown as AsyncIterable<InterpretationStreamEvent>,
+  })
+    .then((outcome) => {
+      if (outcome.status === "success") cache.set(key, outcome.data);
+      logUnavailable(LABEL, outcome);
+      return outcome;
+    })
+    /*
+     * Nothing above throws today, and a page whose sections never settle would
+     * spin for ever if something ever did.
+     */
+    .catch((): InterpretationOutcome<WrittenInterpretation> => ({
+      status: "unavailable",
+      reason: "network-error",
+      notice: "explanation-unreachable",
+    }))
+    .finally(() => {
+      gates.closeRemaining();
+    });
+
+  return { sections: gates.sections, whole };
 };

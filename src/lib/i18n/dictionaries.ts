@@ -733,6 +733,13 @@ const en = {
     pending: "Writing the explanation…",
     unavailable: "No explanation is available for this analysis.",
     /*
+     * The two states a single paragraph can be in while the rest of the answer
+     * is still arriving. Both keep the heading, so the reading order stays put
+     * rather than the sections below jumping as each one lands.
+     */
+    sectionWriting: "Still being written…",
+    sectionMissing: "This part could not be written.",
+    /*
      * Names the author, and draws the line. Prose written by a model sitting
      * under figures that were computed and cross-checked should say which is
      * which, or a reader is entitled to assume the same hand produced both.
@@ -1476,6 +1483,8 @@ const tr: Dictionary = {
     heading: "Açıklama",
     pending: "Açıklama yazılıyor…",
     unavailable: "Bu analiz için açıklama yok.",
+    sectionWriting: "Hâlâ yazılıyor…",
+    sectionMissing: "Bu bölüm yazılamadı.",
     writtenBy: (model: string) =>
       `${model} tarafından yazıldı. Yukarıdaki sayılar ona ait değil.`,
     sections: {
