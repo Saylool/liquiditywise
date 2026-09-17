@@ -1,9 +1,9 @@
 import type { DataResult } from "../../schemas";
 import { V4_POOL_CARD_FRAGMENT } from "./v4PoolCardRawResponse";
 import {
-  DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
   postV3SubgraphQuery,
+  SEARCH_SUBGRAPH_TIMEOUT_MS,
 } from "./v3SubgraphTransport";
 
 /*
@@ -123,7 +123,7 @@ export const fetchEthereumV4PoolDays = async (
     query: V4_POOL_DAYS_QUERY,
     variables: { from: poolDaysWindowStart(now), limit: V4_POOL_DAYS_LIMIT },
     fetchImpl: request.fetchImpl,
-    timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
+    timeoutMs: request.timeoutMs ?? SEARCH_SUBGRAPH_TIMEOUT_MS,
   });
 
   if (!transport.ok) {

@@ -12,7 +12,7 @@ import {
   readSearchPoolsForReserves,
 } from "./v3PoolSearchAdapter";
 import {
-  DEFAULT_SUBGRAPH_TIMEOUT_MS,
+  SEARCH_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
@@ -109,6 +109,11 @@ export type EthereumV3PoolSearchRequest = {
   readonly fetchImpl: FetchLike;
   /** Injected, because a result carries when it was read. */
   readonly now: () => Date;
+  /**
+   * The budget for the source query, which is the slow half of a search. The
+   * chain read below keeps its own, shorter one: a list that took the source
+   * eighteen seconds should not then be allowed twenty more at the endpoint.
+   */
   readonly timeoutMs?: number;
   readonly onDiagnostic?: PoolSearchDiagnostic | undefined;
 };
@@ -149,7 +154,7 @@ export const fetchEthereumV3PoolSearch = async (
       ? { first, second, limit: POOL_SEARCH_FETCH_LIMIT }
       : { term: first, limit: POOL_SEARCH_FETCH_LIMIT },
     fetchImpl: request.fetchImpl,
-    timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
+    timeoutMs: request.timeoutMs ?? SEARCH_SUBGRAPH_TIMEOUT_MS,
   });
 
   if (!transport.ok) {
@@ -166,7 +171,6 @@ export const fetchEthereumV3PoolSearch = async (
     pools: readSearchPoolsForReserves(transport.payload),
     rpcUrl: request.rpcUrl,
     fetchImpl: request.fetchImpl,
-    timeoutMs: request.timeoutMs,
   });
 
   return normalizeV3PoolSearch({

@@ -7,7 +7,11 @@ import {
   V4_POOL_DAYS_QUERY,
   V4_POOL_DAYS_WINDOW,
 } from "./ethereumV4PoolDays";
-import type { FetchLike } from "./v3SubgraphTransport";
+import {
+  DEFAULT_SUBGRAPH_TIMEOUT_MS,
+  type FetchLike,
+  SEARCH_SUBGRAPH_TIMEOUT_MS,
+} from "./v3SubgraphTransport";
 
 const API_KEY = "test-graph-key-must-never-leak";
 const NOW = new Date("2026-09-15T12:00:00.000Z");
@@ -100,5 +104,33 @@ describe("poolDaysWindowStart", () => {
     const today = midnight(2026, 9, 15);
 
     expect((today - poolDaysWindowStart(new Date("2026-09-15T12:00:00.000Z"))) / 86_400 + 1).toBe(V4_POOL_DAYS_WINDOW);
+  });
+});
+
+/* The list budget, for the same reason the v3 search has it: this read was measured at 0.7 to 5.1 seconds. */
+describe("fetchEthereumV4PoolDays and its budget", () => {
+  it("waits the list budget, well past the page default", async () => {
+    vi.useFakeTimers();
+    try {
+      let abandoned = 0;
+      const fetchImpl: FetchLike = (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            abandoned += 1;
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        });
+      const result = run({ fetchImpl });
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_SUBGRAPH_TIMEOUT_MS + 1_000);
+      expect(abandoned).toBe(0);
+
+      await vi.advanceTimersByTimeAsync(SEARCH_SUBGRAPH_TIMEOUT_MS);
+      expect(abandoned).toBe(1);
+      const answered = await result;
+      expect(answered.status === "unavailable" && answered.notice).toBe("market-data-timed-out");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

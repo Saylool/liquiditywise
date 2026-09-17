@@ -42,6 +42,7 @@ export type EthereumV4PoolSearchRequest = {
   readonly rpcUrl: string | undefined;
   /** For the chain reads below. The day table is read by {@link readDays}. */
   readonly fetchImpl: FetchLike;
+  /** The chain reads' budget. The list's own is spent inside {@link readDays}. */
   readonly timeoutMs?: number;
   readonly onDiagnostic?: PoolSearchDiagnostic | undefined;
 };

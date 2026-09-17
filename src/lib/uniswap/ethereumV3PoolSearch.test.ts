@@ -6,7 +6,12 @@ import {
   V3_POOL_SEARCH_PAIR_QUERY,
   V3_POOL_SEARCH_SINGLE_QUERY,
 } from "./ethereumV3PoolSearch";
-import type { FetchLike } from "./v3SubgraphTransport";
+import { DEFAULT_RPC_TIMEOUT_MS } from "./ethereumRpcTransport";
+import {
+  DEFAULT_SUBGRAPH_TIMEOUT_MS,
+  type FetchLike,
+  SEARCH_SUBGRAPH_TIMEOUT_MS,
+} from "./v3SubgraphTransport";
 
 const API_KEY = "test-graph-key-must-never-leak";
 const SUBGRAPH_ID = "TestStableSubgraphId";
@@ -206,5 +211,74 @@ describe("fetchEthereumV3PoolSearch", () => {
     });
 
     expect(onDiagnostic).toHaveBeenCalledWith("1 of 1 pools unverifiable");
+  });
+});
+
+/*
+ * The budget, which the searches spend more of than any other read here: the
+ * v3 search query was measured at 5.2 to 8.7 seconds, against a ten-second
+ * page default it twice failed on. The two halves of a search have separate
+ * budgets, and this is what proves they are separate rather than one number
+ * passed down.
+ */
+describe("fetchEthereumV3PoolSearch and its budget", () => {
+  const RPC_URL = "https://rpc.test.invalid/key-that-must-never-leak";
+
+  /** A fetch that never answers the given host, and says when its request was abandoned. */
+  const hanging = (host: string, answer: () => Response) => {
+    const abandoned: string[] = [];
+
+    const fetchImpl: FetchLike = (url, init) =>
+      url.startsWith(host)
+        ? new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => {
+              abandoned.push(url);
+              reject(new DOMException("aborted", "AbortError"));
+            });
+          })
+        : Promise.resolve(answer());
+
+    return { fetchImpl, abandoned };
+  };
+
+  it("waits the search budget on the source, well past the page default", async () => {
+    vi.useFakeTimers();
+    try {
+      const { fetchImpl, abandoned } = hanging("https://gateway", () => jsonResponse(successBody));
+      const result = run({ fetchImpl });
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_SUBGRAPH_TIMEOUT_MS + 1_000);
+      expect(abandoned).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(SEARCH_SUBGRAPH_TIMEOUT_MS);
+      expect(abandoned).toHaveLength(1);
+      const answered = await result;
+      expect(answered.status === "unavailable" && answered.notice).toBe("market-data-timed-out");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /*
+   * A list that took the source most of its budget must not then be allowed
+   * the same again at the endpoint. The chain read keeps the shorter budget,
+   * and a search whose chain read hangs comes back with the pools it found and
+   * their reserves unread.
+   */
+  it("does not let a slow chain read spend the search's budget", async () => {
+    vi.useFakeTimers();
+    try {
+      const { fetchImpl, abandoned } = hanging(RPC_URL, () => jsonResponse(successBody));
+      const result = run({ fetchImpl, rpcUrl: RPC_URL });
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_RPC_TIMEOUT_MS + 1_000);
+      expect(abandoned).toEqual([RPC_URL]);
+
+      const answered = await result;
+      expect(answered.status).toBe("success");
+      expect(answered.status === "success" && answered.data.matches[0]?.reserves).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

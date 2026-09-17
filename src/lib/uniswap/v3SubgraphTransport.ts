@@ -15,7 +15,37 @@ import type { DataFailureNotice, DataFailureReason } from "../../schemas";
  */
 const GATEWAY_SUBGRAPH_BASE_URL = "https://gateway.thegraph.com/api/subgraphs/id";
 
+/**
+ * How long a read of one pool's own figures may take.
+ *
+ * Ten seconds is generous for a query the indexer answers from one pool's
+ * entities — a snapshot, a history, a metadata read — and short enough that a
+ * source having a bad minute does not hold a page open.
+ */
 export const DEFAULT_SUBGRAPH_TIMEOUT_MS = 10_000;
+
+/**
+ * How long a read of a *list* may take, which is longer, because the two the
+ * searches are built from cost more at the gateway than anything else here.
+ *
+ * Measured on 2026-09-17, eight consecutive reads of the v3 search query as
+ * the page sends it: 5.2 to 8.7 seconds, and 0.3 seconds on the fourth
+ * identical repeat, where the gateway had it cached. Dropping the ordering
+ * (5.8 s) and asking for half as many rows (5.8 s) changed nothing, so the
+ * cost is the scan behind `symbol_contains_nocase` rather than the sort. The
+ * v4 day table, read the same way, took 0.7 to 5.1 seconds.
+ *
+ * Against that, ten seconds was a budget the v3 search failed on its own tail:
+ * twice in one afternoon the page reported that the list could not be read for
+ * a query that would have arrived a second or two later. Twenty seconds clears
+ * the measured tail with room, and costs a reader nothing they were not
+ * already waiting — both lists stream into a boundary of their own, so a slow
+ * one holds a skeleton while the rest of the page is read.
+ *
+ * It is the budget for the *source* query only. The chain reads that follow a
+ * list keep their own, which is shorter: see `DEFAULT_RPC_TIMEOUT_MS`.
+ */
+export const SEARCH_SUBGRAPH_TIMEOUT_MS = 20_000;
 
 /**
  * The subset of `fetch` this module uses. Narrower than the global signature so a
