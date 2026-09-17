@@ -299,18 +299,28 @@ const en = {
   widths: {
     heading: "The other widths",
     intro:
-      "The same method at each width the form offers, so the trade-off can be seen rather than told: a wider range holds more of the days, and spreads the same deposit over more prices, so each day inside earns a smaller share of the fees.",
+      "The same method at each width the form offers, so the trade-off can be seen rather than told: a wider range holds more of the days, and spreads the same deposit over more prices — which is the last column, and it is the arithmetic of the protocol rather than an estimate.",
     width: "Width",
     range: "Range",
     recent: (days: string) => `Inside, of the last ${days} days`,
     unseen: "Inside, on days it never saw",
     insideOf: (inside: string, total: string) => `${inside} of ${total}`,
     unseenNone: "not enough history",
+    feeShare: "Fee share while inside",
+    feeShareValue: (times: string) => `${times}×`,
     chosen: "shown above",
     columnsNote:
       "The first count is over the days each range was drawn from, so it says how that width was fitted, not how it held. The second is the check above, run for each width: the method stepped back a horizon and laid over the days that followed.",
+    /*
+     * The one column that is a comparison rather than a reading, and the one
+     * most easily read as a promise. It is exact arithmetic about a day inside
+     * the range, and it says nothing about the days outside it — which is the
+     * half the column beside it measures.
+     */
+    feeShareNote:
+      "The last column is what the same deposit would take of the fees charged on a day the price stays inside that range, against the width shown above — so that one reads as one. It is the protocol's own position arithmetic rather than an estimate: a narrower range turns the same money into more liquidity over fewer prices. It assumes the rest of the pool's liquidity is unchanged, which a deposit large enough to move it would not leave true, and it says nothing about the days price spends outside.",
     notAdvice:
-      "None of these is a recommendation. Which trade-off suits a position depends on what the position is for, and nothing here knows that.",
+      "None of these is a recommendation. A narrower range takes a larger share on the days it holds and nothing at all on the days it does not, and which of those matters more depends on what the position is for — which nothing here knows.",
   },
 
   parameters: {
@@ -1138,18 +1148,22 @@ const tr: Dictionary = {
   widths: {
     heading: "Diğer genişlikler",
     intro:
-      "Aynı yöntem, formun sunduğu her genişlikte; böylece ödünleşme anlatılmak yerine görülebilir: daha geniş bir aralık günlerin daha çoğunu içinde tutar ve aynı yatırımı daha çok fiyata yayar, bu yüzden içeride geçen her gün komisyonlardan daha küçük bir pay kazanır.",
+      "Aynı yöntem, formun sunduğu her genişlikte; böylece ödünleşme anlatılmak yerine görülebilir: daha geniş bir aralık günlerin daha çoğunu içinde tutar ve aynı yatırımı daha çok fiyata yayar — son sütun budur, ve bir tahmin değil protokolün aritmetiğidir.",
     width: "Genişlik",
     range: "Aralık",
     recent: (days: string) => `Son ${days} günün içeride geçeni`,
     unseen: "Hiç görmediği günlerde içeride",
     insideOf: (inside: string, total: string) => `${total} günün ${inside} tanesi`,
     unseenNone: "yeterli geçmiş yok",
+    feeShare: "İçerideyken komisyon payı",
+    feeShareValue: (times: string) => `${times}×`,
     chosen: "yukarıda gösterilen",
     columnsNote:
       "İlk sayı, her aralığın çizildiği günler üzerinden; yani o genişliğin nasıl oturtulduğunu söyler, nasıl tuttuğunu değil. İkincisi yukarıdaki sınamanın her genişlik için çalıştırılmış hâli: yöntem bir ufuk geriye alınıp sonraki günlerin üzerine serildi.",
+    feeShareNote:
+      "Son sütun, fiyatın o aralığın içinde kaldığı bir günde alınan komisyonlardan aynı yatırımın alacağı payı, yukarıda gösterilen genişliğe kıyasla verir — bu yüzden o satır bir okunur. Bir tahmin değil, protokolün kendi pozisyon aritmetiği: daha dar bir aralık aynı parayı daha az fiyat üzerinde daha çok likiditeye çevirir. Havuzun geri kalan likiditesinin değişmediğini varsayar; onu kıpırdatacak kadar büyük bir yatırım bunu doğru bırakmaz. Ve fiyatın dışarıda geçirdiği günler hakkında hiçbir şey söylemez.",
     notAdvice:
-      "Bunların hiçbiri bir öneri değil. Hangi ödünleşmenin bir pozisyona uyduğu, pozisyonun ne için olduğuna bağlıdır ve burada hiçbir şey bunu bilmez.",
+      "Bunların hiçbiri bir öneri değil. Daha dar bir aralık, tuttuğu günlerde daha büyük bir pay alır, tutmadığı günlerde hiçbir şey almaz; hangisinin daha önemli olduğu pozisyonun ne için olduğuna bağlıdır — ve burada hiçbir şey bunu bilmez.",
   },
 
   parameters: {

@@ -504,15 +504,23 @@ const describeWidths = (analysis: PoolRangeAnalysis, locale: Locale): readonly s
         row.outOfSample === null
           ? "not enough history to check"
           : `inside on ${whole(row.outOfSample.occupancy.fullyInside)} of ${whole(row.outOfSample.daysMeasured)} days it never saw`;
+      /*
+       * The figure that makes the trade-off arithmetic rather than a saying,
+       * against the width being shown — so the shown row reads as one.
+       */
+      const share =
+        row.relativeFeeShare === null
+          ? "not comparable"
+          : `${formatMultiplier(row.relativeFeeShare, locale)}× the fee share of the shown width on a day inside`;
 
       return line(
         `${label}${row.chosen ? ", the one shown" : ""}`,
-        `1 ${quote.base.symbol} = ${formatPrice(edges.lower, locale)} to ${formatPrice(edges.upper, locale)} ${quote.quote.symbol}; inside on ${whole(row.occupancy.fullyInside)} of the last ${whole(row.daysMeasured)} days; ${unseen}`,
+        `1 ${quote.base.symbol} = ${formatPrice(edges.lower, locale)} to ${formatPrice(edges.upper, locale)} ${quote.quote.symbol}; inside on ${whole(row.occupancy.fullyInside)} of the last ${whole(row.daysMeasured)} days; ${unseen}; ${share}`,
       );
     }),
     line(
       "Say",
-      "in one sentence, what widening the range buys and costs as these figures show it: more of the days inside, a thinner share of the fees on each. Never which width to choose",
+      "in one sentence, what widening the range buys and costs as these figures show it: more of the days inside, a smaller share of the fees charged on each of them. Never which width to choose",
     ),
   ];
 };

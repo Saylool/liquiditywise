@@ -499,7 +499,8 @@ export function PoolRangeReport({
                 <th className="pr-4 pb-2 font-normal">{t.widths.width}</th>
                 <th className="pr-4 pb-2 font-normal">{t.widths.range}</th>
                 <th className="pr-4 pb-2 font-normal">{t.widths.recent(whole(activity.daysMeasured))}</th>
-                <th className="pb-2 font-normal">{t.widths.unseen}</th>
+                <th className="pr-4 pb-2 font-normal">{t.widths.unseen}</th>
+                <th className="pb-2 font-normal">{t.widths.feeShare}</th>
               </tr>
             </thead>
             <tbody>
@@ -519,7 +520,7 @@ export function PoolRangeReport({
                   <td className="py-1 pr-4 font-mono">
                     {t.widths.insideOf(whole(row.occupancy.fullyInside), whole(row.daysMeasured))}
                   </td>
-                  <td className="py-1 font-mono">
+                  <td className="py-1 pr-4 font-mono">
                     {row.outOfSample === null
                       ? t.widths.unseenNone
                       : t.widths.insideOf(
@@ -527,12 +528,18 @@ export function PoolRangeReport({
                           whole(row.outOfSample.daysMeasured),
                         )}
                   </td>
+                  <td className="py-1 font-mono">
+                    {row.relativeFeeShare === null
+                      ? ABSENT
+                      : t.widths.feeShareValue(formatMultiplier(row.relativeFeeShare, locale))}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <p className="text-xs leading-relaxed text-muted">{t.widths.columnsNote}</p>
+        <p className="text-xs leading-relaxed text-muted">{t.widths.feeShareNote}</p>
         <p className="text-sm leading-relaxed">{t.widths.notAdvice}</p>
       </Panel>
 

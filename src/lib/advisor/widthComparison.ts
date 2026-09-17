@@ -1,6 +1,7 @@
 import type { OutOfSampleCheck, RangeOccupancy, TickRange } from "../../schemas";
 import { calculateOutOfSampleCheck } from "../analytics/outOfSampleCheck";
 import { ACTIVITY_WINDOW_DAYS } from "../analytics/poolActivity";
+import { relativeFeeShare } from "../analytics/rangeConcentration";
 import { countOccupancy } from "../analytics/rangeOccupancy";
 import { calculateTickRange } from "../analytics/tickRange";
 import { calculateVolatilityPriceBand } from "../analytics/volatilityPriceBand";
@@ -20,6 +21,10 @@ import { MULTIPLIER_CHOICES } from "./requestedParameters";
  * Pure, and no cheaper to fake: every figure here is what the page would show
  * if that width were chosen, because it is computed the same way. Nothing here
  * recommends a width; the panel says so.
+ *
+ * The one figure that is not the page's own is the fee share, which has no
+ * single-width meaning at all: it exists only as a comparison, so it is
+ * measured against the width being shown. See `rangeConcentration.ts`.
  */
 
 export type WidthComparison = {
@@ -32,6 +37,12 @@ export type WidthComparison = {
   readonly daysMeasured: number;
   /** The page's own check on unseen days, run for this width; `null` where the history had no room. */
   readonly outOfSample: OutOfSampleCheck | null;
+  /**
+   * What the same deposit would take of the fees charged on a day inside this
+   * range, against the width the page is showing — which is therefore always
+   * `1`. `null` where either range cannot be valued at the current price.
+   */
+  readonly relativeFeeShare: number | null;
 };
 
 /**
@@ -51,9 +62,9 @@ export const comparedWidths = (chosen: number): readonly number[] =>
  * exactly, which its test pins.
  */
 export const compareWidths = (analysis: PoolRangeAnalysis): readonly WidthComparison[] => {
-  const { pool, snapshot, history, volatility, parameters } = analysis;
+  const { pool, snapshot, history, volatility, band, parameters } = analysis;
   const recent = history.points.slice(-ACTIVITY_WINDOW_DAYS);
-  const rows: WidthComparison[] = [];
+  const rows: Omit<WidthComparison, "relativeFeeShare">[] = [];
 
   for (const standardDeviationMultiplier of comparedWidths(parameters.standardDeviationMultiplier)) {
     const width = { horizonDays: parameters.horizonDays, standardDeviationMultiplier };
@@ -76,5 +87,17 @@ export const compareWidths = (analysis: PoolRangeAnalysis): readonly WidthCompar
     });
   }
 
-  return rows;
+  /*
+   * The fee share last, because it is the only figure here that is a
+   * comparison rather than a reading: every row is measured against the row
+   * the page is showing, so that row reads as one and the others as what
+   * changing to them would do.
+   */
+  const shown = rows.find((row) => row.chosen)?.range ?? null;
+
+  return rows.map((row) => ({
+    ...row,
+    relativeFeeShare:
+      shown === null ? null : relativeFeeShare(row.range, shown, band.currentPrice),
+  }));
 };

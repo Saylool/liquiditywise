@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../../schemas";
 import { analysePoolRange, DEFAULT_PRICE_BAND_PARAMETERS, type PoolRangeAnalysis } from "./poolRangeAnalysis";
 import { MULTIPLIER_CHOICES } from "./requestedParameters";
+import { relativeFeeShare } from "../analytics/rangeConcentration";
 import { comparedWidths, compareWidths } from "./widthComparison";
 
 const POOL_ID = `0x${"c".repeat(40)}`;
@@ -167,5 +168,43 @@ describe("compareWidths", () => {
 
     expect(rows).toHaveLength(MULTIPLIER_CHOICES.length);
     expect(rows.every((row) => row.outOfSample === null)).toBe(true);
+  });
+});
+
+/*
+ * The column that makes "spread thinner" a number: what the same deposit takes
+ * of a day's fees in each width, against the width the page is showing.
+ */
+describe("compareWidths and the fee share", () => {
+  it("reads as one for the width being shown", () => {
+    const rows = compareWidths(analysis(121, 1.5));
+
+    expect(rows.find((row) => row.chosen)?.relativeFeeShare).toBeCloseTo(1, 12);
+  });
+
+  it("gives a narrower width more of the fees and a wider one less, in order", () => {
+    const rows = compareWidths(analysis(121, 1.5));
+    const shares = rows.map((row) => row.relativeFeeShare ?? 0);
+
+    expect(shares[0]).toBeGreaterThan(1);
+    expect(shares[2]).toBeLessThan(1);
+    expect(shares[3]).toBeLessThan(shares[2] ?? 0);
+    for (let index = 1; index < shares.length; index += 1) {
+      expect(shares[index]).toBeLessThan(shares[index - 1] ?? 0);
+    }
+  });
+
+  /* The figure is the protocol's own arithmetic, so it can be recomputed from the two ranges alone. */
+  it("is the liquidity the same deposit buys in each range, at the current price", () => {
+    const shown = analysis(121, 1);
+    const rows = compareWidths(shown);
+    const widest = rows[rows.length - 1];
+    const chosen = rows.find((row) => row.chosen);
+    if (widest === undefined || chosen === undefined) throw new Error("expected both rows");
+
+    expect(widest.relativeFeeShare).toBeCloseTo(
+      relativeFeeShare(widest.range, chosen.range, shown.band.currentPrice) ?? 0,
+      12,
+    );
   });
 });

@@ -730,6 +730,8 @@ describe("buildRangeInterpretationPrompt and the other widths", () => {
     expect(section).toContain("- Wide (2σ): ");
     expect(section).toContain("- Very wide (3σ): ");
     expect(section).toMatch(/inside on \d+ of the last \d+ days; inside on \d+ of \d+ days it never saw/);
+    expect(section).toContain("1× the fee share of the shown width on a day inside");
+    expect(section).toMatch(/Very wide \(3σ\):[^\n]*0\.\d+× the fee share of the shown width/);
     expect(section).toContain("Never which width to choose");
   });
 

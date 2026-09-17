@@ -676,6 +676,22 @@ describe("PoolRangeReport and the other widths", () => {
     expect(markup).toContain("Inside, of the last 30 days");
   });
 
+  /*
+   * The trade-off the table exists for, as a number: the shown width reads as
+   * one, a narrower width as more and a wider one as less.
+   */
+  it("says what each width does to the fee share, against the one shown", () => {
+    const markup = render(analyse());
+    const shares = [...markup.matchAll(/>([\d.]+)×</g)].map((match) => Number(match[1]));
+
+    expect(markup).toContain("Fee share while inside");
+    expect(shares).toHaveLength(4);
+    expect(shares[0]).toBe(1);
+    expect(shares[1]).toBeLessThan(1);
+    expect(shares[3]).toBeLessThan(shares[2] ?? 0);
+    expect(markup).toContain("It assumes the rest of the pool&#x27;s liquidity is unchanged");
+  });
+
   /* A month of history fits a band and leaves nothing to check it on, and the column says so. */
   it("says when a width could not be checked on unseen days", () => {
     const markup = render(analyse());
@@ -691,6 +707,9 @@ describe("PoolRangeReport and the other widths", () => {
     expect(markup).toContain("Dar (1σ) · yukarıda gösterilen");
     expect(markup).toContain("Çok geniş (3σ)");
     expect(markup).toContain("yeterli geçmiş yok");
+    expect(markup).toContain("İçerideyken komisyon payı");
+    expect(markup).toContain("protokolün kendi pozisyon aritmetiği");
     expect(markup).not.toContain("shown above");
+    expect(markup).not.toContain("Fee share");
   });
 });
