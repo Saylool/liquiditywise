@@ -1,34 +1,43 @@
 # Uniswap Strategy Advisor
 
 An educational, AI-assisted decision-support tool for Uniswap v3 and v4 liquidity
-strategies. Users describe a goal in plain language; the application explains the
-relevant Uniswap features and parameters.
+strategies. Name a pool — by its pair, its address or its v4 id — and the
+application reads it, works out a price range from how far that pair has actually
+moved, and explains the result in plain language. Every figure is computed and
+cross-checked before a model is allowed to describe it, and the model is never
+allowed to state one.
 
 **This is not financial advice.** The application does not predict prices, does
 not guarantee returns, and cannot attest that any smart contract is safe.
 
 ## Status
 
-Early, but no longer only a library. The pool page runs the whole pipeline
-against live data: find a pool by pair or address, read its verified figures, and
-read a plain-language explanation written from them by a model that is not
-allowed to state one. A wallet can be connected, and the only thing asked of it
-is its address — see [Connecting a wallet](#connecting-a-wallet). There is no
-persistence, no authentication and no transaction capability of any kind, and
-none of the last is planned.
+Five pages, both protocols, everything computed. `/pool` and `/v4` run the whole
+pipeline against live data — find a pool by pair, address or id, read its
+verified figures, and read a plain-language explanation written from them by a
+model that is not allowed to state a number. `/holdings` answers which pools the
+tokens at an address can go into. `/hooks` lists every hook the week's busiest v4
+pools name and what each is permitted to do. A wallet can be connected, and the
+only thing asked of it is its address — see
+[Connecting a wallet](#connecting-a-wallet). There is no persistence, no
+authentication and no transaction capability of any kind, and none of the last is
+planned.
 
-Five read-only market-data adapters exist, all server-only readers over The
-Graph:
+The reads are all server-only, and they fall into two kinds.
 
-1. **Current pool snapshot** — one Ethereum mainnet Uniswap v3 pool, normalised
-   into a `PoolMarketSnapshot`.
+**Over The Graph**, against the v3 and the v4 subgraph:
+
+1. **Current pool snapshot** — one Ethereum mainnet pool of either protocol,
+   normalised into a `PoolMarketSnapshot`: its price, its tick, the liquidity
+   active at that price, and what it holds. One query serves both protocols,
+   because the v4 subgraph publishes this entity under the same names —
+   verified by introspection against the deployed schema, not assumed.
 2. **Pool metadata** — a pool's fixed configuration: verified token ordering,
-   token `decimals`, symbols and fee tier, normalised into a `V3PoolMetadata`.
-   Read separately because the snapshot does not carry it, and it is what any
-   price/decimal conversion needs first.
-3. **Daily price history** — the previous 121 *completed* UTC days of closing
-   prices for one such pool, normalised into a `PoolDailyPriceHistory`. The
-   current, still-incomplete UTC day is always excluded.
+   token `decimals`, symbols and fee tier. Read separately because the snapshot
+   does not carry it, and it is what any price/decimal conversion needs first.
+3. **Daily price history** — the previous 121 *completed* UTC days for one pool,
+   normalised into a `PoolDailyPriceHistory`. The current, still-incomplete UTC
+   day is always excluded.
 
    Only the most recent 31 of those closes are *measured from*: 31 closes give 30
    daily returns, which is what a 30-day volatility figure needs, and the
@@ -37,19 +46,31 @@ Graph:
    checked against the days that actually followed — one request answers both
    questions, and the two windows cannot come from different readings of a moving
    market.
-4. **Pool search** — the pools whose token symbols match one or two terms,
-   normalised into a `PoolSearchResults` and ordered by this application rather
-   than by the source. See [Finding a pool](#finding-a-pool).
-5. **Pair fee tiers** — every pool trading the same pair as a given one,
-   normalised into a `PairFeeTiers`. Filtered on token addresses rather than
-   symbols, so a lookalike ticker cannot join the list. See
+4. **Pool search**, per protocol — the pools whose token symbols match one or two
+   terms, ordered by this application rather than by the source. See
+   [Finding a pool](#finding-a-pool). The v4 search cannot be written the way the
+   v3 one is; see [Uniswap v4](#uniswap-v4) for what the source refuses.
+5. **Where a pair trades** — every v3 pool of the same pair, and every v4 pool of
+   the same two currencies. Filtered on token addresses rather than symbols, so a
+   lookalike ticker cannot join the list. See
    [Where else this pair trades](#where-else-this-pair-trades).
+6. **The week's busiest pools**, per protocol — a net rather than a page, and the
+   only read here that takes no input. Three things are built on the one reading:
+   the tokens a holdings lookup asks about, the v4 search, and the hook
+   directory.
 
-The two readers that return *lists* — 4 and 5 — select a pool through one shared
-GraphQL fragment, parse it with one shared schema and verify it with one shared
-normaliser, so neither list can admit a pool on easier terms than the other. Both
-kinds of entry are a link into a full analysis, and the check that lets a pool
-become one belongs in a single place.
+**Over JSON-RPC**, read-only, for the facts no subgraph exposes or gets right: a
+v3 pool's tick spacing, a v4 pool's real fee from the PoolManager's storage and
+the log that created it, and every balance a holdings lookup needs. The last of
+those is one aggregated call through Multicall3, believed only once the code at
+that address has been checked byte for byte — see
+[What an address holds](#what-an-address-holds).
+
+The readers that return *lists* select a pool through one shared GraphQL
+fragment, parse it with one shared schema and verify it with one shared
+normaliser, so no list can admit a pool on easier terms than another. Every entry
+is a link into a full analysis, and the check that lets a pool become one belongs
+in a single place.
 
 Days the source never indexed are reported as gaps, never invented. There is no
 forward-filling of a previous close and no treating a missing day as zero, so a
@@ -116,8 +137,12 @@ On top of both sits the composition: `calculateV3TickRange` takes a price band, 
 always covers at least the band it came from; rounding inward would quietly hand
 back a narrower position while still looking like the band's range.
 
-It is still not a position. Nothing here sizes a deposit, quotes an amount of
-either token, or claims the range is a good one.
+It is not a position, and it does not claim the range is a good one. It does now
+size a deposit, on the reader's instruction and never on its own — see
+[What a deposit would have collected](#what-a-deposit-would-have-collected) — and
+it quotes amounts of both tokens for a swap through the pool, which is arithmetic
+the protocol fixes rather than a suggestion. Neither is advice and neither is a
+forecast.
 
 **The range is checked against the chain's own tick.** The subgraph publishes both
 the pool's `tick` and its price, so converting that price with the metadata
@@ -160,14 +185,18 @@ distinguishable outcomes rather than one blank screen.
 memory which contract a pair lives at, and an address this application cannot
 verify has no place in its UI.
 
-`/pool` is rate limited, because every analysed pool costs four upstream calls —
-three subgraph queries and one `eth_call` — a search costs one, and the page is
-public. `src/proxy.ts` allows **10 a minute per client** and answers the rest with
-a real `429` and a `Retry-After`, before rendering begins. Only a request that
-will actually reach a source is counted: a missing or malformed address, and a
-search term the page refuses, are answered without a single upstream call, so a
-typo never costs an analysis. See [The rate limit](#the-rate-limit) for the
-counter every instance shares.
+**The three routes that spend upstream quota are rate limited**: `/pool`, `/v4`
+and `/holdings`. An analysed v3 pool costs three subgraph queries and an
+`eth_call`, a v4 one costs three queries and two chain reads, a holdings lookup
+is the dearest of all, a search costs one query, and the pages are public.
+`src/proxy.ts` allows **10 a minute per client** and answers the rest with a real
+`429` and a `Retry-After`, before rendering begins. Only a request that will
+actually reach a source is counted: a missing or malformed address, and a search
+term the page refuses, are answered without a single upstream call, so a typo
+never costs an analysis. `/hooks` is deliberately outside that list — it takes no
+input and its one read is shared and cached, so however often it is asked for it
+costs a single query every ten minutes. See
+[The rate limit](#the-rate-limit) for the counter every instance shares.
 
 One limit of that, stated rather than papered over:
 
@@ -302,9 +331,11 @@ estimates.
 
 **None of it is what a position would earn**, and the page says so beside the
 figures. That would be these fees multiplied by a share of the liquidity active
-in the range while the swaps happened: a share this application does not read,
-for a deposit it will not size. There is no yield figure and there will not be
-one.
+in the range while the swaps happened — and both halves of that are now read, for
+a deposit size the reader sets, in the panel directly below:
+[What a deposit would have collected](#what-a-deposit-would-have-collected).
+What is still not here is a yield. Nothing is annualised, nothing is projected,
+and the figure covers days that have already happened.
 
 Alongside it, how the measured days sat against the suggested range — entirely
 inside, entirely outside, or crossing an edge. Three buckets rather than a
@@ -337,6 +368,52 @@ The snapshot's three rolling-volume fields are gone with this. They were always
 null — the source publishes a lifetime cumulative figure and nothing per window —
 and they put a caveat on every single analysis that said only that. A snapshot
 with a reported block time is now a plain success.
+
+## What a deposit would have collected
+
+The figures above are the pool's. This one is a position's, and it was the first
+thing on the front page's list of what this application could not do — turning
+"the pool charged this" into "a deposit would have taken that" needs a position
+size and a share of the liquidity active at each price, and neither was read.
+
+Both are read now, and neither costs a request. The size comes from the form
+beside the range, defaulting to a thousand dollars and printed next to every
+figure derived from it. The liquidity active on a day is one more field on the
+`poolDayDatas` query the volatility figure already makes.
+
+The arithmetic is a share, not a model. A position of liquidity `L` in a pool
+whose active liquidity is `A` takes `L / (A + L)` of everything charged while the
+price sits inside its range. The `+ L` is the deposit diluting itself, and it is
+the part that surprises people: **a larger deposit does not collect
+proportionally more.** Measured against a small sUSDe/USDT pool, a thousand
+dollars would have taken 2.4 cents over 28 days and a million would have taken
+$1.22 — a thousand times the money for fifty times the fees. That is why the
+interface offers sizes a thousandfold apart rather than printing a rate per
+dollar: the figure is not linear in the deposit, and the non-linearity is worth
+seeing.
+
+Getting from dollars to the protocol's own `L` is two conversions and both are
+exact. The source says what the pool holds, in each token and in dollars, and
+those three figures name a rate — **the source's own rate, the one its `feesUSD`
+is denominated in.** A price fetched from anywhere else would divide one pool's
+fees by another market's money. Then one unit of value buys
+`1 / (2√P − √pa − P/√pb)` of liquidity, and because the protocol's `L` is defined
+over *raw* token amounts the whole conversion collapses to a single factor of
+`10^((d0 + d1) / 2)`. Get that wrong and nothing looks wrong: the figure stays
+positive and finite and is out by a power of ten. It is pinned by a test that
+derives a stablecoin's price back out of a real pool's published figures and
+expects a dollar — live, USDC comes back at $1.0003.
+
+Only days the price never left the range are counted, through the same function
+the occupancy panel counts by, so the two cannot disagree about what "inside"
+means. A day inside the range that the source could not answer for is counted
+separately and named, because a figure covering nineteen of thirty in-range days
+and one covering all thirty are different claims.
+
+**It is withheld on exactly the pools the fee figure above it is withheld on.** A
+hook permitted to take a share of a swap makes "the fees charged while the price
+sat inside this range" unattributable, and a fraction of an unattributable total
+is no better. The same flag decides both.
 
 ## The same method, on days it never saw
 
@@ -421,8 +498,8 @@ movement and nothing else. The fees a provider earns are precisely what they are
 paid for that difference, and this does not model them — see below for why not.
 
 It is size-independent. Liquidity cancels out of a ratio of two portfolios, so
-this can be reported without ever sizing a deposit, which this project does not
-do.
+this one is reported without a deposit size at all — unlike the fee figure below
+it, which needs one and asks for it.
 
 The usual name for it is wrong and the page corrects it: nothing is *impermanent*
 about a position closed at a price other than the one it opened at. "Divergence"
@@ -437,18 +514,118 @@ schema refuse the whole figure rather than publish it.
 
 ### What is not here, and why
 
-**Fee income is not modelled, and not estimated.** What a position earns is its
-share of the liquidity active in its range, multiplied by the volume that trades
-while price is inside it. The first needs the tick-level liquidity distribution,
-which this application does not read, *and* a deposit size, which it will not
-invent. The second, for any period that has not happened yet, is a forecast.
-Stacking an estimate on a forecast on data we do not have is exactly the figure
-this project exists not to produce, so there is no APR here and there will not
-be one.
+**No APR, no yield, and no forecast.** What a position would have taken of the
+fees a pool *did* charge is now computed, for a size the reader sets, over days
+that have already happened — see
+[What a deposit would have collected](#what-a-deposit-would-have-collected).
+What is not here is the step from that to a rate: the volume that will trade next
+month is a forecast, and multiplying a measured share by a forecast is exactly
+the figure this project exists not to produce.
 
-What can honestly be said about fees is what the pool actually did — its real
-volume and the fees it generated, per day, which the source does publish. That is
-[What the pool actually did](#what-the-pool-actually-did), above.
+Two smaller absences behind the figure that does exist, both stated on the page
+rather than smoothed over:
+
+- **A day that crossed an edge is not apportioned.** The source publishes a daily
+  high and low, which cannot say how much of the day was spent inside the range,
+  so only days the price never left are counted. The figure is a floor and the
+  page says which days it rests on.
+- **The share is taken over the liquidity the pool reports for each day**, which
+  is the figure at that day's close and is the right denominator for a day the
+  price stayed inside the range. Splitting a straddling day would need the
+  tick-level liquidity distribution, which this application does not read.
+
+**Gas is still not counted anywhere**, and it is the one absence here that is a
+limit of the tooling rather than a decision. A range the price has left has to be
+closed and reopened to follow it, which costs gas and turns a divergence on paper
+into one that has been realised. Measuring what that actually costs means reading
+transaction receipts, and the free RPC tier this is built against does not answer
+for them — so rather than assume a figure, the front page lists it as missing.
+
+## The same range, one side at a time
+
+The range this page suggests straddles the current price and earns fees while the
+price stays inside it. Split it at the price and each half is a different
+instrument: a position sitting wholly on one side holds one token and nothing
+else, and the pool converts it into the other as the price moves through the
+band. That is a range order, and it was on the front page's list of what this
+application could not do. What it needed turned out to be nothing at all — no new
+request, no new field, no measurement.
+
+**The price it converts at is exact and does not depend on how much is put in.**
+For liquidity `L` in `[pa, pb]` the position holds `L · (1/√pa − 1/√pb)` of token0
+below the band and `L · (√pb − √pa)` of token1 above it, so the conversion
+averages
+
+```
+(√pb − √pa) / ((√pb − √pa) / (√pa·√pb)) = √(pa · pb)
+```
+
+— the geometric mean of the bounds, with `L` cancelled out of it. A hundred
+dollars and a million convert at the same price, and the figure would be the same
+on a pool that had never traded. It is checked against those two amount formulas
+written out independently rather than against itself, so a module computing the
+mean of the wrong pair, or the arithmetic mean, fails instead of agreeing.
+
+The split is on the pool's tick grid, and **the step the price sits in belongs to
+neither side**: a leg starting at the price's own step would already be in range,
+which is the one thing a one-sided position is defined by not being. On
+USDC/WETH 0.05% that shows in the numbers — selling from 2,467.63 and buying up
+to 2,465.16, with the price's own step between them.
+
+Which half sells and which buys is read off the quoted prices rather than the
+legs' own names. "Above" means above the *pool's* price, and a pair shown the
+other way round turns the pool's upper half into the reader's lower one, so
+taking the names at face value would swap the two labels on every pool quoted
+that way.
+
+Three sentences say what it does not promise: that the price ever crosses the
+whole band, that anything schedules the conversion, that there is a queue or a
+counterparty. There is no order book here, and an order the price never reaches
+is the ordinary outcome rather than a failure.
+
+## What a swap through it costs
+
+Everything else here is about providing liquidity. This is about using it, and it
+exists because nothing else on the page answered the first question anybody asks
+of a pool.
+
+There is an exact answer and it has an edge. A pool's liquidity is constant
+between initialized ticks, and a tick can only be initialized at a multiple of
+the pool's spacing — so **between the two boundaries the price sits between, the
+liquidity already read is the whole truth**, and a swap inside that span is
+priced from the protocol's formulas with nothing assumed. One boundary further
+another position's liquidity may begin, and this application does not read the
+liquidity at every price. So the figure stops where the certainty does, and the
+page says that the amount is **not a limit**: a larger swap works, and this page
+cannot price it.
+
+What it costs is the geometric mean again — of the price now and the price the
+swap ends at, from the same two formulas as the range order above, seen from the
+other side of the trade. A swap crossing a band pays it; a position sitting in
+that band receives it. Live on USDC/WETH 0.05%: 45,078 USDC in one direction
+giving up 0.02%, 26.46 WETH in the other giving up 0.03%, the asymmetry being
+where in its step the price happens to sit.
+
+Two things the live read found that no fixture would have:
+
+- **On a pool whose steps are one tick wide, the price was sitting 3.6 billionths
+  above its lower boundary**, which left two billionths of a token of room
+  upward. Both amounts are then differences of nearly equal numbers, the quotient
+  came out 4.6e-9 from the price it should be, and the schema refused the pair. A
+  leg that cannot be verified to a part in a billion is a leg whose amounts are
+  noise — and it must not take the other one down. Each leg is now checked on its
+  own, the one that fails is dropped, and the page says why only one direction is
+  shown. The other direction had forty-six tokens of room and agreed to 1.2e-12.
+- **The refusal when the source's tick and this application's disagree is
+  narrower than it looks, and worth keeping.** `calculateTickRange` has already
+  refused anything more than one tick apart, so by the time this runs the two can
+  differ by at most that — and one tick crosses a spacing boundary only when the
+  price is sitting on one, which is exactly when attributing the liquidity to the
+  wrong step is most likely to be wrong.
+
+**TWAMM stays on the front page's list.** What is built is the half an analysis
+page can answer; scheduling an order over time is a hook's job, and this
+application does not model a hook's behaviour.
 
 ## Where else this pair trades
 
@@ -572,7 +749,50 @@ can take a share of the swap itself. A live example — the busiest hooked pool 
 mainnet, USDC/WETH — is permitted to do eight things including
 `afterSwapReturnsDelta`.
 
-There is no range analysis for v4 yet. This page is identity.
+A v4 pool now gets the same analysis a v3 one does — the same band, the same
+range, the same comparisons, the same explanation — because the two reads behind
+it are the same query against a different subgraph. What is not the same is the
+fee, and that took a correction.
+
+**The indexer's `feeTier` on a v4 pool is not the pool's fee.** It is the total
+the last swap paid, which on a dynamic-fee pool is whatever the hook decided that
+moment and on a hookless one includes the protocol's cut. The fee in the PoolKey
+is read instead: from the `Initialize` log that created the pool, for the hooked
+ones, and from the PoolManager's own storage for the rest. The page prints what a
+swap actually pays, per direction when the protocol's cut differs by direction,
+and says when the key carries the dynamic-fee sentinel instead of a number.
+
+**The v4 search cannot be written the way the v3 one is, and the source is why.**
+Every `pools` query ordered by volume, and every one filtered by a token's
+symbol, dies at the gateway after about fifteen seconds with `bad indexers` —
+measured across a dozen variants with a 45-second client timeout so the
+gateway's own answer could be seen. Only two indexers serve the subgraph; one
+refuses with a 402 and the other times out. What does answer, cold, in under
+three seconds, is `poolDayDatas` filtered by date: a thousand of the week's
+busiest pool-days name a few hundred distinct pools. So both v4 lists — the
+search and the net a holdings lookup casts — come from that one reading, shared
+through a ten-minute cache, and the search matches terms in this application
+rather than at the source. The page says the window is the week's activity, not
+the terms.
+
+### Every hook the net saw
+
+`/hooks` lists them: each hook address, what it is permitted to do in the same
+plain words the single-pool page uses, and which of the week's busiest pools run
+it. Live today, 250 pools named 37 hooked ones between 30 distinct hooks, the
+busiest hook running four pools and most running one.
+
+It is a directory of addresses and permissions and **deliberately not a directory
+of behaviour**. What a hook does with a permission is in its code; this
+application does not read code, and it keeps no list of hooks anybody has vouched
+for. Both would be a claim it cannot check, sitting next to figures it can.
+
+It costs no request — the pools are the same reading the v4 search is built on —
+which is also why it is the one page outside the rate limit.
+
+The permission sentences come from a component shared with the single-pool page,
+on the same fourteen bits of the same address. Two readings of one hook is the
+failure a directory like this could have that nobody would notice.
 
 ### Choosing the subgraph
 
@@ -821,10 +1041,9 @@ everything written under the old wording). Keying on the figures instead would
 look safer and be useless — the price moves every block, so every visit would
 miss.
 
-Measured on the pool page: **9.3s on the first visit, 0.3s on the next**, one
-model call serving all of them. The figures are never cached; they are
-recomputed and rendered fresh every time, and only the prose about them is
-reused. Failures are not cached either — pinning a rate limit that has since
+On a cache hit the prose is on the page at once. The figures are never cached;
+they are recomputed and rendered fresh every time, and only the prose about them
+is reused. Failures are not cached either — pinning a rate limit that has since
 cleared would be worse than repeating a call that costs nothing.
 
 Like every in-memory store here it is per-instance, so a platform running several
@@ -832,8 +1051,32 @@ copies calls the model once per copy. That costs a little more than a shared
 store and is wrong in no way: an entry is either valid or absent, never stale in
 one place and fresh in another.
 
-Model: **`gpt-5.6-terra`** by default, overridable with `OPENAI_MODEL`. The job is narrow, so a mid-tier
-model is the deliberate choice; what keeps it safe is the contract, not the tier.
+Model: **`gpt-5.6-luna`** by default, overridable with `OPENAI_MODEL`. The job is
+narrow, so a mid-tier model is the deliberate choice; what keeps it safe is the
+contract, not the tier. The reasoning effort is `low` and the attempt times out
+at 45 seconds, both from measurement — `minimal` is refused by this model with a
+400, and `none` measured *slower* than `low` in both languages despite spending
+no reasoning tokens at all.
+
+**The paragraphs arrive as they are written.** A cold explanation took most of a
+minute, under a page the reader could already read in full — and the reader saw
+one pending panel for all of it. The model's answer is now streamed, and each
+paragraph is released the moment it is complete: the transport accumulates the
+deltas, scans for the end of a finished field, and hands it up. It reaches the
+page through one promise and one `<Suspense>` boundary per section, so the
+paragraphs appear one at a time with no client JavaScript at all.
+
+**Nothing is released that has not been checked.** A finished paragraph is parsed
+and then passed through the *same* per-section schema the whole answer is checked
+against — the bounds, the refusal of any digit — before it is shown. Streaming
+buys latency, not a weaker contract: a section that fails is not displayed, and
+the reader is told the explanation is unavailable rather than shown prose nothing
+verified.
+
+Measured against the live model over twenty-four calls on 2026-09-17 — four pools
+across both protocols, both languages, three runs each — English answers took 7.6
+to 9.8 seconds and Turkish 8.1 to 11.7. Nothing was refused, the longest section
+ran to 84% of its bound, and the largest spend was 27% of the output budget.
 
 **`interpretationTransport.ts` is the only module that knows who the provider
 is.** The contract, the prompt, the check on the way back and the composition
@@ -879,6 +1122,51 @@ business and reaches them through the log, exactly.
 The model is given the caveats as the same sentences the page shows, in the same
 language — a model reasoning over an English caveat while writing Turkish prose
 about it is reasoning about a different page than the one being read.
+
+## When a page is slow, missing or broken
+
+Three screens the framework used to answer for, in English, on a site published
+in two languages.
+
+**While a page is being read.** Every route that waits on a source has a loading
+shell that says what it is doing — reading a pool from the indexer and the chain,
+asking a few hundred token contracts what an address holds. Without one the
+browser sits on the previous screen with nothing to show that a click did
+anything, which it does more than it used to: links into counted pages are
+deliberately not prefetched. Measured in production, the holdings shell reaches
+the reader at 0.8 seconds against content at 17.8 on a fully cold instance.
+
+**A URL that names nothing.** `not-found.tsx` is a page of this site — the
+reader's language, the reader's theme, and a link to the one box where a pool
+address actually goes, since putting one in the path is the likeliest way to
+arrive there.
+
+**A page that threw.** `error.tsx` says what happened, that it is worth trying
+again, and that nothing of the reader's was involved — that last because this
+application holds no account and stores nothing anybody looks up, and "something
+went wrong" without saying so invites a reader to wonder what it lost. It shows
+the framework's identifier when there is one and never the error's message, which
+can carry a host, a port or a query.
+
+That screen had one real obstacle. **An error boundary has to be a Client
+Component, and a Client Component has no request to ask which language to render
+in.** The three obvious ways round it are all worse: reading the cookie in the
+browser shows a Turkish reader a flash of English while the effect runs,
+importing the dictionary ships both languages of every string to every visitor on
+every page, and rendering it in English gives up on the reader at the exact
+moment an explanation has to land. So the layout, which *is* a Server Component
+and already resolves the language to set the document's `lang`, hands ten strings
+down through a context. They live in their own module and are served as
+`t.error`, so there is one source for them and the translation check walks them
+with everything else — and a test pins that nothing in them is a function, since
+`Dictionary` is full of template functions and one added there would take down
+every page rather than that screen.
+
+`global-error.tsx` covers the layout itself failing. That file replaces the root
+layout, so there are no styles, no fonts, no theme and no resolved language: it
+writes its own document, styles itself inline as the refusal page in `proxy.ts`
+does, and says its two sentences **in both languages**, because guessing wrong
+there has no second chance to correct itself.
 
 ## The rate limit
 
@@ -957,40 +1245,43 @@ switching theme would spend API quota and a rate-limit slot. A small synchronous
 script at the top of `<body>` applies the stored theme before anything paints;
 without it, every navigation flashes light before turning dark.
 
-The theme toggle is the application's **only Client Component**. Everything else,
-including both switchers' markup, is still server-rendered.
+There are **six Client Components** in the whole application, and the list is
+worth stating because everything else — including both switchers' markup, every
+figure and every panel — is server-rendered. They are the theme toggle, the
+wallet button, and four that exist because the framework requires an error
+boundary to be one: the two boundaries themselves, the screen they render, and
+the provider that carries the reader's language into them. See
+[When a page is slow, missing or broken](#when-a-page-is-slow-missing-or-broken).
 
 Reading a cookie and a header makes a route dynamic, so the landing page is no
 longer statically prerendered. That is the price of being correct on the first
 paint, and it costs no upstream calls.
 
-Still absent from that layer: no recommendation policy, no risk categories, no
-AI and no persistence.
+Standing limits of every read here:
 
-Shared limits of both adapters:
-
-- Ethereum mainnet (`chainId` 1) and Uniswap v3 only.
-- One pool per call, by address.
+- Ethereum mainnet (`chainId` 1). Both Uniswap v3 and v4; no other chain and no
+  other protocol.
+- One pool per call, by address or by id. The two list reads are the exception
+  and take no input at all.
 - No transaction, signing or approval capability of any kind. A wallet is asked
-  for its address and never reaches these adapters.
-- Rolling 24h/7d/30d volume is **not** available in this phase. The pool entity
-  exposes a lifetime cumulative total, which is not a rolling window, so those
-  fields stay `null` and the call returns a `partial` result naming them. No
-  figure is estimated to fill the gap.
+  for its address and never reaches these readers.
 - The subgraph alone cannot build a full `V3Pool`, because the pool entity does
-  not report `tickSpacing`. `fetchEthereumV3Pool` adds it from the contract.
+  not report `tickSpacing`. `fetchEthereumV3Pool` adds it from the contract. A v4
+  pool carries its spacing in the PoolKey and needs no such call — but it does
+  need the chain for its real fee, which the indexer reports as something else.
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in the three values below
+cp .env.example .env.local   # fill in the values below
 npm run dev
 ```
 
-Open http://localhost:3000, then follow **Analyse a pool** to `/pool` and paste an
-Ethereum mainnet Uniswap v3 pool address — the pool contract's own address, not a
-token's.
+Open http://localhost:3000, then follow **Find a pool** to `/pool` and search for
+a pair, or paste an Ethereum mainnet Uniswap v3 pool address — the pool
+contract's own address, not a token's. A v4 pool is read at `/v4?id=` by its
+32-byte id, and `/hooks` needs nothing typed at all.
 
 Without `.env.local` filled in, the page still renders: it reports a
 `configuration-error` for the stage that needed a credential and makes no network
@@ -1031,12 +1322,19 @@ The prose lands in `explanations.json` and a summary in
 model in use: gpt-5.6-luna
 default if unset: gpt-5.6-luna — reachable
 
-0x88e6a0… tr  ok       sections 722/545/629/542 (worst 66% of bound)  tokens 2383 (58% of budget, 1699 reasoning)
-0xcbcdf9… tr  ok       sections 488/510/810/429 (worst 74% of bound)  tokens 1587 (39% of budget, 958 reasoning)
+0x88e6a0… tr  ok       sections 576/424/621/458 (worst 56% of bound)  tokens 746 (18% of budget, 162 reasoning)
+0x2b21c6… tr  ok       sections 591/636/920/774 (worst 84% of bound)  tokens 984 (24% of budget, 189 reasoning)
 
-worst section margin: 0xcbcdf9… tr whatTheVolatilitySays at 810 of 1100
-worst token margin:   0x88e6a0… tr at 2383 of 4096
+worst section margin: 0x2b21c6… tr whatTheVolatilitySays at 920 of 1100
+worst token margin:   0x7eb593… tr at 1101 of 4096
 ```
+
+**Run it three times rather than once.** The same section has come back at 466
+characters in one run and 812 in the next, so a single run says almost nothing
+about the margin that matters. The four pools the bounds were last measured over
+are named in the file's own header: a v3 pool that trades heavily and one that
+barely trades, a hooked v4 pool and a hookless one, so every optional block in
+the brief is in play at least once.
 
 **Every explanation outage this project has had was invisible to the suite and
 visible in one run of this.** A section bound of 700 characters, comfortable in
@@ -1087,6 +1385,9 @@ user input
 | `src/lib/search`      | What a visitor may search for, and how one raw string is taken apart. Pure. |
 | `src/lib/i18n`        | Published languages, how one is negotiated, and every interface string in each. |
 | `src/lib/theme`       | The three theme choices, the store behind the toggle, and the script that applies one before paint. |
+| `src/lib/wallet`      | What a browser wallet is asked for, and the parsing of what it answers. One method, never a signature. |
+| `src/lib/crypto`      | Protocol hashing this application does itself: a v4 PoolId from its key, a storage slot from a pool id. |
+| `src/lib/testing`     | Helpers shared between tests and belonging to no layer — currently a walk over a rendered element tree, for the one thing static markup cannot show. |
 | `src/lib/ai`          | The prompt layer, the one model call, the provider wiring, and the check the answer has to pass. |
 | `src/lib/ai/prompts`  | One module per feature, composed on top of a shared base instruction module. |
 | `src/schemas`         | The normalized domain contracts: Zod schemas plus the types inferred from them. |
@@ -1146,20 +1447,22 @@ user input
 All credentials are server-side. See `.env.example`. Never prefix a credential
 with `NEXT_PUBLIC_` — that inlines it into the client bundle.
 
-The v3 market-data readers need all three of:
+The market-data readers need all four of:
 
 | Variable | Purpose |
 | --- | --- |
 | `THE_GRAPH_API_KEY` | Sent only as an `Authorization: Bearer` header, never in a URL or body. |
 | `UNISWAP_V3_ETHEREUM_SUBGRAPH_ID` | The stable **Subgraph ID** from The Graph Explorer — not a deployment/IPFS id. The gateway resolves it to the latest sufficiently synced deployment. |
+| `UNISWAP_V4_ETHEREUM_SUBGRAPH_ID` | The same, for v4. Not a credential — a Subgraph ID is public — so the working one is written into `.env.example` rather than left blank. Which one, and why that one, is in [Choosing the subgraph](#choosing-the-subgraph). |
 | `ETHEREUM_RPC_URL` | Mainnet JSON-RPC endpoint for read-only `eth_call`, `eth_getLogs` and `eth_getCode`. **Treat the whole URL as a secret** — most providers embed the key in the path. |
 
-Three more are optional, and the application is honest about running without
-each of them:
+Four more are optional, and the application is honest about running without each
+of them:
 
 | Variable | Purpose |
 | --- | --- |
 | `OPENAI_API_KEY` | Writes the plain-language explanation of an already-computed analysis. With it absent every figure is still computed and shown; only the prose is missing. |
+| `OPENAI_MODEL` | Which model writes it. Blank uses the default; a name this application does not know the price of falls back to the default, and the page names whichever model actually wrote the text, so a fallback is visible rather than silent. |
 | `UPSTASH_REDIS_REST_URL` | The shared rate-limit counter, so ten a minute means ten across every running copy rather than ten per warm instance. **Treat the URL as a credential alongside the token.** |
 | `UPSTASH_REDIS_REST_TOKEN` | The bearer token for the same database. Both halves are required; either alone is read as no store at all. |
 
