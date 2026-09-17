@@ -64,8 +64,23 @@ export const V4_POOL_DAYS_WINDOW = 7;
  * How many pool-days to read: the most one request may ask for.
  *
  * Measured to fold into a few hundred pools — a thousand of the week's
- * busiest days named 284 distinct pools on 2026-09-16 — and to arrive in
- * under three seconds, at half a megabyte.
+ * busiest days named 284 distinct pools on 2026-09-16, 297 the day after — and
+ * to arrive in under three seconds, at half a megabyte.
+ *
+ * **Half of that half-megabyte is the same pools repeated**, since a thousand
+ * days name three hundred pools and each day carries its pool's whole card.
+ * Splitting the read in two — ids from the day table, then
+ * `pools(where: { id_in: … })` for the distinct ones — was measured on
+ * 2026-09-17 and is *not* worth it: 233 KB instead of 507, and 1.3 to 1.9
+ * seconds instead of 1.3 to 1.6. The second round trip costs what the bytes
+ * saved. Worth knowing for its own sake: that `id_in` filter does answer, where
+ * every `pools` query ordered by volume or filtered by symbol dies at the
+ * gateway.
+ *
+ * What does vary is the gateway. The same query answered in 1.3 seconds twice
+ * and 12.6 once inside the same ten minutes, which is why the timeout on this
+ * read is the twenty-second one rather than the ten-second budget a single
+ * pool's figures get.
  */
 export const V4_POOL_DAYS_LIMIT = 1000;
 
