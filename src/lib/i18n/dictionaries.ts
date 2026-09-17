@@ -34,6 +34,9 @@ const en = {
     poolTitle: "Pool range analysis · Uniswap Strategy Advisor",
     poolDescription:
       "A price range for one Ethereum mainnet Uniswap v3 pool, drawn from how far its price has actually moved.",
+    hooksTitle: "The hooks on Uniswap v4 · Uniswap Strategy Advisor",
+    hooksDescription:
+      "Every hook the week's busiest Uniswap v4 pools name, and what each one is permitted to do — read from its own address."
   },
 
   preferences: {
@@ -59,7 +62,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -98,11 +101,6 @@ const en = {
             name: "What a hook actually does",
             summary:
               "A v4 page says what a hook is permitted to do, because the protocol enforces that much and it is read out of the hook's own address. Reading the contract to say what it does with those permissions is a different problem, and this application does not attempt it.",
-          },
-          {
-            name: "Hook discovery",
-            summary:
-              "Finding published hooks relevant to a goal, with their limitations stated plainly.",
           },
           {
             name: "TWAMM-style strategies",
@@ -563,6 +561,39 @@ const en = {
     search: "Find a pool →",
   },
 
+  /*
+   * The directory, and the line it will not cross.
+   *
+   * Every sentence here is about what the protocol enforces, because that is the
+   * only thing about a hook this application can check. A name, a category, a
+   * "verified" badge — all of them would be somebody's claim republished, and
+   * the reader would have no way to tell which parts of the page were which.
+   */
+  hooks: {
+    heading: "The hooks running on Uniswap v4",
+    loading: "Reading this week's busiest v4 pools…",
+    intro:
+      "Every v4 pool may name a hook: a contract the PoolManager calls at fixed moments in a swap, a deposit, a withdrawal. Which moments is not a promise anybody makes. It is mined into the hook's address — the low fourteen bits are the list, and the protocol refuses to call the contract for anything outside it.",
+    onlyPermissions:
+      "That is the whole of what this page knows, and it is worth knowing precisely because it is enforced rather than claimed. What a hook does with a permission is in its code. This application does not read code, and it keeps no list of hooks anybody has vouched for — both would be a claim it could not check, next to figures it can.",
+    /*
+     * Phrased so no count is followed by a noun that would have to agree with
+     * it. A list of one pool is not a case this page will meet — the week's
+     * busiest days name hundreds — but "1 pools" is the kind of sentence that
+     * only ever appears in front of somebody.
+     */
+    window: (pools: string, hooked: string, hookless: string) =>
+      `Read from the pools of this week's busiest v4 days — ${pools} of them. ${hooked} name a hook; ${hookless} name none, and behave the way a v3 pool does.`,
+    ordering:
+      "Ordered by how many of those pools run each hook. That is a count of pools and nothing else: a hook on many of them is a hook somebody deployed many pools with.",
+    runs: (count: string) => `Runs ${count} of them`,
+    poolsHeading: "Where it runs",
+    moreNotShown: (count: string) => `and ${count} more`,
+    none: "No pool in this week's busiest v4 days names a hook.",
+    unavailable: "The week's v4 pools could not be read, so there is no directory to show.",
+    fromHome: "See every hook →",
+  },
+
   wallet: {
     heading: "Connect a wallet",
     intro:
@@ -922,6 +953,8 @@ const en = {
         "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
       "out-of-sample-unverifiable":
         "The out-of-sample check produced a result this application cannot verify.",
+      "hook-directory-unverifiable":
+        "The hooks of this week's v4 pools did not pass their own check, so the directory is not shown.",
       "holdings-unverifiable":
         "What this address holds produced a result this application cannot verify.",
       "explanation-key-rejected":
@@ -1008,6 +1041,9 @@ const tr: Dictionary = {
     poolTitle: "Havuz aralığı analizi · Uniswap Strateji Danışmanı",
     poolDescription:
       "Bir Ethereum mainnet Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
+    hooksTitle: "Uniswap v4 kancaları · Uniswap Strateji Danışmanı",
+    hooksDescription:
+      "Haftanın en yoğun Uniswap v4 havuzlarının adını verdiği her kanca ve her birinin neye izinli olduğu — kendi adresinden okunmuş hâliyle."
   },
 
   preferences: {
@@ -1033,7 +1069,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -1072,11 +1108,6 @@ const tr: Dictionary = {
             name: "Bir hook'un gerçekte ne yaptığı",
             summary:
               "Bir v4 sayfası, hook'un neye izinli olduğunu söyler; çünkü protokolün zorladığı kısım budur ve hook'un kendi adresinden okunur. O izinlerle ne yaptığını söylemek için sözleşmeyi okumak gerekir, bu ayrı bir problemdir ve bu uygulama ona girişmez.",
-          },
-          {
-            name: "Hook keşfi",
-            summary:
-              "Bir hedefe uygun yayımlanmış hook'ları bulmak ve sınırlarını açıkça belirtmek.",
           },
           {
             name: "TWAMM tarzı stratejiler",
@@ -1424,6 +1455,25 @@ const tr: Dictionary = {
     search: "Havuz bul →",
   },
 
+  hooks: {
+    heading: "Uniswap v4'te çalışan kancalar",
+    loading: "Bu haftanın en yoğun v4 havuzları okunuyor…",
+    intro:
+      "Her v4 havuzu bir kancanın adını verebilir: PoolManager'ın bir takasın, bir yatırmanın, bir çekmenin belirli anlarında çağırdığı bir sözleşme. Hangi anlarda çağrılacağı kimsenin verdiği bir söz değil. Kancanın adresine kazınmış durumda — düşük on dört bit o listenin kendisi, ve protokol sözleşmeyi bunun dışında hiçbir şey için çağırmaz.",
+    onlyPermissions:
+      "Bu sayfanın bildiği şeyin tamamı bu, ve tam da iddia değil zorunluluk olduğu için bilmeye değer. Bir kancanın o izinle ne yaptığı kendi kodunda. Bu uygulama kod okumaz ve kimsenin kefil olduğu bir kanca listesi tutmaz — ikisi de, doğrulayabildiği rakamların yanına doğrulayamadığı bir iddia koymak olurdu.",
+    window: (pools: string, hooked: string, hookless: string) =>
+      `Bu haftanın en yoğun v4 günlerindeki ${pools} havuzdan okundu. Bunların ${hooked} tanesi bir kancanın adını veriyor; ${hookless} tanesi hiçbirini vermiyor ve bir v3 havuzu gibi davranıyor.`,
+    ordering:
+      "Her kancayı kaç havuzun çalıştırdığına göre sıralanmış. Bu yalnızca bir havuz sayısı: çok havuzda görünen bir kanca, birinin çok havuz açtığı bir kancadır, başka bir şey değil.",
+    runs: (count: string) => `Bunların ${count} tanesini çalıştırıyor`,
+    poolsHeading: "Nerede çalışıyor",
+    moreNotShown: (count: string) => `ve ${count} tane daha`,
+    none: "Bu haftanın en yoğun v4 günlerindeki hiçbir havuz bir kancanın adını vermiyor.",
+    unavailable: "Haftanın v4 havuzları okunamadı; gösterilecek bir dizin yok.",
+    fromHome: "Bütün kancaları gör →",
+  },
+
   wallet: {
     heading: "Cüzdan bağla",
     intro:
@@ -1714,6 +1764,8 @@ const tr: Dictionary = {
         "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
       "out-of-sample-unverifiable":
         "Örneklem dışı kontrol, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
+      "hook-directory-unverifiable":
+        "Bu haftanın v4 havuzlarının kancaları kendi denetiminden geçemedi; bu yüzden dizin gösterilmiyor.",
       "holdings-unverifiable":
         "Bu adresin ne tuttuğu, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "explanation-key-rejected":

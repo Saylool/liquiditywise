@@ -33,12 +33,24 @@ export default async function Home() {
           {t.home.workingTodayHeading}
         </h2>
         <p className="text-sm leading-relaxed">{t.home.workingTodayBody}</p>
-        <Link
-          href="/pool"
-          className="w-fit rounded-md border border-border bg-background px-4 py-2 text-sm font-medium"
-        >
-          {t.home.analysePool}
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/pool"
+            className="w-fit rounded-md border border-border bg-background px-4 py-2 text-sm font-medium"
+          >
+            {t.home.analysePool}
+          </Link>
+          {/*
+           * The one page here that takes no input, so it is the one worth
+           * offering rather than waiting to be searched for.
+           */}
+          <Link
+            href="/hooks"
+            className="w-fit rounded-md border border-border px-4 py-2 text-sm font-medium"
+          >
+            {t.hooks.fromHome}
+          </Link>
+        </div>
       </section>
 
       <WalletConnect strings={t.wallet} />

@@ -98,6 +98,7 @@ export const DataFailureNoticeSchema = z.enum([
   "out-of-sample-insufficient-history",
   "out-of-sample-unverifiable",
   "holdings-unverifiable",
+  "hook-directory-unverifiable",
 
   /* The written explanation. */
   "explanation-key-rejected",
