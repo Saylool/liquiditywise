@@ -1,28 +1,38 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_HORIZON_DAYS } from "../../schemas";
-import { DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
+import { DEPOSIT_USD_MAXIMUM, MAX_HORIZON_DAYS } from "../../schemas";
+import { DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
 import {
   HORIZON_CHOICES,
   HORIZON_PARAMETER,
   MULTIPLIER_CHOICES,
   MULTIPLIER_PARAMETER,
+  DEPOSIT_CHOICES,
+  DEPOSIT_PARAMETER,
   poolAnalysisHref,
   readRequestedParameters,
   v4PoolAnalysisHref,
 } from "./requestedParameters";
 
-const read = (horizon?: string | string[], multiplier?: string | string[]) =>
-  readRequestedParameters(horizon, multiplier);
+const read = (
+  horizon?: string | string[],
+  multiplier?: string | string[],
+  deposit?: string | string[],
+) => readRequestedParameters(horizon, multiplier, deposit);
 
 describe("readRequestedParameters", () => {
   it("uses the defaults when nothing was asked for", () => {
-    expect(read()).toEqual({ parameters: DEFAULT_PRICE_BAND_PARAMETERS, fellBack: false });
+    expect(read()).toEqual({
+      parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+      depositUsd: DEFAULT_DEPOSIT_USD,
+      fellBack: false,
+    });
   });
 
   it("takes both fields when both were asked for", () => {
-    expect(read("90", "2")).toEqual({
+    expect(read("90", "2", "100000")).toEqual({
       parameters: { horizonDays: 90, standardDeviationMultiplier: 2 },
+      depositUsd: 100_000,
       fellBack: false,
     });
   });
@@ -41,10 +51,13 @@ describe("readRequestedParameters", () => {
   it("accepts every choice the interface offers", () => {
     for (const days of HORIZON_CHOICES) {
       for (const sigma of MULTIPLIER_CHOICES) {
-        expect(read(String(days), String(sigma))).toEqual({
-          parameters: { horizonDays: days, standardDeviationMultiplier: sigma },
-          fellBack: false,
-        });
+        for (const usd of DEPOSIT_CHOICES) {
+          expect(read(String(days), String(sigma), String(usd))).toEqual({
+            parameters: { horizonDays: days, standardDeviationMultiplier: sigma },
+            depositUsd: usd,
+            fellBack: false,
+          });
+        }
       }
     }
   });
@@ -55,8 +68,9 @@ describe("readRequestedParameters", () => {
    * button for it.
    */
   it("accepts a value the schema allows but no button offers", () => {
-    expect(read("365", "0.5")).toEqual({
+    expect(read("365", "0.5", "2500.5")).toEqual({
       parameters: { horizonDays: 365, standardDeviationMultiplier: 0.5 },
+      depositUsd: 2500.5,
       fellBack: false,
     });
   });
@@ -87,6 +101,29 @@ describe("readRequestedParameters", () => {
     expect(result.parameters.standardDeviationMultiplier).toBe(
       DEFAULT_PRICE_BAND_PARAMETERS.standardDeviationMultiplier,
     );
+    expect(result.fellBack).toBe(true);
+  });
+
+  it.each([
+    ["not a number", "lots"],
+    ["zero", "0"],
+    ["under a dollar", "0.5"],
+    ["past the largest size", String(DEPOSIT_USD_MAXIMUM + 1)],
+    ["negative", "-1000"],
+    ["written in exponent form", "1e4"],
+  ])("falls back on a deposit that is %s", (_label, raw) => {
+    const result = read("90", "2", raw);
+
+    expect(result.depositUsd).toBe(DEFAULT_DEPOSIT_USD);
+    expect(result.fellBack).toBe(true);
+    /* And only that field: the band it arrived beside is untouched. */
+    expect(result.parameters).toEqual({ horizonDays: 90, standardDeviationMultiplier: 2 });
+  });
+
+  it("treats a repeated deposit parameter as unreadable rather than picking one", () => {
+    const result = read("90", "2", ["1000", "1000000"]);
+
+    expect(result.depositUsd).toBe(DEFAULT_DEPOSIT_USD);
     expect(result.fellBack).toBe(true);
   });
 
@@ -157,6 +194,7 @@ describe("poolAnalysisHref", () => {
     const read = readRequestedParameters(
       query.get(HORIZON_PARAMETER) ?? undefined,
       query.get(MULTIPLIER_PARAMETER) ?? undefined,
+      query.get(DEPOSIT_PARAMETER) ?? undefined,
     );
 
     expect(read.parameters).toEqual(parameters);

@@ -57,6 +57,8 @@ const snapshotWith = (price: number, tick: number | null) => ({
   token0PriceInToken1: price,
   token1PriceInToken0: 1 / price,
   tvlUsd: 1_000_000,
+  lockedToken0: null,
+  lockedToken1: null,
   tick,
   liquidity: "123456789",
   source: "uniswap-v3-subgraph",

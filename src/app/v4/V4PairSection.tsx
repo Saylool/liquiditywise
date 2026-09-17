@@ -21,11 +21,14 @@ import { type PriceBandParameters, type V4Pool, ZERO_ADDRESS } from "@/schemas";
 export async function V4PairSection({
   pool,
   parameters,
+  depositUsd,
   locale,
   t,
 }: {
   pool: V4Pool;
   parameters: PriceBandParameters;
+  /** Carried into the links out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   locale: Locale;
   t: Dictionary;
 }) {
@@ -47,6 +50,7 @@ export async function V4PairSection({
       pair={`${pool.token0.symbol} / ${pool.token1.symbol}`}
       token0Address={pool.token0.address}
       parameters={parameters}
+      depositUsd={depositUsd}
       t={t}
       locale={locale}
     />

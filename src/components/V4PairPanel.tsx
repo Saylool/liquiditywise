@@ -25,6 +25,7 @@ export function V4PairPanel({
   pair,
   token0Address,
   parameters,
+  depositUsd,
   t,
   locale,
 }: {
@@ -34,6 +35,8 @@ export function V4PairPanel({
   pair: string;
   token0Address: string;
   parameters: PriceBandParameters;
+  /** Carried into every link out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -44,7 +47,7 @@ export function V4PairPanel({
       </h2>
 
       <h3 className="text-xs uppercase tracking-widest text-muted">{t.feeTiers.onV4}</h3>
-      <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} t={t} locale={locale} />
+      <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
 
       <h3 className="border-t border-border pt-4 text-xs uppercase tracking-widest text-muted">
         {t.feeTiers.onV3}
@@ -52,7 +55,7 @@ export function V4PairPanel({
       {v3Result === null || token0Address === ZERO_ADDRESS ? (
         <p className="text-sm leading-relaxed text-muted">{t.feeTiers.v3NoNative}</p>
       ) : (
-        <V3PairPoolList result={v3Result} pair={pair} parameters={parameters} t={t} locale={locale} />
+        <V3PairPoolList result={v3Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
       )}
     </section>
   );

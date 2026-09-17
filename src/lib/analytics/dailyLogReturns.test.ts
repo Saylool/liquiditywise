@@ -6,7 +6,13 @@ const DAY_ZERO = Date.parse("2026-07-20T00:00:00.000Z");
 const at = (dayIndex: number, offsetMs = 0) =>
   new Date(DAY_ZERO + dayIndex * MS_PER_DAY + offsetMs).toISOString();
 /** Only the timestamp and the price matter to a return; the rest is carried. */
-const activity = { low: null, high: null, volumeUsd: null, feesUsd: null } as const;
+const activity = {
+  low: null,
+  high: null,
+  volumeUsd: null,
+  feesUsd: null,
+  activeLiquidity: null,
+} as const;
 const point = (dayIndex: number, price: number) => ({
   timestamp: at(dayIndex),
   price,

@@ -24,3 +24,4 @@ export * from "./pairFeeTiers";
 export * from "./outOfSampleCheck";
 export * from "./holdings";
 export * from "./interpretation";
+export * from "./depositFeeShare";

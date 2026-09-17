@@ -124,6 +124,20 @@ export const normalizePoolSnapshot = ({
     return unavailable("invalid-response", MALFORMED);
   }
 
+  /*
+   * The two balances behind that USD figure. Zero is real here for the same
+   * reason it is real above, and a figure that will not convert becomes `null`
+   * rather than failing the snapshot: every other field on it is a price, a tick
+   * and a liquidity that the range this page exists to draw is computed from,
+   * and none of them needs to know what the pool is holding.
+   */
+  const lockedToken0 = convertNonNegativeDecimal(pool.totalValueLockedToken0 ?? "", {
+    allowZero: true,
+  });
+  const lockedToken1 = convertNonNegativeDecimal(pool.totalValueLockedToken1 ?? "", {
+    allowZero: true,
+  });
+
   const liquidity = Uint128StringSchema.safeParse(pool.liquidity);
   if (!liquidity.success) {
     return unavailable("invalid-response", MALFORMED);
@@ -164,6 +178,8 @@ export const normalizePoolSnapshot = ({
     token0PriceInToken1: token0PriceInToken1.value,
     token1PriceInToken0: token1PriceInToken0.value,
     tvlUsd: tvlUsd.value,
+    lockedToken0: lockedToken0.ok ? lockedToken0.value : null,
+    lockedToken1: lockedToken1.ok ? lockedToken1.value : null,
     tick,
     liquidity: liquidity.data,
     source: identity.source,

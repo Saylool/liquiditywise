@@ -58,7 +58,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, and what each of the other widths would have done instead. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -83,11 +83,6 @@ const en = {
       {
         version: "Uniswap v3",
         features: [
-          {
-            name: "What a deposit would earn",
-            summary:
-              "The fees the pool charged are measured and shown; what a particular deposit would take of them is not. That needs a position size and its share of the liquidity active at each price, and this application reads neither.",
-          },
           {
             name: "Gas, and the cost of following the price",
             summary:
@@ -162,7 +157,37 @@ const en = {
     inSample:
       "These are the same days the range was drawn from, so they show how it was fitted rather than testing how it holds up — and the range is centred on today's price, which nobody could have opened a month ago. Read them as how the pool's recent movement sits against the range, not as a backtest.",
     notYourEarnings:
-      "None of this is what a position would earn. That would be these fees multiplied by your share of the liquidity active in the range while the swaps happened — a share this application does not read, for a deposit it will not size. There is no yield figure here on purpose.",
+      "None of this is what a position would earn: it is what the whole pool charged. What a deposit would have taken of it — its share of the liquidity active while the swaps happened — is the panel directly below, and even that is fees and nothing else.",
+  },
+
+  /*
+   * The half of the fee question this application used to refuse.
+   *
+   * The refusal was honest while it lasted: the figures above are the pool's,
+   * and turning them into a position's needs a size and a share of the active
+   * liquidity. Both are read now, so the page answers instead of declining —
+   * and every sentence here exists to stop the answer being read as a yield.
+   */
+  deposit: {
+    heading: "What a deposit would have collected",
+    unavailable: "What a deposit would have taken of those fees cannot be worked out for this pool.",
+    withheldNote:
+      "For the same reason as the figure above it: a hook here may take a share of the swap, and nothing in the source separates its share from the providers'. A fraction of a total that cannot be attributed to this range cannot be attributed to a deposit in it either.",
+    deposited: "Deposit",
+    depositedNote: "The size this is worked out for. Change it in the form above.",
+    collected: "Fees it would have taken",
+    collectedNote: (days: string) => `Over the ${days} days the price never left the range.`,
+    ofDeposit: "Of the deposit",
+    ofDepositNote:
+      "Those fees against the money put in, over those days and no others. Not a yearly rate, and nothing here turns it into one.",
+    sentence: (deposit: string, days: string, poolFees: string, yourFees: string) =>
+      `On the ${days} days the price never left this range, the pool charged ${poolFees} in fees. A deposit of ${deposit} placed in the range would have taken about ${yourFees} of that — its own liquidity as a share of the liquidity that was actually active on each of those days.`,
+    unmeasurableNote: (days: string) =>
+      `${days} further days sat inside the range, but the source published no fees or no active liquidity for them, so they are not in the total.`,
+    dilution:
+      "A larger deposit does not collect proportionally more. The share is your liquidity over everybody's including your own, so past a certain size most of what you add dilutes what you already have — which is why the amounts offered are a thousandfold apart.",
+    caveat:
+      "Fees only, and days that have already happened. It assumes the position was open for every one of them and that nothing moved in response to it, and it says nothing about what the next thirty days will pay. What a position gives up against simply holding the two tokens is the comparison further down this page, and the two have to be read together.",
   },
 
   realizedFee: {
@@ -333,6 +358,7 @@ const en = {
      */
     horizonLabel: "How far ahead",
     widthLabel: "How wide",
+    depositLabel: "How much",
     days: (days: string) => `${days} days`,
     sigma: (value: string) => `${value}σ`,
     /** A word for the offered widths; a width typed into the URL gets none. */
@@ -859,6 +885,12 @@ const en = {
         "The pool's recent activity produced a result this application cannot verify.",
       "fee-rate-unmeasurable":
         "This pool traded nothing on any indexed day of the window, so the rate it charges cannot be divided out of what it collected.",
+      "deposit-share-unpriceable":
+        "The source does not price what this pool holds, so a deposit in dollars cannot be turned into a position in it.",
+      "deposit-share-no-days":
+        "The price left this range on every day the source could answer for, so there is no day a deposit in it would have collected anything.",
+      "deposit-share-unverifiable":
+        "What a deposit would have taken did not pass its own check, so it is not shown.",
       "out-of-sample-insufficient-history":
         "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
       "out-of-sample-unverifiable":
@@ -966,7 +998,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, ve diğer genişliklerin her birinin ne yapacağı. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -991,11 +1023,6 @@ const tr: Dictionary = {
       {
         version: "Uniswap v3",
         features: [
-          {
-            name: "Bir yatırımın ne kazanacağı",
-            summary:
-              "Havuzun aldığı komisyonlar ölçülüp gösteriliyor; belli bir yatırımın bunlardan ne kadarını alacağı gösterilmiyor. Bunun için bir pozisyon büyüklüğü ve o pozisyonun her fiyatta aktif olan likidite içindeki payı gerekir; bu uygulama ikisini de okumaz.",
-          },
           {
             name: "Gas, ve fiyatı takip etmenin maliyeti",
             summary:
@@ -1059,7 +1086,29 @@ const tr: Dictionary = {
     inSample:
       "Bunlar aralığın çizildiği günlerin ta kendisi; yani nasıl oturtulduğunu gösterirler, ne kadar tuttuğunu sınamazlar — üstelik aralık bugünkü fiyata ortalanmış, bir ay önce kimse onu açamazdı. Geriye dönük bir test olarak değil, havuzun son dönem hareketinin aralığa göre nerede durduğu olarak oku.",
     notYourEarnings:
-      "Bunların hiçbiri bir pozisyonun kazanacağı miktar değil. O, bu komisyonların, takaslar olurken aralıkta aktif olan likiditedeki payınla çarpımı olurdu — bu uygulamanın okumadığı bir pay, ve büyüklüğünü belirlemeyeceği bir yatırım için. Burada bilerek bir getiri rakamı yok.",
+      "Bunların hiçbiri bir pozisyonun kazanacağı miktar değil; havuzun tamamının aldığı komisyon. Bir yatırımın bundan alacağı pay — takaslar olurken aktif olan likidite içindeki payı — hemen aşağıdaki bölümde, ve o da yalnızca komisyon, başka hiçbir şey değil.",
+  },
+
+  deposit: {
+    heading: "Bir yatırım ne toplardı",
+    unavailable: "Bir yatırımın bu komisyonlardan alacağı pay bu havuz için hesaplanamıyor.",
+    withheldNote:
+      "Üstündeki rakamla aynı sebepten: buradaki kanca takastan kendine pay alabilir ve kaynak, onun payını likidite sağlayıcılarınkinden ayırmıyor. Bu aralığa atfedilemeyen bir toplamın bir kesri de, o aralıktaki bir yatırıma atfedilemez.",
+    deposited: "Yatırım",
+    depositedNote: "Hesabın yapıldığı büyüklük. Yukarıdaki formdan değiştirilebilir.",
+    collected: "Alacağı komisyon",
+    collectedNote: (days: string) => `Fiyatın aralıktan hiç çıkmadığı ${days} gün boyunca.`,
+    ofDeposit: "Yatırımın yüzdesi",
+    ofDepositNote:
+      "Bu komisyonların, konulan paraya oranı — yalnızca o günler için. Yıllık bir oran değil ve burada hiçbir şey onu yıllığa çevirmiyor.",
+    sentence: (deposit: string, days: string, poolFees: string, yourFees: string) =>
+      `Fiyatın bu aralıktan hiç çıkmadığı ${days} gün boyunca havuz ${poolFees} komisyon aldı. Bu aralığa konulan ${deposit} tutarında bir yatırım bunun yaklaşık ${yourFees} kadarını alırdı — kendi likiditesinin, o günlerin her birinde gerçekten aktif olan likidite içindeki payı kadar.`,
+    unmeasurableNote: (days: string) =>
+      `${days} gün daha aralığın içinde kalmış, ama kaynak o günler için ne komisyon ne de aktif likidite yayımlamış; bu yüzden toplama girmiyorlar.`,
+    dilution:
+      "Daha büyük bir yatırım orantılı olarak daha fazla toplamaz. Pay, senin likiditenin herkesinkine — seninki dahil — oranı; yani belli bir büyüklükten sonra eklediğinin çoğu, hâlihazırda koyduğunu seyreltir. Sunulan tutarların uçtan uca bin kat farklı olmasının sebebi bu.",
+    caveat:
+      "Yalnızca komisyon ve yalnızca geçmiş günler. Pozisyonun bu günlerin hepsinde açık olduğunu ve buna karşılık piyasada hiçbir şeyin kıpırdamadığını varsayar; önümüzdeki otuz günün ne ödeyeceği hakkında hiçbir şey söylemez. Bir pozisyonun, iki jetonu öylece tutmaya kıyasla neyden vazgeçtiği bu sayfanın aşağısındaki karşılaştırmada; ikisi birlikte okunmalı.",
   },
 
   realizedFee: {
@@ -1194,6 +1243,7 @@ const tr: Dictionary = {
     apply: "Yeniden hesapla",
     horizonLabel: "Ne kadar ileriye",
     widthLabel: "Ne kadar geniş",
+    depositLabel: "Ne kadar para",
     days: (days: string) => `${days} gün`,
     sigma: (value: string) => `${value}σ`,
     widthChoice: (sigma: string, word: string | null) =>
@@ -1599,6 +1649,12 @@ const tr: Dictionary = {
         "Havuzun son dönem hareketliliği, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "fee-rate-unmeasurable":
         "Bu havuz, pencerenin indekslenmiş hiçbir gününde işlem görmemiş; bu yüzden aldığı komisyon oranı, topladığı tutardan bölünerek çıkarılamıyor.",
+      "deposit-share-unpriceable":
+        "Kaynak, bu havuzun tuttuğu varlıklara bir dolar değeri biçmiyor; bu yüzden dolarla verilen bir yatırım, havuzdaki bir pozisyona çevrilemiyor.",
+      "deposit-share-no-days":
+        "Kaynağın yanıtlayabildiği her gün fiyat bu aralığın dışına çıkmış; yani bu aralıktaki bir yatırımın komisyon toplayacağı tek bir gün bile yok.",
+      "deposit-share-unverifiable":
+        "Bir yatırımın alacağı pay kendi denetiminden geçemedi; bu yüzden gösterilmiyor.",
       "out-of-sample-insufficient-history":
         "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
       "out-of-sample-unverifiable":

@@ -46,12 +46,15 @@ const PoolRow = ({
   entry,
   current,
   parameters,
+  depositUsd,
   t,
   locale,
 }: {
   entry: V4PairPool;
   current: boolean;
   parameters: PriceBandParameters;
+  /** Carried into every link out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   t: Dictionary;
   locale: Locale;
 }) => {
@@ -101,7 +104,7 @@ const PoolRow = ({
         <div className="flex flex-col gap-2 rounded-md border border-accent bg-background p-4">{body}</div>
       ) : (
         <GuardedLink
-          href={v4PoolAnalysisHref(pool.id, parameters)}
+          href={v4PoolAnalysisHref(pool.id, parameters, depositUsd)}
           className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
         >
           {body}
@@ -115,6 +118,7 @@ export function V4PairPoolList({
   result,
   pair,
   parameters,
+  depositUsd,
   t,
   locale,
 }: {
@@ -122,6 +126,8 @@ export function V4PairPoolList({
   /** The pair as the page names it, so the two agree. */
   pair: string;
   parameters: PriceBandParameters;
+  /** Carried into every link out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -156,7 +162,7 @@ export function V4PairPoolList({
             key={entry.pool.id}
             entry={entry}
             current={entry.pool.id === analysedPoolId}
-            parameters={parameters}
+            parameters={parameters} depositUsd={depositUsd}
             t={t}
             locale={locale}
           />

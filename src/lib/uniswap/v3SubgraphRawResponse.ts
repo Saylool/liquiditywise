@@ -117,6 +117,18 @@ const RawPoolSchema = z.object({
   /** Provider perspective: token1 per token0. Maps to `token0PriceInToken1`. */
   token1Price: z.string(),
   totalValueLockedUSD: z.string(),
+  /**
+   * `BigDecimal!` each: what that USD figure is the value of, in whole tokens.
+   * Together with a price they are how one dollar becomes one token, which is
+   * what sizing a deposit against this pool needs.
+   *
+   * Optional, unlike the fields around them, because they are the only ones here
+   * that nothing else on the page depends on: a snapshot without them still
+   * carries the price, the tick and the liquidity the suggested range is drawn
+   * from. They degrade to `null` rather than failing the read.
+   */
+  totalValueLockedToken0: z.string().nullish(),
+  totalValueLockedToken1: z.string().nullish(),
   liquidity: z.string(),
   tick: z.string().nullable(),
 });

@@ -1,7 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { HORIZON_CHOICES, MULTIPLIER_CHOICES } from "../lib/advisor/requestedParameters";
+import {
+  DEPOSIT_CHOICES,
+  DEPOSIT_PARAMETER,
+  HORIZON_CHOICES,
+  MULTIPLIER_CHOICES,
+} from "../lib/advisor/requestedParameters";
 import { getDictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { PriceBandParameters } from "../schemas";
@@ -17,6 +22,7 @@ const render = (
     action = "/pool",
     poolParameter = "address",
     poolId = POOL,
+    depositUsd = 1_000,
   } = {},
 ) =>
   renderToStaticMarkup(
@@ -25,6 +31,7 @@ const render = (
       poolParameter={poolParameter}
       poolId={poolId}
       parameters={parameters}
+      depositUsd={depositUsd}
       fellBack={fellBack}
       t={getDictionary(locale)}
       locale={locale}
@@ -164,5 +171,39 @@ describe("BandParametersForm, pointed at the v4 page", () => {
     expect(markup).toContain('action="/v4"');
     expect(markup).toContain(`name="id" value="${POOL_ID}"`);
     expect(markup).not.toContain('name="address"');
+  });
+});
+
+/*
+ * The third knob, which is not part of the band and says so everywhere it
+ * appears. It is here because this is where a reader already is when they want
+ * to change what the fee figure is worked out for.
+ */
+describe("the deposit", () => {
+  it("offers every size, by the name the URL gives it", () => {
+    const markup = render();
+
+    expect(markup).toContain(`name="${DEPOSIT_PARAMETER}"`);
+    for (const choice of DEPOSIT_CHOICES) {
+      expect(markup).toContain(`value="${choice}"`);
+    }
+  });
+
+  it("shows the size in effect as selected", () => {
+    const markup = render(undefined, { depositUsd: 100_000 });
+
+    expect(markup).toContain('value="100000" selected=""');
+  });
+
+  /* The schema accepts more than the buttons offer, so a URL can reach here. */
+  it("adds a size nobody offered when that is what is in effect", () => {
+    const markup = render(undefined, { depositUsd: 2_500 });
+
+    expect(markup).toContain('value="2500" selected=""');
+    expect(markup).toContain('value="1000"');
+  });
+
+  it("writes the amounts in the reader's language", () => {
+    expect(render(undefined, { locale: "tr" })).toContain("Ne kadar para");
   });
 });

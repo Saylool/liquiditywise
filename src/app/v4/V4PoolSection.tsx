@@ -28,19 +28,22 @@ import type { PriceBandParameters } from "@/schemas";
 export async function V4PoolSection({
   poolId,
   parameters,
+  depositUsd,
   controls,
   locale,
   t,
 }: {
   poolId: string;
   parameters: PriceBandParameters;
+  /** The deposit the fee-share figure is worked out for. Scales nothing else. */
+  depositUsd: number;
   /** The form that changes the range; the report places it under the figures it changes. */
   controls: React.ReactNode;
   locale: Locale;
   t: Dictionary;
 }) {
   const poolRead = getEthereumV4Pool(poolId);
-  const analysis = getPoolRangeAnalysis("v4", poolId, parameters, poolRead);
+  const analysis = getPoolRangeAnalysis("v4", poolId, parameters, depositUsd, poolRead);
 
   const pool = await poolRead;
 
@@ -112,6 +115,7 @@ async function V4RangeReport({
             <V4PairSection
               pool={result.data.pool}
               parameters={result.data.parameters}
+              depositUsd={result.data.depositUsd}
               locale={locale}
               t={t}
             />

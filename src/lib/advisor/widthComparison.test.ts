@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../../schemas";
-import { analysePoolRange, DEFAULT_PRICE_BAND_PARAMETERS, type PoolRangeAnalysis } from "./poolRangeAnalysis";
+import {
+  analysePoolRange,
+  DEFAULT_DEPOSIT_USD,
+  DEFAULT_PRICE_BAND_PARAMETERS,
+  type PoolRangeAnalysis,
+} from "./poolRangeAnalysis";
 import { MULTIPLIER_CHOICES } from "./requestedParameters";
 import { relativeFeeShare } from "../analytics/rangeConcentration";
 import { comparedWidths, compareWidths } from "./widthComparison";
@@ -31,6 +36,9 @@ const snapshot = (): PoolMarketSnapshot =>
     token0PriceInToken1: CURRENT_PRICE,
     token1PriceInToken0: 1 / CURRENT_PRICE,
     tvlUsd: 12_500_000,
+    /* Half the value on each side, so a dollar converts back to $1 of USDC. */
+    lockedToken0: 6_250_000,
+    lockedToken1: 6_250_000 * CURRENT_PRICE,
     tick: 196_256,
     liquidity: "987654321",
     source: "uniswap-v3-subgraph",
@@ -58,6 +66,7 @@ const history = (days: number): PoolDailyPriceHistory => {
     high: price * 1.004,
     volumeUsd: 1_000_000,
     feesUsd: 3_000,
+    activeLiquidity: "1000000000000000000",
   }));
   return {
     pool: POOL_REF,
@@ -81,6 +90,7 @@ const analysis = (days = 121, standardDeviationMultiplier = 1): PoolRangeAnalysi
     snapshot: ok(snapshot()),
     history: ok(history(days)),
     parameters: { ...DEFAULT_PRICE_BAND_PARAMETERS, standardDeviationMultiplier },
+    depositUsd: DEFAULT_DEPOSIT_USD,
   });
   if (result.status === "unavailable") throw new Error(`fixture should analyse: ${result.notice}`);
   return result.data;

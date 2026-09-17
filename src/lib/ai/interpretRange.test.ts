@@ -9,6 +9,7 @@ import {
 } from "../../schemas";
 import {
   analysePoolRange,
+  DEFAULT_DEPOSIT_USD,
   DEFAULT_PRICE_BAND_PARAMETERS,
   type PoolRangeAnalysis,
 } from "../advisor/poolRangeAnalysis";
@@ -38,6 +39,9 @@ const snapshot = {
   token0PriceInToken1: CURRENT_PRICE,
   token1PriceInToken0: 1 / CURRENT_PRICE,
   tvlUsd: 12_500_000,
+  /* Half the value on each side, so a dollar converts back to $1 of USDC. */
+  lockedToken0: 6_250_000,
+  lockedToken1: 6_250_000 * CURRENT_PRICE,
   tick: 196_256,
   liquidity: "987654321",
   source: "uniswap-v3-subgraph",
@@ -51,6 +55,7 @@ const history = ((): PoolDailyPriceHistory => {
     high: null;
     volumeUsd: null;
     feesUsd: null;
+    activeLiquidity: string;
   }[] = [];
   let price = CURRENT_PRICE;
   for (let day = 0; day < 31; day += 1) {
@@ -59,6 +64,7 @@ const history = ((): PoolDailyPriceHistory => {
       timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
       price,
       low: null, high: null, volumeUsd: null, feesUsd: null,
+      activeLiquidity: "1000000000000000000",
     });
   }
   return {
@@ -83,6 +89,7 @@ const analysis = ((): PoolRangeAnalysis => {
     snapshot: ok(snapshot),
     history: ok(history),
     parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    depositUsd: DEFAULT_DEPOSIT_USD,
   });
   if (result.status === "unavailable") throw new Error("fixture should analyse");
   return result.data;

@@ -15,7 +15,13 @@ const DAY_ZERO = Date.parse(RANGE_START);
 
 const at = (dayIndex: number) => new Date(DAY_ZERO + dayIndex * DAY_MS).toISOString();
 /** Only the timestamp and the price matter here; the rest of a day is carried. */
-const activity = { low: null, high: null, volumeUsd: null, feesUsd: null } as const;
+const activity = {
+  low: null,
+  high: null,
+  volumeUsd: null,
+  feesUsd: null,
+  activeLiquidity: null,
+} as const;
 const point = (dayIndex: number, price: number) => ({
   timestamp: at(dayIndex),
   price,

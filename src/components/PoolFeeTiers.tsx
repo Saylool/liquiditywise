@@ -37,12 +37,15 @@ const TierRow = ({
   tier,
   current,
   parameters,
+  depositUsd,
   t,
   locale,
 }: {
   tier: PairFeeTier;
   current: boolean;
   parameters: PriceBandParameters;
+  /** Carried into every link out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   t: Dictionary;
   locale: Locale;
 }) => {
@@ -96,7 +99,7 @@ const TierRow = ({
         </div>
       ) : (
         <GuardedLink
-          href={poolAnalysisHref(tier.pool.id, parameters)}
+          href={poolAnalysisHref(tier.pool.id, parameters, depositUsd)}
           className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
         >
           {body}
@@ -119,12 +122,15 @@ export function V3PairPoolList({
   result,
   pair,
   parameters,
+  depositUsd,
   t,
   locale,
 }: {
   result: DataResult<PairFeeTiers>;
   pair: string;
   parameters: PriceBandParameters;
+  /** Carried into every link out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -161,7 +167,7 @@ export function V3PairPoolList({
             key={tier.pool.id}
             tier={tier}
             current={tier.pool.id === analysedPoolId}
-            parameters={parameters}
+            parameters={parameters} depositUsd={depositUsd}
             t={t}
             locale={locale}
           />
@@ -181,6 +187,7 @@ export function PoolFeeTiers({
   v4Result,
   pair,
   parameters,
+  depositUsd,
   t,
   locale,
 }: {
@@ -191,6 +198,8 @@ export function PoolFeeTiers({
   pair: string;
   /** The band in effect, carried into every link out of here. */
   parameters: PriceBandParameters;
+  /** Carried into every link out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -200,7 +209,7 @@ export function PoolFeeTiers({
         {t.feeTiers.heading}
       </h2>
 
-      <V3PairPoolList result={result} pair={pair} parameters={parameters} t={t} locale={locale} />
+      <V3PairPoolList result={result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
 
       {/*
        * The other protocol, beneath. The same two contracts, which is stated
@@ -209,7 +218,7 @@ export function PoolFeeTiers({
       <h3 className="border-t border-border pt-4 text-xs uppercase tracking-widest text-muted">
         {t.feeTiers.onV4}
       </h3>
-      <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} t={t} locale={locale} />
+      <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
     </section>
   );
 }

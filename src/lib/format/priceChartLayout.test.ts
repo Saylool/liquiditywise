@@ -33,7 +33,7 @@ const PLOT_HEIGHT = PRICE_CHART.height - PRICE_CHART.top - PRICE_CHART.bottom;
 describe("chartDays", () => {
   /* The pool quotes ether in dollars; the chart, like the page, turns it round — extremes included. */
   const point = (price: number, low: number | null, high: number | null): HistoricalPricePoint =>
-    ({ timestamp: "2026-09-10T00:00:00.000Z", price, low, high, volumeUsd: null, feesUsd: null }) as HistoricalPricePoint;
+    ({ timestamp: "2026-09-10T00:00:00.000Z", price, low, high, volumeUsd: null, feesUsd: null, activeLiquidity: null }) as HistoricalPricePoint;
 
   it("turns each day the reader's way round, and swaps its extremes with it", () => {
     const quote = choosePriceQuote(pair, 1 / 3000);

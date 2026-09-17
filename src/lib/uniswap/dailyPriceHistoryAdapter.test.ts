@@ -32,6 +32,7 @@ const dayRow = (index: number, token1Price = String(2500 + index)) => ({
   low: String((1 / Number(token1Price)) * 0.98),
   volumeUSD: String(1_000_000 + index),
   feesUSD: String(500 + index),
+  liquidity: String(1_000_000_000_000_000_000n + BigInt(index)),
   pool: { id: POOL_ADDRESS },
 });
 
@@ -84,6 +85,7 @@ describe("a complete history", () => {
         high: 1 / ((1 / (2500 + index)) * 0.98),
         volumeUsd: 1_000_000 + index,
         feesUsd: 500 + index,
+        activeLiquidity: String(1_000_000_000_000_000_000n + BigInt(index)),
       })),
       source: "uniswap-v3-subgraph",
     });

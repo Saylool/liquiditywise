@@ -67,6 +67,24 @@ describe("formatPercent", () => {
     expect(formatPercent(1e30)).toBe("1E32%");
   });
 
+  /*
+   * The small end, which two decimal places write as "0.00%". A deposit's fees
+   * against the money put in lands there on a pool small enough, and a page that
+   * prints zero for two hundredths of a cent has answered a different question.
+   */
+  it("switches notation rather than rounding a real figure to nothing", () => {
+    expect(formatPercent(0.000_023_977)).toBe("2.398E-3%");
+    expect(formatPercent(0.000_001_222)).toBe("1.222E-4%");
+  });
+
+  it("still writes an exact zero as zero", () => {
+    expect(formatPercent(0)).toBe("0.00%");
+  });
+
+  it("keeps two decimal places for anything that has them", () => {
+    expect(formatPercent(0.0001)).toBe("0.01%");
+  });
+
   it("reports a value it cannot represent as absent", () => {
     expect(formatPercent(Number.NaN)).toBe(ABSENT);
   });

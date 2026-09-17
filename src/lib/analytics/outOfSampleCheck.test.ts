@@ -43,6 +43,7 @@ const historyOf = (
         high: override.high === undefined ? (override.price ?? price) * 1.01 : override.high,
         volumeUsd: 1_000,
         feesUsd: 5,
+        activeLiquidity: "1000000000000000000",
       };
     }),
     source: "uniswap-v3-subgraph",

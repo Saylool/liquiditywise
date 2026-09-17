@@ -27,6 +27,8 @@ export const POOL_SNAPSHOT_QUERY = `query PoolMarketSnapshot($poolId: ID!) {
     token0Price
     token1Price
     totalValueLockedUSD
+    totalValueLockedToken0
+    totalValueLockedToken1
     liquidity
     tick
   }

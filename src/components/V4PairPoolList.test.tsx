@@ -45,7 +45,7 @@ const found = (pools: readonly V4PairPool[], analysedPoolId: string | null = poo
 
 const render = (result: DataResult<V4PairPools>, locale: Locale = "en") =>
   renderToStaticMarkup(
-    <V4PairPoolList result={result} pair="USDC / WETH" parameters={DEFAULT_PRICE_BAND_PARAMETERS} t={getDictionary(locale)} locale={locale} />,
+    <V4PairPoolList result={result} pair="USDC / WETH" parameters={DEFAULT_PRICE_BAND_PARAMETERS} depositUsd={1_000} t={getDictionary(locale)} locale={locale} />,
   );
 
 describe("V4PairPoolList", () => {
@@ -72,7 +72,7 @@ describe("V4PairPoolList", () => {
 
     expect(markup).toContain("You are reading this one");
     expect(markup).not.toContain(`href="/v4?id=${poolId(1)}`);
-    expect(markup).toContain(`href="/v4?id=${poolId(2)}&amp;days=30&amp;sigma=1"`);
+    expect(markup).toContain(`href="/v4?id=${poolId(2)}&amp;days=30&amp;sigma=1&amp;usd=1000"`);
   });
 
   it("links every pool when none is being read", () => {
@@ -161,6 +161,7 @@ describe("V4PairPanel", () => {
         pair="USDC / WETH"
         token0Address={token0Address}
         parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        depositUsd={1_000}
         t={getDictionary("en")}
         locale="en"
       />,
@@ -201,6 +202,7 @@ describe("PoolFeeTiers with the v4 list beneath", () => {
         v4Result={found([entry(1, "20"), entry(2, "10")], null)}
         pair="USDC / WETH"
         parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        depositUsd={1_000}
         t={getDictionary("en")}
         locale="en"
       />,

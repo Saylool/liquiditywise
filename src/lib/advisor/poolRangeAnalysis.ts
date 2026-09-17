@@ -1,3 +1,7 @@
+import {
+  calculateDepositFeeShare,
+  type DepositFeeShareResult,
+} from "../analytics/depositFeeShare";
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
 import { ACTIVITY_WINDOW_DAYS, calculatePoolActivity } from "../analytics/poolActivity";
 import {
@@ -98,7 +102,18 @@ export type PoolRangeAnalysis = {
    * find out what it did without trusting the hook's author.
    */
   readonly realizedFee: RealizedFeeRateResult;
+  /**
+   * What a deposit of {@link depositUsd} would have taken of those fees.
+   *
+   * A result rather than data, like the two above it and for the same reason,
+   * plus one of its own: it is the only figure on the page that needs the pool's
+   * holdings to be priced in dollars, and a pool of two tokens the source does
+   * not track cannot have one. Every other figure on such a pool is unaffected.
+   */
+  readonly depositFeeShare: DepositFeeShareResult;
   readonly parameters: PriceBandParameters;
+  /** The size the figure above was worked out for. Printed wherever it is. */
+  readonly depositUsd: number;
 };
 
 export type PoolRangeAnalysisResult =
@@ -131,6 +146,17 @@ export type PoolRangeAnalysisInput = {
   readonly snapshot: DataResult<PoolMarketSnapshot>;
   readonly history: DataResult<PoolDailyPriceHistory>;
   readonly parameters: PriceBandParameters;
+  /**
+   * The deposit to size against the suggested range, in US dollars.
+   *
+   * Separate from {@link PriceBandParameters} because it is a different kind of
+   * knob. The horizon and the multiplier decide *which range is suggested*; this
+   * decides nothing at all about the analysis, and only scales one figure at the
+   * end of it. Folding it in would have put a deposit into the band's schema,
+   * into the out-of-sample check that refits that band, and into the cache key
+   * of every reading — for a number none of them look at.
+   */
+  readonly depositUsd: number;
 };
 
 /**
@@ -144,6 +170,18 @@ export const DEFAULT_PRICE_BAND_PARAMETERS: PriceBandParameters = {
   horizonDays: 30,
   standardDeviationMultiplier: 1,
 };
+
+/**
+ * The deposit the page works out a fee share for when nobody has said one.
+ *
+ * A thousand dollars, and it is a worked example rather than a suggestion: it is
+ * printed beside every figure derived from it, and changed from the same form
+ * that sets the band. Something had to be chosen — a page that asked for a
+ * number before it would show anything would show nothing to most readers — and
+ * a round figure in the middle of the offered sizes is the plainest thing to
+ * label.
+ */
+export const DEFAULT_DEPOSIT_USD = 1_000;
 
 /**
  * The part of a `DataResult` this composition reads.
@@ -332,6 +370,25 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     stated: statedSwapFee(pool.value),
   });
 
+  /*
+   * Over exactly the days the two figures above cover, for the same reason they
+   * cover each other's: the fees this divides up are the fees the activity panel
+   * reports, and a share taken over a different set of days would sit beside a
+   * total it is not a share of.
+   *
+   * Cannot stop the pipeline either. It is the only stage that needs the pool's
+   * holdings priced in dollars, and a pool the source does not price still has
+   * every other figure on the page.
+   */
+  const depositFeeShare = calculateDepositFeeShare({
+    points: history.value.points.slice(-ACTIVITY_WINDOW_DAYS),
+    range: range.data,
+    snapshot: snapshot.value,
+    token0Decimals: pool.value.token0.decimals,
+    token1Decimals: pool.value.token1.decimals,
+    depositUsd: input.depositUsd,
+  });
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -343,7 +400,9 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     activity: activity.data,
     outOfSample,
     realizedFee,
+    depositFeeShare,
     parameters: input.parameters,
+    depositUsd: input.depositUsd,
   };
 
   if (warnings.length > 0) return { status: "partial", data, warnings };

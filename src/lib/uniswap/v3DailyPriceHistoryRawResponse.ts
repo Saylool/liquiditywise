@@ -39,6 +39,20 @@ const RawPoolDayDataSchema = z.object({
   volumeUSD: z.string(),
   feesUSD: z.string(),
   /**
+   * `BigInt!`, so a string: the in-range liquidity the day closed on. It is the
+   * denominator a position's share of that day's fees is taken over, and it is
+   * the protocol's L — an integer far too wide for a JSON number, which is why
+   * the official schema sends it as text and why it stays text through here.
+   *
+   * Optional here, unlike every field above it, and the difference is what each
+   * one costs when a provider stops sending it. Without a price or a volume this
+   * series is not a series and the read has to fail. Without this, one panel on
+   * one page cannot be drawn and every other figure is untouched — so it
+   * degrades to `null` in the adapter rather than failing a whole month of
+   * history.
+   */
+  liquidity: z.string().nullish(),
+  /**
    * Required, not optional. Each row states which pool it belongs to so ownership
    * can be proved per row rather than inferred from the query's filter, from the
    * row's opaque `id`, or from the separate top-level `pool` field. `Pool!` is

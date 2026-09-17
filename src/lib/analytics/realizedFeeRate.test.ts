@@ -22,6 +22,7 @@ const day = (
   high: 101,
   volumeUsd,
   feesUsd,
+  activeLiquidity: null,
 });
 
 /** A day charging exactly `ppm` on a million dollars of volume. */

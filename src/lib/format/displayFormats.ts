@@ -105,6 +105,17 @@ const PRICE_STANDARD_MAX = 1e9;
 const PERCENT_STANDARD_MAX = 1000;
 
 /**
+ * Below this a percentage with two decimal places is written "0.00%".
+ *
+ * Which is a real figure rounded away, and the one place it happens is the one
+ * place it misleads: a deposit's fees against the money put in, on a pool small
+ * enough that a large deposit is mostly its own dilution. Two hundredths of a
+ * cent on a thousand dollars is a very small number and it is not zero, and a
+ * page that prints zero there has answered a different question.
+ */
+const PERCENT_STANDARD_MIN = 5e-5;
+
+/**
  * A token price. Zero is formatted as-is rather than as absent: a schema-valid
  * price is never zero, so a zero here is a real value worth seeing.
  */
@@ -119,13 +130,23 @@ export const formatPrice = (value: number, locale: Locale = DEFAULT_FORMAT_LOCAL
   return standardPrice[locale].format(value);
 };
 
-/** A decimal ratio shown as a percentage: 0.0545 becomes "5.45%". */
+/**
+ * A decimal ratio shown as a percentage: 0.0545 becomes "5.45%".
+ *
+ * Scientific at both ends, and for the same reason at each: two decimal places
+ * stop carrying the figure. Zero is exempt, as it is for a price — a ratio of
+ * exactly zero is a real answer and "0.00%" is how to write it.
+ */
 export const formatPercent = (ratio: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string => {
   if (!Number.isFinite(ratio)) return ABSENT;
 
-  return Math.abs(ratio) >= PERCENT_STANDARD_MAX
-    ? scientificPercent[locale].format(ratio)
-    : standardPercent[locale].format(ratio);
+  const magnitude = Math.abs(ratio);
+  if (magnitude >= PERCENT_STANDARD_MAX) return scientificPercent[locale].format(ratio);
+  if (magnitude !== 0 && magnitude < PERCENT_STANDARD_MIN) {
+    return scientificPercent[locale].format(ratio);
+  }
+
+  return standardPercent[locale].format(ratio);
 };
 
 /** A plain count, grouped. Rounds nothing away: every caller passes an integer. */

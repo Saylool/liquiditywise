@@ -26,6 +26,8 @@ const snapshot = (overrides: Record<string, unknown> = {}) => ({
   token0PriceInToken1: CURRENT_PRICE,
   token1PriceInToken0: 1 / CURRENT_PRICE,
   tvlUsd: 1234.56,
+  lockedToken0: null,
+  lockedToken1: null,
   tick: -12345,
   liquidity: "123456789012345678901234567890",
   source: "uniswap-v3-subgraph",

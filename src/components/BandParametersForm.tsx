@@ -1,17 +1,19 @@
 import {
+  DEPOSIT_CHOICES,
+  DEPOSIT_PARAMETER,
   HORIZON_CHOICES,
   HORIZON_PARAMETER,
   MULTIPLIER_CHOICES,
   MULTIPLIER_PARAMETER,
 } from "../lib/advisor/requestedParameters";
 import { widthWord } from "../lib/advisor/widthWords";
-import { formatMultiplier, formatWhole } from "../lib/format/displayFormats";
+import { formatMultiplier, formatUsd, formatWhole } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { PriceBandParameters } from "../schemas";
 
 /**
- * The two knobs behind the price band.
+ * The knobs behind the price band, and the size the fees are shared out for.
  *
  * Until this existed every visitor saw the same analysis — thirty days, one
  * standard deviation — and the pipeline had taken both as parameters the whole
@@ -75,6 +77,7 @@ export function BandParametersForm({
   poolParameter,
   poolId,
   parameters,
+  depositUsd,
   fellBack,
   t,
   locale,
@@ -91,6 +94,14 @@ export function BandParametersForm({
   poolParameter: string;
   poolId: string;
   parameters: PriceBandParameters;
+  /**
+   * The deposit the fee share is worked out for.
+   *
+   * Beside the band rather than in it, here as everywhere else: it changes no
+   * figure the band produces, and sits in this form only because this is where a
+   * reader already is when they want to change what they are being told about.
+   */
+  depositUsd: number;
   /** True when something was asked for and could not be used. */
   fellBack: boolean;
   t: Dictionary;
@@ -128,6 +139,13 @@ export function BandParametersForm({
               widthWord(value, t),
             )
           }
+        />
+        <Choice
+          name={DEPOSIT_PARAMETER}
+          label={t.parameters.depositLabel}
+          current={depositUsd}
+          options={optionsIncluding(DEPOSIT_CHOICES, depositUsd)}
+          format={(value) => formatUsd(value, locale)}
         />
         <button
           type="submit"

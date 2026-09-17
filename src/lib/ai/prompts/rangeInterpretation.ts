@@ -361,8 +361,20 @@ const describeDivergence = (analysis: PoolRangeAnalysis, locale: Locale): readon
  * explanation is the only place that can head it off in a sentence.
  */
 const describeActivity = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
-  const { activity } = analysis;
+  const { activity, depositFeeShare } = analysis;
   const usd = (value: number | null) => (value === null ? "not available" : formatUsd(value, locale));
+  const mayAttribute = feeDisclosureFor(analysis.pool).mayAttributeFeesToRange;
+
+  /*
+   * Handed over under exactly the condition the page shows it under. The model
+   * cannot print a figure — the schema rejects a digit — so what this buys is
+   * the ability to *characterise* the share, and a characterisation of a figure
+   * the page withheld would be the withheld figure said in words.
+   */
+  const deposit =
+    !mayAttribute || depositFeeShare.status !== "success"
+      ? null
+      : depositFeeShare.data;
 
   return [
     line("Volume over the last day", usd(activity.volume24hUsd)),
@@ -375,13 +387,31 @@ const describeActivity = (analysis: PoolRangeAnalysis, locale: Locale): readonly
     line("Days that crossed an edge", formatWhole(activity.occupancy.undetermined, locale)),
     line(
       "Fees charged on the days entirely inside",
-      feeDisclosureFor(analysis.pool).mayAttributeFeesToRange
+      mayAttribute
         ? usd(activity.feesWhileFullyInsideUsd)
         : "withheld; this pool's hook may take a share of a swap and the source does not separate it",
     ),
     line(
-      "What these are not",
-      "anyone's earnings; they are the whole pool's, and the share a position would take is not known here",
+      "The deposit the page works a share out for",
+      deposit === null ? "not available" : usd(deposit.depositUsd),
+    ),
+    line(
+      "What that deposit would have taken of those fees",
+      deposit === null
+        ? "not available"
+        : `${usd(deposit.depositFeesUsd)}, over ${formatWhole(deposit.daysCounted, locale)} days entirely inside the range`,
+    ),
+    line(
+      "Those fees as a share of the deposit",
+      deposit === null ? "not available" : formatPercent(deposit.shareOfDeposit, locale),
+    ),
+    line(
+      "What that share is not",
+      "a yield, a rate, or a forecast; it is fees over days that have already happened, for a position assumed open through all of them, and it ignores what the position gives up against holding",
+    ),
+    line(
+      "What the pool's own figures are not",
+      "anyone's earnings; they are the whole pool's, and only the deposit line above turns them into one position's",
     ),
     line(
       "Why these day counts do not test the range",

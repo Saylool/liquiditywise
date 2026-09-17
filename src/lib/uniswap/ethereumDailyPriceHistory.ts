@@ -54,6 +54,7 @@ export const DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
     low
     volumeUSD
     feesUSD
+    liquidity
     pool {
       id
     }

@@ -13,6 +13,7 @@ import { getEthereumV3Pool } from "../uniswap/getEthereumV3Pool";
 import { getEthereumV4Pool } from "../uniswap/getEthereumV4Pool";
 import {
   analysePoolRange,
+  DEFAULT_DEPOSIT_USD,
   DEFAULT_PRICE_BAND_PARAMETERS,
   type PoolRangeAnalysisResult,
 } from "./poolRangeAnalysis";
@@ -71,6 +72,7 @@ export const getPoolRangeAnalysis = async (
   protocolVersion: ProtocolVersion,
   poolId: string,
   parameters: PriceBandParameters = DEFAULT_PRICE_BAND_PARAMETERS,
+  depositUsd: number = DEFAULT_DEPOSIT_USD,
   poolRead: Promise<DataResult<V3Pool> | DataResult<V4Pool>> = POOL_READERS[protocolVersion](
     poolId,
   ),
@@ -81,5 +83,5 @@ export const getPoolRangeAnalysis = async (
     getEthereumDailyPriceHistory(protocolVersion, poolId),
   ]);
 
-  return analysePoolRange({ pool, snapshot, history, parameters });
+  return analysePoolRange({ pool, snapshot, history, parameters, depositUsd });
 };

@@ -12,6 +12,7 @@ type DayInput = {
   high?: number | null;
   volumeUsd?: number | null;
   feesUsd?: number | null;
+  activeLiquidity?: string | null;
 };
 
 const day = (index: number, overrides: DayInput = {}) => ({
@@ -21,6 +22,8 @@ const day = (index: number, overrides: DayInput = {}) => ({
   high: overrides.high === undefined ? 101 : overrides.high,
   volumeUsd: overrides.volumeUsd === undefined ? 1_000 : overrides.volumeUsd,
   feesUsd: overrides.feesUsd === undefined ? 5 : overrides.feesUsd,
+  activeLiquidity:
+    overrides.activeLiquidity === undefined ? "1000000000000000000" : overrides.activeLiquidity,
 });
 
 const historyOf = (points: readonly unknown[]) => ({ points }) as unknown as PoolDailyPriceHistory;

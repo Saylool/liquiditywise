@@ -126,6 +126,18 @@ export const UsdAmountSchema = z.number().nonnegative();
 export type UsdAmount = z.infer<typeof UsdAmountSchema>;
 
 /**
+ * A quantity of a token, in whole tokens rather than in its smallest unit.
+ *
+ * Identical in shape to {@link UsdAmountSchema} and separate from it on purpose:
+ * the two are counted in different things, and a field typed as dollars that
+ * holds ether is the kind of mistake that stays invisible until something
+ * divides one by the other. Absence is `null` at the field level, never `0`.
+ */
+export const TokenAmountSchema = z.number().nonnegative();
+
+export type TokenAmount = z.infer<typeof TokenAmountSchema>;
+
+/**
  * An exchange rate between two tokens. Strictly greater than zero: a zero or
  * negative price is malformed input, not a cheap asset.
  */

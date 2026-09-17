@@ -9,6 +9,7 @@ import { PreferenceBar } from "@/components/PreferenceBar";
 import {
   HORIZON_PARAMETER,
   MULTIPLIER_PARAMETER,
+  DEPOSIT_PARAMETER,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -80,6 +81,7 @@ export default async function V4PoolPage({
   const band = readRequestedParameters(
     params[HORIZON_PARAMETER],
     params[MULTIPLIER_PARAMETER],
+    params[DEPOSIT_PARAMETER],
   );
 
   if (!poolId.success) {
@@ -102,6 +104,7 @@ export default async function V4PoolPage({
         <V4PoolSection
           poolId={poolId.data}
           parameters={band.parameters}
+          depositUsd={band.depositUsd}
           locale={locale}
           t={t}
           /*
@@ -115,6 +118,7 @@ export default async function V4PoolPage({
               poolParameter="id"
               poolId={poolId.data}
               parameters={band.parameters}
+              depositUsd={band.depositUsd}
               fellBack={band.fellBack}
               t={t}
               locale={locale}

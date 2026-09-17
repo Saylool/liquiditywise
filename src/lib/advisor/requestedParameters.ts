@@ -1,5 +1,9 @@
-import { type PriceBandParameters, PriceBandParametersSchema } from "../../schemas";
-import { DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
+import {
+  DepositUsdSchema,
+  type PriceBandParameters,
+  PriceBandParametersSchema,
+} from "../../schemas";
+import { DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
 
 /*
  * The band parameters a visitor asked for, read from the query string.
@@ -36,15 +40,35 @@ export const HORIZON_CHOICES = [7, 30, 90] as const;
  */
 export const MULTIPLIER_CHOICES = [1, 1.5, 2, 3] as const;
 
+/**
+ * The deposits the interface offers.
+ *
+ * A thousandfold apart end to end, because the figure they scale is not linear
+ * in them. A deposit takes `L / (A + L)` of what a pool charges, so on a pool
+ * small enough the largest of these dilutes itself visibly while the smallest
+ * does not — and seeing that happen is worth more than any one of the amounts.
+ */
+export const DEPOSIT_CHOICES = [1_000, 10_000, 100_000, 1_000_000] as const;
+
 /** Query parameter names, short enough to read in a URL bar. */
 export const HORIZON_PARAMETER = "days";
 export const MULTIPLIER_PARAMETER = "sigma";
+export const DEPOSIT_PARAMETER = "usd";
 
 /** A decimal, written the way a URL writes one. No exponent, no sign, no comma. */
 const DECIMAL = /^\d+(?:\.\d+)?$/;
 
 export type RequestedParameters = {
   readonly parameters: PriceBandParameters;
+  /**
+   * The deposit to work a fee share out for, in US dollars.
+   *
+   * Beside the band rather than inside it, because it changes nothing about
+   * which range is suggested — it only scales one figure at the end. The page
+   * prints the amount next to every number derived from it, so a reader always
+   * knows which deposit they are looking at.
+   */
+  readonly depositUsd: number;
   /**
    * True when something was asked for and could not be used.
    *
@@ -68,7 +92,7 @@ type Field = { readonly value: number; readonly fellBack: boolean };
 const readField = (
   raw: string | undefined,
   fallback: number,
-  candidate: (value: number) => PriceBandParameters,
+  accepts: (value: number) => boolean,
 ): Field => {
   if (raw === undefined) return { value: fallback, fellBack: false };
 
@@ -76,9 +100,7 @@ const readField = (
   if (!DECIMAL.test(trimmed)) return { value: fallback, fellBack: true };
 
   const parsed = Number(trimmed);
-  if (!PriceBandParametersSchema.safeParse(candidate(parsed)).success) {
-    return { value: fallback, fellBack: true };
-  }
+  if (!accepts(parsed)) return { value: fallback, fellBack: true };
 
   return { value: parsed, fellBack: false };
 };
@@ -93,6 +115,7 @@ const readField = (
 export const readRequestedParameters = (
   horizon: string | string[] | undefined,
   multiplier: string | string[] | undefined,
+  deposit: string | string[] | undefined,
 ): RequestedParameters => {
   const single = (value: string | string[] | undefined): string | undefined =>
     value === undefined || typeof value === "string" ? value : "";
@@ -100,13 +123,26 @@ export const readRequestedParameters = (
   const horizonDays = readField(
     single(horizon),
     DEFAULT_PRICE_BAND_PARAMETERS.horizonDays,
-    (value) => ({ ...DEFAULT_PRICE_BAND_PARAMETERS, horizonDays: value }),
+    (value) =>
+      PriceBandParametersSchema.safeParse({
+        ...DEFAULT_PRICE_BAND_PARAMETERS,
+        horizonDays: value,
+      }).success,
   );
 
   const standardDeviationMultiplier = readField(
     single(multiplier),
     DEFAULT_PRICE_BAND_PARAMETERS.standardDeviationMultiplier,
-    (value) => ({ ...DEFAULT_PRICE_BAND_PARAMETERS, standardDeviationMultiplier: value }),
+    (value) =>
+      PriceBandParametersSchema.safeParse({
+        ...DEFAULT_PRICE_BAND_PARAMETERS,
+        standardDeviationMultiplier: value,
+      }).success,
+  );
+
+  /* Its own schema, because it is its own figure and not part of the band. */
+  const depositUsd = readField(single(deposit), DEFAULT_DEPOSIT_USD, (value) =>
+    DepositUsdSchema.safeParse(value).success,
   );
 
   return {
@@ -114,7 +150,8 @@ export const readRequestedParameters = (
       horizonDays: horizonDays.value,
       standardDeviationMultiplier: standardDeviationMultiplier.value,
     },
-    fellBack: horizonDays.fellBack || standardDeviationMultiplier.fellBack,
+    depositUsd: depositUsd.value,
+    fellBack: horizonDays.fellBack || standardDeviationMultiplier.fellBack || depositUsd.fellBack,
   };
 };
 
@@ -132,12 +169,22 @@ export const readRequestedParameters = (
 export const poolAnalysisHref = (
   poolAddress: string,
   parameters: PriceBandParameters,
+  depositUsd?: number,
 ): string => {
   const query = new URLSearchParams({
     address: poolAddress,
     [HORIZON_PARAMETER]: String(parameters.horizonDays),
     [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
   });
+  /*
+   * Optional, unlike the band, because most links into an analysis come from
+   * somewhere no deposit was ever chosen — a search, a list of holdings — and
+   * appending the default there would put a number in the URL that nobody asked
+   * for. The links that do pass one are the two that leave an analysis for
+   * another pool from inside it, where a size *has* been chosen and arriving
+   * back at a thousand dollars would silently change what is being compared.
+   */
+  if (depositUsd !== undefined) query.set(DEPOSIT_PARAMETER, String(depositUsd));
 
   return `/pool?${query.toString()}`;
 };
@@ -148,12 +195,17 @@ export const poolAnalysisHref = (
  * same reason as above: two pools compared under two different bands look
  * comparable and are not.
  */
-export const v4PoolAnalysisHref = (poolId: string, parameters: PriceBandParameters): string => {
+export const v4PoolAnalysisHref = (
+  poolId: string,
+  parameters: PriceBandParameters,
+  depositUsd?: number,
+): string => {
   const query = new URLSearchParams({
     id: poolId,
     [HORIZON_PARAMETER]: String(parameters.horizonDays),
     [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
   });
+  if (depositUsd !== undefined) query.set(DEPOSIT_PARAMETER, String(depositUsd));
 
   return `/v4?${query.toString()}`;
 };

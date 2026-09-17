@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../schemas";
-import { analysePoolRange, DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
+import { analysePoolRange, DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
 import { formatPercent, formatPrice } from "../lib/format/displayFormats";
 import {
   choosePriceQuote,
@@ -45,6 +45,9 @@ const snapshot = (overrides: Record<string, unknown> = {}): PoolMarketSnapshot =
     token0PriceInToken1: CURRENT_PRICE,
     token1PriceInToken0: 1 / CURRENT_PRICE,
     tvlUsd: 12_500_000,
+    /* Half the value on each side, so a dollar converts back to $1 of USDC. */
+    lockedToken0: 6_250_000,
+    lockedToken1: 6_250_000 * CURRENT_PRICE,
     tick: 196_256,
     liquidity: "987654321",
     source: "uniswap-v3-subgraph",
@@ -60,6 +63,7 @@ const history = (days = 31): PoolDailyPriceHistory => {
     high: null;
     volumeUsd: null;
     feesUsd: null;
+    activeLiquidity: string;
   }[] = [];
   let price = CURRENT_PRICE;
   for (let day = 0; day < days; day += 1) {
@@ -68,6 +72,7 @@ const history = (days = 31): PoolDailyPriceHistory => {
       timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
       price,
       low: null, high: null, volumeUsd: null, feesUsd: null,
+      activeLiquidity: "1000000000000000000",
     });
   }
   return {
@@ -92,6 +97,7 @@ const analyse = (overrides: Partial<Parameters<typeof analysePoolRange>[0]> = {}
     snapshot: ok(snapshot()),
     history: ok(history()),
     parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    depositUsd: DEFAULT_DEPOSIT_USD,
     ...overrides,
   });
 
@@ -293,6 +299,7 @@ describe("PoolRangeReport", () => {
       },
       history: ok(history()),
       parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+      depositUsd: DEFAULT_DEPOSIT_USD,
     });
 
     const partialMarkup = render(result);
@@ -315,6 +322,7 @@ describe("PoolRangeReport", () => {
       },
       history: ok(history()),
       parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+      depositUsd: DEFAULT_DEPOSIT_USD,
     });
     if (result.status !== "partial") throw new Error("fixture should warn");
 
@@ -770,5 +778,112 @@ describe("PoolRangeReport and its tables", () => {
       "Yöntemin sınandığı her aralık, en eskisi önce",
       "Sadece tutmaya kıyasla",
     ]);
+  });
+});
+
+/*
+ * The panel that turns the pool's fees into one position's.
+ *
+ * The default history carries no extremes, so no day can be placed inside the
+ * range and the panel has nothing to divide. These fixtures give each day a
+ * narrow high and low around its own close — well inside a band fitted to daily
+ * moves an order of magnitude larger — so the days count and the arithmetic runs
+ * through the real pipeline like everything else here.
+ */
+describe("what a deposit would have collected", () => {
+  const settled = (): PoolDailyPriceHistory => {
+    const base = history() as unknown as { points: Record<string, unknown>[] };
+
+    return {
+      ...(base as unknown as Record<string, unknown>),
+      points: base.points.map((point) => ({
+        ...point,
+        low: (point.price as number) * 0.999,
+        high: (point.price as number) * 1.001,
+        volumeUsd: 1_000_000,
+        feesUsd: 3_000,
+        activeLiquidity: "1000000000000000000",
+      })),
+    } as unknown as PoolDailyPriceHistory;
+  };
+
+  const withDeposit = (depositUsd: number) =>
+    render(analyse({ history: ok(settled()), depositUsd }));
+
+  it("names the deposit it worked the figure out for", () => {
+    const markup = withDeposit(10_000);
+
+    expect(markup).toContain("What a deposit would have collected");
+    expect(markup).toContain("$10,000");
+  });
+
+  it("says what the pool charged on those days and what the deposit takes of it", () => {
+    const result = analyse({ history: ok(settled()), depositUsd: 10_000 });
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const { depositFeeShare, activity } = result.data;
+    if (depositFeeShare.status !== "success") throw new Error(depositFeeShare.notice);
+
+    /* The same days the activity panel counts, so the two totals are the same. */
+    expect(depositFeeShare.data.poolFeesUsd).toBeCloseTo(
+      activity.feesWhileFullyInsideUsd ?? -1,
+      9,
+    );
+    expect(depositFeeShare.data.daysCounted).toBe(activity.occupancy.fullyInside);
+    expect(depositFeeShare.data.depositFeesUsd).toBeLessThan(depositFeeShare.data.poolFeesUsd);
+  });
+
+  it("grows less than the deposit does", () => {
+    const of = (depositUsd: number) => {
+      const result = analyse({ history: ok(settled()), depositUsd });
+      if (result.status === "unavailable") throw new Error("fixture should analyse");
+      const share = result.data.depositFeeShare;
+      if (share.status !== "success") throw new Error(share.notice);
+      return share.data.depositFeesUsd;
+    };
+
+    const hundredfold = of(100_000) / of(1_000);
+
+    expect(hundredfold).toBeGreaterThan(1);
+    expect(hundredfold).toBeLessThan(100);
+  });
+
+  it("says why there is no figure when the days cannot be shared out", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain("What a deposit would have collected");
+    expect(markup).toContain("cannot be worked out for this pool");
+  });
+
+  /*
+   * The same refusal as the fees figure above it, through the same flag. A hook
+   * that may take a share of the swap makes "the fees charged inside this range"
+   * unattributable, and a fraction of an unattributable total is no better.
+   */
+  it("withholds the figure on a pool whose hook may alter a swap", () => {
+    const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+    const V4_REF = { protocolVersion: "v4", chainId: 1, id: `0x${"d".repeat(64)}` } as const;
+    const markup = render(
+      analyse({
+        pool: ok({
+          ...V4_REF,
+          token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+          token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+          tickSpacing: 60,
+          fee: { kind: "static", feePpm: 3000 },
+          protocolFee: { zeroForOnePpm: 0, oneForZeroPpm: 0 },
+          hookAddress: SWAP_HOOK,
+        } as unknown as V3Pool),
+        snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
+        history: ok({
+          ...(settled() as unknown as Record<string, unknown>),
+          pool: V4_REF,
+          source: "uniswap-v4-subgraph",
+        } as unknown as PoolDailyPriceHistory),
+        depositUsd: 10_000,
+      }),
+    );
+
+    expect(markup).toContain("Not shown for this pool");
+    expect(markup).toContain("cannot be attributed to a deposit in it either");
   });
 });

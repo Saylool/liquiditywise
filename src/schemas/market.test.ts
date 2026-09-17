@@ -23,6 +23,8 @@ const snapshot = {
   token0PriceInToken1: 2500,
   token1PriceInToken0: 1 / 2500,
   tvlUsd: 1234.56,
+  lockedToken0: 0.49,
+  lockedToken1: 1234.07,
   tick: -12345,
   liquidity: "123456789012345678901234567890",
   source: "uniswap-v3-subgraph",
@@ -277,7 +279,7 @@ describe("PoolMarketSnapshotSchema source correlation", () => {
 
 describe("HistoricalPricePointSchema", () => {
   /** A day the source reported nothing else about. */
-  const bare = { low: null, high: null, volumeUsd: null, feesUsd: null };
+  const bare = { low: null, high: null, volumeUsd: null, feesUsd: null, activeLiquidity: null };
 
   it("accepts a well-formed observation", () => {
     expect(
@@ -293,6 +295,7 @@ describe("HistoricalPricePointSchema", () => {
       high: 2600,
       volumeUsd: 1_000_000,
       feesUsd: 500,
+      activeLiquidity: "170141183460469231731687303715884105727",
     };
 
     expect(HistoricalPricePointSchema.safeParse(full).success).toBe(true);
@@ -300,7 +303,15 @@ describe("HistoricalPricePointSchema", () => {
 
   it("accepts a day the pool saw no trade at all", () => {
     // Zero volume is a fact about the day, unlike a zero price.
-    const quiet = { timestamp: FETCHED_AT, price: 2500, low: null, high: null, volumeUsd: 0, feesUsd: 0 };
+    const quiet = {
+    timestamp: FETCHED_AT,
+    price: 2500,
+    low: null,
+    high: null,
+    volumeUsd: 0,
+    feesUsd: 0,
+    activeLiquidity: "0",
+  };
 
     expect(HistoricalPricePointSchema.safeParse(quiet).success).toBe(true);
   });
@@ -323,19 +334,19 @@ describe("HistoricalPricePointSchema", () => {
       // Rejected because no price can sit between an inverted pair, which is the
       // same check and the reason a separate low-above-high rule is unreachable.
       "a low above the high",
-      { timestamp: FETCHED_AT, price: 2500, low: 2600, high: 2400, volumeUsd: null, feesUsd: null },
+      { timestamp: FETCHED_AT, price: 2500, low: 2600, high: 2400, volumeUsd: null, feesUsd: null, activeLiquidity: null },
     ],
     [
       "a price above the day's own high",
-      { timestamp: FETCHED_AT, price: 2700, low: 2400, high: 2600, volumeUsd: null, feesUsd: null },
+      { timestamp: FETCHED_AT, price: 2700, low: 2400, high: 2600, volumeUsd: null, feesUsd: null, activeLiquidity: null },
     ],
     [
       "a price below the day's own low",
-      { timestamp: FETCHED_AT, price: 2300, low: 2400, high: 2600, volumeUsd: null, feesUsd: null },
+      { timestamp: FETCHED_AT, price: 2300, low: 2400, high: 2600, volumeUsd: null, feesUsd: null, activeLiquidity: null },
     ],
     [
       "one extreme without the other",
-      { timestamp: FETCHED_AT, price: 2500, low: 2400, high: null, volumeUsd: null, feesUsd: null },
+      { timestamp: FETCHED_AT, price: 2500, low: 2400, high: null, volumeUsd: null, feesUsd: null, activeLiquidity: null },
     ],
   ])("rejects %s", (_label, value) => {
     expect(HistoricalPricePointSchema.safeParse(value).success).toBe(false);
@@ -354,6 +365,7 @@ describe("PoolDailyPriceHistorySchema", () => {
     high: null,
     volumeUsd: null,
     feesUsd: null,
+    activeLiquidity: null,
   });
 
   const history = (overrides: Record<string, unknown> = {}) => ({
@@ -455,6 +467,7 @@ describe("PoolDailyPriceHistorySchema", () => {
       high: null,
       volumeUsd: null,
       feesUsd: null,
+      activeLiquidity: null,
     });
 
     it("accepts midnight-aligned daily points", () => {
@@ -524,6 +537,7 @@ describe("PoolDailyPriceHistorySchema", () => {
         high: null,
         volumeUsd: null,
         feesUsd: null,
+        activeLiquidity: null,
       };
       expect(HistoricalPricePointSchema.safeParse(noon).success).toBe(true);
     });

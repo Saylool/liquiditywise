@@ -8,6 +8,7 @@ import type {
 } from "../../schemas";
 import {
   analysePoolRange,
+  DEFAULT_DEPOSIT_USD,
   DEFAULT_PRICE_BAND_PARAMETERS,
   type PoolRangeAnalysisInput,
 } from "./poolRangeAnalysis";
@@ -41,6 +42,9 @@ const snapshot = (overrides: Record<string, unknown> = {}): PoolMarketSnapshot =
     token0PriceInToken1: CURRENT_PRICE,
     token1PriceInToken0: 1 / CURRENT_PRICE,
     tvlUsd: 12_500_000,
+    /* Half the value on each side, so a dollar converts back to $1 of USDC. */
+    lockedToken0: 6_250_000,
+    lockedToken1: 6_250_000 * CURRENT_PRICE,
     tick: CURRENT_TICK,
     liquidity: "987654321",
     source: "uniswap-v3-subgraph",
@@ -68,6 +72,7 @@ const history = (
     high: null;
     volumeUsd: null;
     feesUsd: null;
+    activeLiquidity: string;
   }[] = [];
   let price = CURRENT_PRICE;
 
@@ -81,6 +86,7 @@ const history = (
       high: null,
       volumeUsd: null,
       feesUsd: null,
+      activeLiquidity: "1000000000000000000",
     });
   }
 
@@ -105,6 +111,7 @@ const input = (overrides: Partial<PoolRangeAnalysisInput> = {}): PoolRangeAnalys
   snapshot: ok(snapshot()),
   history: ok(history()),
   parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+  depositUsd: DEFAULT_DEPOSIT_USD,
   ...overrides,
 });
 

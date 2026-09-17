@@ -274,6 +274,7 @@ export function PoolRangeReport({
     activity,
     outOfSample,
     realizedFee,
+    depositFeeShare,
     parameters,
   } = result.data;
   const disclosure = feeDisclosureFor(pool);
@@ -588,6 +589,68 @@ export function PoolRangeReport({
         )}
         <p className="text-xs leading-relaxed text-muted">{t.activity.inSample}</p>
         <p className="text-sm leading-relaxed">{t.activity.notYourEarnings}</p>
+      </Panel>
+
+      {/*
+       * Directly under the fees it divides up, because it is the same figure
+       * with one division applied — and because the sentence above it says so.
+       *
+       * Withheld on exactly the pools the figure above it is withheld on, and
+       * through the same flag. A share of a total nobody may attribute to the
+       * range is not something this page knows how to attribute either, and
+       * showing it here after refusing it there would be the same claim made
+       * quietly.
+       */}
+      <Panel title={t.deposit.heading}>
+        {depositFeeShare.status !== "success" ? (
+          <>
+            <p className="text-sm leading-relaxed">{t.deposit.unavailable}</p>
+            <p className="text-sm leading-relaxed text-muted">
+              {t.notices.failure[depositFeeShare.notice]}
+            </p>
+          </>
+        ) : !disclosure.mayAttributeFeesToRange ? (
+          <>
+            <p className="text-sm leading-relaxed">{t.activity.feesWithheld}</p>
+            <p className="text-sm leading-relaxed text-muted">{t.deposit.withheldNote}</p>
+          </>
+        ) : (
+          <>
+            <dl className={FIGURE_GRID}>
+              <Figure
+                label={t.deposit.deposited}
+                value={formatUsd(depositFeeShare.data.depositUsd, locale)}
+                note={t.deposit.depositedNote}
+              />
+              <Figure
+                label={t.deposit.collected}
+                value={formatUsd(depositFeeShare.data.depositFeesUsd, locale)}
+                note={t.deposit.collectedNote(whole(depositFeeShare.data.daysCounted))}
+              />
+              <Figure
+                label={t.deposit.ofDeposit}
+                value={percent(depositFeeShare.data.shareOfDeposit)}
+                note={t.deposit.ofDepositNote}
+              />
+            </dl>
+
+            <p className="text-sm leading-relaxed">
+              {t.deposit.sentence(
+                formatUsd(depositFeeShare.data.depositUsd, locale),
+                whole(depositFeeShare.data.daysCounted),
+                formatUsd(depositFeeShare.data.poolFeesUsd, locale),
+                formatUsd(depositFeeShare.data.depositFeesUsd, locale),
+              )}
+            </p>
+            {depositFeeShare.data.daysUnmeasurable === 0 ? null : (
+              <p className="text-xs leading-relaxed text-muted">
+                {t.deposit.unmeasurableNote(whole(depositFeeShare.data.daysUnmeasurable))}
+              </p>
+            )}
+            <p className="text-sm leading-relaxed">{t.deposit.dilution}</p>
+            <p className="text-xs leading-relaxed text-muted">{t.deposit.caveat}</p>
+          </>
+        )}
       </Panel>
 
       {/*

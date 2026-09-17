@@ -42,6 +42,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   analysePoolRange,
+  DEFAULT_DEPOSIT_USD,
   DEFAULT_PRICE_BAND_PARAMETERS,
 } from "../src/lib/advisor/poolRangeAnalysis";
 import { interpretRange } from "../src/lib/ai/interpretRange";
@@ -100,7 +101,13 @@ const analyse = async (poolId: string) => {
     fetchEthereumDailyPriceHistory(shared),
   ]);
 
-  return analysePoolRange({ pool, snapshot, history, parameters: DEFAULT_PRICE_BAND_PARAMETERS });
+  return analysePoolRange({
+    pool,
+    snapshot,
+    history,
+    parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    depositUsd: DEFAULT_DEPOSIT_USD,
+  });
 };
 
 /** What one call spent, read off the provider's own accounting. */

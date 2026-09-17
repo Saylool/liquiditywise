@@ -26,6 +26,7 @@ const historyOf = (dayCount: number, presentDays?: readonly number[]): PoolDaily
       high: 1_010 + index,
       volumeUsd: 1_000,
       feesUsd: 5,
+      activeLiquidity: "1000000000000000000",
     })),
     source: "uniswap-v3-subgraph",
   } as PoolDailyPriceHistory;

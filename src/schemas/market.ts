@@ -9,6 +9,7 @@ import {
 import {
   IsoTimestampSchema,
   PositivePriceSchema,
+  TokenAmountSchema,
   Uint128StringSchema,
   UnsignedIntegerStringSchema,
   UsdAmountSchema,
@@ -63,6 +64,26 @@ const PoolMarketSnapshotObject = z.strictObject({
   token1PriceInToken0: PositivePriceSchema.nullable(),
 
   tvlUsd: UsdAmountSchema.nullable(),
+  /**
+   * What `tvlUsd` is the value *of*: the two token balances the source credits
+   * to the pool, in whole tokens.
+   *
+   * Carried so that one dollar can be converted into one token, which is what
+   * sizing a deposit needs and what nothing else on this snapshot can do. The
+   * three figures together give it: `tvlUsd / (lockedToken1 + lockedToken0 · P)`
+   * is what the source thinks one token1 is worth, on the source's own basis —
+   * the same basis its `feesUSD` is denominated in, which is the reason to
+   * derive the rate from these rather than to fetch a price from anywhere else.
+   * Two figures that disagreed about what a dollar is would divide one pool's
+   * fees by another pool's money.
+   *
+   * Null when the source omits them. Zero is a real answer: an empty pool holds
+   * nothing, and a pool of tokens the source does not price reports zero for all
+   * three — which is a pool no deposit can be sized against, and is recognised
+   * as such rather than divided by.
+   */
+  lockedToken0: TokenAmountSchema.nullable(),
+  lockedToken1: TokenAmountSchema.nullable(),
 
   /** The pool's current tick, i.e. where the spot price sits on the tick grid. */
   tick: TickSchema.nullable(),
@@ -169,6 +190,22 @@ export const HistoricalPricePointSchema = z
      */
     volumeUsd: UsdAmountSchema.nullable(),
     feesUsd: UsdAmountSchema.nullable(),
+    /**
+     * The liquidity active in the pool at the end of that day, as an exact
+     * decimal string.
+     *
+     * The protocol's L, like the snapshot's — not a USD amount and not a token
+     * amount — and the denominator under any question of the form "what share of
+     * this day's fees would a position have taken". A position's share is its own
+     * liquidity over this plus its own, so without it a deposit can be sized and
+     * still not be placed against what it was competing with.
+     *
+     * **End of period, not an average over it.** The source snapshots the figure
+     * when the day closes; liquidity moved during the day and this does not say
+     * how. Null when the source omits it, which is a day no share can be worked
+     * out for rather than a day with nothing in the pool.
+     */
+    activeLiquidity: Uint128StringSchema.nullable(),
   })
   .refine((point) => (point.low === null) === (point.high === null), {
     error: "A day's extremes are known together or not at all.",

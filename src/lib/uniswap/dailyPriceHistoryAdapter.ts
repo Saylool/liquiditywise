@@ -5,6 +5,7 @@ import {
   type HistoricalPricePoint,
   type PoolDailyPriceHistory,
   PoolDailyPriceHistorySchema,
+  Uint128StringSchema,
 } from "../../schemas";
 import type { SubgraphPoolIdentity } from "./subgraphPoolIdentity";
 import { DAILY_HISTORY_DAYS, type DailyHistoryWindow } from "./v3DailyHistoryWindow";
@@ -170,6 +171,19 @@ export const normalizeDailyPriceHistory = ({
     const volumeUsd = convertNonNegativeDecimal(day.volumeUSD, { allowZero: true });
     const feesUsd = convertNonNegativeDecimal(day.feesUSD, { allowZero: true });
 
+    /*
+     * Kept as the exact integer the source sent, not converted through a float
+     * like the dollar figures above it. It is a uint128 whose value routinely
+     * runs past what a double can hold exactly, and the one thing it is used for
+     * — a ratio against a position's own liquidity — is computed once, at the
+     * point of use, rather than after a lossy round trip through this record.
+     *
+     * A malformed figure becomes `null` rather than failing the day: every other
+     * figure on that row is still a price and a volume this series needs, and
+     * the only thing the absence costs is one day of one panel.
+     */
+    const activeLiquidity = Uint128StringSchema.safeParse(day.liquidity);
+
     points.push({
       timestamp,
       price: price.value,
@@ -177,6 +191,7 @@ export const normalizeDailyPriceHistory = ({
       high: usableExtremes?.high ?? null,
       volumeUsd: volumeUsd.ok ? volumeUsd.value : null,
       feesUsd: feesUsd.ok ? feesUsd.value : null,
+      activeLiquidity: activeLiquidity.success ? activeLiquidity.data : null,
     });
   }
 

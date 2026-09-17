@@ -32,7 +32,11 @@
  *
  * **It assumes the rest of the pool is unchanged.** A deposit large enough to
  * move the total liquidity at a price would dilute its own share, and nothing
- * here knows how large a deposit is — this project does not size one.
+ * here knows how large a deposit is. That is a property of this comparison and
+ * not of the project: `depositFeeShare.ts` sizes a deposit and divides by
+ * `A + L` precisely so the dilution is counted. It reuses the function below
+ * for the same reason this one does — the liquidity a unit of value buys is the
+ * same arithmetic whether the answer wanted is a ratio or an amount.
  */
 
 /**

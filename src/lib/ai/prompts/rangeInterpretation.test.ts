@@ -10,6 +10,7 @@ import type {
 } from "../../../schemas";
 import {
   analysePoolRange,
+  DEFAULT_DEPOSIT_USD,
   DEFAULT_PRICE_BAND_PARAMETERS,
   type PoolRangeAnalysis,
 } from "../../advisor/poolRangeAnalysis";
@@ -41,6 +42,9 @@ const snapshot = {
   token0PriceInToken1: CURRENT_PRICE,
   token1PriceInToken0: 1 / CURRENT_PRICE,
   tvlUsd: 12_500_000,
+  /* Half the value on each side, so a dollar converts back to $1 of USDC. */
+  lockedToken0: 6_250_000,
+  lockedToken1: 6_250_000 * CURRENT_PRICE,
   tick: 196_256,
   liquidity: "987654321",
   source: "uniswap-v3-subgraph",
@@ -54,6 +58,7 @@ const history = (): PoolDailyPriceHistory => {
     high: null;
     volumeUsd: null;
     feesUsd: null;
+    activeLiquidity: string;
   }[] = [];
   let price = CURRENT_PRICE;
   for (let day = 0; day < 31; day += 1) {
@@ -62,6 +67,7 @@ const history = (): PoolDailyPriceHistory => {
       timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
       price,
       low: null, high: null, volumeUsd: null, feesUsd: null,
+      activeLiquidity: "1000000000000000000",
     });
   }
   return {
@@ -86,6 +92,7 @@ const analysis = ((): PoolRangeAnalysis => {
     snapshot: ok(snapshot),
     history: ok(history()),
     parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    depositUsd: DEFAULT_DEPOSIT_USD,
   });
   if (result.status === "unavailable") throw new Error("fixture should analyse");
   return result.data;
@@ -115,6 +122,7 @@ const longHistory = (): PoolDailyPriceHistory => {
       high: price * 1.005,
       volumeUsd: 1_000_000,
       feesUsd: 500,
+      activeLiquidity: "1000000000000000000",
     });
   }
 
@@ -131,6 +139,7 @@ const checkedAnalysis = ((): PoolRangeAnalysis => {
     snapshot: ok(snapshot),
     history: ok(longHistory()),
     parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    depositUsd: DEFAULT_DEPOSIT_USD,
   });
   if (result.status === "unavailable") throw new Error("fixture should analyse");
   return result.data;
@@ -170,6 +179,7 @@ const v4Analysis = (
     snapshot: ok({ ...snapshot, pool: V4_REF, source: "uniswap-v4-subgraph" } as PoolMarketSnapshot),
     history: ok({ ...history(), pool: V4_REF, source: "uniswap-v4-subgraph" } as PoolDailyPriceHistory),
     parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+    depositUsd: DEFAULT_DEPOSIT_USD,
   });
   if (result.status === "unavailable") throw new Error(`v4 fixture should analyse: ${result.notice}`);
   return result.data;
@@ -330,6 +340,7 @@ describe("buildRangeInterpretationPrompt", () => {
       snapshot: ok(snapshot),
       history: ok(history()),
       parameters: { horizonDays: 365, standardDeviationMultiplier: 2 },
+      depositUsd: DEFAULT_DEPOSIT_USD,
     });
     if (widened.status === "unavailable") throw new Error("fixture should analyse");
 
@@ -348,6 +359,7 @@ describe("buildRangeInterpretationPrompt", () => {
       snapshot: ok(snapshot),
       history: ok(history()),
       parameters: { horizonDays: 365, standardDeviationMultiplier },
+      depositUsd: DEFAULT_DEPOSIT_USD,
     });
     if (result.status === "unavailable") throw new Error("fixture should analyse");
 
@@ -469,6 +481,7 @@ describe("directional facts the model is not asked to derive", () => {
       } as PoolMarketSnapshot),
       history: ok({ ...history(), points } as PoolDailyPriceHistory),
       parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+      depositUsd: DEFAULT_DEPOSIT_USD,
     });
     if (result.status === "unavailable") throw new Error(`fixture should analyse: ${result.notice}`);
 

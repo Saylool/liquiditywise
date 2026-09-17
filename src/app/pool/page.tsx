@@ -16,6 +16,7 @@ import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import {
   HORIZON_PARAMETER,
   MULTIPLIER_PARAMETER,
+  DEPOSIT_PARAMETER,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -108,8 +109,14 @@ export default async function PoolRangePage({
     const requested = readRequestedParameters(
       params[HORIZON_PARAMETER],
       params[MULTIPLIER_PARAMETER],
+      params[DEPOSIT_PARAMETER],
     );
-    const result = await getPoolRangeAnalysis("v3", address.data, requested.parameters);
+    const result = await getPoolRangeAnalysis(
+      "v3",
+      address.data,
+      requested.parameters,
+      requested.depositUsd,
+    );
 
     return (
       <Shell locale={locale} t={t}>
@@ -130,6 +137,7 @@ export default async function PoolRangePage({
               poolParameter="address"
               poolId={address.data}
               parameters={requested.parameters}
+              depositUsd={requested.depositUsd}
               fellBack={requested.fellBack}
               t={t}
               locale={locale}
@@ -160,6 +168,7 @@ export default async function PoolRangePage({
                 <PoolFeeTiersSection
                   pool={result.data.pool}
                   parameters={result.data.parameters}
+                  depositUsd={result.data.depositUsd}
                   locale={locale}
                   t={t}
                 />

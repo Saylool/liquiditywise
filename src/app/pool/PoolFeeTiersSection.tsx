@@ -22,11 +22,14 @@ import type { PriceBandParameters, V3PoolMetadata } from "@/schemas";
 export async function PoolFeeTiersSection({
   pool,
   parameters,
+  depositUsd,
   locale,
   t,
 }: {
   pool: V3PoolMetadata;
   parameters: PriceBandParameters;
+  /** Carried into the links out, so a chosen size survives leaving this pool. */
+  depositUsd: number;
   locale: Locale;
   t: Dictionary;
 }) {
@@ -50,6 +53,7 @@ export async function PoolFeeTiersSection({
       v4Result={v4Result}
       pair={`${pool.token0.symbol} / ${pool.token1.symbol}`}
       parameters={parameters}
+      depositUsd={depositUsd}
       t={t}
       locale={locale}
     />
