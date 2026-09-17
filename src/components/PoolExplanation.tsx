@@ -135,7 +135,13 @@ export function PoolExplanationStreamed({
         {t.explanation.heading}
       </h2>
 
-      <div className="flex flex-col gap-5">
+      {/*
+       * Announced as it fills in, because that is what it does: a reader who
+       * cannot see the paragraphs appear is otherwise left with the first one
+       * and no sign that the rest are on their way. Polite, so it waits for a
+       * pause rather than interrupting.
+       */}
+      <div className="flex flex-col gap-5" aria-live="polite">
         <Section title={t.explanation.sections[firstKey]} prose={first} />
         {rest.map((key) => (
           <Suspense key={key} fallback={<SectionWriting title={t.explanation.sections[key]} t={t} />}>

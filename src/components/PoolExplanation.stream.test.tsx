@@ -155,3 +155,16 @@ describe("PoolExplanationStreamed", () => {
     expect(shell).not.toContain("Still being written");
   });
 });
+
+/*
+ * A reader who cannot see the paragraphs appear is otherwise left with the
+ * first one and no sign that the rest are coming.
+ */
+describe("PoolExplanationStreamed and what is announced", () => {
+  it("announces the paragraphs as they fill in, politely", async () => {
+    const { sections } = pending();
+    const { shell } = await render(sections, Promise.resolve(written()));
+
+    expect(shell).toMatch(/<div class="[^"]*" aria-live="polite">/);
+  });
+});

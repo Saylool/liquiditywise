@@ -51,7 +51,8 @@ const snapshot = (overrides: Record<string, unknown> = {}): PoolMarketSnapshot =
     ...overrides,
   }) as unknown as PoolMarketSnapshot;
 
-const history = (): PoolDailyPriceHistory => {
+/** The window the fixtures span. Long enough for folds only when asked for. */
+const history = (days = 31): PoolDailyPriceHistory => {
   const points: {
     timestamp: string;
     price: number;
@@ -61,7 +62,7 @@ const history = (): PoolDailyPriceHistory => {
     feesUsd: null;
   }[] = [];
   let price = CURRENT_PRICE;
-  for (let day = 0; day < 31; day += 1) {
+  for (let day = 0; day < days; day += 1) {
     if (day > 0) price *= day % 2 === 0 ? 1.01 : 1 / 1.01;
     points.push({
       timestamp: new Date(RANGE_START + day * DAY_MS).toISOString(),
@@ -75,7 +76,7 @@ const history = (): PoolDailyPriceHistory => {
     sourceBlockNumber: "21500000",
     sourceBlockTimestamp: "2026-08-21T09:14:48.000Z",
     rangeStart: "2026-07-21T00:00:00.000Z",
-    rangeEndExclusive: new Date(RANGE_START + 31 * DAY_MS).toISOString(),
+    rangeEndExclusive: new Date(RANGE_START + days * DAY_MS).toISOString(),
     interval: "1d",
     priceDirection: "token0PriceInToken1",
     points,
@@ -711,5 +712,63 @@ describe("PoolRangeReport and the other widths", () => {
     expect(markup).toContain("protokolün kendi pozisyon aritmetiği");
     expect(markup).not.toContain("shown above");
     expect(markup).not.toContain("Fee share");
+  });
+});
+
+/*
+ * What a reader who cannot see the page is given.
+ *
+ * Three of the panels are tables, and two of them were drawn with rows of
+ * spans: they lined up on screen and said nothing to a screen reader, which
+ * reads a cell without its column heading as a number with no name. These
+ * check the structure rather than the words, so a table added later without a
+ * name or without headed columns fails here.
+ */
+describe("PoolRangeReport and its tables", () => {
+  const tablesIn = (markup: string) => markup.match(/<table[\s\S]*?<\/table>/g) ?? [];
+  /* Four months of history, which is what leaves room to fit a band in the past and test it. */
+  const withFolds = () => render(analyse({ history: ok(history(121)) }));
+
+  it("draws the widths and the divergence as tables, and the folds when there are any", () => {
+    expect(tablesIn(render(analyse()))).toHaveLength(2);
+    expect(tablesIn(withFolds())).toHaveLength(3);
+  });
+
+  it("gives every table a name of its own", () => {
+    for (const table of tablesIn(withFolds())) {
+      expect(table).toMatch(/<caption class="sr-only">[^<]+<\/caption>/);
+    }
+  });
+
+  it("heads every column, so a cell is never read without its heading", () => {
+    for (const table of tablesIn(withFolds())) {
+      const head = table.match(/<thead[\s\S]*?<\/thead>/)?.[0] ?? "";
+      const headings = head.match(/<th\b[^>]*>/g) ?? [];
+
+      expect(headings.length).toBeGreaterThan(1);
+      for (const heading of headings) expect(heading).toContain('scope="col"');
+    }
+  });
+
+  it("makes the first cell of every row that row's heading", () => {
+    for (const table of tablesIn(withFolds())) {
+      const body = table.match(/<tbody[\s\S]*?<\/tbody>/)?.[0] ?? "";
+      const rows = body.match(/<tr[\s\S]*?<\/tr>/g) ?? [];
+
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) expect(row).toMatch(/^<tr[^>]*>\s*<th\b[^>]*scope="row"/);
+    }
+  });
+
+  it("names them in Turkish too", () => {
+    const captions = tablesIn(render(analyse({ history: ok(history(121)) }), "tr")).map(
+      (table) => table.match(/<caption class="sr-only">([^<]+)</)?.[1],
+    );
+
+    expect(captions).toEqual([
+      "Diğer genişlikler",
+      "Yöntemin sınandığı her aralık, en eskisi önce",
+      "Sadece tutmaya kıyasla",
+    ]);
   });
 });

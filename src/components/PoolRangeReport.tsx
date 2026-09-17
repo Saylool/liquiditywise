@@ -494,13 +494,14 @@ export function PoolRangeReport({
         <p className="text-sm leading-relaxed text-muted">{t.widths.intro}</p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-max text-sm">
+            <caption className="sr-only">{t.widths.heading}</caption>
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-muted">
-                <th className="pr-4 pb-2 font-normal">{t.widths.width}</th>
-                <th className="pr-4 pb-2 font-normal">{t.widths.range}</th>
-                <th className="pr-4 pb-2 font-normal">{t.widths.recent(whole(activity.daysMeasured))}</th>
-                <th className="pr-4 pb-2 font-normal">{t.widths.unseen}</th>
-                <th className="pb-2 font-normal">{t.widths.feeShare}</th>
+                <th scope="col" className="pr-4 pb-2 font-normal">{t.widths.width}</th>
+                <th scope="col" className="pr-4 pb-2 font-normal">{t.widths.range}</th>
+                <th scope="col" className="pr-4 pb-2 font-normal">{t.widths.recent(whole(activity.daysMeasured))}</th>
+                <th scope="col" className="pr-4 pb-2 font-normal">{t.widths.unseen}</th>
+                <th scope="col" className="pb-2 font-normal">{t.widths.feeShare}</th>
               </tr>
             </thead>
             <tbody>
@@ -510,10 +511,10 @@ export function PoolRangeReport({
                   className={row.chosen ? "font-medium" : "text-muted"}
                   data-chosen={row.chosen ? "true" : undefined}
                 >
-                  <td className="py-1 pr-4">
+                  <th scope="row" className="py-1 pr-4 text-left font-medium">
                     {row.label}
                     {row.chosen ? ` · ${t.widths.chosen}` : ""}
-                  </td>
+                  </th>
                   <td className="py-1 pr-4 font-mono">
                     {price(row.edges.lower)} – {price(row.edges.upper)} {counter}
                   </td>
@@ -646,28 +647,32 @@ export function PoolRangeReport({
               {t.outOfSample.showFolds}
             </summary>
             {/* One row per fold, oldest first, so a run of them can be scanned. */}
-            <div className="mt-3 flex flex-col gap-1 overflow-x-auto">
-              <div className="flex min-w-max justify-between gap-6 text-xs uppercase tracking-widest text-muted">
-                <span>{t.outOfSample.foldPeriod}</span>
-                <span>{t.outOfSample.foldVolatility}</span>
-                <span>{t.outOfSample.foldVerdict}</span>
-              </div>
-              {outOfSample.data.folds.map((fold) => (
-                <div
-                  key={fold.measuredRangeStart}
-                  className="flex min-w-max justify-between gap-6 font-mono text-sm"
-                >
-                  <span>
-                    {formatUtcDate(fold.measuredRangeStart)} →{" "}
-                    {formatUtcDate(fold.measuredRangeEndExclusive)}
-                  </span>
-                  <span className="text-muted">{percent(fold.annualizedVolatility)}</span>
-                  <span>
-                    {whole(fold.occupancy.fullyInside)} / {whole(fold.occupancy.fullyOutside)} /{" "}
-                    {whole(fold.occupancy.undetermined)}
-                  </span>
-                </div>
-              ))}
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-max text-sm">
+                <caption className="sr-only">{t.outOfSample.foldsCaption}</caption>
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                    <th scope="col" className="pr-6 pb-1 font-normal">{t.outOfSample.foldPeriod}</th>
+                    <th scope="col" className="pr-6 pb-1 font-normal">{t.outOfSample.foldVolatility}</th>
+                    <th scope="col" className="pb-1 font-normal">{t.outOfSample.foldVerdict}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outOfSample.data.folds.map((fold) => (
+                    <tr key={fold.measuredRangeStart} className="font-mono">
+                      <th scope="row" className="py-0.5 pr-6 text-left font-normal">
+                        {formatUtcDate(fold.measuredRangeStart)} →{" "}
+                        {formatUtcDate(fold.measuredRangeEndExclusive)}
+                      </th>
+                      <td className="py-0.5 pr-6 text-muted">{percent(fold.annualizedVolatility)}</td>
+                      <td className="py-0.5">
+                        {whole(fold.occupancy.fullyInside)} / {whole(fold.occupancy.fullyOutside)} /{" "}
+                        {whole(fold.occupancy.undetermined)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted">{t.outOfSample.foldColumns}</p>
           </details>
@@ -680,20 +685,25 @@ export function PoolRangeReport({
       <Panel title={t.divergence.heading}>
         <p className="text-sm leading-relaxed">{t.divergence.intro}</p>
 
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between gap-4 text-xs uppercase tracking-widest text-muted">
-            <span>{t.divergence.price(base)}</span>
-            <span>{t.divergence.loss}</span>
-          </div>
-          {divergencePoints.map((point) => (
-            <div key={point.price} className="flex justify-between gap-4 font-mono text-sm">
-              <span>
-                {price(point.price)} {counter}
-              </span>
-              <span>{percent(point.lossRatio)}</span>
-            </div>
-          ))}
-        </div>
+        <table className="w-full text-sm">
+          <caption className="sr-only">{t.divergence.heading}</caption>
+          <thead>
+            <tr className="text-xs uppercase tracking-widest text-muted">
+              <th scope="col" className="pb-1 text-left font-normal">{t.divergence.price(base)}</th>
+              <th scope="col" className="pb-1 text-right font-normal">{t.divergence.loss}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {divergencePoints.map((point) => (
+              <tr key={point.price} className="font-mono">
+                <th scope="row" className="py-0.5 text-left font-normal">
+                  {price(point.price)} {counter}
+                </th>
+                <td className="py-0.5 text-right">{percent(point.lossRatio)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         <p className="text-xs leading-relaxed text-muted">{t.divergence.entryRow}</p>
         <p className="text-xs leading-relaxed text-muted">{t.divergence.impermanentNote}</p>

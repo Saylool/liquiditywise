@@ -215,6 +215,7 @@ const en = {
     foldPeriod: "Days checked",
     foldVolatility: "Fitted volatility",
     foldVerdict: "In / out / crossed",
+    foldsCaption: "Each stretch the method was tested over, oldest first",
     foldColumns:
       "Each row is one fold: the days it was checked over, the volatility its own fit measured — not the figure above — and how those days sat against the band that fit produced.",
     /*
@@ -1091,6 +1092,7 @@ const tr: Dictionary = {
     foldPeriod: "Sınanan günler",
     foldVolatility: "Kurulum volatilitesi",
     foldVerdict: "İçeride / dışarıda / kenar",
+    foldsCaption: "Yöntemin sınandığı her aralık, en eskisi önce",
     foldColumns:
       "Her satır bir kat: sınandığı günler, o katın kendi kurulumunun ölçtüğü volatilite — yukarıdaki rakam değil — ve o günlerin, o kurulumun ürettiği banda göre nerede durduğu.",
     notIndependent:
