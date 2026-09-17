@@ -4,6 +4,7 @@ import {
 } from "../analytics/depositFeeShare";
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
 import { calculateRangeOrders, type RangeOrdersResult } from "../analytics/rangeOrder";
+import { calculateSwapDepth, type SwapDepthResult } from "../analytics/swapDepth";
 import { ACTIVITY_WINDOW_DAYS, calculatePoolActivity } from "../analytics/poolActivity";
 import {
   type AnalyticsFailureReason,
@@ -122,6 +123,15 @@ export type PoolRangeAnalysis = {
    * range and the pool's tick grid — so it cannot fail for want of a source.
    */
   readonly rangeOrders: RangeOrdersResult;
+  /**
+   * The largest swap this page can price exactly, in each direction.
+   *
+   * The only figure here about using the pool rather than providing to it, and
+   * the only one that can be refused because two readings disagree: it needs the
+   * liquidity and the tick to describe the same price step, and says so when
+   * they do not.
+   */
+  readonly swapDepth: SwapDepthResult;
   readonly parameters: PriceBandParameters;
   /** The size the figure above was worked out for. Printed wherever it is. */
   readonly depositUsd: number;
@@ -399,6 +409,18 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
    */
   const rangeOrders = calculateRangeOrders({ pool: pool.value, range: range.data });
 
+  /*
+   * Also free, and also last for a reason of its own: it describes what somebody
+   * trading through this pool would pay, which is the other half of every figure
+   * above it. The range is what a provider offers; this is what it is worth to
+   * the person taking it.
+   */
+  const swapDepth = calculateSwapDepth({
+    pool: pool.value,
+    snapshot: snapshot.value,
+    range: range.data,
+  });
+
   const depositFeeShare = calculateDepositFeeShare({
     points: history.value.points.slice(-ACTIVITY_WINDOW_DAYS),
     range: range.data,
@@ -421,6 +443,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     realizedFee,
     depositFeeShare,
     rangeOrders,
+    swapDepth,
     parameters: input.parameters,
     depositUsd: input.depositUsd,
   };

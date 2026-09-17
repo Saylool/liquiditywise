@@ -353,6 +353,44 @@ const describeDivergence = (analysis: PoolRangeAnalysis, locale: Locale): readon
 };
 
 /**
+ * What somebody trading through this pool would pay.
+ *
+ * The only block here about using the pool rather than providing to it, and the
+ * one the model is likeliest to overreach on: the amount is the largest swap
+ * this page can price, not the largest the pool can take, and a sentence calling
+ * it a capacity or a limit would be wrong in a way a reader could act on.
+ */
+const describeSwapDepth = (
+  analysis: PoolRangeAnalysis,
+  locale: Locale,
+): readonly string[] | null => {
+  const { swapDepth, pool } = analysis;
+  if (swapDepth.status !== "success") return null;
+
+  const symbolOf = (tokenIn: "token0" | "token1") =>
+    tokenIn === "token0" ? pool.token0.symbol : pool.token1.symbol;
+
+  return [
+    ...[swapDepth.data.sellingToken0, swapDepth.data.sellingToken1]
+      .filter((leg) => leg !== null)
+      .map((leg) =>
+        line(
+          `Selling ${symbolOf(leg.tokenIn)} into this pool`,
+          `${formatPrice(leg.amountIn, locale)} ${symbolOf(leg.tokenIn)} can be priced exactly, giving up ${formatPercent(leg.costRatio, locale)} against the price on the page`,
+        ),
+      ),
+    line(
+      "Why it stops there",
+      "liquidity is constant only between the price steps a pool is built on, and the liquidity at the next step has not been read",
+    ),
+    line(
+      "What that amount is not",
+      "a limit or a capacity. A larger swap works; this page cannot say what it costs. Say what it is worth comparing for — how much this market absorbs before it moves — and not what anyone should trade",
+    ),
+  ];
+};
+
+/**
  * The same range read as the two one-sided positions it contains.
  *
  * Handed over because the explanation is where a mechanism gets explained, and
@@ -640,6 +678,7 @@ export const buildRangeInterpretationPrompt = (
   const terminology = TERMINOLOGY[locale];
   const hookLines = describeHook(analysis, locale);
   const rangeOrderLines = describeRangeOrders(analysis, locale);
+  const swapDepthLines = describeSwapDepth(analysis, locale);
 
   const blocks: readonly (string | null)[] = [
     `Write in ${LANGUAGE_NAMES[locale]}.`,
@@ -659,6 +698,7 @@ export const buildRangeInterpretationPrompt = (
     rangeOrderLines === null
       ? null
       : section("THE SAME RANGE, ONE SIDE AT A TIME", rangeOrderLines),
+    swapDepthLines === null ? null : section("WHAT A SWAP THROUGH IT COSTS", swapDepthLines),
     section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
     section("WHAT IT ACTUALLY CHARGED", describeRealizedFee(analysis, locale)),
     section("THE SAME METHOD, ON DAYS IT NEVER SAW", describeOutOfSample(analysis, locale)),

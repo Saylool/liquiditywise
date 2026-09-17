@@ -950,3 +950,109 @@ describe("selling and buying through the range", () => {
     expect(markup).toContain("too narrow to hold a one-sided position");
   });
 });
+
+/*
+ * The one panel about using the pool rather than providing to it.
+ *
+ * The success case is built from the tick the pipeline actually computed for the
+ * fixture's price, handed back to the snapshot unchanged, rather than left to
+ * whether the fixture's own tick happens to fall in the same step — the kind of
+ * coincidence that quietly stops holding.
+ */
+describe("what a swap costs here", () => {
+  const withTick = (shift: number) => {
+    const first = analyse();
+    if (first.status === "unavailable") throw new Error("fixture should analyse");
+
+    return analyse({
+      snapshot: ok(snapshot({ tick: first.data.range.currentTick + shift })),
+    });
+  };
+  const agreeing = () => withTick(0);
+
+  it("prices both directions, each named by the token going in", () => {
+    const markup = render(agreeing());
+
+    expect(markup).toContain("What a swap costs here");
+    expect(markup).toContain("Selling USDC into the pool");
+    expect(markup).toContain("Selling WETH into the pool");
+    expect(markup).toContain("What it gives up");
+  });
+
+  it("says what goes in, in that token", () => {
+    const result = agreeing();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const depth = result.data.swapDepth;
+    if (depth.status !== "success") throw new Error(depth.notice);
+
+    const markup = render(result);
+
+    expect(depth.data.sellingToken0?.amountIn).toBeGreaterThan(0);
+    expect(depth.data.sellingToken1?.amountIn).toBeGreaterThan(0);
+    /* The amount carries its own symbol, because a bare number has no unit. */
+    expect(markup).toMatch(/[\d.,]+ USDC/);
+    expect(markup).toMatch(/[\d.,]+ WETH/);
+  });
+
+  it("says it is not a limit, and where the certainty stops", () => {
+    const markup = render(agreeing());
+
+    expect(markup).toContain("Not a limit: a larger swap works");
+    expect(markup).toContain("does not read the liquidity at every price");
+  });
+
+  /*
+   * The guard that matters most here: the liquidity belongs to whichever step
+   * the pool is actually in, and pricing a swap across a step it may not be in
+   * would produce a perfectly reasonable-looking number.
+   */
+  /*
+   * Built rather than provoked. Reaching this through the pipeline needs the
+   * price to sit exactly on a spacing boundary with the source one tick below —
+   * `calculateTickRange` refuses anything further apart, and stops the analysis
+   * before this panel is reached. The calculator's own tests cover that window;
+   * what is checked here is that the panel says which of the two it is.
+   */
+  it("says which reading refused when the two ticks disagree", () => {
+    const result = agreeing();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const markup = render({
+      ...result,
+      data: {
+        ...result.data,
+        swapDepth: { status: "unavailable", notice: "swap-depth-tick-disagreement" },
+      },
+    });
+
+    expect(markup).toContain("cannot be worked out for this pool");
+    expect(markup).toContain("different price step than the price shown");
+  });
+
+  it("says why only one direction is shown when only one is", () => {
+    const result = agreeing();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const depth = result.data.swapDepth;
+    if (depth.status !== "success") throw new Error(depth.notice);
+
+    const both = render(result);
+    const one = render({
+      ...result,
+      data: {
+        ...result.data,
+        swapDepth: { status: "success", data: { ...depth.data, sellingToken1: null } },
+      },
+    });
+
+    expect(both).not.toContain("Only one direction is shown");
+    expect(one).toContain("Only one direction is shown");
+    expect(one).not.toContain("Selling WETH into the pool");
+  });
+
+  it("says the same in Turkish", () => {
+    const markup = render(agreeing(), "tr");
+
+    expect(markup).toContain("Burada bir takas ne kadara mal olur");
+    expect(markup).toContain("Havuza USDC satmak");
+    expect(markup).toContain("Neden vazgeçiyor");
+  });
+});

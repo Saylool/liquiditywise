@@ -6,8 +6,11 @@ import type {
 import { compareWidths } from "../lib/advisor/widthComparison";
 import { widthWord } from "../lib/advisor/widthWords";
 import type { RealizedFeeRateResult } from "../lib/analytics/realizedFeeRate";
+import { Fragment } from "react";
+
 import {
   ABSENT,
+  formatEtherAmount,
   formatFeePpm,
   formatMeasuredFeePpm,
   formatMultiplier,
@@ -276,6 +279,7 @@ export function PoolRangeReport({
     realizedFee,
     depositFeeShare,
     rangeOrders,
+    swapDepth,
     parameters,
   } = result.data;
   const disclosure = feeDisclosureFor(pool);
@@ -865,6 +869,57 @@ export function PoolRangeReport({
             <p className="text-sm leading-relaxed">{t.rangeOrder.exact}</p>
             <p className="text-sm leading-relaxed">{t.rangeOrder.onlyIfThrough}</p>
             <p className="text-xs leading-relaxed text-muted">{t.rangeOrder.notAnOrderBook}</p>
+          </>
+        )}
+      </Panel>
+
+      {/*
+       * The other side of the trade, directly under the panel whose arithmetic
+       * it shares. Labelled by which token goes in rather than by the shown
+       * direction: an amount of a token is the same amount whichever way round
+       * the pair is quoted, so nothing here has to be inverted.
+       */}
+      <Panel title={t.swapDepth.heading}>
+        {swapDepth.status !== "success" ? (
+          <>
+            <p className="text-sm leading-relaxed">{t.swapDepth.unavailable}</p>
+            <p className="text-sm leading-relaxed text-muted">
+              {t.notices.failure[swapDepth.notice]}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed">{t.swapDepth.intro}</p>
+
+            <dl className={FIGURE_GRID}>
+              {[swapDepth.data.sellingToken0, swapDepth.data.sellingToken1].map((entry) =>
+                entry === null ? null : (
+                  <Fragment key={entry.tokenIn}>
+                    <Figure
+                      label={t.swapDepth.selling(
+                        entry.tokenIn === "token0" ? pool.token0.symbol : pool.token1.symbol,
+                      )}
+                      value={t.swapDepth.amount(
+                        formatEtherAmount(entry.amountIn, locale),
+                        entry.tokenIn === "token0" ? pool.token0.symbol : pool.token1.symbol,
+                      )}
+                      note={t.swapDepth.largestNote}
+                    />
+                    <Figure
+                      label={t.swapDepth.cost}
+                      value={percent(entry.costRatio)}
+                      note={t.swapDepth.costNote}
+                    />
+                  </Fragment>
+                ),
+              )}
+            </dl>
+
+            {swapDepth.data.sellingToken0 !== null && swapDepth.data.sellingToken1 !== null ? null : (
+              <p className="text-sm leading-relaxed">{t.swapDepth.oneSideOnly}</p>
+            )}
+            <p className="text-sm leading-relaxed">{t.swapDepth.geometric}</p>
+            <p className="text-xs leading-relaxed text-muted">{t.swapDepth.whyItDiffers}</p>
           </>
         )}
       </Panel>

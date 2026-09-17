@@ -62,7 +62,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. What a swap through the pool costs, for the largest one that can be priced without assuming anything. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -105,7 +105,7 @@ const en = {
           {
             name: "TWAMM-style strategies",
             summary:
-              "Spreading a large order over time instead of executing it against a single point of liquidity.",
+              "Spreading a large order over time instead of executing it against a single point of liquidity. The half of this an analysis page can already answer is there: what a swap costs against the liquidity at the current price, and how large a swap it can price at all. Scheduling one over time is a hook's job, and this application does not model a hook's behaviour.",
           },
         ],
       },
@@ -284,6 +284,39 @@ const en = {
     notAnOrderBook:
       "Nothing here schedules the conversion and nothing guarantees it. This is not an order book: an order the price never reaches is the ordinary outcome rather than a failure, and there is no queue and no counterparty waiting. What there is instead is that the position collects the pool's fees while the price is inside the band, rather than paying them.",
     unavailable: "This range has no one-sided half to describe.",
+  },
+
+  /*
+   * The one panel about using a pool rather than providing to it.
+   *
+   * It exists because nothing else here answers the first question anybody asks
+   * of a pool, and it stops where the certainty does: at the edge of the price
+   * step, because liquidity beyond it is a thing this application has not read.
+   */
+  swapDepth: {
+    heading: "What a swap costs here",
+    intro:
+      "Everything above is about providing liquidity. This is about using it. A pool's liquidity is constant between the price steps it is built on, so a swap that stays inside the step the price is in can be priced from the protocol's own formulas with nothing assumed — and one step further cannot, because another position's liquidity may begin there and this application does not read the liquidity at every price.",
+    /*
+     * "into the pool", because the panel above this one also has a leg called
+     * "Selling WETH" and it means something else there: a position that sells as
+     * the price passes it, rather than a swap sent now. Two labels reading the
+     * same on one page is a reader mistaking one for the other.
+     */
+    selling: (token: string) => `Selling ${token} into the pool`,
+    amount: (amount: string, symbol: string) => `${amount} ${symbol}`,
+    largest: "Largest swap priced here",
+    largestNote:
+      "What goes in before the price reaches the end of the step it is in. Not a limit: a larger swap works, and this page cannot say what it costs.",
+    cost: "What it gives up",
+    costNote: "How far the swap's average sits from the price on the screen.",
+    oneSideOnly:
+      "Only one direction is shown. The price is sitting close enough to the end of its step that the room the other way is a rounding error rather than a swap, and this page will not print a figure it cannot check.",
+    geometric:
+      "That average is the geometric mean of the price now and the price the swap ends at — the same identity the one-sided positions above rest on, seen from the other side of the trade. A swap crossing a band pays it; a position sitting in that band receives it.",
+    whyItDiffers:
+      "The two directions are not the same size because the price sits somewhere inside its step rather than in the middle of it. What is worth comparing between pools is the size itself: it is what this market absorbs before it moves, and it is the reason anybody breaks a large order into small ones instead of sending it at once.",
+    unavailable: "What a swap would cost cannot be worked out for this pool.",
   },
 
   feeTiers: {
@@ -949,6 +982,12 @@ const en = {
         "This range is too narrow to hold a one-sided position on either side of the current price.",
       "range-order-unverifiable":
         "The one-sided halves of this range did not pass their own check, so they are not shown.",
+      "swap-depth-no-liquidity":
+        "This pool reports no liquidity at its current price, so there is no swap here to price.",
+      "swap-depth-tick-disagreement":
+        "The source's own tick puts this pool in a different price step than the price shown, so the liquidity it reported cannot be attributed to this step.",
+      "swap-depth-unverifiable":
+        "What a swap would cost did not pass its own check, so it is not shown.",
       "out-of-sample-insufficient-history":
         "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
       "out-of-sample-unverifiable":
@@ -1069,7 +1108,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -1112,7 +1151,7 @@ const tr: Dictionary = {
           {
             name: "TWAMM tarzı stratejiler",
             summary:
-              "Büyük bir emri tek bir likidite noktasına karşı yürütmek yerine zamana yaymak.",
+              "Büyük bir emri tek bir likidite noktasına karşı yürütmek yerine zamana yaymak. Bunun bir analiz sayfasının cevaplayabileceği yarısı artık var: güncel fiyattaki likiditeye karşı bir takasın ne kadara mal olduğu ve sayfanın hangi büyüklüğe kadarını fiyatlayabildiği. Emri zamana yaymak bir kancanın işi ve bu uygulama bir kancanın davranışını modellemiyor.",
           },
         ],
       },
@@ -1256,6 +1295,26 @@ const tr: Dictionary = {
     notAnOrderBook:
       "Burada dönüşümü zamanlayan da garanti eden de yok. Bu bir emir defteri değil: fiyatın hiç ulaşmadığı bir emir, başarısızlık değil olağan sonuçtur; ne sıra vardır ne de bekleyen bir karşı taraf. Bunun yerine olan şey şu: fiyat bandın içindeyken pozisyon havuzun komisyonunu ödemez, toplar.",
     unavailable: "Bu aralığın anlatılacak tek taraflı bir yarısı yok.",
+  },
+
+  swapDepth: {
+    heading: "Burada bir takas ne kadara mal olur",
+    intro:
+      "Yukarıdakilerin hepsi likidite sağlamakla ilgili. Bu ise onu kullanmakla. Bir havuzun likiditesi, üzerine kurulduğu fiyat adımlarının arasında sabittir; yani fiyatın içinde bulunduğu adımın dışına çıkmayan bir takas, protokolün kendi formüllerinden hiçbir şey varsayılmadan fiyatlanabilir. Bir adım ötesi fiyatlanamaz: orada başka bir pozisyonun likiditesi başlıyor olabilir ve bu uygulama her fiyattaki likiditeyi okumaz.",
+    selling: (token: string) => `Havuza ${token} satmak`,
+    amount: (amount: string, symbol: string) => `${amount} ${symbol}`,
+    largest: "Burada fiyatlanabilen en büyük takas",
+    largestNote:
+      "Fiyat, içinde bulunduğu adımın sonuna varmadan önce içeri giren miktar. Bir sınır değil: daha büyük bir takas da çalışır, bu sayfa onun maliyetini söyleyemez.",
+    cost: "Neden vazgeçiyor",
+    costNote: "Takasın ortalamasının, ekrandaki fiyattan ne kadar uzakta durduğu.",
+    oneSideOnly:
+      "Yalnızca bir yön gösteriliyor. Fiyat, adımının sonuna o kadar yakın duruyor ki öbür taraftaki yer bir takas değil bir yuvarlama artığı; bu sayfa da doğrulayamadığı bir rakamı yazmıyor.",
+    geometric:
+      "Bu ortalama, şimdiki fiyat ile takasın bittiği fiyatın geometrik ortalamasıdır — yukarıdaki tek taraflı pozisyonların dayandığı aynı kimlik, alışverişin öbür tarafından görülmüş hâli. Bir bandı geçen takas onu öder; o bantta duran pozisyon onu alır.",
+    whyItDiffers:
+      "İki yön aynı büyüklükte değil, çünkü fiyat adımının tam ortasında değil bir yerinde duruyor. Havuzlar arasında karşılaştırmaya değen şey büyüklüğün kendisi: bu piyasanın kıpırdamadan önce ne kadarını yuttuğu, ve büyük bir emri tek seferde göndermek yerine küçük parçalara bölmenin sebebi de bu.",
+    unavailable: "Bir takasın maliyeti bu havuz için hesaplanamıyor.",
   },
 
   feeTiers: {
@@ -1760,6 +1819,12 @@ const tr: Dictionary = {
         "Bu aralık, güncel fiyatın iki yanında da tek taraflı bir pozisyon tutamayacak kadar dar.",
       "range-order-unverifiable":
         "Bu aralığın tek taraflı yarıları kendi denetiminden geçemedi; bu yüzden gösterilmiyor.",
+      "swap-depth-no-liquidity":
+        "Bu havuz güncel fiyatında hiç likidite bildirmiyor; yani burada fiyatlanacak bir takas yok.",
+      "swap-depth-tick-disagreement":
+        "Kaynağın kendi tick'i bu havuzu gösterilen fiyattan farklı bir fiyat adımına koyuyor; bu yüzden bildirdiği likidite bu adıma atfedilemiyor.",
+      "swap-depth-unverifiable":
+        "Bir takasın maliyeti kendi denetiminden geçemedi; bu yüzden gösterilmiyor.",
       "out-of-sample-insufficient-history":
         "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
       "out-of-sample-unverifiable":

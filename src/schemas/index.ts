@@ -27,3 +27,4 @@ export * from "./interpretation";
 export * from "./depositFeeShare";
 export * from "./rangeOrder";
 export * from "./hookDirectory";
+export * from "./swapDepth";
