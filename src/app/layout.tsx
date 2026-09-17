@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
+import { ErrorCopyProvider } from "@/components/ErrorCopyProvider";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme/theme";
 
@@ -39,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { locale } = await getRequestDictionary();
+  const { locale, t } = await getRequestDictionary();
 
   return (
     <html
@@ -62,7 +63,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
          * flash on every navigation.
          */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
-        {children}
+        {/*
+         * The error boundary below this is a Client Component and cannot ask the
+         * request which language to render in. This is how the answer reaches
+         * it: worked out here, where the request still exists, and handed down
+         * as data. It wraps everything because the boundary can be anywhere.
+         */}
+        <ErrorCopyProvider copy={t.error}>{children}</ErrorCopyProvider>
       </body>
     </html>
   );

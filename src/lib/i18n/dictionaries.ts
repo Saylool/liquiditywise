@@ -1,5 +1,6 @@
 import type { HookPermission, HookTopic } from "../../schemas/hookPermissions";
 import type { DataFailureNotice, DataWarningNotice } from "../../schemas/notices";
+import { ERROR_COPY } from "./errorCopy";
 import type { Locale } from "./locales";
 
 /*
@@ -955,6 +956,14 @@ const en = {
       `Try again in ${seconds} second${seconds === 1 ? "" : "s"}.`,
     back: "Back to the advisor",
   },
+
+  /*
+   * Served from `errorCopy.ts` rather than written here, because the error
+   * boundary that shows it has to be a Client Component and importing this file
+   * into one would ship every string in both languages to every browser. It is
+   * the same object either way, so the translation check walks it with the rest.
+   */
+  error: ERROR_COPY.en,
 };
 
 export type Dictionary = typeof en;
@@ -1712,6 +1721,8 @@ const tr: Dictionary = {
     retry: (seconds: number) => `${seconds} saniye sonra tekrar dene.`,
     back: "Danışmana dön",
   },
+
+  error: ERROR_COPY.tr,
 };
 
 const dictionaries: Record<Locale, Dictionary> = { en, tr };
