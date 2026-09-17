@@ -353,6 +353,55 @@ const describeDivergence = (analysis: PoolRangeAnalysis, locale: Locale): readon
 };
 
 /**
+ * The same range read as the two one-sided positions it contains.
+ *
+ * Handed over because the explanation is where a mechanism gets explained, and
+ * this is the one figure on the page that is not a measurement of anything: the
+ * average is fixed by the protocol's formulas and would be the same on a pool
+ * that had never traded. A reader told only the number may take it for a
+ * forecast, which is the misreading the page's own sentences and this block are
+ * both written against.
+ */
+const describeRangeOrders = (
+  analysis: PoolRangeAnalysis,
+  locale: Locale,
+): readonly string[] | null => {
+  const { rangeOrders } = analysis;
+  if (rangeOrders.status !== "success") return null;
+
+  const quote = quoteFor(analysis);
+  /* Named by where they sit for the *reader*, which inverting the quote swaps. */
+  const legs = [rangeOrders.data.above, rangeOrders.data.below]
+    .filter((leg) => leg !== null)
+    .map((leg) => ({
+      average: quotedPrice(quote, leg.averagePrice),
+      lower: quotedPrice(quote, leg.lowerPrice),
+      upper: quotedPrice(quote, leg.upperPrice),
+    }));
+  const current = quotedPrice(quote, analysis.band.currentPrice);
+
+  return [
+    ...legs.map((leg) => {
+      const selling = leg.average > current;
+      const [lower, upper] = leg.lower < leg.upper ? [leg.lower, leg.upper] : [leg.upper, leg.lower];
+
+      return line(
+        `${selling ? "Selling" : "Buying"} ${quote.base.symbol}, between ${formatPrice(lower, locale)} and ${formatPrice(upper, locale)} ${quote.quote.symbol}`,
+        `averages ${priceSentence(quote, leg.average, locale)}, ${formatPercent(leg.average / current - 1, locale)} against the current price`,
+      );
+    }),
+    line(
+      "Why the average is exact",
+      "it is the geometric mean of the band's two bounds, which is what the protocol's own position formulas give at the ends of the band; the amount put in cancels out",
+    ),
+    line(
+      "What it does not promise",
+      "that the price ever reaches the band, or crosses the whole of it; a price that turns back inside leaves the position holding some of each, at no single price. There is no order book here and nothing schedules a conversion",
+    ),
+  ];
+};
+
+/**
  * What the pool did over the window, and where those days sat.
  *
  * The model is given these so the explanation can say what they mean — and told,
@@ -590,6 +639,7 @@ export const buildRangeInterpretationPrompt = (
   const { analysis, locale, warnings } = input;
   const terminology = TERMINOLOGY[locale];
   const hookLines = describeHook(analysis, locale);
+  const rangeOrderLines = describeRangeOrders(analysis, locale);
 
   const blocks: readonly (string | null)[] = [
     `Write in ${LANGUAGE_NAMES[locale]}.`,
@@ -606,6 +656,9 @@ export const buildRangeInterpretationPrompt = (
     section("SUGGESTED PRICE RANGE", describeRange(analysis, locale)),
     section("THE OTHER WIDTHS", describeWidths(analysis, locale)),
     section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
+    rangeOrderLines === null
+      ? null
+      : section("THE SAME RANGE, ONE SIDE AT A TIME", rangeOrderLines),
     section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
     section("WHAT IT ACTUALLY CHARGED", describeRealizedFee(analysis, locale)),
     section("THE SAME METHOD, ON DAYS IT NEVER SAW", describeOutOfSample(analysis, locale)),

@@ -93,6 +93,8 @@ export const DataFailureNoticeSchema = z.enum([
   "deposit-share-unpriceable",
   "deposit-share-no-days",
   "deposit-share-unverifiable",
+  "range-order-no-room",
+  "range-order-unverifiable",
   "out-of-sample-insufficient-history",
   "out-of-sample-unverifiable",
   "holdings-unverifiable",

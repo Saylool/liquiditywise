@@ -887,3 +887,66 @@ describe("what a deposit would have collected", () => {
     expect(markup).toContain("cannot be attributed to a deposit in it either");
   });
 });
+
+/*
+ * The panel that describes the other thing the same range can be.
+ *
+ * The fixture's pair is shown inverted — USDC per WETH, not the pool's own
+ * direction — which is exactly the case that can put the two legs the wrong way
+ * round, so that is what most of this checks.
+ */
+describe("selling and buying through the range", () => {
+  const AGAINST = /Against the current price<\/dt><dd[^>]*>([^<]+)</g;
+
+  it("names both legs by the token the page is quoting", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain("Selling and buying through the range");
+    expect(markup).toContain("Selling WETH");
+    expect(markup).toContain("Buying WETH");
+  });
+
+  /*
+   * The pool's "above" is the reader's "below" here. If the panel took the legs
+   * at their own names rather than comparing their prices, the selling leg would
+   * be the one under the current price and this would be negative.
+   */
+  it("puts the selling leg above the current price and the buying leg below it", () => {
+    const markup = render(analyse());
+    const against = [...markup.matchAll(AGAINST)].map((match) => match[1] ?? "");
+
+    expect(against).toHaveLength(2);
+    expect(against[0]?.startsWith("-")).toBe(false);
+    expect(against[1]?.startsWith("-")).toBe(true);
+  });
+
+  it("says what the figure does not promise", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain("only if the price crosses the whole band");
+    expect(markup).toContain("This is not an order book");
+  });
+
+  it("says the same in Turkish", () => {
+    const markup = render(analyse(), "tr");
+
+    expect(markup).toContain("Aralıktan geçerken satmak ve almak");
+    expect(markup).toContain("WETH satmak");
+    expect(markup).toContain("WETH almak");
+  });
+
+  it("says why there is nothing to show when the range has no one-sided half", () => {
+    const result = analyse();
+    if (result.status === "unavailable") throw new Error("fixture should analyse");
+    const markup = render({
+      ...result,
+      data: {
+        ...result.data,
+        rangeOrders: { status: "unavailable", notice: "range-order-no-room" },
+      },
+    });
+
+    expect(markup).toContain("no one-sided half to describe");
+    expect(markup).toContain("too narrow to hold a one-sided position");
+  });
+});

@@ -3,6 +3,7 @@ import {
   type DepositFeeShareResult,
 } from "../analytics/depositFeeShare";
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
+import { calculateRangeOrders, type RangeOrdersResult } from "../analytics/rangeOrder";
 import { ACTIVITY_WINDOW_DAYS, calculatePoolActivity } from "../analytics/poolActivity";
 import {
   type AnalyticsFailureReason,
@@ -111,6 +112,16 @@ export type PoolRangeAnalysis = {
    * not track cannot have one. Every other figure on such a pool is unaffected.
    */
   readonly depositFeeShare: DepositFeeShareResult;
+  /**
+   * The same range split at the price, as the two one-sided positions it
+   * contains.
+   *
+   * A result rather than data, like the three above it, and the only one whose
+   * absence is a property of the range itself: a range one price step wide has
+   * no half to describe. It reads nothing — every figure in it comes from the
+   * range and the pool's tick grid — so it cannot fail for want of a source.
+   */
+  readonly rangeOrders: RangeOrdersResult;
   readonly parameters: PriceBandParameters;
   /** The size the figure above was worked out for. Printed wherever it is. */
   readonly depositUsd: number;
@@ -380,6 +391,14 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
    * holdings priced in dollars, and a pool the source does not price still has
    * every other figure on the page.
    */
+  /*
+   * Costs nothing and reads nothing: the range is already computed and the tick
+   * grid is the pool's. It is last among the calculators for the same reason it
+   * is last on the page — it describes another use of the range rather than
+   * another property of it.
+   */
+  const rangeOrders = calculateRangeOrders({ pool: pool.value, range: range.data });
+
   const depositFeeShare = calculateDepositFeeShare({
     points: history.value.points.slice(-ACTIVITY_WINDOW_DAYS),
     range: range.data,
@@ -401,6 +420,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     outOfSample,
     realizedFee,
     depositFeeShare,
+    rangeOrders,
     parameters: input.parameters,
     depositUsd: input.depositUsd,
   };

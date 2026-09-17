@@ -59,7 +59,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -88,11 +88,6 @@ const en = {
             name: "Gas, and the cost of following the price",
             summary:
               "A range the price has left has to be closed and reopened to follow it, which costs gas and turns a divergence on paper into one that has been realised. None of that is counted anywhere here.",
-          },
-          {
-            name: "Range orders",
-            summary:
-              "Using a one-sided position to convert between two tokens as price moves through a band.",
           },
         ],
       },
@@ -264,6 +259,33 @@ const en = {
     entryRow: "The price this is measured from — the pool's current price.",
     impermanentNote:
       "This is what is usually called impermanent loss. It is only impermanent if price comes back: a position closed at a price other than the one it opened at has realised it.",
+  },
+
+  /*
+   * The other thing the same range can be. It was on the front page's list of
+   * what this application could not do, and what it needed turned out to be no
+   * data at all: a range order's average price is fixed by the protocol's own
+   * formulas and falls out of the two bounds already on the page.
+   */
+  rangeOrder: {
+    heading: "Selling and buying through the range",
+    intro:
+      "The range above is two-sided: money on both sides of the price, earning fees for as long as the price stays between them. Split it at the price and each half is a different instrument. A position sitting entirely above the price holds one token and nothing else, and the pool sells that token for the other as the price rises through the band. Below the price it does the reverse. That is what a range order is, and both halves of this range are one.",
+    selling: (token: string) => `Selling ${token}`,
+    buying: (token: string) => `Buying ${token}`,
+    band: "Band",
+    bandNote:
+      "Where the position sits. Its inner edge is the first price step past the one the price is in, so it starts out holding none of what it is converting into.",
+    average: "Average price",
+    averageNote: "What the conversion works out at, if the price crosses the whole band.",
+    against: "Against the current price",
+    exact:
+      "That average is the geometric mean of the two bounds — exactly, and whichever way round the prices are written. It follows from the protocol's own formulas for what a position holds at each end of its band, and the amount put in cancels out of it: a hundred dollars and a million convert at the same price.",
+    onlyIfThrough:
+      "And only if the price crosses the whole band. One that turns back inside leaves the position holding some of each, at no single price at all — which is the same thing the range above it is for, arrived at by accident.",
+    notAnOrderBook:
+      "Nothing here schedules the conversion and nothing guarantees it. This is not an order book: an order the price never reaches is the ordinary outcome rather than a failure, and there is no queue and no counterparty waiting. What there is instead is that the position collects the pool's fees while the price is inside the band, rather than paying them.",
+    unavailable: "This range has no one-sided half to describe.",
   },
 
   feeTiers: {
@@ -892,6 +914,10 @@ const en = {
         "The price left this range on every day the source could answer for, so there is no day a deposit in it would have collected anything.",
       "deposit-share-unverifiable":
         "What a deposit would have taken did not pass its own check, so it is not shown.",
+      "range-order-no-room":
+        "This range is too narrow to hold a one-sided position on either side of the current price.",
+      "range-order-unverifiable":
+        "The one-sided halves of this range did not pass their own check, so they are not shown.",
       "out-of-sample-insufficient-history":
         "This pool does not have enough indexed history to fit a band in the past and still have a full horizon of days to check it against.",
       "out-of-sample-unverifiable":
@@ -1007,7 +1033,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -1036,11 +1062,6 @@ const tr: Dictionary = {
             name: "Gas, ve fiyatı takip etmenin maliyeti",
             summary:
               "Fiyatın terk ettiği bir aralık, fiyatı takip etmek için kapatılıp yeniden açılmalıdır; bu hem gas harcar hem de kâğıt üstündeki bir sapmayı gerçekleşmiş bir sapmaya çevirir. Bunların hiçbiri burada hesaba katılmıyor.",
-          },
-          {
-            name: "Aralık emirleri",
-            summary:
-              "Fiyat bir bandın içinden geçerken tek taraflı pozisyonla iki token arasında dönüşüm yapmak.",
           },
         ],
       },
@@ -1183,6 +1204,27 @@ const tr: Dictionary = {
     entryRow: "Bunun ölçüldüğü fiyat — havuzun güncel fiyatı.",
     impermanentNote:
       "Buna genelde geçici kayıp denir. Yalnızca fiyat geri gelirse geçicidir: açıldığı fiyattan farklı bir fiyatta kapatılan bir pozisyon onu gerçekleştirmiş olur.",
+  },
+
+  rangeOrder: {
+    heading: "Aralıktan geçerken satmak ve almak",
+    intro:
+      "Yukarıdaki aralık iki taraflı: paranın bir kısmı fiyatın altında, bir kısmı üstünde, ve fiyat ikisinin arasında kaldığı sürece komisyon topluyor. Aralığı fiyattan ikiye böl, her yarısı bambaşka bir araç olur. Tamamen fiyatın üstünde duran bir pozisyon tek bir jetondan başka bir şey tutmaz; fiyat o bandın içinden yukarı geçerken havuz o jetonu diğeriyle takas eder. Fiyatın altında ise tersi olur. Aralık emri dedikleri budur, ve bu aralığın iki yarısı da birer tanesidir.",
+    selling: (token: string) => `${token} satmak`,
+    buying: (token: string) => `${token} almak`,
+    band: "Bant",
+    bandNote:
+      "Pozisyonun durduğu yer. İç kenarı, fiyatın içinde bulunduğu adımdan bir sonraki fiyat adımı — böylece dönüşeceği jetondan başlangıçta hiç tutmaz.",
+    average: "Ortalama fiyat",
+    averageNote: "Fiyat bandın tamamını geçerse, dönüşümün denk geldiği fiyat.",
+    against: "Güncel fiyata göre",
+    exact:
+      "Bu ortalama, iki sınırın geometrik ortalamasıdır — tam olarak, ve fiyatlar hangi yönde yazılırsa yazılsın. Protokolün, bir pozisyonun bandının her iki ucunda ne tuttuğuna dair kendi formüllerinden çıkar ve konulan miktar sadeleşir: yüz dolar da bir milyon da aynı fiyattan dönüşür.",
+    onlyIfThrough:
+      "Ve yalnızca fiyat bandın tamamını geçerse. İçeride geri dönen bir fiyat, pozisyonu her ikisinden bir miktar tutar hâlde bırakır — tek bir fiyat diye bir şey olmaz. Bu da zaten üstündeki aralığın işi; sadece kazara varılmış hâli.",
+    notAnOrderBook:
+      "Burada dönüşümü zamanlayan da garanti eden de yok. Bu bir emir defteri değil: fiyatın hiç ulaşmadığı bir emir, başarısızlık değil olağan sonuçtur; ne sıra vardır ne de bekleyen bir karşı taraf. Bunun yerine olan şey şu: fiyat bandın içindeyken pozisyon havuzun komisyonunu ödemez, toplar.",
+    unavailable: "Bu aralığın anlatılacak tek taraflı bir yarısı yok.",
   },
 
   feeTiers: {
@@ -1664,6 +1706,10 @@ const tr: Dictionary = {
         "Kaynağın yanıtlayabildiği her gün fiyat bu aralığın dışına çıkmış; yani bu aralıktaki bir yatırımın komisyon toplayacağı tek bir gün bile yok.",
       "deposit-share-unverifiable":
         "Bir yatırımın alacağı pay kendi denetiminden geçemedi; bu yüzden gösterilmiyor.",
+      "range-order-no-room":
+        "Bu aralık, güncel fiyatın iki yanında da tek taraflı bir pozisyon tutamayacak kadar dar.",
+      "range-order-unverifiable":
+        "Bu aralığın tek taraflı yarıları kendi denetiminden geçemedi; bu yüzden gösterilmiyor.",
       "out-of-sample-insufficient-history":
         "Bu havuzun, geçmişte bir bant kurup onu tam bir ufuk boyunca sınamaya yetecek kadar indekslenmiş geçmişi yok.",
       "out-of-sample-unverifiable":

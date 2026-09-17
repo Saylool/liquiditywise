@@ -25,3 +25,4 @@ export * from "./outOfSampleCheck";
 export * from "./holdings";
 export * from "./interpretation";
 export * from "./depositFeeShare";
+export * from "./rangeOrder";

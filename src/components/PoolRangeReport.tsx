@@ -275,6 +275,7 @@ export function PoolRangeReport({
     outOfSample,
     realizedFee,
     depositFeeShare,
+    rangeOrders,
     parameters,
   } = result.data;
   const disclosure = feeDisclosureFor(pool);
@@ -325,6 +326,28 @@ export function PoolRangeReport({
   const percent = (ratio: number) => formatPercent(ratio, locale);
   const whole = (value: number) => formatWhole(value, locale);
   const widthInTicks = range.upperTick - range.lowerTick;
+  /*
+   * The two one-sided halves of the range, quoted like everything else.
+   *
+   * Which half sells and which buys is decided by comparing the quoted average
+   * against the quoted current price, not by the leg's own name. The names are
+   * the pool's — "above" means above *its* price — and inverting the quote turns
+   * the pool's upper half into the reader's lower one. Reading the label off the
+   * figures rather than off the name is what keeps the two from swapping when a
+   * pair is shown the other way round.
+   */
+  const quotedLegs =
+    rangeOrders.status !== "success"
+      ? []
+      : [rangeOrders.data.above, rangeOrders.data.below]
+          .filter((entry) => entry !== null)
+          .map((entry) => ({
+            edges: quotedInterval(quote, { lower: entry.lowerPrice, upper: entry.upperPrice }),
+            average: quotedPrice(quote, entry.averagePrice),
+          }));
+  const sellingLeg = quotedLegs.find((entry) => entry.average > current) ?? null;
+  const buyingLeg = quotedLegs.find((entry) => entry.average < current) ?? null;
+
   /* Every offered width beside the chosen one, in the same direction as everything else. */
   const widths = compareWidths(result.data).map((row) => ({
     ...row,
@@ -770,6 +793,80 @@ export function PoolRangeReport({
 
         <p className="text-xs leading-relaxed text-muted">{t.divergence.entryRow}</p>
         <p className="text-xs leading-relaxed text-muted">{t.divergence.impermanentNote}</p>
+      </Panel>
+
+      {/*
+       * Last of the panels that interpret anything, because it is about a
+       * different use of the same range rather than another property of it: the
+       * figures above describe holding it, and this describes passing through
+       * it.
+       */}
+      <Panel title={t.rangeOrder.heading}>
+        {rangeOrders.status !== "success" ? (
+          <>
+            <p className="text-sm leading-relaxed">{t.rangeOrder.unavailable}</p>
+            <p className="text-sm leading-relaxed text-muted">
+              {t.notices.failure[rangeOrders.notice]}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed">{t.rangeOrder.intro}</p>
+
+            <dl className={FIGURE_GRID}>
+              {sellingLeg === null ? null : (
+                <>
+                  <Figure
+                    label={t.rangeOrder.selling(base)}
+                    value={t.report.rangeValue(
+                      price(sellingLeg.edges.lower),
+                      price(sellingLeg.edges.upper),
+                      counter,
+                      base,
+                    )}
+                    note={t.rangeOrder.bandNote}
+                  />
+                  <Figure
+                    label={t.rangeOrder.average}
+                    value={t.report.priceSentence(base, price(sellingLeg.average), counter)}
+                    note={t.rangeOrder.averageNote}
+                  />
+                  <Figure
+                    label={t.rangeOrder.against}
+                    value={percent(sellingLeg.average / current - 1)}
+                  />
+                </>
+              )}
+              {buyingLeg === null ? null : (
+                <>
+                  <Figure
+                    label={t.rangeOrder.buying(base)}
+                    value={t.report.rangeValue(
+                      price(buyingLeg.edges.lower),
+                      price(buyingLeg.edges.upper),
+                      counter,
+                      base,
+                    )}
+                    note={t.rangeOrder.bandNote}
+                  />
+                  <Figure
+                    label={t.rangeOrder.average}
+                    value={t.report.priceSentence(base, price(buyingLeg.average), counter)}
+                    note={t.rangeOrder.averageNote}
+                  />
+                  <Figure
+                    label={t.rangeOrder.against}
+                    value={percent(buyingLeg.average / current - 1)}
+                  />
+                </>
+              )}
+            </dl>
+
+            <p className="text-sm leading-relaxed">{t.rangeOrder.exact}</p>
+            <p className="text-sm leading-relaxed">{t.rangeOrder.onlyIfThrough}</p>
+            <p className="text-xs leading-relaxed text-muted">{t.rangeOrder.notAnOrderBook}</p>
+          </>
+        )}
       </Panel>
 
       {/*
