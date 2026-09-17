@@ -1,20 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { TRADED_POOL_LIMIT } from "./ethereumV3TradedPools";
-import {
-  fetchEthereumV4TradedPools,
-  tradedWindowStart,
-  V4_TRADED_POOL_DAYS_LIMIT,
-  V4_TRADED_POOLS_QUERY,
-  V4_TRADED_WINDOW_DAYS,
-} from "./ethereumV4TradedPools";
-import type { FetchLike } from "./v3SubgraphTransport";
+import type { DataResult } from "../../schemas";
+import type { V4PoolDays } from "./ethereumV4PoolDays";
+import { fetchEthereumV4TradedPools } from "./ethereumV4TradedPools";
 
-const API_KEY = "test-graph-key-must-never-leak";
-const NOW = new Date("2026-09-15T12:00:00.000Z");
+const FETCHED_AT = "2026-09-15T12:00:00.000Z";
+const POOL_ID = `0x${"e5".repeat(32)}`;
+const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
 
 const pool = {
-  id: `0x${"e5".repeat(32)}`,
+  id: POOL_ID,
   createdAtBlockNumber: "21688329",
   tickSpacing: "10",
   hooks: `0x${"0".repeat(40)}`,
@@ -22,101 +17,68 @@ const pool = {
   token1: { id: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", symbol: "USDC", name: "USD Coin", decimals: "6", derivedETH: "0.0004" },
 };
 
-/** The busiest pool-days of the week: the same pool on two of its days. */
-const body = {
+/** The week's busiest pool-days: the same pool on two of its days. */
+const payload = {
   data: {
     poolDayDatas: [{ pool }, { pool }],
-    poolManagers: [{ id: "0x000000000004444c5dc75cb358380d2e3de08a90" }],
+    poolManagers: [{ id: POOL_MANAGER }],
     _meta: { hasIndexingErrors: false },
   },
 };
 
-const run = (overrides: Partial<Parameters<typeof fetchEthereumV4TradedPools>[0]> = {}) =>
-  fetchEthereumV4TradedPools({
-    apiKey: API_KEY,
-    subgraphId: "TestV4SubgraphId",
-    fetchImpl: vi.fn<FetchLike>(async () => new Response(JSON.stringify(body), { status: 200 })),
-    now: () => NOW,
-    ...overrides,
-  });
+const days = (value: DataResult<V4PoolDays>) => vi.fn(async () => value);
+
+const run = (value: DataResult<V4PoolDays> = { status: "success", data: { payload, fetchedAt: FETCHED_AT } }) =>
+  fetchEthereumV4TradedPools(days(value));
 
 describe("fetchEthereumV4TradedPools", () => {
-  it("returns the verified pools, each once, with the time they were read", async () => {
+  it("folds the days into pools, each once, with the time they were read", async () => {
     const result = await run();
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
     expect(result.data.pools).toHaveLength(1);
     expect(result.data.pools[0]?.token0.symbol).toBe("ETH");
-    expect(result.data.fetchedAt).toBe(NOW.toISOString());
-  });
-
-  /* The chain is not asked here: every fee is unread, and the manager travels with the list for whoever asks later. */
-  it("publishes every fee unread, with the manager and the creation blocks for a later read", async () => {
-    const fetchImpl = vi.fn<FetchLike>(async () => new Response(JSON.stringify(body), { status: 200 }));
-    const result = await run({ fetchImpl });
-
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(result.status).toBe("success");
-    if (result.status !== "success") return;
-    expect(result.data.pools[0]?.fee).toEqual({ kind: "unread" });
-    expect(result.data.poolManager).toBe("0x000000000004444c5dc75cb358380d2e3de08a90");
-    expect(result.data.createdAtBlockNumbers).toEqual({ [`0x${"e5".repeat(32)}`]: "21688329" });
+    expect(result.data.fetchedAt).toBe(FETCHED_AT);
   });
 
   /*
-   * Not the v3 query. The source refuses every ordering of `pools`, and
-   * answers the day table filtered by date in under a second — so that is
-   * what is asked, for the week that ends today.
+   * The chain is not asked here: every fee is unread, and the manager and the
+   * creation blocks travel with the list for whoever reads it later.
    */
-  it("asks for the week's busiest pool-days, never for pools ordered by volume", async () => {
-    const fetchImpl = vi.fn<FetchLike>(async () => new Response(JSON.stringify(body), { status: 200 }));
-    await run({ fetchImpl });
-    const sent = JSON.parse(String(vi.mocked(fetchImpl).mock.calls[0]?.[1].body)) as { query: string; variables: unknown };
+  it("publishes every fee unread, with the manager and the creation blocks", async () => {
+    const result = await run();
 
-    expect(sent.query).toBe(V4_TRADED_POOLS_QUERY);
-    expect(sent.query).toContain("poolDayDatas(");
-    expect(sent.query).toContain("where: { date_gte: $from }");
-    expect(sent.query).not.toContain("txCount");
-    expect(sent.variables).toEqual({ from: tradedWindowStart(NOW), limit: V4_TRADED_POOL_DAYS_LIMIT });
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.pools[0]?.fee).toEqual({ kind: "unread" });
+    expect(result.data.poolManager).toBe(POOL_MANAGER);
+    expect(result.data.createdAtBlockNumbers).toEqual({ [POOL_ID]: "21688329" });
   });
 
-  it("reports a missing subgraph as configuration, without calling out", async () => {
-    const fetchImpl = vi.fn<FetchLike>();
-    const result = await run({ fetchImpl, subgraphId: undefined });
+  /* The list is one read of the shared day table and nothing else. */
+  it("reads the day table once and asks for nothing else", async () => {
+    const readDays = days({ status: "success", data: { payload, fetchedAt: FETCHED_AT } });
+    await fetchEthereumV4TradedPools(readDays);
+
+    expect(readDays).toHaveBeenCalledTimes(1);
+    expect(readDays).toHaveBeenCalledWith();
+  });
+
+  it("passes a failed read on with its own notice", async () => {
+    const result = await run({
+      status: "unavailable",
+      reason: "configuration-error",
+      notice: "market-data-not-configured",
+    });
 
     expect(result.status === "unavailable" && result.notice).toBe("market-data-not-configured");
-    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result.status === "unavailable" && result.reason).toBe("configuration-error");
   });
 
-  it("keeps the key out of a failure", async () => {
-    const result = await run({ fetchImpl: vi.fn(async () => new Response("{}", { status: 401 })) });
+  it("refuses a payload it cannot verify", async () => {
+    const result = await run({ status: "success", data: { payload: { data: null }, fetchedAt: FETCHED_AT } });
 
-    expect(result.status).toBe("unavailable");
-    expect(JSON.stringify(result)).not.toContain(API_KEY);
-  });
-});
-
-describe("tradedWindowStart", () => {
-  const midnight = (year: number, month: number, day: number) => Date.UTC(year, month - 1, day) / 1000;
-
-  /* A day's `date` is its first second, so the window opens at midnight UTC six days back. */
-  it("opens at midnight UTC, six days before the day now falls in", () => {
-    expect(tradedWindowStart(new Date("2026-09-15T12:00:00.000Z"))).toBe(midnight(2026, 9, 9));
-  });
-
-  it("moves with the day and not with the hour", () => {
-    expect(tradedWindowStart(new Date("2026-09-15T23:59:59.999Z"))).toBe(midnight(2026, 9, 9));
-    expect(tradedWindowStart(new Date("2026-09-16T00:00:00.000Z"))).toBe(midnight(2026, 9, 10));
-  });
-
-  it("covers the declared number of calendar days, today included", () => {
-    const today = midnight(2026, 9, 15);
-
-    expect((today - tradedWindowStart(new Date("2026-09-15T12:00:00.000Z"))) / 86_400 + 1).toBe(V4_TRADED_WINDOW_DAYS);
-  });
-
-  it("is the v3 net's width once the days are folded into pools", () => {
-    expect(V4_TRADED_POOL_DAYS_LIMIT).toBeGreaterThan(TRADED_POOL_LIMIT);
+    expect(result.status === "unavailable" && result.notice).toBe("market-data-malformed");
   });
 });

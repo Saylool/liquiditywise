@@ -3,25 +3,18 @@ import {
   PoolSearchTermsSchema,
   type V4PoolSearchResults,
 } from "../../schemas";
-import {
-  tradedWindowStart,
-  V4_TRADED_POOL_DAYS_LIMIT,
-  V4_TRADED_POOLS_QUERY,
-} from "./ethereumV4TradedPools";
+import type { ReadV4PoolDays } from "./ethereumV4PoolDays";
 import { fetchEthereumV4PoolKeys } from "./ethereumV4PoolKeys";
 import { fetchEthereumV4PoolStates } from "./ethereumV4PoolState";
 import { hookedRefs, normalizeV4PoolSearch, readV4SearchPools } from "./v4PoolSearchAdapter";
 import type { PoolSearchDiagnostic } from "./v3PoolSearchAdapter";
-import {
-  DEFAULT_SUBGRAPH_TIMEOUT_MS,
-  type FetchLike,
-  postV3SubgraphQuery,
-} from "./v3SubgraphTransport";
+import { type FetchLike } from "./v3SubgraphTransport";
 
 /*
  * The v4 search does not ask the source for the pools matching the terms. It
- * asks for the week's busiest pool-days — the same request the holdings net
- * is read with — and matches the terms against the pools those days name.
+ * reads the week's busiest pool-days — the very same read the holdings net
+ * uses, cached and shared — and matches the terms against the pools those days
+ * name.
  *
  * Because the source cannot be asked. The v3 search documents, run against the
  * v4 subgraph, were answered by its gateway with fifteen seconds of silence
@@ -37,16 +30,18 @@ import {
  */
 
 const INVALID_TERMS = "invalid-search-terms";
-const NOT_CONFIGURED = "market-data-not-configured";
 
 export type EthereumV4PoolSearchRequest = {
   readonly terms: readonly string[];
-  readonly apiKey: string | undefined;
-  readonly subgraphId: string | undefined;
+  /**
+   * The week's pool-days, asked for only once the terms are known to be
+   * usable — a search this application refuses must read nothing.
+   */
+  readonly readDays: ReadV4PoolDays;
   /** Raw environment value; without it the results arrive with no chain state. */
   readonly rpcUrl: string | undefined;
+  /** For the chain reads below. The day table is read by {@link readDays}. */
   readonly fetchImpl: FetchLike;
-  readonly now: () => Date;
   readonly timeoutMs?: number;
   readonly onDiagnostic?: PoolSearchDiagnostic | undefined;
 };
@@ -68,24 +63,9 @@ export const fetchEthereumV4PoolSearch = async (
     return { status: "unavailable", reason: "invalid-input", notice: INVALID_TERMS };
   }
 
-  const apiKey = request.apiKey?.trim();
-  const subgraphId = request.subgraphId?.trim();
-  if (apiKey === undefined || apiKey === "" || subgraphId === undefined || subgraphId === "") {
-    return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
-  }
-
-  const now = request.now();
-  const transport = await postV3SubgraphQuery({
-    apiKey,
-    subgraphId,
-    query: V4_TRADED_POOLS_QUERY,
-    variables: { from: tradedWindowStart(now), limit: V4_TRADED_POOL_DAYS_LIMIT },
-    fetchImpl: request.fetchImpl,
-    timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
-  });
-
-  if (!transport.ok) {
-    return { status: "unavailable", reason: transport.reason, notice: transport.notice };
+  const days = await request.readDays();
+  if (days.status === "unavailable") {
+    return { status: "unavailable", reason: days.reason, notice: days.notice };
   }
 
   /*
@@ -95,7 +75,7 @@ export const fetchEthereumV4PoolSearch = async (
    * PoolManager's storage. The two reads run together; the state decides the
    * order and the key decides the fee.
    */
-  const { pools, poolManager } = readV4SearchPools(transport.payload, terms.data);
+  const { pools, poolManager } = readV4SearchPools(days.data.payload, terms.data);
   const chain = {
     poolManager,
     rpcUrl: request.rpcUrl,
@@ -114,12 +94,18 @@ export const fetchEthereumV4PoolSearch = async (
     fetchEthereumV4PoolStates({ poolIds: pools.map((pool) => pool.id), ...chain }),
   ]);
 
+  /*
+   * Stamped with the moment the list was read rather than the moment this page
+   * rendered, because that read is shared and may be minutes old. The chain
+   * figures beside it are this moment's, as they are in the v3 search: a list
+   * the source chose, ordered by what the chain says now.
+   */
   return normalizeV4PoolSearch({
-    payload: transport.payload,
+    payload: days.data.payload,
     states,
     keys,
     terms: terms.data,
-    fetchedAt: now.toISOString(),
+    fetchedAt: days.data.fetchedAt,
     onDiagnostic: request.onDiagnostic,
   });
 };

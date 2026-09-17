@@ -1,20 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { DataResult } from "../../schemas";
 import { fetchEthereumV4PoolSearch } from "./ethereumV4PoolSearch";
-import { tradedWindowStart, V4_TRADED_POOL_DAYS_LIMIT, V4_TRADED_POOLS_QUERY } from "./ethereumV4TradedPools";
+import type { V4PoolDays } from "./ethereumV4PoolDays";
 import { MULTICALL3_ADDRESS } from "./multicall3";
 import { answerRpc, decodeAggregate3Calls } from "./testing/multicall3Endpoint";
 import type { FetchLike } from "./v3SubgraphTransport";
 import { DYNAMIC_FEE_FLAG, INITIALIZE_TOPIC } from "./v4PoolKey";
 import { EXTSLOAD_SELECTOR } from "./v4PoolStateSlots";
 
-const API_KEY = "test-graph-key-must-never-leak";
-const SUBGRAPH_ID = "TestStableV4SubgraphId";
 const RPC_URL = "https://rpc.test.invalid/key-that-must-never-leak";
 const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
 const POOL_ID = "0xe500210c7ea6bfd9f69dce044b09ef384ec2b34832f132baec3b418208e3a657";
 const OTHER_POOL_ID = `0x${"4f".repeat(32)}`;
-const NOW = new Date("2026-09-15T14:00:00.000Z");
+const READ_AT = "2026-09-15T14:00:00.000Z";
 
 const usdcWeth = {
   id: POOL_ID,
@@ -60,7 +59,7 @@ const wbtcDai = {
 };
 
 /** The week's busiest pool-days: the hooked pool on two of its days, the other on one. */
-const subgraphBody = {
+const payload = {
   data: {
     poolDayDatas: [{ pool: usdcWeth }, { pool: wbtcDai }, { pool: usdcWeth }],
     poolManagers: [{ id: POOL_MANAGER }],
@@ -90,45 +89,41 @@ const initializeLog = {
     .join("")}`,
 };
 
-/**
- * One fetch that plays both parts: the gateway for the GraphQL request, and the
- * node for the `eth_getLogs` batch and the aggregated storage reads after it.
- */
-const bothEndpoints = (): FetchLike =>
-  vi.fn(async (url, init) => {
-    if (url === RPC_URL) {
-      return new Response(
-        JSON.stringify(
-          answerRpc(String(init.body), {
-            logs: () => [initializeLog],
-            // First word of each pair is slot0, second is liquidity.
-            call: (_question, index) => ({
-              success: true,
-              data: word(index % 2 === 0 ? ((198_320n) << 160n) | SQRT_PRICE : 642_953_328_768_594_464n),
-            }),
+/** The node: the creation log for whatever is asked, and a state word per storage read. */
+const chain = (): FetchLike =>
+  vi.fn(async (_url, init) =>
+    new Response(
+      JSON.stringify(
+        answerRpc(String(init.body), {
+          logs: () => [initializeLog],
+          // First word of each pair is slot0, second is liquidity.
+          call: (_question, index) => ({
+            success: true,
+            data: word(index % 2 === 0 ? (198_320n << 160n) | SQRT_PRICE : 642_953_328_768_594_464n),
           }),
-        ),
-        { status: 200 },
-      );
-    }
-    return new Response(JSON.stringify(subgraphBody), { status: 200 });
-  });
+        }),
+      ),
+      { status: 200 },
+    ),
+  );
+
+const daysRead = (
+  value: DataResult<V4PoolDays> = { status: "success", data: { payload, fetchedAt: READ_AT } },
+) => vi.fn(async () => value);
 
 const run = (overrides: Partial<Parameters<typeof fetchEthereumV4PoolSearch>[0]> = {}) =>
   fetchEthereumV4PoolSearch({
     terms: ["usdc", "weth"],
-    apiKey: API_KEY,
-    subgraphId: SUBGRAPH_ID,
+    readDays: daysRead(),
     rpcUrl: RPC_URL,
-    fetchImpl: bothEndpoints(),
-    now: () => NOW,
+    fetchImpl: chain(),
     ...overrides,
   });
 
 const requestsMade = (fetchImpl: FetchLike) =>
   vi.mocked(fetchImpl).mock.calls.map(([url, init]) => ({
     url,
-    body: JSON.parse(String(init.body)) as unknown,
+    body: JSON.parse(String(init.body)) as { method: string; params: [{ to?: string; data?: string; address?: string; topics?: string[] }] }[],
   }));
 
 describe("fetchEthereumV4PoolSearch", () => {
@@ -144,7 +139,16 @@ describe("fetchEthereumV4PoolSearch", () => {
       liquidity: "642953328768594464",
       sqrtPriceX96: SQRT_PRICE.toString(),
     });
-    expect(result.data.fetchedAt).toBe(NOW.toISOString());
+  });
+
+  /*
+   * The list is shared with the holdings net and may be minutes old, so the
+   * page says when it was read rather than when it was rendered.
+   */
+  it("stamps the results with the moment the list was read", async () => {
+    const result = await run();
+
+    expect(result.status === "success" && result.data.fetchedAt).toBe(READ_AT);
   });
 
   /* The fee is the key's, from the log the chain answered with — dynamic, here. */
@@ -161,39 +165,25 @@ describe("fetchEthereumV4PoolSearch", () => {
     });
   });
 
-  it("does not ask the source for its fee figure at all", async () => {
-    const fetchImpl = bothEndpoints();
-    await run({ fetchImpl });
-    const [graph] = requestsMade(fetchImpl);
-
-    expect((graph?.body as { query: string }).query).not.toContain("feeTier");
-    expect((graph?.body as { query: string }).query).toContain("createdAtBlockNumber");
-  });
-
   /*
    * The source is not asked for the terms. It cannot answer a search over every
    * v4 pool before the page stops waiting, so the week's busiest pool-days are
-   * read — the same request the holdings net is read with — and the terms are
-   * matched here. Nothing typed by a visitor travels anywhere.
+   * read — the same read the holdings net uses, cached and shared — and the
+   * terms are matched here. Nothing typed by a visitor travels anywhere.
    */
-  it("asks for the week's busiest pool-days, and keeps the terms out of the request", async () => {
-    const fetchImpl = bothEndpoints();
-    await run({ fetchImpl });
-    const [graph] = requestsMade(fetchImpl);
-    const body = graph?.body as { query: string; variables: Record<string, unknown> };
+  it("reads the shared day table once, with no terms in the asking", async () => {
+    const readDays = daysRead();
+    const fetchImpl = chain();
+    await run({ readDays, fetchImpl });
 
-    expect(body.query).toBe(V4_TRADED_POOLS_QUERY);
-    expect(body.variables).toEqual({ from: tradedWindowStart(NOW), limit: V4_TRADED_POOL_DAYS_LIMIT });
-    expect(JSON.stringify(body)).not.toContain("usdc");
+    expect(readDays).toHaveBeenCalledTimes(1);
+    expect(readDays).toHaveBeenCalledWith();
+    expect(JSON.stringify(requestsMade(fetchImpl))).not.toContain("usdc");
   });
 
-  it("runs a single term over the same window", async () => {
-    const fetchImpl = bothEndpoints();
-    const result = await run({ fetchImpl, terms: ["weth"] });
-    const body = requestsMade(fetchImpl)[0]?.body as { query: string; variables: unknown };
+  it("runs a single term over the same list", async () => {
+    const result = await run({ terms: ["weth"] });
 
-    expect(body.query).toBe(V4_TRADED_POOLS_QUERY);
-    expect(body.variables).toEqual({ from: tradedWindowStart(NOW), limit: V4_TRADED_POOL_DAYS_LIMIT });
     expect(result.status === "success" && result.data.matches.map((match) => match.pool.id)).toEqual([POOL_ID]);
   });
 
@@ -211,20 +201,15 @@ describe("fetchEthereumV4PoolSearch", () => {
   });
 
   /* The address the chain reads go to comes from the answer, not from here — and only the matching pools are read. */
-  it("asks the source which PoolManager to read, then reads that one's logs and storage for the matches alone", async () => {
-    const fetchImpl = bothEndpoints();
+  it("asks the list which PoolManager to read, then reads that one's logs and storage for the matches alone", async () => {
+    const fetchImpl = chain();
     await run({ fetchImpl });
-    const [graph, ...chain] = requestsMade(fetchImpl);
-
-    expect((graph?.body as { query: string }).query).toContain("poolManagers(first: 1)");
-    expect(chain.every((request) => request.url === RPC_URL)).toBe(true);
-    const requests = chain.flatMap(
-      (request) => request.body as { method: string; params: [{ to?: string; data?: string; address?: string; topics?: string[] }] }[],
-    );
+    const requests = requestsMade(fetchImpl).flatMap((request) => request.body);
     const calls = requests.filter((request) => request.method === "eth_call");
     const logs = requests.filter((request) => request.method === "eth_getLogs");
+
     // One aggregated call, to Multicall3, carrying the two storage words of the one matching pool.
-    expect(calls.length).toBe(1);
+    expect(calls).toHaveLength(1);
     expect(calls[0]?.params[0].to).toBe(MULTICALL3_ADDRESS);
     const questions = decodeAggregate3Calls(calls[0]?.params[0].data ?? "");
     expect(questions).toHaveLength(2);
@@ -241,15 +226,12 @@ describe("fetchEthereumV4PoolSearch", () => {
 
   /* The window is cut by the terms before the chain is asked, not by anything fixed. */
   it("reads the chain for the pools that answer the terms, whichever they are", async () => {
-    const fetchImpl = bothEndpoints();
+    const fetchImpl = chain();
     const result = await run({ fetchImpl, terms: ["wbtc", "dai"] });
-    const [, ...chain] = requestsMade(fetchImpl);
-    const requests = chain.flatMap((request) => request.body as { method: string; params: [{ data?: string }] }[]);
-    const aggregate = requests.find((request) => request.method === "eth_call");
+    const requests = requestsMade(fetchImpl).flatMap((request) => request.body);
 
     expect(result.status === "success" && result.data.matches.map((match) => match.pool.id)).toEqual([OTHER_POOL_ID]);
     expect(result.status === "success" && result.data.matches[0]?.state).not.toBeNull();
-    expect(decodeAggregate3Calls(aggregate?.params[0].data ?? "")).toHaveLength(2);
     expect(requests.filter((request) => request.method === "eth_getLogs")).toHaveLength(0);
   });
 
@@ -262,41 +244,45 @@ describe("fetchEthereumV4PoolSearch", () => {
     expect(result.data.matches[0]?.pool.fee).toEqual({ kind: "unread" });
   });
 
-  it("sends the key in the header and never in the URL", async () => {
-    const fetchImpl = bothEndpoints();
-    await run({ fetchImpl });
-    const [url, init] = vi.mocked(fetchImpl).mock.calls[0] ?? [];
-
-    expect(String(url)).not.toContain(API_KEY);
-    expect((init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${API_KEY}`);
-  });
-
   it.each([
     ["no terms", []],
     ["three terms", ["usdc", "weth", "dai"]],
     ["a term that is too short", ["a"]],
-  ])("refuses %s without calling anything", async (_label, terms) => {
-    const fetchImpl = bothEndpoints();
-    const result = await run({ fetchImpl, terms });
+  ])("refuses %s without reading anything", async (_label, terms) => {
+    const readDays = daysRead();
+    const fetchImpl = chain();
+    const result = await run({ readDays, fetchImpl, terms });
 
     expect(result.status === "unavailable" && result.notice).toBe("invalid-search-terms");
+    expect(readDays).not.toHaveBeenCalled();
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("reports a missing v4 subgraph as configuration, without calling anything", async () => {
-    const fetchImpl = bothEndpoints();
-    const result = await run({ fetchImpl, subgraphId: undefined });
-
-    expect(result.status === "unavailable" && result.notice).toBe("market-data-not-configured");
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
-
-  it("maps a refused key to a configuration failure that carries nothing from the wire", async () => {
+  it.each([
+    ["a deployment with no v4 subgraph", "market-data-not-configured", "configuration-error"],
+    ["a source that would not answer", "market-data-timed-out", "timeout"],
+  ])("passes %s on with its own notice, and reads no chain", async (_label, notice, reason) => {
+    const fetchImpl = chain();
     const result = await run({
-      fetchImpl: vi.fn(async () => new Response("{}", { status: 401 })),
+      fetchImpl,
+      readDays: daysRead({ status: "unavailable", reason, notice } as DataResult<V4PoolDays>),
     });
 
-    expect(result.status === "unavailable" && result.notice).toBe("market-data-credentials-rejected");
-    expect(JSON.stringify(result)).not.toContain(API_KEY);
+    expect(result.status === "unavailable" && result.notice).toBe(notice);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("refuses a payload it cannot verify", async () => {
+    const result = await run({
+      readDays: daysRead({ status: "success", data: { payload: { data: null }, fetchedAt: READ_AT } }),
+    });
+
+    expect(result.status === "unavailable" && result.notice).toBe("market-data-malformed");
+  });
+
+  it("never puts the endpoint in what it returns", async () => {
+    const result = await run({ fetchImpl: vi.fn(async () => new Response("x", { status: 500 })) });
+
+    expect(JSON.stringify(result)).not.toContain("key-that-must-never-leak");
   });
 });
