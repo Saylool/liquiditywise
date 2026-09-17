@@ -1,4 +1,6 @@
 import { feeDisclosureFor } from "../../advisor/feeDisclosure";
+import { compareWidths } from "../../advisor/widthComparison";
+import { widthWord } from "../../advisor/widthWords";
 import {
   formatFeePpm,
   formatMeasuredFeePpm,
@@ -480,6 +482,41 @@ const describeOutOfSample = (analysis: PoolRangeAnalysis, locale: Locale): reado
   ];
 };
 
+/**
+ * Every width the page compares, in the page's own figures and words: the
+ * range each would draw, how many of the recent days it held, and how it did
+ * on days it never saw. The model is asked for the trade-off and nothing else
+ * — which width to choose is not a question the page answers either.
+ */
+const describeWidths = (analysis: PoolRangeAnalysis, locale: Locale): readonly string[] => {
+  const t = getDictionary(locale);
+  const quote = quoteFor(analysis);
+  const whole = (value: number) => formatWhole(value, locale);
+
+  return [
+    ...compareWidths(analysis).map((row) => {
+      const edges = quotedInterval(quote, { lower: row.range.lowerPrice, upper: row.range.upperPrice });
+      const label = t.parameters.widthChoice(
+        t.parameters.sigma(formatMultiplier(row.standardDeviationMultiplier, locale)),
+        widthWord(row.standardDeviationMultiplier, t),
+      );
+      const unseen =
+        row.outOfSample === null
+          ? "not enough history to check"
+          : `inside on ${whole(row.outOfSample.occupancy.fullyInside)} of ${whole(row.outOfSample.daysMeasured)} days it never saw`;
+
+      return line(
+        `${label}${row.chosen ? ", the one shown" : ""}`,
+        `1 ${quote.base.symbol} = ${formatPrice(edges.lower, locale)} to ${formatPrice(edges.upper, locale)} ${quote.quote.symbol}; inside on ${whole(row.occupancy.fullyInside)} of the last ${whole(row.daysMeasured)} days; ${unseen}`,
+      );
+    }),
+    line(
+      "Say",
+      "in one sentence, what widening the range buys and costs as these figures show it: more of the days inside, a thinner share of the fees on each. Never which width to choose",
+    ),
+  ];
+};
+
 const section = (title: string, lines: readonly string[]): string =>
   `${title}\n${lines.join("\n")}`;
 
@@ -529,6 +566,7 @@ export const buildRangeInterpretationPrompt = (
     section("CURRENT STATE", describeMarket(analysis, locale)),
     section("HOW THE RANGE WAS DRAWN", describeBasis(analysis, locale)),
     section("SUGGESTED PRICE RANGE", describeRange(analysis, locale)),
+    section("THE OTHER WIDTHS", describeWidths(analysis, locale)),
     section("AGAINST SIMPLY HOLDING", describeDivergence(analysis, locale)),
     section("WHAT THE POOL ACTUALLY DID", describeActivity(analysis, locale)),
     section("WHAT IT ACTUALLY CHARGED", describeRealizedFee(analysis, locale)),

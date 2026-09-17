@@ -4,6 +4,7 @@ import {
   MULTIPLIER_CHOICES,
   MULTIPLIER_PARAMETER,
 } from "../lib/advisor/requestedParameters";
+import { widthWord } from "../lib/advisor/widthWords";
 import { formatMultiplier, formatWhole } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -38,25 +39,6 @@ import type { PriceBandParameters } from "../schemas";
  */
 const optionsIncluding = (offered: readonly number[], current: number): readonly number[] =>
   offered.includes(current) ? offered : [...offered, current].sort((a, b) => a - b);
-
-/**
- * A word for each offered width, in the order the widths are offered.
- *
- * "1σ" means nothing to most people; "tight" means something, and the sigma
- * stays beside it for the reader it does mean something to. The words are
- * relative to each other and to nothing else — none of them is a
- * recommendation, and the note under the form says the width is not a
- * confidence level. A width typed into the URL gets no word, because the
- * words were chosen for the offered widths and would mislead beside another.
- */
-const WIDTH_WORDS = ["tight", "medium", "wide", "veryWide"] as const satisfies readonly (keyof Dictionary["parameters"]["widthWords"])[];
-
-const widthWord = (value: number, t: Dictionary): string | null => {
-  const index = (MULTIPLIER_CHOICES as readonly number[]).indexOf(value);
-  const key = WIDTH_WORDS[index];
-
-  return key === undefined ? null : t.parameters.widthWords[key];
-};
 
 const Choice = ({
   name,

@@ -657,3 +657,40 @@ describe("what the pool actually charged", () => {
     });
   });
 });
+
+/*
+ * The form changes one width at a time; the table under it shows all of them
+ * at once, computed the way the page computes its own, with the chosen one
+ * marked and the two day counts told apart.
+ */
+describe("PoolRangeReport and the other widths", () => {
+  it("compares the four offered widths and marks the one shown", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain("The other widths");
+    expect(markup.match(/<tr[^>]*data-chosen="true"/g)).toHaveLength(1);
+    expect(markup).toContain("Tight (1σ) · shown above");
+    expect(markup).toContain("Medium (1.5σ)");
+    expect(markup).toContain("Wide (2σ)");
+    expect(markup).toContain("Very wide (3σ)");
+    expect(markup).toContain("Inside, of the last 30 days");
+  });
+
+  /* A month of history fits a band and leaves nothing to check it on, and the column says so. */
+  it("says when a width could not be checked on unseen days", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain("not enough history");
+    expect(markup).toContain("None of these is a recommendation.");
+  });
+
+  it("writes the table in Turkish", () => {
+    const markup = render(analyse(), "tr");
+
+    expect(markup).toContain("Diğer genişlikler");
+    expect(markup).toContain("Dar (1σ) · yukarıda gösterilen");
+    expect(markup).toContain("Çok geniş (3σ)");
+    expect(markup).toContain("yeterli geçmiş yok");
+    expect(markup).not.toContain("shown above");
+  });
+});

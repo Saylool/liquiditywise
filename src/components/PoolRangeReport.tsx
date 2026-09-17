@@ -3,6 +3,8 @@ import type {
   PoolRangeAnalysisResult,
   PoolRangeAnalysisStep,
 } from "../lib/advisor/poolRangeAnalysis";
+import { compareWidths } from "../lib/advisor/widthComparison";
+import { widthWord } from "../lib/advisor/widthWords";
 import type { RealizedFeeRateResult } from "../lib/analytics/realizedFeeRate";
 import {
   ABSENT,
@@ -322,6 +324,15 @@ export function PoolRangeReport({
   const percent = (ratio: number) => formatPercent(ratio, locale);
   const whole = (value: number) => formatWhole(value, locale);
   const widthInTicks = range.upperTick - range.lowerTick;
+  /* Every offered width beside the chosen one, in the same direction as everything else. */
+  const widths = compareWidths(result.data).map((row) => ({
+    ...row,
+    label: t.parameters.widthChoice(
+      t.parameters.sigma(formatMultiplier(row.standardDeviationMultiplier, locale)),
+      widthWord(row.standardDeviationMultiplier, t),
+    ),
+    edges: quotedInterval(quote, { lower: row.range.lowerPrice, upper: row.range.upperPrice }),
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -473,6 +484,57 @@ export function PoolRangeReport({
       </Panel>
 
       {controls}
+
+      {/*
+       * The form above changes one width at a time; this shows all of them at
+       * once, computed the way the page computes its own. Two day counts per
+       * width, and the note says which is the fit and which is the check.
+       */}
+      <Panel title={t.widths.heading}>
+        <p className="text-sm leading-relaxed text-muted">{t.widths.intro}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-max text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                <th className="pr-4 pb-2 font-normal">{t.widths.width}</th>
+                <th className="pr-4 pb-2 font-normal">{t.widths.range}</th>
+                <th className="pr-4 pb-2 font-normal">{t.widths.recent(whole(activity.daysMeasured))}</th>
+                <th className="pb-2 font-normal">{t.widths.unseen}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {widths.map((row) => (
+                <tr
+                  key={row.standardDeviationMultiplier}
+                  className={row.chosen ? "font-medium" : "text-muted"}
+                  data-chosen={row.chosen ? "true" : undefined}
+                >
+                  <td className="py-1 pr-4">
+                    {row.label}
+                    {row.chosen ? ` · ${t.widths.chosen}` : ""}
+                  </td>
+                  <td className="py-1 pr-4 font-mono">
+                    {price(row.edges.lower)} – {price(row.edges.upper)} {counter}
+                  </td>
+                  <td className="py-1 pr-4 font-mono">
+                    {t.widths.insideOf(whole(row.occupancy.fullyInside), whole(row.daysMeasured))}
+                  </td>
+                  <td className="py-1 font-mono">
+                    {row.outOfSample === null
+                      ? t.widths.unseenNone
+                      : t.widths.insideOf(
+                          whole(row.outOfSample.occupancy.fullyInside),
+                          whole(row.outOfSample.daysMeasured),
+                        )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs leading-relaxed text-muted">{t.widths.columnsNote}</p>
+        <p className="text-sm leading-relaxed">{t.widths.notAdvice}</p>
+      </Panel>
 
       <Panel title={t.activity.heading}>
         <dl className={FIGURE_GRID}>

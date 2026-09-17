@@ -715,3 +715,36 @@ describe("buildRangeInterpretationPrompt and the hook", () => {
     expect(buildV4(SWAP_HOOK).system).toBe(build().system);
   });
 });
+
+/*
+ * The page compares every offered width; the model is handed the same rows in
+ * the page's own words and figures, and asked for the trade-off alone.
+ */
+describe("buildRangeInterpretationPrompt and the other widths", () => {
+  it("hands the model every width the page compares, the shown one marked", () => {
+    const { user } = buildChecked();
+    const section = user.slice(user.indexOf("THE OTHER WIDTHS"), user.indexOf("AGAINST SIMPLY HOLDING"));
+
+    expect(section).toContain("- Tight (1σ), the one shown: 1 WETH = ");
+    expect(section).toContain("- Medium (1.5σ): 1 WETH = ");
+    expect(section).toContain("- Wide (2σ): ");
+    expect(section).toContain("- Very wide (3σ): ");
+    expect(section).toMatch(/inside on \d+ of the last \d+ days; inside on \d+ of \d+ days it never saw/);
+    expect(section).toContain("Never which width to choose");
+  });
+
+  it("says when a width could not be checked on unseen days", () => {
+    const { user } = build();
+
+    expect(user).toContain("- Tight (1σ), the one shown: 1 WETH = ");
+    expect(user).toContain("not enough history to check");
+  });
+
+  it("names the widths in the reader's language", () => {
+    const { user } = buildChecked("tr");
+
+    expect(user).toContain("- Dar (1σ), the one shown: 1 WETH = ");
+    expect(user).toContain("- Çok geniş (3σ): ");
+    expect(user).not.toContain("Tight");
+  });
+});

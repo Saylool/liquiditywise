@@ -291,6 +291,28 @@ const en = {
     v3Unavailable: "The pair's v3 pools could not be read",
   },
 
+  /*
+   * The same method at every width the form offers, on one page. The two day
+   * counts are different kinds of figure, and the note under the table says
+   * which is which: the first is the fit, the second the check.
+   */
+  widths: {
+    heading: "The other widths",
+    intro:
+      "The same method at each width the form offers, so the trade-off can be seen rather than told: a wider range holds more of the days, and spreads the same deposit over more prices, so each day inside earns a smaller share of the fees.",
+    width: "Width",
+    range: "Range",
+    recent: (days: string) => `Inside, of the last ${days} days`,
+    unseen: "Inside, on days it never saw",
+    insideOf: (inside: string, total: string) => `${inside} of ${total}`,
+    unseenNone: "not enough history",
+    chosen: "shown above",
+    columnsNote:
+      "The first count is over the days each range was drawn from, so it says how that width was fitted, not how it held. The second is the check above, run for each width: the method stepped back a horizon and laid over the days that followed.",
+    notAdvice:
+      "None of these is a recommendation. Which trade-off suits a position depends on what the position is for, and nothing here knows that.",
+  },
+
   parameters: {
     heading: "Change the range",
     apply: "Recalculate",
@@ -1111,6 +1133,23 @@ const tr: Dictionary = {
     moreNotShown: (count: string) => `${count} tanesi daha gösterilmiyor; bunlardan daha sığlar.`,
     v4Unavailable: "Paritenin v4 havuzları okunamadı",
     v3Unavailable: "Paritenin v3 havuzları okunamadı",
+  },
+
+  widths: {
+    heading: "Diğer genişlikler",
+    intro:
+      "Aynı yöntem, formun sunduğu her genişlikte; böylece ödünleşme anlatılmak yerine görülebilir: daha geniş bir aralık günlerin daha çoğunu içinde tutar ve aynı yatırımı daha çok fiyata yayar, bu yüzden içeride geçen her gün komisyonlardan daha küçük bir pay kazanır.",
+    width: "Genişlik",
+    range: "Aralık",
+    recent: (days: string) => `Son ${days} günün içeride geçeni`,
+    unseen: "Hiç görmediği günlerde içeride",
+    insideOf: (inside: string, total: string) => `${total} günün ${inside} tanesi`,
+    unseenNone: "yeterli geçmiş yok",
+    chosen: "yukarıda gösterilen",
+    columnsNote:
+      "İlk sayı, her aralığın çizildiği günler üzerinden; yani o genişliğin nasıl oturtulduğunu söyler, nasıl tuttuğunu değil. İkincisi yukarıdaki sınamanın her genişlik için çalıştırılmış hâli: yöntem bir ufuk geriye alınıp sonraki günlerin üzerine serildi.",
+    notAdvice:
+      "Bunların hiçbiri bir öneri değil. Hangi ödünleşmenin bir pozisyona uyduğu, pozisyonun ne için olduğuna bağlıdır ve burada hiçbir şey bunu bilmez.",
   },
 
   parameters: {
