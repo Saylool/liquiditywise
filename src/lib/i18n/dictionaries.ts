@@ -349,6 +349,7 @@ const en = {
     intro:
       "The tokens found at this address, and the pools they can go into. Nothing here is stored, and the address is public information — the same list is visible to anyone who looks it up.",
     forAddress: "Address",
+    loading: "Asking the token contracts what this address holds…",
     /*
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
@@ -498,6 +499,19 @@ const en = {
     invalidId:
       "That is not a v4 pool id. A v4 pool is named by a 32-byte hash — 0x followed by 64 hexadecimal characters — not by a contract address.",
     noId: "Paste a v4 pool id to see what the pool is and what its hook may do.",
+    loading: "Reading this v4 pool, from the indexer and from the chain…",
+  },
+
+  /*
+   * The page a reader reaches by following something that is not here: an old
+   * link, a typo, an address pasted into the path instead of the box. The
+   * framework's own answer is an unstyled English line, which on a site
+   * published in two languages is the one screen that forgets which it is in.
+   */
+  notFound: {
+    title: "There is no page here",
+    body: "The address you followed does not name anything this application serves. A pool is reached by its address or, for v4, by its id — both of which go in the search box rather than in the path.",
+    search: "Find a pool →",
   },
 
   wallet: {
@@ -1195,6 +1209,7 @@ const tr: Dictionary = {
     intro:
       "Bu adreste bulunan tokenlar ve girebilecekleri havuzlar. Burada hiçbir şey saklanmıyor ve adres zaten herkese açık bilgi — aynı liste, bakan herkese görünür.",
     forAddress: "Adres",
+    loading: "Bu adresin ne tuttuğu token sözleşmelerine soruluyor…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
       `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: Ethereum mainnet'te en çok işlem gören ${v3Pools} Uniswap v3 havuzunda geçen tokenların tamamı${v4Pools === null ? "" : ` ve son yedi günde en çok işlem gören ${v4Pools} v4 havuzundaki para birimlerinin tamamı — zincirin kendi ether'i dahil`}. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
     v4NotSearched:
@@ -1299,6 +1314,13 @@ const tr: Dictionary = {
     invalidId:
       "Bu bir v4 havuz kimliği değil. Bir v4 havuzu 32 baytlık bir özetle adlandırılır — 0x ve ardından 64 onaltılık karakter — bir sözleşme adresiyle değil.",
     noId: "Havuzun ne olduğunu ve hook'unun neye izinli olduğunu görmek için bir v4 havuz kimliği yapıştır.",
+    loading: "Bu v4 havuzu, veri kaynağından ve zincirden okunuyor…",
+  },
+
+  notFound: {
+    title: "Burada bir sayfa yok",
+    body: "Takip ettiğin adres, bu uygulamanın sunduğu hiçbir şeyi adlandırmıyor. Bir havuza adresiyle, v4 ise kimliğiyle ulaşılır; ikisi de yolun içine değil, arama kutusuna yazılır.",
+    search: "Havuz bul →",
   },
 
   wallet: {

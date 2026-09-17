@@ -52,31 +52,4 @@ describe("the front page's copy", () => {
     }
   });
 
-  /*
-   * The failure the notices have their own guard for: an English sentence
-   * pasted into the Turkish object. Checked over every string on the page
-   * rather than the prose alone, because a heading left in English is the same
-   * failure in a more visible place.
-   *
-   * `version` is exempt and is the only exemption: it is the protocol's own
-   * name, and the test above requires both languages to spell it the same.
-   */
-  it("never leaves an English string standing as its own translation", () => {
-    const strings = (value: unknown, path: string): readonly (readonly [string, string])[] => {
-      if (typeof value === "string") return [[path, value]];
-      if (Array.isArray(value)) return value.flatMap((item, index) => strings(item, `${path}[${index}]`));
-      if (typeof value === "object" && value !== null) {
-        return Object.entries(value).flatMap(([key, item]) => strings(item, `${path}.${key}`));
-      }
-      return [];
-    };
-
-    const english = new Map(strings(HOME.en, "home"));
-    const untranslated = strings(HOME.tr, "home")
-      .filter(([path]) => !path.endsWith(".version"))
-      .filter(([path, value]) => english.get(path) === value)
-      .map(([path]) => path);
-
-    expect(untranslated).toEqual([]);
-  });
 });

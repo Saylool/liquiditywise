@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+
+import { getDictionary } from "./dictionaries";
+
+/*
+ * Every string the interface shows, in both languages, checked for the one
+ * failure the compiler cannot see: an English sentence pasted into the Turkish
+ * object.
+ *
+ * The type makes a *missing* key a build error, which is the easy half. The
+ * other half is a key that is present and still English, and it is the likely
+ * one: copy is added to both objects by hand, and the second is written last.
+ *
+ * So the rule is inverted. Rather than listing what must be translated, this
+ * requires that everything is, and keeps a short list of what is deliberately
+ * the same — each with the reason it is. The list is checked in both
+ * directions: an entry that stops being identical is as much a mistake as a
+ * string that starts being.
+ */
+
+/** Paths that read the same in both languages on purpose, and why. */
+const SAME_IN_BOTH: ReadonlyMap<string, string> = new Map([
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the word the Turkish copy uses for a hook throughout"],
+  [".holdings.hookTag", "the word the Turkish copy uses for a hook throughout"],
+  [".search.v4Hook", "the word the Turkish copy uses for a hook throughout"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
+/** Every string in a dictionary, by the path it sits at. */
+const strings = (value: unknown, path = ""): readonly (readonly [string, string])[] => {
+  if (typeof value === "string") return [[path, value]];
+  if (Array.isArray(value)) return value.flatMap((item, index) => strings(item, `${path}[${index}]`));
+  if (typeof value === "object" && value !== null) {
+    return Object.entries(value).flatMap(([key, item]) => strings(item, `${path}.${key}`));
+  }
+
+  return [];
+};
+
+const english = new Map(strings(getDictionary("en")));
+const turkish = strings(getDictionary("tr"));
+
+describe("the two dictionaries", () => {
+  it("carry a comparable number of strings", () => {
+    expect(english.size).toBeGreaterThan(300);
+    expect(turkish).toHaveLength(english.size);
+  });
+
+  it("never leave an English string standing as its own translation", () => {
+    const untranslated = turkish
+      .filter(([path, value]) => english.get(path) === value)
+      .map(([path]) => path)
+      .filter((path) => !SAME_IN_BOTH.has(path));
+
+    expect(untranslated).toEqual([]);
+  });
+
+  /* A reason that has stopped applying is a reason nobody will notice is wrong. */
+  it("keeps no reason for a string that has since been translated", () => {
+    const stale = [...SAME_IN_BOTH.keys()].filter(
+      (path) => english.get(path) !== turkish.find(([at]) => at === path)?.[1],
+    );
+
+    expect(stale).toEqual([]);
+  });
+
+  it("gives a reason for every string it exempts", () => {
+    for (const [path, reason] of SAME_IN_BOTH) {
+      expect(reason.length, path).toBeGreaterThan(20);
+    }
+  });
+});
