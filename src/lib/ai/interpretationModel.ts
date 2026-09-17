@@ -95,6 +95,14 @@ export const resolveInterpretationModel = (configured: string | undefined): Inte
  * Hitting this ceiling should mean something went wrong, not that the limit was
  * tight. At 4096 it is roughly three times the largest spend observed, and the
  * worst case costs a fraction of a cent at the prices above.
+ *
+ * **Measured again on 2026-09-17**, after three increments had each added a
+ * block to the model's brief — what a deposit would take of the fees, the two
+ * one-sided halves of the range, and the hook material the directory shares.
+ * Twenty-four calls, four pools of both protocols, both languages, three runs:
+ * every answer landed, and the largest spend was 1101 tokens — 27% of this
+ * budget, against the 36% the figures above describe. More to read did not turn
+ * into more to think about.
  */
 export const INTERPRETATION_MAX_TOKENS = 4096;
 
@@ -136,6 +144,10 @@ export const INTERPRETATION_REASONING_EFFORT = "low";
  * one read whose work is genuinely open-ended, and because the section streams
  * into a boundary of its own: a slow explanation costs a reader a pending
  * panel under a page they can already read in full.
+ *
+ * Still true on 2026-09-17, over the twenty-four calls described above: English
+ * answers took 7.6 to 9.8 seconds, Turkish 8.1 to 11.7. The worst is a quarter
+ * of this budget, which is the margin a provider having a bad minute needs.
  */
 export const INTERPRETATION_TIMEOUT_MS = 45_000;
 

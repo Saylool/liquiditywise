@@ -30,6 +30,20 @@
  *     node --env-file=.env.local ./node_modules/vitest/vitest.mjs run \
  *     scripts/readLiveExplanations.spec.ts
  *
+ * The four pools the margins in `MAX_SECTION_CHARACTERS` were last measured
+ * over, chosen to put every optional block in the brief into play at least
+ * once — a v3 pool that trades heavily and a v3 pool that barely trades, a
+ * hooked v4 pool and a hookless one:
+ *
+ *   0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640  v3  USDC/WETH, the busiest
+ *   0x7eb59373d63627be64b42406b108b602174b4ccc  v3  sUSDe/USDT, near-idle
+ *   0x2b21c65d9a7dc6926ee330a1c6e5a8037fd81774f3dc066536f800128e39f634  v4 hooked
+ *   0x3b1b1f2e775a6db1664f8e7d59ad568605ea2406312c11aef03146c0cf89d5b9  v4 plain
+ *
+ * Run it three times rather than once. The same section has come back at 466
+ * characters in one run and 812 in the next, so a single run says almost
+ * nothing about the margin that matters.
+ *
  * It calls the model directly rather than through `getRangeInterpretation`, so
  * an edited prompt is read back on the next run instead of an hour later.
  */

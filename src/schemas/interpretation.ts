@@ -62,6 +62,15 @@ const containsFigure = (prose: string): boolean => /\d/.test(prose.replace(PROTO
  * limits section from 957 characters to 465. This bound exists to catch a model
  * that has stopped cooperating, and a bound that also rejects a cooperative
  * answer in one of two published languages is a bug in the bound.
+ *
+ * **Re-measured on 2026-09-17**, after three increments had each added material
+ * to the brief. Twenty-four calls — four pools across both protocols, both
+ * languages, three runs each — and not one section was refused. Turkish ran 43
+ * to 920 characters and English 43 to 857, so the worst case sat at 84% of this
+ * bound and the longest section was `whatTheVolatilitySays` on all three runs:
+ * it is where the band, the widths and the missing days all land. More for the
+ * model to read did not make what it writes longer, which is the thing that
+ * would have needed acting on.
  */
 export const MAX_SECTION_CHARACTERS = 1100;
 
