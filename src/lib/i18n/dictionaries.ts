@@ -762,6 +762,8 @@ const en = {
      * encode are in the technical details at the end, where a reader who
      * wants to check them can, and a reader who does not is never made to.
      */
+    contentsHeading: "On this page",
+    contentsLabel: "The sections of this analysis",
     rangeHeading: "Suggested price range",
     rangeIntro: (base: string, quote: string) =>
       `Where a position in this pool would be active, as the price of one ${base} in ${quote}.`,
@@ -1635,6 +1637,8 @@ const tr: Dictionary = {
         : `Bu sayılar için ${count} çekince geçerli.`,
     caveatsAriaLabel: "Çekinceler",
 
+    contentsHeading: "Bu sayfada",
+    contentsLabel: "Bu analizin bölümleri",
     rangeHeading: "Önerilen fiyat aralığı",
     rangeIntro: (base: string, quote: string) =>
       `Bu havuzdaki bir pozisyonun aktif olacağı fiyatlar; ${base} fiyatı ${quote} cinsinden yazıldı.`,

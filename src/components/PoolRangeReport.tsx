@@ -82,10 +82,105 @@ function Figure({
   );
 }
 
-/** A titled panel. A `<dl>` inside it is the caller's, so prose can sit beside it. */
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+/*
+ * The panels this report is made of, in the order it renders them.
+ *
+ * Not everything on the page: where the pair also trades, and the written
+ * explanation, are streamed in by the route after this component has returned.
+ * Linking to a section that has not arrived would be a link to nothing, so the
+ * contents name what is there when the page first paints.
+ *
+ * One list, used twice: to title each panel and to build the contents that jump
+ * to them. Keeping them apart would let the contents name a panel that had been
+ * renamed, moved or removed — the kind of drift nobody notices because both
+ * halves still look right on their own. A panel added without an entry here is a
+ * type error, and an entry with no panel is a link to nothing, which is why the
+ * ids are checked against the rendered markup by a test.
+ *
+ * The technical fold is in the list because it is the longest thing on the page
+ * and the hardest to scroll to, even though it opens closed.
+ */
+const PANELS = [
+  "range",
+  "basis",
+  "widths",
+  "activity",
+  "deposit",
+  "realizedFee",
+  "outOfSample",
+  "divergence",
+  "rangeOrder",
+  "swapDepth",
+  "technical",
+] as const;
+
+type PanelId = (typeof PANELS)[number];
+
+const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
+  range: t.report.rangeHeading,
+  basis: t.report.basisHeading,
+  widths: t.widths.heading,
+  activity: t.activity.heading,
+  deposit: t.deposit.heading,
+  realizedFee: t.realizedFee.heading,
+  outOfSample: t.outOfSample.heading,
+  divergence: t.divergence.heading,
+  rangeOrder: t.rangeOrder.heading,
+  swapDepth: t.swapDepth.heading,
+  technical: t.technical.heading,
+});
+
+/**
+ * Where the page's own sections are, without leaving it.
+ *
+ * Eleven panels is more than a reader will scroll through looking for one, and
+ * the page grew to that a panel at a time without anyone deciding it should.
+ * Plain anchors: no JavaScript, every one of them a real link that can be copied
+ * and sent.
+ *
+ * Under the range rather than above it. The range is what somebody came for, and
+ * a list of contents standing in front of it would make them read an index
+ * before an answer.
+ */
+function Contents({ t }: { t: Dictionary }) {
+  const titles = panelTitles(t);
+
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <nav aria-label={t.report.contentsLabel} className="flex flex-col gap-2">
+      <h2 className="text-xs uppercase tracking-widest text-muted">{t.report.contentsHeading}</h2>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1">
+        {PANELS.map((id) => (
+          <li key={id}>
+            <a href={`#${id}`} className="text-sm leading-relaxed text-accent underline">
+              {titles[id]}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/** A titled panel. A `<dl>` inside it is the caller's, so prose can sit beside it. */
+function Panel({
+  id,
+  title,
+  children,
+}: {
+  /** What the contents above link to. Typed, so the two lists cannot drift. */
+  id: PanelId;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      id={id}
+      /*
+       * A little room above, so a heading jumped to is not flush against the
+       * top of the window with its panel running off the bottom.
+       */
+      className="flex scroll-mt-4 flex-col gap-4 rounded-lg border border-border bg-surface p-5"
+    >
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">{title}</h2>
       {children}
     </section>
@@ -140,7 +235,7 @@ function RealizedFeePanel({
 }) {
   if (result.status === "unavailable") {
     return (
-      <Panel title={t.realizedFee.heading}>
+      <Panel id="realizedFee" title={t.realizedFee.heading}>
         <p className="text-sm leading-relaxed">{t.realizedFee.unavailableHeading}</p>
         <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
       </Panel>
@@ -150,7 +245,7 @@ function RealizedFeePanel({
   const { rate, verdict } = result;
 
   return (
-    <Panel title={t.realizedFee.heading}>
+    <Panel id="realizedFee" title={t.realizedFee.heading}>
       <p className="text-sm leading-relaxed">
         {verdict.kind === "matches"
           ? t.realizedFee.verdictMatches
@@ -405,7 +500,7 @@ export function PoolRangeReport({
        * they would type into a position; everything after it says where it
        * came from and what it is not.
        */}
-      <Panel title={t.report.rangeHeading}>
+      <Panel id="range" title={t.report.rangeHeading}>
         <p className="text-sm leading-relaxed text-muted">{t.report.rangeIntro(base, counter)}</p>
         <p className="font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
           {t.report.rangeValue(price(edges.lower), price(edges.upper), counter, base)}
@@ -476,7 +571,9 @@ export function PoolRangeReport({
        * knobs are the labels of the form below, so a reader changing one can
        * see which figure they are changing.
        */}
-      <Panel title={t.report.basisHeading}>
+      <Contents t={t} />
+
+      <Panel id="basis" title={t.report.basisHeading}>
         <p className="text-sm leading-relaxed text-muted">
           {t.report.basisIntro(base, whole(volatility.expectedReturnCount))}
         </p>
@@ -518,7 +615,7 @@ export function PoolRangeReport({
        * once, computed the way the page computes its own. Two day counts per
        * width, and the note says which is the fit and which is the check.
        */}
-      <Panel title={t.widths.heading}>
+      <Panel id="widths" title={t.widths.heading}>
         <p className="text-sm leading-relaxed text-muted">{t.widths.intro}</p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-max text-sm">
@@ -572,7 +669,7 @@ export function PoolRangeReport({
         <p className="text-sm leading-relaxed">{t.widths.notAdvice}</p>
       </Panel>
 
-      <Panel title={t.activity.heading}>
+      <Panel id="activity" title={t.activity.heading}>
         <dl className={FIGURE_GRID}>
           <Figure label={t.activity.tvl} value={formatUsd(snapshot.tvlUsd, locale)} />
           <Figure label={t.activity.volume24h} value={formatUsd(activity.volume24hUsd, locale)} />
@@ -628,7 +725,7 @@ export function PoolRangeReport({
        * showing it here after refusing it there would be the same claim made
        * quietly.
        */}
-      <Panel title={t.deposit.heading}>
+      <Panel id="deposit" title={t.deposit.heading}>
         {depositFeeShare.status !== "success" ? (
           <>
             <p className="text-sm leading-relaxed">{t.deposit.unavailable}</p>
@@ -693,14 +790,14 @@ export function PoolRangeReport({
        * wants to know whether the total rests on a single lucky month.
        */}
       {outOfSample.status !== "success" ? (
-        <Panel title={t.outOfSample.heading}>
+        <Panel id="outOfSample" title={t.outOfSample.heading}>
           <p className="text-sm leading-relaxed">{t.outOfSample.unavailableHeading}</p>
           <p className="text-sm leading-relaxed text-muted">
             {t.notices.failure[outOfSample.notice]}
           </p>
         </Panel>
       ) : (
-        <Panel title={t.outOfSample.heading}>
+        <Panel id="outOfSample" title={t.outOfSample.heading}>
           <p className="text-sm leading-relaxed">
             {t.outOfSample.verdict(
               whole(outOfSample.data.occupancy.fullyInside),
@@ -772,7 +869,7 @@ export function PoolRangeReport({
         </Panel>
       )}
 
-      <Panel title={t.divergence.heading}>
+      <Panel id="divergence" title={t.divergence.heading}>
         <p className="text-sm leading-relaxed">{t.divergence.intro}</p>
 
         <table className="w-full text-sm">
@@ -805,7 +902,7 @@ export function PoolRangeReport({
        * figures above describe holding it, and this describes passing through
        * it.
        */}
-      <Panel title={t.rangeOrder.heading}>
+      <Panel id="rangeOrder" title={t.rangeOrder.heading}>
         {rangeOrders.status !== "success" ? (
           <>
             <p className="text-sm leading-relaxed">{t.rangeOrder.unavailable}</p>
@@ -879,7 +976,7 @@ export function PoolRangeReport({
        * direction: an amount of a token is the same amount whichever way round
        * the pair is quoted, so nothing here has to be inverted.
        */}
-      <Panel title={t.swapDepth.heading}>
+      <Panel id="swapDepth" title={t.swapDepth.heading}>
         {swapDepth.status !== "success" ? (
           <>
             <p className="text-sm leading-relaxed">{t.swapDepth.unavailable}</p>
@@ -929,7 +1026,7 @@ export function PoolRangeReport({
        * end: the ticks the prices above encode, the pool's own direction, the
        * blocks the figures were read at.
        */}
-      <details className="rounded-lg border border-border bg-surface p-5">
+      <details id="technical" className="scroll-mt-4 rounded-lg border border-border bg-surface p-5">
         <summary className="cursor-pointer text-sm font-semibold uppercase tracking-widest text-muted">
           {t.technical.heading}
         </summary>

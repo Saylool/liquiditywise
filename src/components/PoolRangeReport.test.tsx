@@ -203,8 +203,13 @@ describe("PoolRangeReport", () => {
     );
     const controls = withControls.indexOf('<form id="controls">');
 
-    expect(controls).toBeGreaterThan(withControls.indexOf("How this range was drawn"));
-    expect(controls).toBeLessThan(withControls.indexOf("What the pool actually did"));
+    /*
+     * Located by the panels' own ids rather than by their headings: every
+     * heading is also a link in the contents above them, so `indexOf` on the
+     * words would find the link and not the panel.
+     */
+    expect(controls).toBeGreaterThan(withControls.indexOf('id="basis"'));
+    expect(controls).toBeLessThan(withControls.indexOf('id="activity"'));
   });
 
   it("still shows the controls when there is no analysis to show", () => {
@@ -460,8 +465,11 @@ describe("PoolRangeReport against simply holding", () => {
     const quote = choosePriceQuote(pool, band.currentPrice);
     const shown = divergence.points.map((point) => quotedPrice(quote, point.price)).sort((a, b) => a - b);
 
-    // Within the panel: the current price is also printed higher up the page.
-    const panel = markup.slice(markup.indexOf("Compared with just holding"));
+    /*
+     * Within the panel, located by its id: the current price is printed higher
+     * up the page, and the panel's own heading is a link in the contents.
+     */
+    const panel = markup.slice(markup.indexOf('id="divergence"'));
     const positions = shown.map((value) => panel.indexOf(`${formatPrice(value)} USDC<`));
     expect(positions.every((position) => position > 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
@@ -1054,5 +1062,59 @@ describe("what a swap costs here", () => {
     expect(markup).toContain("Burada bir takas ne kadara mal olur");
     expect(markup).toContain("Havuza USDC satmak");
     expect(markup).toContain("Neden vazgeçiyor");
+  });
+});
+
+/*
+ * The page grew to eleven panels a panel at a time, without anyone deciding it
+ * should. These are the checks that keep the way in honest: every link goes
+ * somewhere, every panel can be reached, and the two lists cannot drift apart
+ * because they are the same list.
+ */
+describe("the way into the page", () => {
+  const anchors = (markup: string) => [...markup.matchAll(/href="#([a-zA-Z]+)"/g)].map((m) => m[1]);
+  const targets = (markup: string) => [...markup.matchAll(/ id="([a-zA-Z]+)"/g)].map((m) => m[1]);
+
+  it("lists the sections under the range rather than in front of it", () => {
+    const markup = render(analyse());
+    const contents = markup.indexOf("On this page");
+    const firstPanel = markup.indexOf("Suggested price range");
+    const secondPanel = markup.indexOf("How this range was drawn");
+
+    expect(contents).toBeGreaterThan(firstPanel);
+    expect(contents).toBeLessThan(secondPanel);
+  });
+
+  it("links every section it names to a panel that is there", () => {
+    const markup = render(analyse());
+    const linked = anchors(markup);
+    const present = new Set(targets(markup));
+
+    expect(linked.length).toBe(11);
+    expect(linked.filter((id) => !present.has(id))).toEqual([]);
+  });
+
+  it("names every panel on the page, including the one that opens closed", () => {
+    const markup = render(analyse());
+    const linked = new Set(anchors(markup));
+
+    for (const id of targets(markup)) {
+      expect(linked.has(id)).toBe(true);
+    }
+    expect(linked.has("technical")).toBe(true);
+  });
+
+  it("is a labelled navigation rather than a list of stray links", () => {
+    const markup = render(analyse());
+
+    expect(markup).toContain('<nav aria-label="The sections of this analysis"');
+  });
+
+  it("names the sections in the reader's language", () => {
+    const markup = render(analyse(), "tr");
+
+    expect(markup).toContain("Bu sayfada");
+    expect(markup).toContain("Bu analizin bölümleri");
+    expect(markup).not.toContain("On this page");
   });
 });
