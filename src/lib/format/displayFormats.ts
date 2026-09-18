@@ -34,6 +34,18 @@ export const ABSENT = "—";
 const byLocale = <T,>(build: (tag: string) => T): Record<Locale, T> => ({
   en: build("en-US"),
   tr: build("tr-TR"),
+  de: build("de-DE"),
+  es: build("es-ES"),
+  /*
+   * Arabic with Latin digits, not the Eastern Arabic-Indic ones `ar` defaults
+   * to. Every figure on these pages is meant to be read against the others —
+   * a price beside a range beside a tick — and against addresses and token
+   * symbols that are Latin whatever the language. Two numeral systems in one
+   * line would make them harder to compare, not easier to read.
+   */
+  ar: build("ar-u-nu-latn"),
+  hi: build("hi-IN"),
+  zh: build("zh-CN"),
 });
 
 const standardPrice = byLocale(

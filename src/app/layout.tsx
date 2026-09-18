@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 
 import { ErrorCopyProvider } from "@/components/ErrorCopyProvider";
+import { directionOf } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme/theme";
 
@@ -45,6 +46,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={locale}
+      /*
+       * Arabic runs the other way, and one attribute is what turns the whole
+       * document around: text alignment, the order of flex and grid children,
+       * scrollbars, and every logical property the styles are written in. The
+       * styles use `start`/`end` rather than `left`/`right` for exactly this —
+       * a margin written as `left` would stay on the left in a language that
+       * reads from the right, which is how a mirrored layout comes apart.
+       */
+      dir={directionOf(locale)}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       /*
        * The boot script below stamps `data-theme` on this element before React

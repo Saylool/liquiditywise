@@ -9,8 +9,8 @@ import {
 } from "./locales";
 
 describe("LOCALES", () => {
-  it("publishes English and Turkish, with English as the fallback", () => {
-    expect(LOCALES).toEqual(["en", "tr"]);
+  it("publishes seven languages, with English as the fallback", () => {
+    expect(LOCALES).toEqual(["en", "tr", "de", "es", "ar", "hi", "zh"]);
     expect(DEFAULT_LOCALE).toBe("en");
   });
 });
@@ -19,7 +19,7 @@ describe("isLocale", () => {
   it("accepts only a language this interface is published in", () => {
     expect(isLocale("en")).toBe(true);
     expect(isLocale("tr")).toBe(true);
-    expect(isLocale("de")).toBe(false);
+    expect(isLocale("sv")).toBe(false);
     expect(isLocale("TR")).toBe(false);
     expect(isLocale("")).toBe(false);
     expect(isLocale(null)).toBe(false);
@@ -57,7 +57,7 @@ describe("negotiateLocale", () => {
   });
 
   it("skips a language it does not publish", () => {
-    expect(negotiateLocale("de-DE,fr;q=0.9,tr;q=0.8")).toBe("tr");
+    expect(negotiateLocale("sv-SE,nb;q=0.9,tr;q=0.8")).toBe("tr");
   });
 
   it("drops an entry the client explicitly refused", () => {
@@ -68,12 +68,12 @@ describe("negotiateLocale", () => {
 
   it("ignores a wildcard, which asks for nothing in particular", () => {
     expect(negotiateLocale("*")).toBeNull();
-    expect(negotiateLocale("de,*;q=0.5")).toBeNull();
+    expect(negotiateLocale("sv,*;q=0.5")).toBeNull();
   });
 
   it("says nothing rather than guessing when no language matches", () => {
     // `null` lets the caller tell "no preference" from "preferred English".
-    expect(negotiateLocale("de-DE,fr")).toBeNull();
+    expect(negotiateLocale("sv-SE,nb")).toBeNull();
     expect(negotiateLocale("")).toBeNull();
     expect(negotiateLocale(null)).toBeNull();
     expect(negotiateLocale(undefined)).toBeNull();
@@ -110,12 +110,12 @@ describe("resolveLocale", () => {
 
   it("ignores a cookie value that is not a published language", () => {
     // A stale or tampered cookie must not take the reader out of the interface.
-    expect(resolveLocale({ cookieValue: "de", acceptLanguage: "tr" })).toBe("tr");
+    expect(resolveLocale({ cookieValue: "sv", acceptLanguage: "tr" })).toBe("tr");
     expect(resolveLocale({ cookieValue: "", acceptLanguage: "tr" })).toBe("tr");
   });
 
   it("falls back to the default when neither says anything usable", () => {
     expect(resolveLocale({ cookieValue: null, acceptLanguage: null })).toBe(DEFAULT_LOCALE);
-    expect(resolveLocale({ cookieValue: "de", acceptLanguage: "fr" })).toBe(DEFAULT_LOCALE);
+    expect(resolveLocale({ cookieValue: "sv", acceptLanguage: "sv" })).toBe(DEFAULT_LOCALE);
   });
 });

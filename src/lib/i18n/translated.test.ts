@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { getDictionary } from "./dictionaries";
+import { FULLY_TRANSLATED, isFullyTranslated, LOCALES, type Locale } from "./locales";
 
 /*
- * Every string the interface shows, in both languages, checked for the one
+ * Every string the interface shows, in every language, checked for the one
  * failure the compiler cannot see: an English sentence pasted into the Turkish
  * object.
  *
@@ -18,8 +19,8 @@ import { getDictionary } from "./dictionaries";
  * string that starts being.
  */
 
-/** Paths that read the same in both languages on purpose, and why. */
-const SAME_IN_BOTH: ReadonlyMap<string, string> = new Map([
+/** Paths that read the same as English on purpose, per language, and why. */
+const TURKISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".feeTiers.hook", "the word the Turkish copy uses for a hook throughout"],
@@ -40,35 +41,85 @@ const strings = (value: unknown, path = ""): readonly (readonly [string, string]
 };
 
 const english = new Map(strings(getDictionary("en")));
-const turkish = strings(getDictionary("tr"));
 
-describe("the two dictionaries", () => {
-  it("carry a comparable number of strings", () => {
-    expect(english.size).toBeGreaterThan(300);
-    expect(turkish).toHaveLength(english.size);
-  });
+const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
+  ["tr", TURKISH_SAME_AS_ENGLISH],
+]);
 
-  it("never leave an English string standing as its own translation", () => {
-    const untranslated = turkish
-      .filter(([path, value]) => english.get(path) === value)
-      .map(([path]) => path)
-      .filter((path) => !SAME_IN_BOTH.has(path));
+/*
+ * Driven by `FULLY_TRANSLATED` rather than by a list written here, so promoting
+ * a language is one edit and this starts holding it to the same standard the
+ * same day. A language still being translated is checked by the block below
+ * instead, which asks something weaker and true of it.
+ */
+describe.each(FULLY_TRANSLATED.filter((locale) => locale !== "en"))(
+  "the %s dictionary",
+  (locale) => {
+    const translated = strings(getDictionary(locale));
+    const exempt = EXEMPT.get(locale) ?? new Map<string, string>();
 
-    expect(untranslated).toEqual([]);
-  });
+    it("carries a comparable number of strings", () => {
+      expect(english.size).toBeGreaterThan(300);
+      expect(translated).toHaveLength(english.size);
+    });
 
-  /* A reason that has stopped applying is a reason nobody will notice is wrong. */
-  it("keeps no reason for a string that has since been translated", () => {
-    const stale = [...SAME_IN_BOTH.keys()].filter(
-      (path) => english.get(path) !== turkish.find(([at]) => at === path)?.[1],
-    );
+    it("never leaves an English string standing as its own translation", () => {
+      const untranslated = translated
+        .filter(([path, value]) => english.get(path) === value)
+        .map(([path]) => path)
+        .filter((path) => !exempt.has(path));
 
-    expect(stale).toEqual([]);
-  });
+      expect(untranslated).toEqual([]);
+    });
 
-  it("gives a reason for every string it exempts", () => {
-    for (const [path, reason] of SAME_IN_BOTH) {
-      expect(reason.length, path).toBeGreaterThan(20);
-    }
-  });
-});
+    /* A reason that has stopped applying is a reason nobody will notice is wrong. */
+    it("keeps no reason for a string that has since been translated", () => {
+      const stale = [...exempt.keys()].filter(
+        (path) => english.get(path) !== translated.find(([at]) => at === path)?.[1],
+      );
+
+      expect(stale).toEqual([]);
+    });
+
+    it("gives a reason for every string it exempts", () => {
+      for (const [path, reason] of exempt) {
+        expect(reason.length, path).toBeGreaterThan(20);
+      }
+    });
+  },
+);
+
+/*
+ * The languages whose interface is translated and whose explanations are not.
+ *
+ * Nothing here demands completeness — that is the point of the state. What it
+ * demands is that the state is real: a partial dictionary that translated
+ * nothing would render an entirely English page while the interface claimed,
+ * in that language, to be partly translated. And every string must still be
+ * present, because a reader meets a missing one as a blank rather than as
+ * English.
+ */
+describe.each(LOCALES.filter((locale) => !isFullyTranslated(locale)))(
+  "the %s dictionary, still being translated",
+  (locale) => {
+    const translated = strings(getDictionary(locale));
+
+    it("has every string English has", () => {
+      expect(translated).toHaveLength(english.size);
+    });
+
+    it("has actually translated some of them", () => {
+      const changed = translated.filter(([path, value]) => english.get(path) !== value);
+
+      expect(changed.length).toBeGreaterThan(15);
+    });
+
+    /* The sentence that says the rest is English has to be in the language. */
+    it("says so in its own language", () => {
+      const notice = getDictionary(locale).preferences.partlyTranslated;
+
+      expect(notice).not.toBe(getDictionary("en").preferences.partlyTranslated);
+      expect(notice.length).toBeGreaterThan(20);
+    });
+  },
+);

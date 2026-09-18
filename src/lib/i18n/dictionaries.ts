@@ -1,6 +1,7 @@
 import type { HookPermission, HookTopic } from "../../schemas/hookPermissions";
 import type { DataFailureNotice, DataWarningNotice } from "../../schemas/notices";
-import { ERROR_COPY } from "./errorCopy";
+import { ERROR_COPY, type ErrorCopy } from "./errorCopy";
+import { type DeepPartial, withFallback } from "./fallback";
 import type { Locale } from "./locales";
 
 /*
@@ -41,6 +42,15 @@ const en = {
 
   preferences: {
     languageLabel: "Language",
+    selectLanguage: "Select language",
+    closeLanguages: "Close",
+    /*
+     * Said in the reader's own language, at the moment they choose it, rather
+     * than left to be discovered paragraph by paragraph. A reader who is told
+     * can decide; one who meets it halfway down a page cannot.
+     */
+    partlyTranslated:
+      "This language is still being translated. The menus, labels and headings are in it; the longer explanations are still in English.",
     themeLabel: "Theme",
     themeSystem: "System",
     themeLight: "Light",
@@ -1139,6 +1149,10 @@ const tr: Dictionary = {
 
   preferences: {
     languageLabel: "Dil",
+    selectLanguage: "Dil seç",
+    closeLanguages: "Kapat",
+    partlyTranslated:
+      "Bu dilin çevirisi sürüyor. Menüler, etiketler ve başlıklar bu dilde; uzun açıklamalar hâlâ İngilizce.",
     themeLabel: "Tema",
     themeSystem: "Sistem",
     themeLight: "Açık",
@@ -1976,6 +1990,236 @@ const tr: Dictionary = {
   error: ERROR_COPY.tr,
 };
 
-const dictionaries: Record<Locale, Dictionary> = { en, tr };
+/*
+ * The five languages whose interface is translated and whose longer
+ * explanations are not yet.
+ *
+ * Written as partial dictionaries and completed from English, so nothing can
+ * render empty and a sentence can be moved across one at a time. What is here
+ * is what a reader navigates by: the page titles, the preference controls, the
+ * disclaimer, the search, the panel headings and the buttons. What is not here
+ * is the explanatory prose, which is the slowest to translate well and the
+ * worst to translate badly — and the interface says so, in the reader's own
+ * language, at the moment they pick it.
+ */
+
+const de: DeepPartial<Dictionary> = {
+  metadata: {
+    description:
+      "Ein informativer, KI-gestützter Ratgeber für Liquiditätsstrategien in Uniswap v3 und v4. Nur zur Orientierung — keine Finanzberatung.",
+  },
+  preferences: {
+    languageLabel: "Sprache",
+    selectLanguage: "Sprache wählen",
+    closeLanguages: "Schließen",
+    partlyTranslated:
+      "Diese Sprache wird noch übersetzt. Menüs, Beschriftungen und Überschriften sind bereits darin; die längeren Erklärungen sind weiterhin auf Englisch.",
+    themeLabel: "Darstellung",
+    themeSystem: "System",
+    themeLight: "Hell",
+    themeDark: "Dunkel",
+  },
+  disclaimer: {
+    ariaLabel: "Wichtiger Hinweis",
+    title: "Lernwerkzeug — keine Finanzberatung.",
+    body: "Diese Anwendung erklärt die Mechanik von Uniswap und hilft beim Nachdenken über Parameter. Sie sagt keine Kurse voraus, garantiert keine Erträge und kann nicht prüfen, ob ein Smart Contract sicher ist. Liquidität bereitzustellen birgt echte Risiken, darunter Impermanent Loss und den Totalverlust des eingesetzten Kapitals. Prüfen Sie Vertragsadressen immer selbst und recherchieren Sie eigenständig.",
+  },
+  search: {
+    label: "Ein Paar, eine v3-Pool-Adresse oder eine v4-Pool-ID",
+    submit: "Pools finden",
+    heading: "Passende Uniswap-v3-Pools",
+    emptyHint: "Prüfen Sie die Schreibweise, oder fügen Sie die Adresse des Pools ein, falls Sie sie haben.",
+  },
+  parameters: {
+    heading: "Bereich ändern",
+    apply: "Neu berechnen",
+    horizonLabel: "Wie weit voraus",
+    widthLabel: "Wie breit",
+    depositLabel: "Wie viel",
+  },
+  holdings: { heading: "Was diese Adresse hält", forAddress: "Adresse" },
+  positions: { heading: "Positionen, die diese Adresse bereits hält", analyse: "Diesen Pool analysieren →" },
+  notFound: { title: "Hier gibt es keine Seite", search: "Einen Pool finden →" },
+};
+
+const es: DeepPartial<Dictionary> = {
+  metadata: {
+    description:
+      "Un asesor educativo asistido por IA para estrategias de liquidez en Uniswap v3 y v4. Solo orientación — no es asesoramiento financiero.",
+  },
+  preferences: {
+    languageLabel: "Idioma",
+    selectLanguage: "Seleccionar idioma",
+    closeLanguages: "Cerrar",
+    partlyTranslated:
+      "Este idioma aún se está traduciendo. Los menús, las etiquetas y los títulos ya están en él; las explicaciones más largas siguen en inglés.",
+    themeLabel: "Tema",
+    themeSystem: "Sistema",
+    themeLight: "Claro",
+    themeDark: "Oscuro",
+  },
+  disclaimer: {
+    ariaLabel: "Aviso importante",
+    title: "Herramienta educativa — no es asesoramiento financiero.",
+    body: "Esta aplicación explica la mecánica de Uniswap y ayuda a razonar sobre la elección de parámetros. No predice precios, no garantiza rendimientos y no puede verificar que un contrato inteligente sea seguro. Aportar liquidez conlleva riesgos reales, incluidas la pérdida impermanente y la pérdida total de los fondos. Verifique siempre las direcciones de los contratos e investigue por su cuenta.",
+  },
+  search: {
+    label: "Un par, la dirección de un pool v3 o el id de un pool v4",
+    submit: "Buscar pools",
+    heading: "Pools de Uniswap v3 coincidentes",
+    emptyHint: "Revise la ortografía, o pegue la dirección del pool si la tiene.",
+  },
+  parameters: {
+    heading: "Cambiar el rango",
+    apply: "Recalcular",
+    horizonLabel: "Hasta cuándo",
+    widthLabel: "Qué amplitud",
+    depositLabel: "Cuánto",
+  },
+  holdings: { heading: "Lo que tiene esta dirección", forAddress: "Dirección" },
+  positions: { heading: "Posiciones que ya tiene esta dirección", analyse: "Analizar este pool →" },
+  notFound: { title: "Aquí no hay ninguna página", search: "Buscar un pool →" },
+};
+
+const ar: DeepPartial<Dictionary> = {
+  metadata: {
+    description:
+      "مرشد تعليمي مدعوم بالذكاء الاصطناعي لاستراتيجيات السيولة في Uniswap v3 و v4. إرشاد فقط — وليس نصيحة مالية.",
+  },
+  preferences: {
+    languageLabel: "اللغة",
+    selectLanguage: "اختر اللغة",
+    closeLanguages: "إغلاق",
+    partlyTranslated:
+      "لا تزال هذه اللغة قيد الترجمة. القوائم والتسميات والعناوين بها، أما الشروح الطويلة فما زالت بالإنجليزية.",
+    themeLabel: "المظهر",
+    themeSystem: "النظام",
+    themeLight: "فاتح",
+    themeDark: "داكن",
+  },
+  disclaimer: {
+    ariaLabel: "تنبيه مهم",
+    title: "أداة تعليمية — وليست نصيحة مالية.",
+    body: "يشرح هذا التطبيق آليات Uniswap ويساعدك على التفكير في اختيار المعايير. وهو لا يتنبأ بالأسعار، ولا يضمن أي عائد، ولا يمكنه التحقق من أمان أي عقد ذكي. توفير السيولة ينطوي على مخاطر حقيقية، منها الخسارة غير الدائمة وفقدان الأموال بالكامل. تحقّق دائمًا من عناوين العقود بنفسك وابحث على مسؤوليتك.",
+  },
+  search: {
+    label: "زوج، أو عنوان تجمّع v3، أو معرّف تجمّع v4",
+    submit: "ابحث عن التجمّعات",
+    heading: "تجمّعات Uniswap v3 المطابقة",
+    emptyHint: "راجع الإملاء، أو ألصق عنوان التجمّع إن كان لديك.",
+  },
+  parameters: {
+    heading: "غيّر النطاق",
+    apply: "أعد الحساب",
+    horizonLabel: "إلى أي مدى",
+    widthLabel: "ما اتساعه",
+    depositLabel: "كم المبلغ",
+  },
+  holdings: { heading: "ما الذي يملكه هذا العنوان", forAddress: "العنوان" },
+  positions: { heading: "المراكز التي يملكها هذا العنوان بالفعل", analyse: "حلّل هذا التجمّع ←" },
+  notFound: { title: "لا توجد صفحة هنا", search: "ابحث عن تجمّع ←" },
+};
+
+const hi: DeepPartial<Dictionary> = {
+  metadata: {
+    description:
+      "Uniswap v3 और v4 की लिक्विडिटी रणनीतियों के लिए एक शैक्षिक, AI-सहायित सलाहकार। केवल मार्गदर्शन — वित्तीय सलाह नहीं।",
+  },
+  preferences: {
+    languageLabel: "भाषा",
+    selectLanguage: "भाषा चुनें",
+    closeLanguages: "बंद करें",
+    partlyTranslated:
+      "इस भाषा का अनुवाद अभी चल रहा है। मेन्यू, लेबल और शीर्षक इसी भाषा में हैं; लंबे स्पष्टीकरण अब भी अंग्रेज़ी में हैं।",
+    themeLabel: "थीम",
+    themeSystem: "सिस्टम",
+    themeLight: "उजला",
+    themeDark: "गहरा",
+  },
+  disclaimer: {
+    ariaLabel: "महत्वपूर्ण सूचना",
+    title: "शैक्षिक उपकरण — वित्तीय सलाह नहीं।",
+    body: "यह ऐप्लिकेशन Uniswap की कार्यप्रणाली समझाता है और पैरामीटर चुनने पर सोचने में मदद करता है। यह कीमतों का अनुमान नहीं लगाता, किसी प्रतिफल की गारंटी नहीं देता, और यह जाँच नहीं सकता कि कोई स्मार्ट कॉन्ट्रैक्ट सुरक्षित है। लिक्विडिटी देने में वास्तविक जोखिम है, जिसमें अस्थायी हानि और पूरी पूँजी का नुकसान शामिल है। कॉन्ट्रैक्ट के पते हमेशा स्वयं जाँचें और अपनी ओर से शोध करें।",
+  },
+  search: {
+    label: "एक जोड़ी, कोई v3 पूल पता, या कोई v4 पूल आईडी",
+    submit: "पूल खोजें",
+    heading: "मेल खाते Uniswap v3 पूल",
+    emptyHint: "वर्तनी जाँचें, या पूल का पता आपके पास हो तो वही चिपकाएँ।",
+  },
+  parameters: {
+    heading: "दायरा बदलें",
+    apply: "फिर से गणना करें",
+    horizonLabel: "कितना आगे तक",
+    widthLabel: "कितना चौड़ा",
+    depositLabel: "कितना",
+  },
+  holdings: { heading: "इस पते के पास क्या है", forAddress: "पता" },
+  positions: { heading: "इस पते के पास पहले से मौजूद पोज़िशन", analyse: "इस पूल का विश्लेषण करें →" },
+  notFound: { title: "यहाँ कोई पृष्ठ नहीं है", search: "कोई पूल खोजें →" },
+};
+
+const zh: DeepPartial<Dictionary> = {
+  metadata: {
+    description:
+      "一个面向 Uniswap v3 与 v4 流动性策略的教学型 AI 辅助顾问。仅供参考——不构成财务建议。",
+  },
+  preferences: {
+    languageLabel: "语言",
+    selectLanguage: "选择语言",
+    closeLanguages: "关闭",
+    partlyTranslated:
+      "这门语言仍在翻译中。菜单、标签和标题已是该语言；较长的说明文字目前仍为英文。",
+    themeLabel: "主题",
+    themeSystem: "跟随系统",
+    themeLight: "浅色",
+    themeDark: "深色",
+  },
+  disclaimer: {
+    ariaLabel: "重要声明",
+    title: "教学工具——不构成财务建议。",
+    body: "本应用讲解 Uniswap 的运作机制，帮助你思考参数的选择。它不预测价格，不保证任何收益，也无法验证某个智能合约是否安全。提供流动性存在真实风险，包括无常损失以及本金的全部损失。请始终自行核对合约地址，并独立研究。",
+  },
+  search: {
+    label: "一个交易对、一个 v3 池地址，或一个 v4 池 id",
+    submit: "查找资金池",
+    heading: "匹配的 Uniswap v3 资金池",
+    emptyHint: "请检查拼写，或者直接粘贴该池的地址。",
+  },
+  parameters: {
+    heading: "调整区间",
+    apply: "重新计算",
+    horizonLabel: "看多远",
+    widthLabel: "多宽",
+    depositLabel: "多少",
+  },
+  holdings: { heading: "这个地址持有什么", forAddress: "地址" },
+  positions: { heading: "这个地址已经持有的仓位", analyse: "分析这个资金池 →" },
+  notFound: { title: "这里没有页面", search: "查找一个资金池 →" },
+};
+
+/**
+ * A partly translated language, completed from English.
+ *
+ * The error copy is attached afterwards rather than merged, and that is not
+ * tidiness: an error boundary is handed this object directly, and merging would
+ * hand it a copy instead — so `t.error` would stop being the very object
+ * `ERROR_COPY` holds, and the check that there is one source for those
+ * sentences would have nothing left to check.
+ */
+const completed = (partial: DeepPartial<Dictionary>, error: ErrorCopy): Dictionary => ({
+  ...withFallback(en, partial),
+  error,
+});
+
+const dictionaries: Record<Locale, Dictionary> = {
+  en,
+  tr,
+  de: completed(de, ERROR_COPY.de),
+  es: completed(es, ERROR_COPY.es),
+  ar: completed(ar, ERROR_COPY.ar),
+  hi: completed(hi, ERROR_COPY.hi),
+  zh: completed(zh, ERROR_COPY.zh),
+};
 
 export const getDictionary = (locale: Locale): Dictionary => dictionaries[locale];

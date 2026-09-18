@@ -66,6 +66,11 @@ import { BASE_INSTRUCTION } from "./base";
 const LANGUAGE_NAMES: Record<Locale, string> = {
   en: "English",
   tr: "Turkish",
+  de: "German",
+  es: "Spanish",
+  ar: "Arabic",
+  hi: "Hindi",
+  zh: "Chinese (Simplified)",
 };
 
 /**
@@ -83,6 +88,17 @@ const LANGUAGE_NAMES: Record<Locale, string> = {
  */
 const TERMINOLOGY: Record<Locale, readonly string[]> = {
   en: [],
+  /*
+   * Empty until measured. The Turkish list below exists because a deployment
+   * was read across four pools and found using two words for the same thing;
+   * writing a list for a language nobody has read the output of would be
+   * guessing at a problem instead of fixing an observed one.
+   */
+  de: [],
+  es: [],
+  ar: [],
+  hi: [],
+  zh: [],
   tr: [
     'the pool: "havuz"',
     'token, plural: "tokenlar"',

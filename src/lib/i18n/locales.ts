@@ -12,9 +12,54 @@
  * English, and the interface around them speaks the reader's language.
  */
 
-export const LOCALES = ["en", "tr"] as const;
+export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh"] as const;
 
 export type Locale = (typeof LOCALES)[number];
+
+/** Which way the script runs. Only Arabic, of these, runs the other way. */
+export type Direction = "ltr" | "rtl";
+
+/**
+ * How each language presents itself: its own name, a flag, and its direction.
+ *
+ * **Named in itself, never translated.** Someone looking for Turkish is looking
+ * for the word "Türkçe"; showing them "Turkish" while the interface is in
+ * English asks them to already read the language they are trying to leave.
+ *
+ * **The flags are decoration and nothing more.** A language is not a country —
+ * Arabic belongs to two dozen of them, Spanish to twenty, and picking one flag
+ * for each is a choice made for recognisability at a glance, not a claim about
+ * where a language is spoken. The name beside it is what actually identifies
+ * the entry, and it is what a screen reader is given.
+ */
+export const LOCALE_DETAILS: Record<
+  Locale,
+  { readonly name: string; readonly flag: string; readonly direction: Direction }
+> = {
+  en: { name: "English", flag: "🇬🇧", direction: "ltr" },
+  tr: { name: "Türkçe", flag: "🇹🇷", direction: "ltr" },
+  de: { name: "Deutsch", flag: "🇩🇪", direction: "ltr" },
+  es: { name: "Español", flag: "🇪🇸", direction: "ltr" },
+  ar: { name: "العربية", flag: "🇸🇦", direction: "rtl" },
+  hi: { name: "हिन्दी", flag: "🇮🇳", direction: "ltr" },
+  zh: { name: "中文", flag: "🇨🇳", direction: "ltr" },
+};
+
+/**
+ * The languages every sentence has been written in.
+ *
+ * The rest are published with their interface translated and their longer
+ * explanations still in English, and the page says so in that language rather
+ * than letting a reader discover it paragraph by paragraph. Moving a language
+ * into this set is the last step of translating it, not the first.
+ */
+export const FULLY_TRANSLATED: readonly Locale[] = ["en", "tr"];
+
+export const isFullyTranslated = (locale: Locale): boolean =>
+  FULLY_TRANSLATED.includes(locale);
+
+/** Which way a language's script runs, for the `dir` attribute on the document. */
+export const directionOf = (locale: Locale): Direction => LOCALE_DETAILS[locale].direction;
 
 /** Used when nothing identifies a preference. */
 export const DEFAULT_LOCALE: Locale = "en";
