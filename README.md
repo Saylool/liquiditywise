@@ -935,6 +935,58 @@ token contracts get asked, and a ten-minute-old net can only mean a pool listed
 in the last ten minutes has not been asked about yet. That is a narrower version
 of the limit the page already states.
 
+## Positions an address is already in
+
+The page above answers what an address *could* do. This answers what it has
+done: the Uniswap v3 positions it is actually in, each with the prices it
+covers and whether the pool is inside them now.
+
+It comes from a different place. A position is an ERC-721 token held by one
+singleton, so the question is asked of that contract rather than of a pool or an
+indexer — and it is three questions in a row, because the ids come out of the
+count and the positions out of the ids. Each is one aggregated call, so three
+round trips carry hundreds of questions. Measured against live addresses: 0.17
+seconds for one holding nothing, 0.88 for one holding 84.
+
+**A position names a pair and a fee, never a pool.** The pool is where v3's
+factory deployed it, which is fixed by those two things and the factory — so the
+address is computed with CREATE2 rather than looked up. Two of the three inputs
+are not taken on trust: the factory is read from the position manager's own
+`factory()`, and the derived address is then looked up and must come back
+describing the same two tokens and the same fee. A wrong derivation finds
+nothing; it cannot find something else. The one input that cannot be read from
+anywhere is the pool's creation-code hash, which no live contract publishes — it
+is pinned, and pinned safely because the derivation is tested against the pool
+address the indexer publishes for a real position and every runtime derivation
+is checked against what the source says is there.
+
+**Closed positions are counted, not listed.** An address that has minted and
+burnt holds those tokens still: one of the live addresses read held 84 tokens of
+which 80 were closed. A closed one is a receipt of a position that was, and the
+page says how many there are rather than padding a list with them.
+
+Two things the chain got in the way of, both found by reading it rather than
+assuming:
+
+- **An `int24` arrives sign-extended to the whole 32-byte word**, not to three
+  bytes, so a tick of -414400 comes back as `2^256 - 414400` and reading the low
+  three bytes gives a number that is not a tick and does not look like one.
+- **A position covering every price a pool can express** — a common, deliberate
+  choice — was being printed as `2.96E-39 – 3.38E38`. True, and no use to
+  anybody; it is named now instead.
+
+The contract is proved before anything it says is believed, the way the balance
+sweep proves Multicall3: its code is read in the same batch as the first call
+and the answers are refused unless it hashes to the runtime this was built
+against. A hash rather than the bytes, because the manager is 24,384 bytes and
+pinning all of them to check one thing is weight the repository does not need to
+carry.
+
+And it is the one panel here that describes somebody's own money, so it says
+what that does and does not mean: the list is public — a position's owner is on
+chain and anybody can read the same one — nothing is stored, and a range is not
+a valuation.
+
 ## The explanation
 
 `getRangeInterpretation` hands one finished analysis to a model and gets back four

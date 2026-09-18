@@ -51,6 +51,8 @@ describe("postAggregatedCalls", () => {
         { success: false, data: "0x" },
         { success: true, data: word(7n) },
       ],
+      /* No extra contract was asked about, so nothing came back for one. */
+      codes: [],
     });
   });
 
@@ -58,8 +60,30 @@ describe("postAggregatedCalls", () => {
     const fetchImpl = vi.fn(rpcEndpoint());
     const result = await run(fetchImpl, []);
 
-    expect(result).toEqual({ ok: true, results: [] });
+    expect(result).toEqual({ ok: true, results: [], codes: [] });
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  /*
+   * For a caller that has to prove a second contract before it believes what
+   * that contract said. The code travels rather than a verdict: what counts as
+   * the right code is the caller's business.
+   */
+  it("brings back the code of any other address asked about, in order", async () => {
+    const fetchImpl = rpcEndpoint({
+      code: (address) => (address === MULTICALL3_ADDRESS ? MULTICALL3_RUNTIME_CODE : "0xbeef"),
+    });
+    const result = await postAggregatedCalls({
+      rpcUrl: RPC_URL,
+      calls: CALLS,
+      codeOf: [`0x${"a".repeat(40)}`, `0x${"b".repeat(40)}`],
+      fetchImpl,
+      timeoutMs: 1_000,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.codes).toEqual(["0xbeef", "0xbeef"]);
   });
 
   /*

@@ -34,12 +34,26 @@ export type AggregatedCallsRequest = {
   readonly rpcUrl: string;
   /** Answered in the same order, one result each. */
   readonly calls: readonly Aggregate3Call[];
+  /**
+   * Extra addresses whose deployed code should come back in the same batch.
+   *
+   * For a caller that has to prove a second contract before it believes what
+   * that contract said. The code travels rather than a verdict: what counts as
+   * the right code is the caller's business, and this module already knows one
+   * contract's runtime by heart and should not learn a second.
+   */
+  readonly codeOf?: readonly string[];
   readonly fetchImpl: FetchLike;
   readonly timeoutMs: number;
 };
 
 export type AggregatedCallsResult =
-  | { readonly ok: true; readonly results: readonly Aggregate3Result[] }
+  | {
+      readonly ok: true;
+      readonly results: readonly Aggregate3Result[];
+      /** One entry per `codeOf` address, in order. `null` where none came back. */
+      readonly codes: readonly (string | null)[];
+    }
   | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
 
 const failure = (reason: DataFailureReason, notice: DataFailureNotice): AggregatedCallsResult => ({
@@ -60,16 +74,18 @@ const failure = (reason: DataFailureReason, notice: DataFailureNotice): Aggregat
 export const postAggregatedCalls = async ({
   rpcUrl,
   calls,
+  codeOf = [],
   fetchImpl,
   timeoutMs,
 }: AggregatedCallsRequest): Promise<AggregatedCallsResult> => {
-  if (calls.length === 0) return { ok: true, results: [] };
+  if (calls.length === 0) return { ok: true, results: [], codes: [] };
 
   const batch = await postRpcBatch({
     rpcUrl,
     requests: [
       ethCallEntry({ to: MULTICALL3_ADDRESS, data: encodeAggregate3(calls) }),
       ethGetCodeEntry(MULTICALL3_ADDRESS),
+      ...codeOf.map(ethGetCodeEntry),
     ],
     fetchImpl,
     timeoutMs,
@@ -83,6 +99,16 @@ export const postAggregatedCalls = async ({
   }
 
   /*
+   * The extra code reads sit after the two this module makes, in the order they
+   * were asked for. One that did not come back is `null` rather than missing, so
+   * a caller checking a hash sees an absence instead of another address's code.
+   */
+  const codes = codeOf.map((_address, index) => {
+    const entry = batch.results[index + 2];
+    return entry !== undefined && entry.ok && typeof entry.result === "string" ? entry.result : null;
+  });
+
+  /*
    * One call carries every question, so a refusal is every question unread.
    * The same for an answer that does not decode: a guess at it would pair one
    * question's answer with another's name.
@@ -91,5 +117,5 @@ export const postAggregatedCalls = async ({
   const results = decodeAggregate3(answers.result, calls.length);
   if (results === null) return failure("invalid-response", MALFORMED);
 
-  return { ok: true, results };
+  return { ok: true, results, codes };
 };

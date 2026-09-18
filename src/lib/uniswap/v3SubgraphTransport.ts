@@ -95,7 +95,7 @@ export type SubgraphQueryRequest = {
    * filters are `Int!`; every value is JSON-encoded into the body, never spliced
    * into the query text.
    */
-  readonly variables: Readonly<Record<string, string | number>>;
+  readonly variables: Readonly<Record<string, string | number | readonly string[]>>;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs: number;
 };

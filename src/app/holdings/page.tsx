@@ -10,6 +10,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { EvmAddressSchema } from "@/schemas/primitives";
 import { HoldingsSection, HoldingsPending } from "./HoldingsSection";
+import { PositionsSection, PositionsPending } from "./PositionsSection";
 
 /*
  * What one address holds, and the pools that opens.
@@ -88,6 +89,20 @@ export default async function HoldingsPage({
        * endpoint answers all of them. The shell and the disclaimer reach the
        * reader immediately either way.
        */}
+      {/*
+       * What the address already holds, before what it could hold. It is the
+       * shorter read of the two and the more specific answer, and neither waits
+       * on the other: two boundaries, two streams.
+       */}
+      <Suspense fallback={<PositionsPending t={t} />}>
+        <PositionsSection
+          address={address.data}
+          parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+          locale={locale}
+          t={t}
+        />
+      </Suspense>
+
       <Suspense fallback={<HoldingsPending t={t} />}>
         <HoldingsSection
           address={address.data}

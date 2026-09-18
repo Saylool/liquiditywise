@@ -63,8 +63,15 @@ export type RpcAnswers = {
   readonly call?: (call: Aggregate3Call, index: number) => Aggregate3Result | null;
   /** The aggregated call's raw answer, when a test needs one that is not made of results. Overrides `call`. */
   readonly aggregate?: string | null;
-  /** What `eth_getCode` reports at Multicall3's address. The runtime code unless said otherwise. */
-  readonly code?: string;
+  /**
+   * What `eth_getCode` reports, by the address asked about.
+   *
+   * A string answers for every address, which is what a test about Multicall3
+   * alone wants. A function is for a read that has to prove a second contract as
+   * well — it is handed the address, so a test can give one the right code and
+   * another the wrong one.
+   */
+  readonly code?: string | ((address: string) => string);
   /** What `eth_getLogs` returns for a filter. Nothing unless said otherwise. */
   readonly logs?: (filter: unknown) => unknown;
   /** An `eth_call` that is not the aggregate: its raw result, or `null` to refuse it. */
@@ -79,7 +86,11 @@ type Answers = Required<Omit<RpcAnswers, "aggregate">> & Pick<RpcAnswers, "aggre
 const answerEntry = (entry: Entry, answers: Answers): unknown => {
   const { id } = entry;
   const refused = { jsonrpc: "2.0", id, error: { code: 429, message: "slow down" } };
-  if (entry.method === "eth_getCode") return { jsonrpc: "2.0", id, result: answers.code };
+  if (entry.method === "eth_getCode") {
+    const address = String(entry.params[0] ?? "");
+    const code = typeof answers.code === "function" ? answers.code(address) : answers.code;
+    return { jsonrpc: "2.0", id, result: code };
+  }
   if (entry.method === "eth_getLogs") return { jsonrpc: "2.0", id, result: answers.logs(entry.params[0]) };
   if (entry.method !== "eth_call") return refused;
 

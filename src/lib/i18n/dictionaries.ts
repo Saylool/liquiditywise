@@ -62,7 +62,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. What a swap through the pool costs, for the largest one that can be priced without assuming anything. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. What a swap through the pool costs, for the largest one that can be priced without assuming anything. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into, and for the Uniswap v3 positions it already holds — each with the prices it covers and whether the pool is inside them now. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -627,6 +627,34 @@ const en = {
     fromHome: "See every hook →",
   },
 
+  /*
+   * The one panel here that describes somebody's own money.
+   *
+   * It says so, and it says what that does and does not mean: the same list is
+   * public, anybody can read it for any address, and nothing about it is kept.
+   */
+  positions: {
+    heading: "Positions this address already holds",
+    intro:
+      "Everything above is what this address could do — which pools its tokens open. This is what it has already done. A Uniswap v3 position is a token held by one contract, so the list comes from asking that contract rather than any pool or indexer.",
+    none: "This address holds no Uniswap v3 position tokens.",
+    noneOpen:
+      "Every position token this address holds has been closed. A closed one is a receipt of a position that was, not a position.",
+    counts: (held: string, open: string, closed: string) =>
+      `${held} position tokens, of which ${open} still have liquidity in them and ${closed} have been closed.`,
+    inRange: "Earning now",
+    outOfRange: "Outside its range",
+    rangeUnknown: "Nobody has swapped here",
+    analyse: "Analyse this pool →",
+    everyPrice: "Every price this pool can express",
+    moreNotShown: (count: string) => `${count} more are open and not listed here.`,
+    readCap: (read: string, held: string) =>
+      `${read} of ${held} were read. The rest are not on this page, which is a limit of the page rather than of the address.`,
+    unavailable: "This address's positions could not be read.",
+    publicNote:
+      "A position's owner is on chain, so this list is public: anybody can read the same one for the same address, and it says nothing this address has not already published by holding these tokens. Nothing here is stored, and no figure on this page is a valuation — a range is not what a position is worth.",
+  },
+
   wallet: {
     heading: "Connect a wallet",
     intro:
@@ -996,6 +1024,12 @@ const en = {
         "The out-of-sample check produced a result this application cannot verify.",
       "hook-directory-unverifiable":
         "The hooks of this week's v4 pools did not pass their own check, so the directory is not shown.",
+      "positions-manager-unverified":
+        "The contract that holds Uniswap v3 positions did not answer with the code this application was built against, so nothing it said is shown.",
+      "positions-unreadable":
+        "The chain did not answer for this address's positions, so none is shown — which is not the same as holding none.",
+      "positions-unverifiable":
+        "This address's positions did not pass their own check, so they are not shown.",
       "holdings-unverifiable":
         "What this address holds produced a result this application cannot verify.",
       "explanation-key-rejected":
@@ -1110,7 +1144,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için sorgulanabilir. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için ve hâlihazırda tuttuğu Uniswap v3 pozisyonları için sorgulanabilir — her biri hangi fiyatları kapsadığı ve havuzun şu anda içinde olup olmadığıyla birlikte. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -1535,6 +1569,28 @@ const tr: Dictionary = {
     fromHome: "Bütün kancaları gör →",
   },
 
+  positions: {
+    heading: "Bu adresin hâlihazırda tuttuğu pozisyonlar",
+    intro:
+      "Yukarıdakilerin hepsi bu adresin ne yapabileceğiydi — tuttuğu jetonların hangi havuzları açtığı. Bu ise çoktan ne yaptığı. Bir Uniswap v3 pozisyonu tek bir sözleşmenin tuttuğu bir jetondur; yani liste, herhangi bir havuza ya da indeksleyiciye değil, o sözleşmeye sorularak çıkar.",
+    none: "Bu adres hiç Uniswap v3 pozisyon jetonu tutmuyor.",
+    noneOpen:
+      "Bu adresin tuttuğu bütün pozisyon jetonları kapatılmış. Kapalı bir jeton, vaktiyle var olan bir pozisyonun makbuzudur, pozisyon değil.",
+    counts: (held: string, open: string, closed: string) =>
+      `${held} pozisyon jetonu; bunların ${open} tanesinde hâlâ likidite var, ${closed} tanesi kapatılmış.`,
+    inRange: "Şu anda kazanıyor",
+    outOfRange: "Aralığının dışında",
+    rangeUnknown: "Burada hiç takas olmamış",
+    analyse: "Bu havuzu analiz et →",
+    everyPrice: "Bu havuzun ifade edebildiği her fiyat",
+    moreNotShown: (count: string) => `${count} tane daha açık ama burada listelenmedi.`,
+    readCap: (read: string, held: string) =>
+      `${held} tanesinin ${read} tanesi okundu. Kalanı bu sayfada yok; bu, adresin değil sayfanın sınırı.`,
+    unavailable: "Bu adresin pozisyonları okunamadı.",
+    publicNote:
+      "Bir pozisyonun sahibi zincirde yazılıdır, yani bu liste herkese açık: aynı listeyi aynı adres için isteyen okuyabilir, ve bu adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Burada hiçbir şey saklanmıyor, ve bu sayfadaki hiçbir rakam bir değerleme değil — bir aralık, bir pozisyonun ne ettiği anlamına gelmez.",
+  },
+
   wallet: {
     heading: "Cüzdan bağla",
     intro:
@@ -1835,6 +1891,12 @@ const tr: Dictionary = {
         "Örneklem dışı kontrol, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "hook-directory-unverifiable":
         "Bu haftanın v4 havuzlarının kancaları kendi denetiminden geçemedi; bu yüzden dizin gösterilmiyor.",
+      "positions-manager-unverified":
+        "Uniswap v3 pozisyonlarını tutan sözleşme, bu uygulamanın karşısına aldığı kodla cevap vermedi; bu yüzden söylediklerinin hiçbiri gösterilmiyor.",
+      "positions-unreadable":
+        "Zincir bu adresin pozisyonları için cevap vermedi; bu yüzden hiçbiri gösterilmiyor — bu, hiç pozisyonu olmadığı anlamına gelmez.",
+      "positions-unverifiable":
+        "Bu adresin pozisyonları kendi denetiminden geçemedi; bu yüzden gösterilmiyor.",
       "holdings-unverifiable":
         "Bu adresin ne tuttuğu, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "explanation-key-rejected":
