@@ -53,7 +53,7 @@ export const LOCALE_DETAILS: Record<
  * than letting a reader discover it paragraph by paragraph. Moving a language
  * into this set is the last step of translating it, not the first.
  */
-export const FULLY_TRANSLATED: readonly Locale[] = ["en", "tr", "de", "es", "ar"];
+export const FULLY_TRANSLATED: readonly Locale[] = ["en", "tr", "de", "es", "ar", "hi"];
 
 export const isFullyTranslated = (locale: Locale): boolean =>
   FULLY_TRANSLATED.includes(locale);

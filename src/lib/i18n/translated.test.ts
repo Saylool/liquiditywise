@@ -81,11 +81,22 @@ const ARABIC_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 
+/** And for Hindi, which keeps the same term in Latin script for the same reason. */
+const HINDI_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the term Hindi writing about v4 keeps in Latin script"],
+  [".holdings.hookTag", "the term Hindi writing about v4 keeps in Latin script"],
+  [".search.v4Hook", "the term Hindi writing about v4 keeps in Latin script"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
   ["de", GERMAN_SAME_AS_ENGLISH],
   ["es", SPANISH_SAME_AS_ENGLISH],
   ["ar", ARABIC_SAME_AS_ENGLISH],
+  ["hi", HINDI_SAME_AS_ENGLISH],
 ]);
 
 /*
