@@ -54,9 +54,20 @@ const GERMAN_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 
+/** And for Spanish, which keeps the English word for a hook as the others do. */
+const SPANISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the word Spanish writing about v4 uses for a hook, untranslated"],
+  [".holdings.hookTag", "the word Spanish writing about v4 uses for a hook, untranslated"],
+  [".search.v4Hook", "the word Spanish writing about v4 uses for a hook, untranslated"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
   ["de", GERMAN_SAME_AS_ENGLISH],
+  ["es", SPANISH_SAME_AS_ENGLISH],
 ]);
 
 /*
