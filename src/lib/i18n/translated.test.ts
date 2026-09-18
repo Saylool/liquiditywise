@@ -42,8 +42,21 @@ const strings = (value: unknown, path = ""): readonly (readonly [string, string]
 
 const english = new Map(strings(getDictionary("en")));
 
+/** The same, for German. Mostly words German and English happen to share. */
+const GERMAN_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".preferences.themeSystem", "German for the system's own setting is the same word"],
+  [".rangeOrder.band", "German uses the same word for a band of prices"],
+  [".feeTiers.hook", "the word German writing about v4 uses for a hook, untranslated"],
+  [".holdings.hookTag", "the word German writing about v4 uses for a hook, untranslated"],
+  [".search.v4Hook", "the word German writing about v4 uses for a hook, untranslated"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
+  ["de", GERMAN_SAME_AS_ENGLISH],
 ]);
 
 /*
