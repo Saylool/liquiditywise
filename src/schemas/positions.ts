@@ -45,6 +45,22 @@ const PositionObject = z.strictObject({
   upperPrice: PositivePriceSchema,
   /** The protocol's L for this position. Never zero: a closed one is not listed. */
   liquidity: Uint128StringSchema,
+  /**
+   * What this position has earned and not yet taken out, in each token's
+   * smallest unit.
+   *
+   * Not an estimate and not a rate: it is the pool's own fee accounting, read
+   * and differenced. Base units, exactly, because eighteen decimals put an
+   * ordinary balance past what a double holds — and a `uint128` at that,
+   * because that is the field both protocols keep it in.
+   *
+   * `null` where it could not be read, which includes the case where that very
+   * `uint128` has overflowed. That happens in pools whose token is junk, and
+   * there every available figure is meaningless rather than merely large.
+   */
+  uncollected: z
+    .strictObject({ token0: Uint128StringSchema, token1: Uint128StringSchema })
+    .nullable(),
   /** Where the pool is now, or `null` when the source reported no tick. */
   currentTick: TickSchema.nullable(),
   /**

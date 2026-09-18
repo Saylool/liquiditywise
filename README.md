@@ -1007,6 +1007,57 @@ hook all arrive from the chain already proved. In particular the indexer's
 pool's latest swap rather than the key's fee — and there is nothing to gain from
 it when the key is in hand.
 
+### What each position has earned
+
+The list says which positions an address holds. This says what they have made
+and not yet taken out, and it is not an estimate: it is the protocol's own fee
+accounting, read and differenced.
+
+A pool stores no record of what any one position is owed. It keeps one running
+total per token — fees per unit of liquidity since the pool began — and each
+initialised tick keeps that total as it stood on the far side of it. A
+position's share is the total inside its range now, less the total inside it
+when the position was last touched, times its liquidity. Nothing is iterated
+and nothing is annualised. The same arithmetic serves both protocols, over two
+completely different reads: three calls per v3 pool and two per position, or
+three storage words per v4 pool and seven per position.
+
+**It is checked against the contract's own answer.** The v3 manager will say
+what it would pay out — `collect`, asked rather than executed — and on sixteen
+live positions this reproduced that figure exactly for fifteen. The sixteenth
+came out one unit apart, for a reason worth keeping: the manager and the pool
+each hold their own snapshot of the same range, taken at different moments, so
+each floors a different difference. What is reported is the position's own
+accounting, which is what a holder is asking about; what the pool would hand
+over can differ from it by a unit either way. On the v4 side there is no such
+call to compare with, so the check is structural instead — the liquidity stored
+at the derived slot must equal what the PositionManager reports for that token,
+and on 26 live positions all 26 agreed.
+
+Two things about the arithmetic, both found by reading the chain:
+
+- **The counters wrap, and the subtraction has to wrap with them.** They are
+  uint256 totals that overflow and keep counting; Solidity does it `unchecked`
+  on purpose, and the difference is correct modulo 2^256 even when the later
+  value is the smaller one. A live v4 position was found storing a snapshot of
+  about 2^256 - 5.8 x 10^38 — arithmetic that refused to wrap would have
+  reported its earnings as a number with 41 more digits than the token has
+  supply.
+- **A figure that overflows `uint128` is reported as unreadable, not as a large
+  number.** That is the field both protocols keep the amount in, and the v3
+  manager is Solidity 0.7.6, where the cast wraps silently. Two live positions
+  in a junk-token pool overflowed it: unwrapped the share came to 1.05 x 10^53,
+  wrapped it came to 3.19 x 10^38, and `collect` offered a third figure again —
+  the same one for both positions, because the pool's shared record had wrapped
+  as well. None of the three is what anybody earned, so the page says it could
+  not be read.
+
+**The figure is an addition to the answer, not part of it.** A fee read that
+fails costs the earnings and not the list, and a position it did not cover is
+shown without the figure rather than with a zero — nothing earned and nothing
+read being different facts, and this the one panel where a reader might act on
+the difference.
+
 ### What both sides do with what they found
 
 **Closed positions are counted, not listed.** An address that has minted and

@@ -38,6 +38,11 @@ const position = (overrides: Record<string, unknown> = {}) => ({
   tickLower: -414_400,
   tickUpper: 0,
   liquidity: "38349616863029655014582929927279522",
+  /* The manager's fee accounting, untouched since this position was opened. */
+  feeGrowthInside0Last: 0n,
+  feeGrowthInside1Last: 0n,
+  tokensOwed0: 0n,
+  tokensOwed1: 0n,
   ...overrides,
 });
 
@@ -101,12 +106,15 @@ const v4Pool = (overrides: Partial<V4PoolTokens> = {}): V4PoolTokens => ({
   ...overrides,
 });
 
+/** Most cases are about the list rather than the earnings, so they pass none. */
+const noFees = new Map<string, { token0: string; token1: string }>();
+
 type Input = Parameters<typeof composeAddressPositions>[0];
 
 const compose = (input: Partial<Input> = {}) =>
   composeAddressPositions({
     address: OWNER,
-    v3: { raw: rawV3(), pools: [pool()] },
+    v3: { raw: rawV3(), pools: [pool()], fees: noFees },
     v4: null,
     fetchedAt: FETCHED_AT,
     ...input,
@@ -160,12 +168,12 @@ describe("composing a v3 position", () => {
     ["above", 10, false],
   ])("says a pool at a tick %s is or is not earning", (_label, tick, expected) => {
     expect(
-      succeed({ v3: { raw: rawV3(), pools: [pool({}, tick)] } }).positions[0]?.inRange,
+      succeed({ v3: { raw: rawV3(), pools: [pool({}, tick)], fees: noFees } }).positions[0]?.inRange,
     ).toBe(expected);
   });
 
   it("says it does not know when the pool reports no tick", () => {
-    const [first] = succeed({ v3: { raw: rawV3(), pools: [pool({}, null)] } }).positions;
+    const [first] = succeed({ v3: { raw: rawV3(), pools: [pool({}, null)], fees: noFees } }).positions;
 
     expect(first?.inRange).toBeNull();
     expect(first?.currentTick).toBeNull();
@@ -184,7 +192,7 @@ describe("composing a v3 position", () => {
       [pool({ token0: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 } })],
     ],
   ])("drops a position when %s", (_label, pools) => {
-    const answer = succeed({ v3: { raw: rawV3(), pools } });
+    const answer = succeed({ v3: { raw: rawV3(), pools, fees: noFees } });
 
     expect(answer.positions).toEqual([]);
     /* Dropped from the list and still counted: the reader holds it either way. */
@@ -194,7 +202,7 @@ describe("composing a v3 position", () => {
 
 describe("composing a v4 position", () => {
   const onlyV4 = (input: Partial<Input> = {}) =>
-    succeed({ v3: null, v4: { raw: rawV4(), pools: [v4Pool()] }, ...input });
+    succeed({ v3: null, v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees }, ...input });
 
   it("builds the pool out of the key the manager proved", () => {
     const [first] = onlyV4().positions;
@@ -239,6 +247,7 @@ describe("composing a v4 position", () => {
           ],
         }),
         pools: [v4Pool()],
+        fees: noFees,
       },
     });
 
@@ -264,7 +273,7 @@ describe("composing a v4 position", () => {
       [v4Pool({ token0: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 } })],
     ],
   ])("drops a v4 position when %s", (_label, pools) => {
-    const answer = succeed({ v3: null, v4: { raw: rawV4(), pools } });
+    const answer = succeed({ v3: null, v4: { raw: rawV4(), pools, fees: noFees } });
 
     expect(answer.positions).toEqual([]);
     expect(answer.open).toBe(1);
@@ -272,7 +281,7 @@ describe("composing a v4 position", () => {
 });
 
 describe("composing both protocols at once", () => {
-  const both = { v3: { raw: rawV3(), pools: [pool()] }, v4: { raw: rawV4(), pools: [v4Pool()] } };
+  const both = { v3: { raw: rawV3(), pools: [pool()], fees: noFees }, v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees } };
 
   it("lists them together and adds up what each read found", () => {
     const answer = succeed(both);
@@ -317,7 +326,7 @@ describe("composing both protocols at once", () => {
       position({ tokenId: String(index + 1) }),
     );
     const answer = succeed({
-      v3: { raw: rawV3({ held: 20, read: 20, open: many, closed: 5 }), pools: [pool()] },
+      v3: { raw: rawV3({ held: 20, read: 20, open: many, closed: 5 }), pools: [pool()], fees: noFees },
     });
 
     expect(answer.held).toBe(20);
@@ -328,8 +337,8 @@ describe("composing both protocols at once", () => {
 
   it("answers for an address holding nothing of either protocol", () => {
     const answer = succeed({
-      v3: { raw: rawV3({ held: 0, read: 0, open: [], closed: 0 }), pools: [] },
-      v4: { raw: rawV4({ held: 0, read: 0, open: [], closed: 0 }), pools: [] },
+      v3: { raw: rawV3({ held: 0, read: 0, open: [], closed: 0 }), pools: [], fees: noFees },
+      v4: { raw: rawV4({ held: 0, read: 0, open: [], closed: 0 }), pools: [], fees: noFees },
     });
 
     expect(answer.positions).toEqual([]);
@@ -341,8 +350,51 @@ describe("composing both protocols at once", () => {
     expect(succeed().fetchedAt).toBe(FETCHED_AT);
   });
 
+  /*
+   * The fee read is an addition to this answer, not a part of it. A position
+   * missing from the map is shown without the figure — never with a zero,
+   * which would say it has earned nothing.
+   */
+  it("attaches what each position earned, on either protocol", () => {
+    const answer = succeed({
+      v3: {
+        raw: rawV3(),
+        pools: [pool()],
+        fees: new Map([["1112391", { token0: "161442767", token1: "64800531737822263" }]]),
+      },
+      v4: {
+        raw: rawV4(),
+        pools: [v4Pool()],
+        fees: new Map([["408162", { token0: "0", token1: "0" }]]),
+      },
+    });
+
+    expect(answer.positions[0]?.uncollected).toEqual({
+      token0: "161442767",
+      token1: "64800531737822263",
+    });
+    expect(answer.positions[1]?.uncollected).toEqual({ token0: "0", token1: "0" });
+  });
+
+  it("leaves the figure out rather than calling it zero when it was not read", () => {
+    expect(succeed().positions[0]?.uncollected).toBeNull();
+  });
+
+  it("still lists a position whose fees came back for somebody else", () => {
+    const answer = succeed({
+      v3: {
+        raw: rawV3(),
+        pools: [pool()],
+        fees: new Map([["999", { token0: "5", token1: "5" }]]),
+      },
+    });
+
+    expect(answer.positions).toHaveLength(1);
+    expect(answer.positions[0]?.uncollected).toBeNull();
+  });
+
   it("publishes nothing when the counts contradict each other", () => {
-    expect(compose({ v3: { raw: rawV3({ held: 0, read: 1 }), pools: [pool()] } })).toEqual({
+    expect(compose({ v3: { raw: rawV3({ held: 0, read: 1 }), pools: [pool()], fees: noFees } })).toEqual({
       status: "unavailable",
       notice: "positions-unverifiable",
     });

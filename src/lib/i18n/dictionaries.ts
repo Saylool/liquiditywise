@@ -646,6 +646,15 @@ const en = {
     outOfRange: "Outside its range",
     rangeUnknown: "Nobody has swapped here",
     analyse: "Analyse this pool →",
+    /*
+     * Read from the pool's own fee accounting and differenced, not estimated.
+     * Deliberately not a rate: it says what has accrued, not over how long or
+     * at what pace, because neither follows from the figure.
+     */
+    feesEarned: (amount0: string, symbol0: string, amount1: string, symbol1: string) =>
+      `Earned and not yet taken out: ${amount0} ${symbol0} and ${amount1} ${symbol1}.`,
+    feesNone: "Nothing earned to take out yet.",
+    feesUnread: "What it has earned could not be read.",
     everyPrice: "Every price this pool can express",
     moreNotShown: (count: string) => `${count} more are open and not listed here.`,
     readCap: (read: string, held: string) =>
@@ -1589,6 +1598,10 @@ const tr: Dictionary = {
     outOfRange: "Aralığının dışında",
     rangeUnknown: "Burada hiç takas olmamış",
     analyse: "Bu havuzu analiz et →",
+    feesEarned: (amount0: string, symbol0: string, amount1: string, symbol1: string) =>
+      `Kazanılmış ve henüz çekilmemiş: ${amount0} ${symbol0} ve ${amount1} ${symbol1}.`,
+    feesNone: "Henüz çekilecek bir kazanç yok.",
+    feesUnread: "Ne kazandığı okunamadı.",
     everyPrice: "Bu havuzun ifade edebildiği her fiyat",
     moreNotShown: (count: string) => `${count} tane daha açık ama burada listelenmedi.`,
     readCap: (read: string, held: string) =>

@@ -33,6 +33,7 @@ const position = (overrides: Record<string, unknown> = {}) => ({
   liquidity: "38349616863029655014582929927279522",
   currentTick: -200_000,
   inRange: true,
+  uncollected: null,
   ...overrides,
 });
 
@@ -59,6 +60,13 @@ describe("PositionSchema", () => {
    * one list carry both. A v4 pool is whole — it carries its spacing, its fee
    * mode and its hook, all from the key the manager proved.
    */
+  it("accepts a position whose earnings were read", () => {
+    expect(
+      PositionSchema.safeParse(position({ uncollected: { token0: "161442767", token1: "0" } }))
+        .success,
+    ).toBe(true);
+  });
+
   it("accepts a position in a v4 pool", () => {
     expect(PositionSchema.safeParse(position({ pool: V4_POOL })).success).toBe(true);
   });
@@ -98,6 +106,8 @@ describe("PositionSchema", () => {
     ["no liquidity left in it", { liquidity: "0" }],
     ["a token id that is not a number", { tokenId: "0x10f947" }],
     ["a field nobody declared", { owner: `0x${"b".repeat(40)}` }],
+    ["an earning past what the protocol can record", { uncollected: { token0: "0", token1: (1n << 128n).toString() } }],
+    ["an earning that is not a whole number of base units", { uncollected: { token0: "0.5", token1: "0" } }],
   ])("refuses a position with %s", (_label, overrides) => {
     expect(PositionSchema.safeParse(position(overrides)).success).toBe(false);
   });

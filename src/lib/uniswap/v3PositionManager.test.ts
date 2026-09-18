@@ -88,6 +88,11 @@ describe("decoding", () => {
       tickLower: -414_400,
       tickUpper: 0,
       liquidity: "38349616863029655014582929927279522",
+      /* The four fee-accounting words, which this position had never touched. */
+      feeGrowthInside0Last: 0n,
+      feeGrowthInside1Last: 0n,
+      tokensOwed0: 0n,
+      tokensOwed1: 0n,
     });
   });
 

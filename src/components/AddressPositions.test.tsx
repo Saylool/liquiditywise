@@ -42,6 +42,7 @@ const v4Position = (overrides: Record<string, unknown> = {}) => ({
   liquidity: "28519709909040362220",
   currentTick: 98_526,
   inRange: true,
+  uncollected: null,
   ...overrides,
 });
 
@@ -62,6 +63,7 @@ const position = (overrides: Record<string, unknown> = {}) => ({
   liquidity: "38349616863029655014582929927279522",
   currentTick: -200_000,
   inRange: true,
+  uncollected: null,
   ...overrides,
 });
 
@@ -253,6 +255,68 @@ describe("AddressPositions", () => {
 
     expect(markup).toContain("Uniswap v4 positions could not be read this time");
     expect(markup).toContain("about the other protocol alone");
+  });
+
+  /*
+   * Three states, and the difference between the last two is the point: a
+   * position that has earned nothing and one whose earnings nobody could read
+   * are different facts about somebody's money.
+   */
+  it("says what a position has earned, in each token's own decimals", () => {
+    /*
+     * The real figures for token #998651 in USDC/WETH, where the two tokens
+     * carry six decimals and eighteen. The same base-unit count means wholly
+     * different amounts in the two, which is why the pool's decimals and not
+     * the number decide what is printed.
+     */
+    const earning = position({
+      pool: {
+        ...position().pool,
+        token0: { chainId: 1, address: XOR, symbol: "USDC", decimals: 6 },
+        token1: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 },
+      },
+      uncollected: { token0: "161442767", token1: "64800531737822263" },
+    });
+    const markup = render(answer({ positions: [earning] }));
+
+    expect(markup).toContain("Earned and not yet taken out");
+    /* Each amount beside its own token, which is the pairing worth pinning. */
+    expect(markup).toMatch(/161\.44[\d.,]* USDC and 0\.0648[\d.,]* WETH/);
+  });
+
+  /*
+   * A range the price has moved through earns in one token and then the other,
+   * so a position with something in only one of them is ordinary rather than
+   * unusual — and calling that "nothing earned" would be wrong about money.
+   */
+  it("still reports an earning that is in one token only", () => {
+    const markup = render(
+      answer({
+        positions: [position({ uncollected: { token0: "0", token1: "64800531737822263" } })],
+      }),
+    );
+
+    expect(markup).toContain("Earned and not yet taken out");
+    expect(markup).not.toContain("Nothing earned to take out yet");
+  });
+
+  it("separates having earned nothing from not knowing", () => {
+    expect(
+      render(answer({ positions: [position({ uncollected: { token0: "0", token1: "0" } })] })),
+    ).toContain("Nothing earned to take out yet");
+    expect(render(answer({ positions: [position()] }))).toContain(
+      "What it has earned could not be read",
+    );
+  });
+
+  it("says the same about earnings in Turkish", () => {
+    const markup = render(
+      answer({ positions: [position({ uncollected: { token0: "0", token1: "0" } })] }),
+      "tr",
+    );
+
+    expect(markup).toContain("Henüz çekilecek bir kazanç yok");
+    expect(markup).not.toContain("Nothing earned");
   });
 
   it("says why there is nothing when the read failed", () => {

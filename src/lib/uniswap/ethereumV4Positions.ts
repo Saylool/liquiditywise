@@ -7,6 +7,7 @@ import type { FetchLike } from "./v3SubgraphTransport";
 import {
   decodePoolAndPositionInfo,
   isV4PositionManagerCode,
+  POOL_MANAGER_SELECTOR,
   ownerOfCalldata,
   poolAndPositionInfoCalldata,
   positionLiquidityCalldata,
@@ -59,6 +60,8 @@ export type EthereumV4PositionsRequest = {
 
 /** What the chain said, before anything is made of it. */
 export type RawV4Positions = {
+  /** Where this manager keeps its pools' state. Read from the manager itself. */
+  readonly poolManager: string;
   /** How many position tokens the address holds, open and closed together. */
   readonly held: number;
   /** How many the chain confirmed it owns out of the ids that were offered. */
@@ -160,6 +163,7 @@ export const fetchEthereumV4Positions = async ({
     timeoutMs,
     calls: [
       { to: V4_POSITION_MANAGER_ADDRESS, data: balanceOf },
+      { to: V4_POSITION_MANAGER_ADDRESS, data: POOL_MANAGER_SELECTOR },
       ...asked.flatMap((tokenId) => [
         { to: V4_POSITION_MANAGER_ADDRESS, data: ownerOfCalldata(tokenId) ?? "" },
         { to: V4_POSITION_MANAGER_ADDRESS, data: poolAndPositionInfoCalldata(tokenId) ?? "" },
@@ -175,14 +179,16 @@ export const fetchEthereumV4Positions = async ({
     return unavailable("configuration-error", MANAGER_UNVERIFIED);
   }
 
-  const [balanceResult, ...rest] = batch.results;
+  const [balanceResult, poolManagerResult, ...rest] = batch.results;
   const balance = balanceResult?.success === true ? decodeUint(balanceResult.data) : null;
-  if (balance === null) return unavailable("invalid-response", UNREADABLE);
+  const poolManager =
+    poolManagerResult?.success === true ? decodeAddress(poolManagerResult.data, 0) : null;
+  if (balance === null || poolManager === null) return unavailable("invalid-response", UNREADABLE);
 
   const held = Number(balance);
   if (!Number.isSafeInteger(held) || held < 0) return unavailable("invalid-response", UNREADABLE);
 
   const { open, read, closed } = collectV4Positions(holder, asked, rest);
 
-  return { status: "success", data: { held, read, open, closed } };
+  return { status: "success", data: { poolManager, held, read, open, closed } };
 };

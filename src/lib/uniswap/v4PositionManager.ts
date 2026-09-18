@@ -52,6 +52,12 @@ export const V4_BALANCE_OF_SELECTOR = "0x70a08231";
 export const OWNER_OF_SELECTOR = "0x6352211e";
 export const POOL_AND_POSITION_INFO_SELECTOR = "0x7ba03aad";
 export const POSITION_LIQUIDITY_SELECTOR = "0x1efeed33";
+/*
+ * `poolManager()`. Where a v4 pool's state actually lives, asked of the one
+ * contract whose code this application has already proved — rather than
+ * written down here, which would be a second address to trust.
+ */
+export const POOL_MANAGER_SELECTOR = "0xdc4c90d3";
 
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 const DECIMAL = /^[0-9]+$/;

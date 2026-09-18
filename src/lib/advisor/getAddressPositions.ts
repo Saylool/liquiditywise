@@ -1,13 +1,16 @@
 import "server-only";
 
-import type { DataFailureNotice } from "../../schemas";
+import type { DataFailureNotice, DataResult } from "../../schemas";
 import { logUnavailable, loggingFetch } from "../observability/serverDiagnostics";
 import { ethereumSubgraphId } from "../uniswap/ethereumSubgraphs";
 import { fetchEthereumV3PoolsByIds } from "../uniswap/ethereumV3PoolsByIds";
+import { fetchEthereumV3PositionFees } from "../uniswap/ethereumV3PositionFees";
 import { fetchEthereumV3Positions } from "../uniswap/ethereumV3Positions";
 import { fetchEthereumV4PoolsByIds } from "../uniswap/ethereumV4PoolsByIds";
+import { fetchEthereumV4PositionFees } from "../uniswap/ethereumV4PositionFees";
 import { fetchEthereumV4PositionIds } from "../uniswap/ethereumV4PositionIds";
 import { fetchEthereumV4Positions } from "../uniswap/ethereumV4Positions";
+import type { PositionFees } from "../uniswap/feeGrowth";
 import {
   composeAddressPositions,
   type AddressPositionsResult,
@@ -41,9 +44,31 @@ type SideResult<Side> =
   | { readonly ok: false; readonly notice: DataFailureNotice };
 
 /**
+ * What each position has earned, or nothing at all.
+ *
+ * A failed fee read is not a failed answer. The panel's subject is which
+ * positions an address holds; what they have earned is an addition to it, and
+ * losing the addition must not lose the list. So this reports the empty map
+ * rather than an error, and the page shows those positions without the figure.
+ */
+const orNothing = async (
+  label: string,
+  read: Promise<DataResult<ReadonlyMap<string, PositionFees>>>,
+): Promise<ReadonlyMap<string, PositionFees>> => {
+  const fees = await read;
+  if (fees.status === "unavailable") {
+    await logUnavailable(label, fees);
+    return new Map();
+  }
+
+  return fees.data;
+};
+
+/**
  * Three round trips, and each cannot start before the last: the ids come from
  * the manager by index, and the pools come out of the positions, derived from
- * the pair and the fee each one names.
+ * the pair and the fee each one names. The last two both hang off the
+ * positions, so they go out together.
  */
 const readV3 = async (address: string): Promise<SideResult<V3Side>> => {
   const positions = await fetchEthereumV3Positions({
@@ -57,18 +82,29 @@ const readV3 = async (address: string): Promise<SideResult<V3Side>> => {
     return { ok: false, notice: positions.notice };
   }
 
-  const pools = await fetchEthereumV3PoolsByIds({
-    poolAddresses: derivedPoolAddresses(positions.data),
-    apiKey: process.env.THE_GRAPH_API_KEY,
-    subgraphId: ethereumSubgraphId("v3"),
-    fetchImpl: loggingFetch(LABEL),
-  });
+  const [pools, fees] = await Promise.all([
+    fetchEthereumV3PoolsByIds({
+      poolAddresses: derivedPoolAddresses(positions.data),
+      apiKey: process.env.THE_GRAPH_API_KEY,
+      subgraphId: ethereumSubgraphId("v3"),
+      fetchImpl: loggingFetch(LABEL),
+    }),
+    orNothing(
+      `${LABEL}-v3-fees`,
+      fetchEthereumV3PositionFees({
+        positions: positions.data.open,
+        factory: positions.data.factory,
+        rpcUrl: process.env.ETHEREUM_RPC_URL,
+        fetchImpl: fetch,
+      }),
+    ),
+  ]);
   if (pools.status === "unavailable") {
     await logUnavailable(`${LABEL}-v3`, pools);
     return { ok: false, notice: pools.notice };
   }
 
-  return { ok: true, side: { raw: positions.data, pools: pools.data } };
+  return { ok: true, side: { raw: positions.data, pools: pools.data, fees } };
 };
 
 /**
@@ -103,18 +139,29 @@ const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
     return { ok: false, notice: positions.notice };
   }
 
-  const pools = await fetchEthereumV4PoolsByIds({
-    poolIds: heldPoolIds(positions.data),
-    apiKey,
-    subgraphId,
-    fetchImpl: loggingFetch(LABEL),
-  });
+  const [pools, fees] = await Promise.all([
+    fetchEthereumV4PoolsByIds({
+      poolIds: heldPoolIds(positions.data),
+      apiKey,
+      subgraphId,
+      fetchImpl: loggingFetch(LABEL),
+    }),
+    orNothing(
+      `${LABEL}-v4-fees`,
+      fetchEthereumV4PositionFees({
+        positions: positions.data.open,
+        poolManager: positions.data.poolManager,
+        rpcUrl: process.env.ETHEREUM_RPC_URL,
+        fetchImpl: fetch,
+      }),
+    ),
+  ]);
   if (pools.status === "unavailable") {
     await logUnavailable(`${LABEL}-v4`, pools);
     return { ok: false, notice: pools.notice };
   }
 
-  return { ok: true, side: { raw: positions.data, pools: pools.data } };
+  return { ok: true, side: { raw: positions.data, pools: pools.data, fees } };
 };
 
 export const getAddressPositions = async (address: string): Promise<AddressPositionsResult> => {

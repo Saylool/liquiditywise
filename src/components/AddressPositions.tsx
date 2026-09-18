@@ -1,6 +1,11 @@
 import type { AddressPositionsResult } from "../lib/advisor/addressPositions";
 import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
-import { formatFeePpm, formatPrice, formatWhole } from "../lib/format/displayFormats";
+import {
+  formatFeePpm,
+  formatPrice,
+  formatTokenAmount,
+  formatWhole,
+} from "../lib/format/displayFormats";
 import { choosePriceQuote, quotedInterval } from "../lib/format/priceQuote";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -134,6 +139,24 @@ const PositionRow = ({
                 quote.quote.symbol,
                 quote.base.symbol,
               )}
+        </p>
+        {/*
+         * What it has earned and not yet taken out, from the pool's own fee
+         * accounting. Three states rather than two: nothing earned and nothing
+         * read are different facts, and this is the one panel where a reader
+         * might act on the difference.
+         */}
+        <p className="text-xs leading-relaxed text-muted">
+          {position.uncollected === null
+            ? t.positions.feesUnread
+            : position.uncollected.token0 === "0" && position.uncollected.token1 === "0"
+              ? t.positions.feesNone
+              : t.positions.feesEarned(
+                  formatTokenAmount(position.uncollected.token0, pool.token0.decimals, locale),
+                  pool.token0.symbol,
+                  formatTokenAmount(position.uncollected.token1, pool.token1.decimals, locale),
+                  pool.token1.symbol,
+                )}
         </p>
         <p className="text-xs text-accent">{t.positions.analyse}</p>
       </GuardedLink>

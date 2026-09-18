@@ -16,6 +16,7 @@ import type { V4PoolTokens } from "../uniswap/ethereumV4PoolsByIds";
 import { priceAtTick } from "../uniswap/v3TickMath";
 import { v3PoolAddress } from "../uniswap/v3PoolAddress";
 import { DYNAMIC_FEE_FLAG } from "../uniswap/v4PoolKey";
+import type { PositionFees } from "../uniswap/feeGrowth";
 import type { RawV4Position } from "../uniswap/v4PositionManager";
 
 /*
@@ -50,11 +51,18 @@ export type AddressPositionsResult =
 export type V3Side = {
   readonly raw: RawV3Positions;
   readonly pools: readonly V3PoolWithTick[];
+  /**
+   * What each position has earned, by token id. A position missing from it is
+   * shown without the figure rather than with a zero — the fee read is an
+   * addition to this answer, and losing it must not lose the answer.
+   */
+  readonly fees: ReadonlyMap<string, PositionFees>;
 };
 
 export type V4Side = {
   readonly raw: RawV4Positions;
   readonly pools: readonly V4PoolTokens[];
+  readonly fees: ReadonlyMap<string, PositionFees>;
 };
 
 export type AddressPositionsInput = {
@@ -103,6 +111,7 @@ const describeV3 = (
   raw: RawV3Positions["open"][number],
   factory: string,
   byAddress: ReadonlyMap<string, V3PoolWithTick>,
+  fees: ReadonlyMap<string, PositionFees>,
 ): Position | null => {
   const derived = v3PoolAddress({
     factory,
@@ -128,6 +137,7 @@ const describeV3 = (
     tickLower: raw.tickLower,
     tickUpper: raw.tickUpper,
     liquidity: raw.liquidity,
+    uncollected: fees.get(raw.tokenId) ?? null,
     ...placed,
   });
 
@@ -147,6 +157,7 @@ const describeV3 = (
 const describeV4 = (
   raw: RawV4Position,
   byId: ReadonlyMap<string, V4PoolTokens>,
+  fees: ReadonlyMap<string, PositionFees>,
 ): Position | null => {
   const found = byId.get(raw.poolId);
   if (found === undefined) return null;
@@ -181,6 +192,7 @@ const describeV4 = (
     tickLower: raw.tickLower,
     tickUpper: raw.tickUpper,
     liquidity: raw.liquidity,
+    uncollected: fees.get(raw.tokenId) ?? null,
     ...placed,
   });
 
@@ -211,8 +223,8 @@ export const composeAddressPositions = ({
   const described = [
     ...(v3 === null
       ? []
-      : v3.raw.open.map((position) => describeV3(position, v3.raw.factory, byAddress))),
-    ...(v4 === null ? [] : v4.raw.open.map((position) => describeV4(position, byId))),
+      : v3.raw.open.map((position) => describeV3(position, v3.raw.factory, byAddress, v3.fees))),
+    ...(v4 === null ? [] : v4.raw.open.map((position) => describeV4(position, byId, v4.fees))),
   ].filter((position): position is Position => position !== null);
 
   const sources: HoldingsSource[] = [];

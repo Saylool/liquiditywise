@@ -73,6 +73,15 @@ export type RawV3Position = {
   readonly tickUpper: number;
   /** Zero for a position that has been closed. Kept as an exact decimal string. */
   readonly liquidity: string;
+  /*
+   * The fee accounting, as the manager last recorded it. Kept as bigints
+   * because nothing displays them: they are inputs to one subtraction against
+   * what the pool holds now, and the answer of that is what a reader sees.
+   */
+  readonly feeGrowthInside0Last: bigint;
+  readonly feeGrowthInside1Last: bigint;
+  readonly tokensOwed0: bigint;
+  readonly tokensOwed1: bigint;
 };
 
 /**
@@ -101,5 +110,21 @@ export const decodePosition = (tokenId: string, data: unknown): RawV3Position | 
   const fee = Number(feePpm);
   if (!Number.isSafeInteger(fee)) return null;
 
-  return { tokenId, token0, token1, feePpm: fee, tickLower, tickUpper, liquidity };
+  const accounting = [8, 9, 10, 11].map((index) => decodeUint(data, index));
+  if (accounting.some((value) => value === null)) return null;
+  const [inside0, inside1, owed0, owed1] = accounting as [string, string, string, string];
+
+  return {
+    tokenId,
+    token0,
+    token1,
+    feePpm: fee,
+    tickLower,
+    tickUpper,
+    liquidity,
+    feeGrowthInside0Last: BigInt(inside0),
+    feeGrowthInside1Last: BigInt(inside1),
+    tokensOwed0: BigInt(owed0),
+    tokensOwed1: BigInt(owed1),
+  };
 };
