@@ -11,6 +11,39 @@ const OWNER = `0x${"b".repeat(40)}`;
 const POOL = `0x${"7".repeat(40)}`;
 const XOR = `0x${"4".repeat(40)}`;
 const WETH = `0x${"c".repeat(40)}`;
+const V4_POOL = `0x${"a".repeat(64)}`;
+const NATIVE = `0x${"0".repeat(40)}`;
+const HEI = `0x${"f".repeat(40)}`;
+const HOOK = "0x000000000000000000000000000000000000f0c0";
+
+/*
+ * A full-range v4 position: the outermost ticks a spacing of 7000 allows, which
+ * is 882000 and nowhere near TickMath's own limit. The v3 test for "every price"
+ * cannot recognise it, and the v4 one must, because a v4 position carries the
+ * spacing that makes those the outermost ticks there are.
+ */
+const v4Position = (overrides: Record<string, unknown> = {}) => ({
+  tokenId: "408162",
+  pool: {
+    protocolVersion: "v4",
+    chainId: 1,
+    id: V4_POOL,
+    token0: { chainId: 1, address: NATIVE, symbol: "ETH", decimals: 18 },
+    token1: { chainId: 1, address: HEI, symbol: "HEI", decimals: 18 },
+    tickSpacing: 7_000,
+    fee: { kind: "static", feePpm: 3_000 },
+    protocolFee: null,
+    hookAddress: null,
+  },
+  tickLower: -882_000,
+  tickUpper: 882_000,
+  lowerPrice: 1e-39,
+  upperPrice: 1e38,
+  liquidity: "28519709909040362220",
+  currentTick: 98_526,
+  inRange: true,
+  ...overrides,
+});
 
 const position = (overrides: Record<string, unknown> = {}) => ({
   tokenId: "1112391",
@@ -41,6 +74,7 @@ const answer = (overrides: Record<string, unknown> = {}): AddressPositionsResult
     read: 1,
     open: 1,
     closed: 0,
+    unread: [],
     fetchedAt: "2026-09-18T07:00:00.000Z",
     sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
     ...overrides,
@@ -131,14 +165,14 @@ describe("AddressPositions", () => {
   it("tells an address holding none that it holds none", () => {
     const markup = render(answer({ positions: [], held: 0, read: 0, open: 0, closed: 0 }));
 
-    expect(markup).toContain("holds no Uniswap v3 position tokens");
+    expect(markup).toContain("holds no Uniswap position tokens");
   });
 
   it("separates holding only closed ones from holding none", () => {
     const markup = render(answer({ positions: [], held: 3, read: 3, open: 0, closed: 3 }));
 
     expect(markup).toContain("has been closed");
-    expect(markup).not.toContain("holds no Uniswap v3 position tokens");
+    expect(markup).not.toContain("holds no Uniswap position tokens");
   });
 
   /*
@@ -150,6 +184,75 @@ describe("AddressPositions", () => {
 
     expect(markup).toContain("this list is public");
     expect(markup).toContain("is not what a position is worth");
+  });
+
+  it("names the v4 pool, its fee and the protocol it is in", () => {
+    const markup = render(answer({ positions: [v4Position()] }));
+
+    expect(markup).toContain("ETH / HEI");
+    expect(markup).toContain("v4 · 0.30%");
+    expect(markup).toContain(`href="/v4?id=${V4_POOL}&amp;days=30&amp;sigma=1"`);
+  });
+
+  it("says when a v4 pool carries a hook", () => {
+    const hooked = v4Position({
+      pool: { ...v4Position().pool, hookAddress: HOOK, fee: { kind: "dynamic", currentFeePpm: null } },
+    });
+
+    expect(render(answer({ positions: [hooked] }))).toContain("Set by the hook, per swap · hook");
+  });
+
+  /*
+   * The spacing is what makes these the outermost ticks, and a v4 position
+   * carries it. The second case is the gain: at a spacing of 60 there are
+   * plenty of usable ticks beyond 880000, so that position is wide and not
+   * full-range — and the v3 test, which has to allow for the widest spacing any
+   * pool could have, would have called it every price.
+   */
+  it("knows a v4 position is full-range from its pool's own spacing", () => {
+    expect(render(answer({ positions: [v4Position()] }))).toContain(
+      "Every price this pool can express",
+    );
+  });
+
+  it("does not call a v4 position full-range when its spacing leaves room above", () => {
+    const narrow = v4Position({
+      pool: { ...v4Position().pool, tickSpacing: 60 },
+      tickLower: -880_000,
+      tickUpper: 880_000,
+    });
+
+    expect(render(answer({ positions: [narrow] }))).not.toContain(
+      "Every price this pool can express",
+    );
+    /* The same ticks on a v3 pool, where the spacing is unknown, are not judged. */
+    expect(
+      render(answer({ positions: [position({ tickLower: -880_000, tickUpper: 880_000 })] })),
+    ).toContain("Every price this pool can express");
+  });
+
+  /*
+   * The list is capped and the protocols are read one after the other, so an
+   * order that followed the reads would bury v4 behind a long v3 list.
+   */
+  it("puts what is earning now at the top, whichever protocol it is in", () => {
+    const markup = render(
+      answer({
+        positions: [position({ inRange: false, currentTick: 10 }), v4Position()],
+        open: 2,
+        held: 2,
+        read: 2,
+      }),
+    );
+
+    expect(markup.indexOf("ETH / HEI")).toBeLessThan(markup.indexOf("XOR / WETH"));
+  });
+
+  it("says which protocol could not be read rather than passing over it", () => {
+    const markup = render(answer({ unread: ["v4"] }));
+
+    expect(markup).toContain("Uniswap v4 positions could not be read this time");
+    expect(markup).toContain("about the other protocol alone");
   });
 
   it("says why there is nothing when the read failed", () => {
@@ -165,5 +268,12 @@ describe("AddressPositions", () => {
     expect(markup).toContain("Bu adresin hâlihazırda tuttuğu pozisyonlar");
     expect(markup).toContain("Şu anda kazanıyor");
     expect(markup).not.toContain("Earning now");
+  });
+
+  it("names an unread protocol in Turkish too", () => {
+    const markup = render(answer({ unread: ["v3"] }), "tr");
+
+    expect(markup).toContain("Uniswap v3 pozisyonlar");
+    expect(markup).not.toContain("could not be read");
   });
 });

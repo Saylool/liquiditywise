@@ -493,6 +493,23 @@ export const PoolSchema = withPoolInvariants(
 export type Pool = z.infer<typeof PoolSchema>;
 
 /**
+ * A pool as one of the positions this application lists names it.
+ *
+ * The two protocols reach it from opposite directions, which is why this is a
+ * union rather than one shape. A v3 position names a pair and a fee, and the
+ * pool is derived from them and then looked up — so what comes back is metadata
+ * an indexer verified, without the tick spacing nobody publishes. A v4 position
+ * carries the pool's whole key, and the key hashes to the pool's id, so the
+ * spacing, the fee and the hook are all known from the chain and the pool is
+ * whole.
+ */
+export const PositionPoolSchema = withPoolInvariants(
+  z.discriminatedUnion("protocolVersion", [v3PoolMetadataObject, v4PoolObject]),
+);
+
+export type PositionPool = z.infer<typeof PositionPoolSchema>;
+
+/**
  * The fee that goes to a pool's liquidity providers, in parts-per-million, or
  * `null` when nothing fixed says.
  *

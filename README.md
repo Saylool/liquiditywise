@@ -938,15 +938,28 @@ of the limit the page already states.
 ## Positions an address is already in
 
 The page above answers what an address *could* do. This answers what it has
-done: the Uniswap v3 positions it is actually in, each with the prices it
-covers and whether the pool is inside them now.
+done: the Uniswap positions it is actually in — of either protocol — each with
+the prices it covers and whether the pool is inside them now.
 
 It comes from a different place. A position is an ERC-721 token held by one
-singleton, so the question is asked of that contract rather than of a pool or an
-indexer — and it is three questions in a row, because the ids come out of the
-count and the positions out of the ids. Each is one aggregated call, so three
-round trips carry hundreds of questions. Measured against live addresses: 0.17
-seconds for one holding nothing, 0.88 for one holding 84.
+singleton per protocol, so the question is asked of those contracts rather than
+of a pool. Both are proved before anything they say is believed, the way the
+balance sweep proves Multicall3: the code at each address is read in the same
+batch as the first call and the answers are refused unless it hashes to the
+runtime this was built against. A hash rather than the bytes, because the two
+managers are 24,384 and 23,877 bytes and pinning all of them to check one thing
+is weight the repository does not need to carry.
+
+Below that, the two protocols have almost nothing in common, and the differences
+are the interesting part.
+
+### v3: three questions in a row, and a pool that is derived
+
+The ids come out of the count and the positions out of the ids, so the read is
+strictly sequential — `balanceOf`, then `tokenOfOwnerByIndex` at each index, then
+`positions` for each id. Each step is one aggregated call, so three round trips
+carry hundreds of questions. Measured against live addresses: 0.17 seconds for
+one holding nothing, 0.88 for one holding 84.
 
 **A position names a pair and a fee, never a pool.** The pool is where v3's
 factory deployed it, which is fixed by those two things and the factory — so the
@@ -960,27 +973,79 @@ is pinned, and pinned safely because the derivation is tested against the pool
 address the indexer publishes for a real position and every runtime derivation
 is checked against what the source says is there.
 
-**Closed positions are counted, not listed.** An address that has minted and
-burnt holds those tokens still: one of the live addresses read held 84 tokens of
-which 80 were closed. A closed one is a receipt of a position that was, and the
-page says how many there are rather than padding a list with them.
+### v4: one question, a list that has to come from elsewhere, and a hash
 
-Two things the chain got in the way of, both found by reading it rather than
+**The v4 manager cannot be asked what an address holds.** It does not implement
+ERC-721's optional `Enumerable` extension — measured on 2026-09-18,
+`tokenOfOwnerByIndex` reverts — so there is no call that turns an address into
+its list, and an indexer is the only place that list exists. That is the weakest
+link in this answer, and it is treated as one: every id the indexer offers goes
+back to the manager, which is asked who owns it, and an id the manager
+attributes to somebody else is dropped. What an indexer can do wrong is leave
+something out, and that shows too, because `balanceOf` comes back in the same
+batch and the page says so when the two disagree. Measured against both live
+addresses, they did not: 104 ids for 104 held, and 7 for 7.
+
+**What a position is, it is in one answer.** `getPoolAndPositionInfo` returns the
+pool's whole key beside a single word with everything else packed into it, so
+there is nothing to derive and nothing sequential — one aggregated call carries
+an owner's entire list. Measured on 2026-09-18: 312 calls for 104 positions in
+401 milliseconds.
+
+**The two halves of that answer check each other.** A v4 pool's id is the
+keccak256 of its key, and the packed word carries the first 25 bytes of the id
+the key must hash to. So the key is hashed and compared, which is free and
+conclusive: a misread offset, a word that is not a key's, a fee or a spacing
+outside its own range, and the hash comes out somewhere else. The same check
+refuses a token nobody minted, whose answer is six zero words — zeros do not
+hash to zeros.
+
+That is also why the indexer is asked for so little here. It supplies two
+symbols, two decimals and the current tick; the fee, the tick spacing and the
+hook all arrive from the chain already proved. In particular the indexer's
+`feeTier` is never read — measured on 2026-09-15 it is the total fee of the
+pool's latest swap rather than the key's fee — and there is nothing to gain from
+it when the key is in hand.
+
+### What both sides do with what they found
+
+**Closed positions are counted, not listed.** An address that has minted and
+burnt holds those tokens still: one live address read held 206 tokens across the
+two protocols of which 151 were closed. A closed one is a receipt of a position
+that was, and the page says how many there are rather than padding a list with
+them.
+
+**A protocol that could not be read is named rather than skipped.** Two
+protocols mean two ways to fail, and they fail apart: the reads run at once, and
+one failing does not take the other with it. But an answer that quietly covered
+one of them would let the page tell an address with positions that it has none,
+so the panel says which half is missing and that the counts beside it are about
+the other protocol alone. Both failing is not a partial answer, and the panel
+reports it unavailable.
+
+**Earning first.** The list is capped for display and the protocols are read
+separately, so an order that simply followed the reads would bury every v4
+position behind a long v3 list. Whether a position is earning right now is what
+a holder looks for first, so it is what decides the order.
+
+Three things the chain got in the way of, all found by reading it rather than
 assuming:
 
 - **An `int24` arrives sign-extended to the whole 32-byte word**, not to three
   bytes, so a tick of -414400 comes back as `2^256 - 414400` and reading the low
   three bytes gives a number that is not a tick and does not look like one.
+- **An `int24` packed beside other fields follows the opposite convention.** It
+  cannot be sign-extended past its own bits without overwriting its neighbour,
+  so the sign lives in bit 23 rather than bit 255 — and reading v4's packed ticks
+  with the rule above returns a large positive number for every negative one,
+  which is a wrong answer that looks like a right one. Both functions exist, and
+  each is tested against the other's input.
 - **A position covering every price a pool can express** — a common, deliberate
   choice — was being printed as `2.96E-39 – 3.38E38`. True, and no use to
-  anybody; it is named now instead.
-
-The contract is proved before anything it says is believed, the way the balance
-sweep proves Multicall3: its code is read in the same batch as the first call
-and the answers are refused unless it hashes to the runtime this was built
-against. A hash rather than the bytes, because the manager is 24,384 bytes and
-pinning all of them to check one thing is weight the repository does not need to
-carry.
+  anybody; it is named now instead. For v4 it is named exactly, because a v4
+  position carries its pool's tick spacing and the outermost usable ticks follow
+  from it. For v3 it cannot be: no source publishes a v3 pool's spacing, so the
+  test there has to allow for the widest any pool could have.
 
 And it is the one panel here that describes somebody's own money, so it says
 what that does and does not mean: the list is public — a position's owner is on

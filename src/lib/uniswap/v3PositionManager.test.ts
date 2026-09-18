@@ -4,10 +4,7 @@ import { keccak256, keccak256Hex, utf8Bytes } from "../crypto/keccak256";
 import {
   BALANCE_OF_SELECTOR,
   balanceOfCalldata,
-  decodeAddress,
-  decodeInt24,
   decodePosition,
-  decodeUint,
   FACTORY_SELECTOR,
   isPositionManagerCode,
   POSITIONS_SELECTOR,
@@ -82,31 +79,6 @@ describe("calldata", () => {
 });
 
 describe("decoding", () => {
-  /*
-   * The one that was wrong before a live read caught it: an `int24` arrives
-   * sign-extended to the whole word, so the tick is not in the low three bytes.
-   */
-  it("reads a negative tick as the whole word says", () => {
-    expect(decodeInt24(POSITION_ANSWER, 5)).toBe(-414_400);
-    expect(decodeInt24(POSITION_ANSWER, 6)).toBe(0);
-  });
-
-  it("refuses a word that is not a tick", () => {
-    const tooLarge = `0x${"0".repeat(56)}${"f".repeat(8)}`;
-
-    expect(decodeInt24(tooLarge, 0)).toBeNull();
-  });
-
-  it("reads an address only when its padding is padding", () => {
-    expect(decodeAddress(POSITION_ANSWER, 2)).toBe("0x40fd72257597aa14c7231a7b1aaa29fce868f677");
-    expect(decodeAddress(`0x${"1".repeat(64)}`, 0)).toBeNull();
-  });
-
-  it("reads a whole number as an exact string", () => {
-    expect(decodeUint(POSITION_ANSWER, 7)).toBe("38349616863029655014582929927279522");
-    expect(decodeUint(`0x${"0".repeat(62)}54`)).toBe("84");
-  });
-
   it("reads the whole position the chain returned", () => {
     expect(decodePosition("1112391", POSITION_ANSWER)).toEqual({
       tokenId: "1112391",

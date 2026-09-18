@@ -636,8 +636,8 @@ const en = {
   positions: {
     heading: "Positions this address already holds",
     intro:
-      "Everything above is what this address could do — which pools its tokens open. This is what it has already done. A Uniswap v3 position is a token held by one contract, so the list comes from asking that contract rather than any pool or indexer.",
-    none: "This address holds no Uniswap v3 position tokens.",
+      "Everything above is what this address could do — which pools its tokens open. This is what it has already done. A position of either protocol is a token held by one contract, and both contracts are asked what each token is. The v3 one can also list an address's tokens; the v4 one cannot, so that list comes from an indexer and every id in it is put back to the chain, which is asked who owns it.",
+    none: "This address holds no Uniswap position tokens, of either protocol.",
     noneOpen:
       "Every position token this address holds has been closed. A closed one is a receipt of a position that was, not a position.",
     counts: (held: string, open: string, closed: string) =>
@@ -650,6 +650,13 @@ const en = {
     moreNotShown: (count: string) => `${count} more are open and not listed here.`,
     readCap: (read: string, held: string) =>
       `${read} of ${held} were read. The rest are not on this page, which is a limit of the page rather than of the address.`,
+    /*
+     * Two protocols mean two ways to fail. The counts beside this cover the
+     * other protocol only, and saying so is the difference between a partial
+     * answer and a wrong one.
+     */
+    unreadProtocol: (protocol: string) =>
+      `Uniswap ${protocol} positions could not be read this time, so every figure here is about the other protocol alone.`,
     unavailable: "This address's positions could not be read.",
     publicNote:
       "A position's owner is on chain, so this list is public: anybody can read the same one for the same address, and it says nothing this address has not already published by holding these tokens. Nothing here is stored, and no figure on this page is a valuation — a range is not what a position is worth.",
@@ -1572,8 +1579,8 @@ const tr: Dictionary = {
   positions: {
     heading: "Bu adresin hâlihazırda tuttuğu pozisyonlar",
     intro:
-      "Yukarıdakilerin hepsi bu adresin ne yapabileceğiydi — tuttuğu jetonların hangi havuzları açtığı. Bu ise çoktan ne yaptığı. Bir Uniswap v3 pozisyonu tek bir sözleşmenin tuttuğu bir jetondur; yani liste, herhangi bir havuza ya da indeksleyiciye değil, o sözleşmeye sorularak çıkar.",
-    none: "Bu adres hiç Uniswap v3 pozisyon jetonu tutmuyor.",
+      "Yukarıdakilerin hepsi bu adresin ne yapabileceğiydi — tuttuğu jetonların hangi havuzları açtığı. Bu ise çoktan ne yaptığı. Her iki protokolde de bir pozisyon, tek bir sözleşmenin tuttuğu bir jetondur ve her jetonun ne olduğu o sözleşmeye sorulur. v3 sözleşmesi bir adresin jetonlarını ayrıca sıralayabiliyor; v4 sözleşmesi sıralayamıyor, bu yüzden o liste bir indeksleyiciden geliyor ve içindeki her kimlik zincire geri götürülüp sahibi soruluyor.",
+    none: "Bu adres hiçbir protokolde Uniswap pozisyon jetonu tutmuyor.",
     noneOpen:
       "Bu adresin tuttuğu bütün pozisyon jetonları kapatılmış. Kapalı bir jeton, vaktiyle var olan bir pozisyonun makbuzudur, pozisyon değil.",
     counts: (held: string, open: string, closed: string) =>
@@ -1586,6 +1593,8 @@ const tr: Dictionary = {
     moreNotShown: (count: string) => `${count} tane daha açık ama burada listelenmedi.`,
     readCap: (read: string, held: string) =>
       `${held} tanesinin ${read} tanesi okundu. Kalanı bu sayfada yok; bu, adresin değil sayfanın sınırı.`,
+    unreadProtocol: (protocol: string) =>
+      `Bu sefer Uniswap ${protocol} pozisyonları okunamadı; buradaki bütün rakamlar yalnızca diğer protokole ait.`,
     unavailable: "Bu adresin pozisyonları okunamadı.",
     publicNote:
       "Bir pozisyonun sahibi zincirde yazılıdır, yani bu liste herkese açık: aynı listeyi aynı adres için isteyen okuyabilir, ve bu adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Burada hiçbir şey saklanmıyor, ve bu sayfadaki hiçbir rakam bir değerleme değil — bir aralık, bir pozisyonun ne ettiği anlamına gelmez.",

@@ -8,10 +8,10 @@ import {
   Uint128StringSchema,
   UnsignedIntegerStringSchema,
 } from "./primitives";
-import { TickSchema, V3PoolMetadataSchema } from "./uniswap";
+import { PositionPoolSchema, ProtocolVersionSchema, TickSchema } from "./uniswap";
 
 /*
- * The Uniswap v3 positions one address actually holds.
+ * The Uniswap positions one address actually holds, of either protocol.
  *
  * Every other answer about an address here is about what it *could* do — which
  * pools the tokens it holds can be put into. This is what it has already done,
@@ -22,20 +22,22 @@ import { TickSchema, V3PoolMetadataSchema } from "./uniswap";
  * anybody can read the same list for the same address. Nothing is stored here
  * and nothing is remembered between visits.
  *
- * **A position names a pair and a fee, never a pool.** The pool is derived from
- * those by CREATE2 and then *checked*: the derived address is looked up, and a
- * pool that does not come back describing the same two tokens and the same fee
- * is dropped rather than shown. That check is why deriving is safe at all.
+ * **Both protocols end in a pool that was proved, by different routes.** A v3
+ * position names a pair and a fee, never a pool: the address follows by CREATE2
+ * and is then *checked*, because a derived address that comes back describing
+ * another pair is not this position's pool. A v4 position carries the pool's
+ * whole key, and a key is checked by hashing it — the pool's id is the keccak of
+ * the key, and the manager returns both in the same word.
  */
 
 /** How many positions the page lists before it counts the rest instead. */
 export const POSITIONS_SHOWN = 12;
 
-const V3PositionObject = z.strictObject({
+const PositionObject = z.strictObject({
   /** The NFT's id, as an exact decimal string: it is a uint256. */
   tokenId: UnsignedIntegerStringSchema,
-  /** The pool it is in, as the source describes the address that was derived. */
-  pool: V3PoolMetadataSchema,
+  /** The pool it is in, as it was proved: derived and looked up, or hashed from a key. */
+  pool: PositionPoolSchema,
   tickLower: TickSchema,
   tickUpper: TickSchema,
   /** What those ticks encode, in the pool's `token0PriceInToken1` direction. */
@@ -53,11 +55,13 @@ const V3PositionObject = z.strictObject({
   inRange: z.boolean().nullable(),
 });
 
-export const V3PositionSchema = V3PositionObject
-  .refine((position) => position.tickLower < position.tickUpper, {
+export const PositionSchema = PositionObject.refine(
+  (position) => position.tickLower < position.tickUpper,
+  {
     error: "A position's lower tick must sit below its upper tick.",
     path: ["tickUpper"],
-  })
+  },
+)
   .refine((position) => position.lowerPrice < position.upperPrice, {
     error: "A position's lower price must sit below its upper price.",
     path: ["upperPrice"],
@@ -84,21 +88,31 @@ export const V3PositionSchema = V3PositionObject
     },
   );
 
-export type V3Position = z.infer<typeof V3PositionSchema>;
+export type Position = z.infer<typeof PositionSchema>;
 
 export const AddressPositionsSchema = z
   .strictObject({
     address: EvmAddressSchema,
-    /** The open ones, newest place in the owner's list first, capped for display. */
-    positions: z.array(V3PositionSchema).max(POSITIONS_SHOWN),
-    /** Every position token the address holds, open and closed together. */
+    /** The open ones, v3 before v4 and in each protocol's own order, capped for display. */
+    positions: z.array(PositionSchema).max(POSITIONS_SHOWN),
+    /** Every position token the address holds, of both protocols, open and closed. */
     held: z.int().nonnegative(),
-    /** How many of those were asked about: `held`, unless it is past the ceiling. */
+    /** How many of those were asked about: `held`, unless something stood in the way. */
     read: z.int().nonnegative(),
     /** How many of the ones read still have liquidity in them. */
     open: z.int().nonnegative(),
     /** And how many had been closed. A minted-and-burnt token is not a position. */
     closed: z.int().nonnegative(),
+    /**
+     * The protocols this read could not reach at all.
+     *
+     * Not the same as finding nothing. Two protocols mean two ways to fail, and
+     * an answer that quietly covered one of them would let the page say "no
+     * positions" to an address that holds several — so a protocol that failed is
+     * named and the page says which figures are missing. Both failing is not a
+     * partial answer, and the caller reports it unavailable instead.
+     */
+    unread: z.array(ProtocolVersionSchema).max(1),
     fetchedAt: IsoTimestampSchema,
     sources: z.array(HoldingsSourceSchema).min(1),
   })
@@ -118,6 +132,10 @@ export const AddressPositionsSchema = z
      */
     error: "Open and closed positions cannot outnumber the ones read.",
     path: ["open"],
+  })
+  .refine((answer) => new Set(answer.unread).size === answer.unread.length, {
+    error: "A protocol can only be unread once.",
+    path: ["unread"],
   });
 
 export type AddressPositions = z.infer<typeof AddressPositionsSchema>;

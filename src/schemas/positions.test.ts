@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { AddressPositionsSchema, POSITIONS_SHOWN, V3PositionSchema } from "./positions";
+import { AddressPositionsSchema, POSITIONS_SHOWN, PositionSchema } from "./positions";
+
+const V4_POOL = {
+  protocolVersion: "v4",
+  chainId: 1,
+  id: `0x${"a".repeat(64)}`,
+  token0: { chainId: 1, address: `0x${"0".repeat(40)}`, symbol: "ETH", decimals: 18 },
+  token1: { chainId: 1, address: `0x${"f".repeat(40)}`, symbol: "HEI", decimals: 18 },
+  tickSpacing: 7_000,
+  fee: { kind: "static", feePpm: 700_000 },
+  protocolFee: null,
+  hookAddress: null,
+};
 
 const POOL = {
   protocolVersion: "v3",
@@ -31,19 +43,37 @@ const answer = (overrides: Record<string, unknown> = {}) => ({
   read: 1,
   open: 1,
   closed: 0,
+  unread: [],
   fetchedAt: "2026-09-18T07:00:00.000Z",
   sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
   ...overrides,
 });
 
-describe("V3PositionSchema", () => {
+describe("PositionSchema", () => {
   it("accepts a position of the shape the composition produces", () => {
-    expect(V3PositionSchema.safeParse(position()).success).toBe(true);
+    expect(PositionSchema.safeParse(position()).success).toBe(true);
+  });
+
+  /*
+   * The same position shape holds a pool of either protocol, which is what lets
+   * one list carry both. A v4 pool is whole — it carries its spacing, its fee
+   * mode and its hook, all from the key the manager proved.
+   */
+  it("accepts a position in a v4 pool", () => {
+    expect(PositionSchema.safeParse(position({ pool: V4_POOL })).success).toBe(true);
+  });
+
+  it("refuses a v4 pool whose hook and fee mode contradict each other", () => {
+    expect(
+      PositionSchema.safeParse(
+        position({ pool: { ...V4_POOL, fee: { kind: "dynamic", currentFeePpm: null } } }),
+      ).success,
+    ).toBe(false);
   });
 
   it("accepts a pool nobody has swapped in, where neither is known", () => {
     expect(
-      V3PositionSchema.safeParse(position({ currentTick: null, inRange: null })).success,
+      PositionSchema.safeParse(position({ currentTick: null, inRange: null })).success,
     ).toBe(true);
   });
 
@@ -59,7 +89,7 @@ describe("V3PositionSchema", () => {
     ["claims to know with no tick", { currentTick: null, inRange: false }],
     ["claims not to know with a tick", { inRange: null }],
   ])("refuses a position that %s", (_label, overrides) => {
-    expect(V3PositionSchema.safeParse(position(overrides)).success).toBe(false);
+    expect(PositionSchema.safeParse(position(overrides)).success).toBe(false);
   });
 
   it.each([
@@ -69,7 +99,7 @@ describe("V3PositionSchema", () => {
     ["a token id that is not a number", { tokenId: "0x10f947" }],
     ["a field nobody declared", { owner: `0x${"b".repeat(40)}` }],
   ])("refuses a position with %s", (_label, overrides) => {
-    expect(V3PositionSchema.safeParse(position(overrides)).success).toBe(false);
+    expect(PositionSchema.safeParse(position(overrides)).success).toBe(false);
   });
 });
 
@@ -91,6 +121,8 @@ describe("AddressPositionsSchema", () => {
     ["more listed than open", { positions: [position(), position()], open: 1, held: 2, read: 2 }],
     ["more open and closed than read", { held: 3, read: 1, open: 1, closed: 1 }],
     ["no source at all", { sources: [] }],
+    ["both protocols unread, which is not an answer", { unread: ["v3", "v4"] }],
+    ["the same protocol unread twice", { unread: ["v3", "v3"] }],
   ])("refuses an answer with %s", (_label, overrides) => {
     expect(AddressPositionsSchema.safeParse(answer(overrides)).success).toBe(false);
   });

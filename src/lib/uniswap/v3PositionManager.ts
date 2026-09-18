@@ -1,3 +1,5 @@
+import { argumentWord, decodeAddress, decodeInt24, decodeUint, words } from "./abiWords";
+
 /*
  * The contract that holds Uniswap v3 positions, and how to ask it what an
  * address owns.
@@ -41,10 +43,6 @@ export const POSITIONS_SELECTOR = "0x99fbab88";
 export const SLOT0_SELECTOR = "0x3850c7bd";
 
 const ADDRESS = /^0x[0-9a-f]{40}$/;
-const WORD = /^[0-9a-f]{64}$/;
-
-/** One 32-byte argument word from a hex value, left-padded as the ABI pads. */
-const word = (value: string): string => value.replace(/^0x/, "").toLowerCase().padStart(64, "0");
 
 /** True when a returned `eth_getCode` is the manager this was built against. */
 export const isPositionManagerCode = (code: unknown, hashOf: (hex: string) => string | null): boolean =>
@@ -52,65 +50,18 @@ export const isPositionManagerCode = (code: unknown, hashOf: (hex: string) => st
 
 /** `balanceOf(owner)`: how many position tokens an address holds. */
 export const balanceOfCalldata = (owner: string): string | null =>
-  ADDRESS.test(owner) ? `${BALANCE_OF_SELECTOR}${word(owner)}` : null;
+  ADDRESS.test(owner) ? `${BALANCE_OF_SELECTOR}${argumentWord(owner)}` : null;
 
 /** `tokenOfOwnerByIndex(owner, index)`: the id at one place in that list. */
 export const tokenOfOwnerByIndexCalldata = (owner: string, index: number): string | null => {
   if (!ADDRESS.test(owner) || !Number.isSafeInteger(index) || index < 0) return null;
 
-  return `${TOKEN_OF_OWNER_BY_INDEX_SELECTOR}${word(owner)}${word(index.toString(16))}`;
+  return `${TOKEN_OF_OWNER_BY_INDEX_SELECTOR}${argumentWord(owner)}${argumentWord(index.toString(16))}`;
 };
 
 /** `positions(tokenId)`: everything the manager records about one position. */
 export const positionsCalldata = (tokenId: string): string | null =>
-  /^[0-9]+$/.test(tokenId) ? `${POSITIONS_SELECTOR}${word(BigInt(tokenId).toString(16))}` : null;
-
-/** Splits an answer into its 32-byte words, or `null` if it is not whole words. */
-const words = (data: unknown): readonly string[] | null => {
-  if (typeof data !== "string" || !/^0x(?:[0-9a-f]{2})*$/i.test(data)) return null;
-
-  const body = data.slice(2).toLowerCase();
-  if (body.length % 64 !== 0) return null;
-
-  return body.match(/.{64}/g) ?? [];
-};
-
-/** A whole number from one word, as an exact decimal string. */
-export const decodeUint = (data: unknown, index = 0): string | null => {
-  const parts = words(data);
-  const part = parts?.[index];
-
-  return part === undefined || !WORD.test(part) ? null : BigInt(`0x${part}`).toString();
-};
-
-/** An address from one word: the low twenty bytes, with the padding checked. */
-export const decodeAddress = (data: unknown, index: number): string | null => {
-  const part = words(data)?.[index];
-  if (part === undefined || !WORD.test(part) || !/^0{24}/.test(part)) return null;
-
-  return `0x${part.slice(24)}`;
-};
-
-/**
- * A tick from one word.
- *
- * An `int24` arrives **sign-extended to the whole 32-byte word**, not to three
- * bytes — so a tick of -414400 comes back as `2^256 - 414400` and reading the
- * low three bytes of it gives a number that is not a tick and does not look like
- * one. The range is checked afterwards, so a word that is neither a small
- * positive number nor a sign-extended negative one is refused rather than
- * truncated into something plausible.
- */
-export const decodeInt24 = (data: unknown, index: number): number | null => {
-  const part = words(data)?.[index];
-  if (part === undefined || !WORD.test(part)) return null;
-
-  const raw = BigInt(`0x${part}`);
-  const value = raw >= 1n << 255n ? raw - (1n << 256n) : raw;
-  if (value < -8_388_608n || value > 8_388_607n) return null;
-
-  return Number(value);
-};
+  /^[0-9]+$/.test(tokenId) ? `${POSITIONS_SELECTOR}${argumentWord(BigInt(tokenId).toString(16))}` : null;
 
 /** One position, exactly as the manager records it and before anything is made of it. */
 export type RawV3Position = {

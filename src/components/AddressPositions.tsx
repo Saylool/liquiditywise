@@ -1,5 +1,5 @@
 import type { AddressPositionsResult } from "../lib/advisor/addressPositions";
-import { poolAnalysisHref } from "../lib/advisor/requestedParameters";
+import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatFeePpm, formatPrice, formatWhole } from "../lib/format/displayFormats";
 import { choosePriceQuote, quotedInterval } from "../lib/format/priceQuote";
 import type { Dictionary } from "../lib/i18n/dictionaries";
@@ -7,14 +7,14 @@ import type { Locale } from "../lib/i18n/locales";
 import {
   MAX_TICK,
   MIN_TICK,
+  type Position,
   type PriceBandParameters,
   V3_MAX_TICK_SPACING,
-  type V3Position,
 } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
 
 /**
- * The positions an address is already in.
+ * The positions an address is already in, of either protocol.
  *
  * Everything else on this page is about what the address *could* do. This is
  * what it has done, and it is the only place in the application that describes
@@ -27,22 +27,119 @@ import { GuardedLink } from "./GuardedLink";
  * of the position's own band when it is not, so a range never comes out upside
  * down for want of a tick.
  */
-const referencePrice = (position: V3Position): number =>
+const referencePrice = (position: Position): number =>
   Math.sqrt(position.lowerPrice) * Math.sqrt(position.upperPrice);
 
 /**
  * Whether a position covers every price its pool can express.
  *
  * A deliberate and common choice, and one the page was printing as
- * `2.96E-39 – 3.38E38`, which is true and tells a reader nothing. The bounds are
- * compared against TickMath's own limits with the widest spacing a v3 pool may
- * have allowed for, because the exact outermost usable tick depends on the
- * pool's spacing and no subgraph publishes that — so the test is "beyond
- * anything any pool could offer" rather than "exactly the edge".
+ * `2.96E-39 – 3.38E38`, which is true and tells a reader nothing.
+ *
+ * A v4 position carries its pool's tick spacing, so the outermost usable ticks
+ * are exact: they are the last multiples of the spacing inside TickMath's
+ * limits, and no tick between one of those and the limit exists. A v3 position
+ * does not — no subgraph publishes a pool's spacing, and the metadata behind
+ * these stops short of it — so there the test is "beyond anything any pool could
+ * offer" rather than "exactly the edge".
  */
-const coversEveryPrice = (position: V3Position): boolean =>
-  position.tickLower <= MIN_TICK + V3_MAX_TICK_SPACING &&
-  position.tickUpper >= MAX_TICK - V3_MAX_TICK_SPACING;
+const coversEveryPrice = (position: Position): boolean => {
+  const spacing =
+    position.pool.protocolVersion === "v4" ? position.pool.tickSpacing : V3_MAX_TICK_SPACING;
+
+  return position.tickLower <= MIN_TICK + spacing && position.tickUpper >= MAX_TICK - spacing;
+};
+
+/**
+ * Earning first.
+ *
+ * The list is capped, and the two protocols are read separately, so an order
+ * that simply followed the reads would hide every v4 position behind a long v3
+ * list. Whether a position is earning right now is the one thing a holder looks
+ * for first, so it is what decides the order, and the sort is stable — within
+ * either group nothing is reordered.
+ */
+const earningFirst = (positions: readonly Position[]): readonly Position[] =>
+  [...positions].sort(
+    (left, right) => Number(right.inRange === true) - Number(left.inRange === true),
+  );
+
+const PositionRow = ({
+  position,
+  parameters,
+  t,
+  locale,
+}: {
+  position: Position;
+  parameters: PriceBandParameters;
+  t: Dictionary;
+  locale: Locale;
+}) => {
+  const { pool } = position;
+  const quote = choosePriceQuote(pool, referencePrice(position));
+  const edges = quotedInterval(quote, { lower: position.lowerPrice, upper: position.upperPrice });
+  const href =
+    pool.protocolVersion === "v3"
+      ? poolAnalysisHref(pool.id, parameters)
+      : v4PoolAnalysisHref(pool.id, parameters);
+  const fee =
+    pool.protocolVersion === "v3"
+      ? formatFeePpm(pool.feePpm, locale)
+      : pool.fee.kind === "static"
+        ? formatFeePpm(pool.fee.feePpm, locale)
+        : pool.fee.kind === "dynamic"
+          ? t.v4.dynamicFee
+          : t.v4.feeUnread;
+  const hooked = pool.protocolVersion === "v4" && pool.hookAddress !== null;
+
+  return (
+    <li>
+      <GuardedLink
+        href={href}
+        className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <span className="font-mono text-base font-medium">
+            {pool.token0.symbol} / {pool.token1.symbol}
+          </span>
+          {/*
+           * Whether it is earning at all, which is the one thing a holder wants
+           * first. Unread is its own answer: a pool nobody has swapped in
+           * reports no tick, and "not earning" and "not known" are different
+           * things to say.
+           */}
+          <span className="text-xs uppercase tracking-widest text-muted">
+            {position.inRange === null
+              ? t.positions.rangeUnknown
+              : position.inRange
+                ? t.positions.inRange
+                : t.positions.outOfRange}
+          </span>
+        </div>
+        {/*
+         * The protocol is on the row because the two are not interchangeable for
+         * a holder: a v3 pool wants wrapped ether where a v4 one may take the
+         * chain's own, and a v4 pool may carry a hook.
+         */}
+        <span className="font-mono text-xs text-muted">
+          {pool.protocolVersion} · {fee}
+          {hooked ? ` · ${t.holdings.hookTag}` : ""}
+        </span>
+        <p className="font-mono text-sm">
+          {coversEveryPrice(position)
+            ? t.positions.everyPrice
+            : t.report.rangeValue(
+                formatPrice(edges.lower, locale),
+                formatPrice(edges.upper, locale),
+                quote.quote.symbol,
+                quote.base.symbol,
+              )}
+        </p>
+        <p className="text-xs text-accent">{t.positions.analyse}</p>
+      </GuardedLink>
+    </li>
+  );
+};
 
 export function AddressPositions({
   result,
@@ -68,8 +165,9 @@ export function AddressPositions({
     );
   }
 
-  const { positions, held, read, open, closed } = result.data;
+  const { positions, held, read, open, closed, unread } = result.data;
   const whole = (value: number) => formatWhole(value, locale);
+  const shown = earningFirst(positions);
 
   return (
     <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-5">
@@ -77,6 +175,17 @@ export function AddressPositions({
         {t.positions.heading}
       </h2>
       <p className="text-sm leading-relaxed">{t.positions.intro}</p>
+
+      {/*
+       * Named rather than skipped. The counts below cover one protocol only when
+       * this is here, and an address with v4 positions must not read a v3-only
+       * "no positions" as an answer about everything it holds.
+       */}
+      {unread.map((protocol) => (
+        <p key={protocol} className="text-sm leading-relaxed text-muted">
+          {t.positions.unreadProtocol(protocol)}
+        </p>
+      ))}
 
       {held === 0 ? (
         <p className="text-sm leading-relaxed">{t.positions.none}</p>
@@ -86,63 +195,25 @@ export function AddressPositions({
             {t.positions.counts(whole(held), whole(open), whole(closed))}
           </p>
 
-          {positions.length === 0 ? (
+          {shown.length === 0 ? (
             <p className="text-sm leading-relaxed">{t.positions.noneOpen}</p>
           ) : (
             <ul className="flex flex-col gap-3">
-              {positions.map((position) => {
-                const quote = choosePriceQuote(position.pool, referencePrice(position));
-                const edges = quotedInterval(quote, {
-                  lower: position.lowerPrice,
-                  upper: position.upperPrice,
-                });
-
-                return (
-                  <li key={position.tokenId}>
-                    <GuardedLink
-                      href={poolAnalysisHref(position.pool.id, parameters)}
-                      className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
-                    >
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                        <span className="font-mono text-base font-medium">
-                          {position.pool.token0.symbol} / {position.pool.token1.symbol} ·{" "}
-                          {formatFeePpm(position.pool.feePpm, locale)}
-                        </span>
-                        {/*
-                         * Whether it is earning at all, which is the one thing a
-                         * holder wants first. Unread is its own answer: a pool
-                         * nobody has swapped in reports no tick, and "not
-                         * earning" and "not known" are different things to say.
-                         */}
-                        <span className="text-xs uppercase tracking-widest text-muted">
-                          {position.inRange === null
-                            ? t.positions.rangeUnknown
-                            : position.inRange
-                              ? t.positions.inRange
-                              : t.positions.outOfRange}
-                        </span>
-                      </div>
-                      <p className="font-mono text-sm">
-                        {coversEveryPrice(position)
-                          ? t.positions.everyPrice
-                          : t.report.rangeValue(
-                              formatPrice(edges.lower, locale),
-                              formatPrice(edges.upper, locale),
-                              quote.quote.symbol,
-                              quote.base.symbol,
-                            )}
-                      </p>
-                      <p className="text-xs text-accent">{t.positions.analyse}</p>
-                    </GuardedLink>
-                  </li>
-                );
-              })}
+              {shown.map((position) => (
+                <PositionRow
+                  key={`${position.pool.protocolVersion}-${position.tokenId}`}
+                  position={position}
+                  parameters={parameters}
+                  t={t}
+                  locale={locale}
+                />
+              ))}
             </ul>
           )}
 
-          {open <= positions.length ? null : (
+          {open <= shown.length ? null : (
             <p className="text-xs leading-relaxed text-muted">
-              {t.positions.moreNotShown(whole(open - positions.length))}
+              {t.positions.moreNotShown(whole(open - shown.length))}
             </p>
           )}
           {read >= held ? null : (

@@ -1,13 +1,12 @@
 import type { DataFailureNotice, DataFailureReason, DataResult } from "../../schemas";
 import { keccak256Hex } from "../crypto/keccak256";
+import { decodeAddress, decodeUint } from "./abiWords";
 import { postAggregatedCalls } from "./ethereumAggregatedCalls";
 import type { Aggregate3Result } from "./multicall3";
 import type { FetchLike } from "./v3SubgraphTransport";
 import {
   balanceOfCalldata,
-  decodeAddress,
   decodePosition,
-  decodeUint,
   FACTORY_SELECTOR,
   isPositionManagerCode,
   POSITION_MANAGER_ADDRESS,
