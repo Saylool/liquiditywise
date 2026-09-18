@@ -64,10 +64,28 @@ const SPANISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 
+/**
+ * And for Arabic, where the word for a hook stays in Latin script.
+ *
+ * Deliberate rather than untranslated: a hook is named by its address in the
+ * protocol's own documentation, and a reader following that term across to here
+ * meets the same letters. Transliterating it would put a word between them and
+ * the thing it names.
+ */
+const ARABIC_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the term Arabic writing about v4 keeps in Latin script"],
+  [".holdings.hookTag", "the term Arabic writing about v4 keeps in Latin script"],
+  [".search.v4Hook", "the term Arabic writing about v4 keeps in Latin script"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
   ["de", GERMAN_SAME_AS_ENGLISH],
   ["es", SPANISH_SAME_AS_ENGLISH],
+  ["ar", ARABIC_SAME_AS_ENGLISH],
 ]);
 
 /*
