@@ -30,7 +30,7 @@ const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; 
     <li>
       <GuardedLink
         href={`/pool?address=${pool.id}`}
-        className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+        className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <span className="text-base font-medium">
@@ -92,7 +92,7 @@ export function PoolSearchResults({
   const searched = terms.join(" / ");
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.search.heading}
       </h2>
@@ -138,7 +138,7 @@ export function PoolSearchResults({
 /** The panel's shape while the search and its balance reads are still running. */
 export function PoolSearchPending({ t }: { t: Dictionary }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.search.heading}
       </h2>

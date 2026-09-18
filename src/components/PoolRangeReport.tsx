@@ -179,7 +179,7 @@ function Panel({
        * A little room above, so a heading jumped to is not flush against the
        * top of the window with its panel running off the bottom.
        */
-      className="flex scroll-mt-4 flex-col gap-4 rounded-lg border border-border bg-surface p-5"
+      className="flex scroll-mt-4 flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card"
     >
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">{title}</h2>
       {children}
@@ -346,7 +346,7 @@ export function PoolRangeReport({
 
     return (
       <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
+        <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-card">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
             {t.report.noRangeHeading}
           </h2>
@@ -538,7 +538,7 @@ export function PoolRangeReport({
         <div
           className={
             range.containsCurrentPrice
-              ? "flex flex-col gap-1 rounded-md border border-border bg-background px-4 py-3 text-sm"
+              ? "flex flex-col gap-1 rounded-md border border-border bg-surface-sunken px-4 py-3 text-sm"
               : "flex flex-col gap-1 rounded-md border border-warning-border bg-warning-surface px-4 py-3 text-sm text-warning-foreground"
           }
         >
@@ -1026,7 +1026,7 @@ export function PoolRangeReport({
        * end: the ticks the prices above encode, the pool's own direction, the
        * blocks the figures were read at.
        */}
-      <details id="technical" className="scroll-mt-4 rounded-lg border border-border bg-surface p-5">
+      <details id="technical" className="scroll-mt-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <summary className="cursor-pointer text-sm font-semibold uppercase tracking-widest text-muted">
           {t.technical.heading}
         </summary>

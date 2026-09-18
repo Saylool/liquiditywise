@@ -39,7 +39,7 @@ export async function HoldingsSection({
 /** The panel's shape while the sweep is still running. */
 export function HoldingsPending({ t }: { t: Dictionary }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.holdings.heading}
       </h2>

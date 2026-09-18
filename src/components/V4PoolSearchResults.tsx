@@ -48,7 +48,7 @@ const PairRow = ({ match, t, locale }: { match: V4PoolSearchMatch; t: Dictionary
     <li>
       <GuardedLink
         href={`/v4?id=${pool.id}`}
-        className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+        className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <span className="text-base font-medium">
@@ -110,7 +110,7 @@ export function V4PoolSearchResults({
   const searched = terms.join(" / ");
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.search.v4Heading}
       </h2>
@@ -150,7 +150,7 @@ export function V4PoolSearchResults({
 /** The panel's shape while the search and its chain reads are still running. */
 export function V4PoolSearchPending({ t }: { t: Dictionary }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.search.v4Heading}
       </h2>

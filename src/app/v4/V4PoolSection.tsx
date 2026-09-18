@@ -138,7 +138,7 @@ async function V4RangeReport({
 /** The page's shape while the pool read is still in flight. */
 export function V4PoolPending({ t }: { t: Dictionary }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.v4.heading}
       </h2>
@@ -150,7 +150,7 @@ export function V4PoolPending({ t }: { t: Dictionary }) {
 /** And while the range behind it is. */
 function V4RangePending({ t }: { t: Dictionary }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.report.rangeHeading}
       </h2>

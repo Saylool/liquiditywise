@@ -96,7 +96,7 @@ export function V4PoolIdentity({
 }) {
   if (result.status === "unavailable") {
     return (
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
           {t.v4.heading}
         </h2>
@@ -112,7 +112,7 @@ export function V4PoolIdentity({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-5 rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">
             {pool.token0.symbol} / {pool.token1.symbol}
@@ -173,7 +173,7 @@ export function V4PoolIdentity({
         </div>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
           {t.v4.hookHeading}
         </h2>

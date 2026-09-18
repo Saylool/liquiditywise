@@ -37,7 +37,7 @@ export function HookDirectory({
 }) {
   if (result.status === "unavailable") {
     return (
-      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-card">
         <p className="text-sm leading-relaxed">{t.hooks.unavailable}</p>
         <p className="text-sm leading-relaxed text-muted">{t.notices.failure[result.notice]}</p>
       </section>
@@ -49,7 +49,7 @@ export function HookDirectory({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <p className="text-sm leading-relaxed">{t.hooks.intro}</p>
         <p className="text-sm leading-relaxed">{t.hooks.onlyPermissions}</p>
         <p className="text-sm leading-relaxed text-muted">
@@ -63,14 +63,14 @@ export function HookDirectory({
       </section>
 
       {hooks.length === 0 ? (
-        <section className="rounded-lg border border-border bg-surface p-5">
+        <section className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <p className="text-sm leading-relaxed">{t.hooks.none}</p>
         </section>
       ) : (
         hooks.map((entry) => (
           <section
             key={entry.address}
-            className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5"
+            className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card"
           >
             <div className="flex flex-col gap-1">
               <p className="break-all font-mono text-sm">{entry.address}</p>
@@ -99,7 +99,7 @@ export function HookDirectory({
                      */}
                     <GuardedLink
                       href={v4PoolAnalysisHref(pool.id, parameters)}
-                      className="block rounded-md border border-border bg-background px-3 py-1.5 font-mono text-xs"
+                      className="block rounded-md border border-border bg-surface-sunken px-3 py-1.5 font-mono text-xs"
                     >
                       {pool.token0.symbol} / {pool.token1.symbol} ·{" "}
                       {t.feeTiers.priceStep(formatPercent(priceStepRatio(pool.tickSpacing), locale))}

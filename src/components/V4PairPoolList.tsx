@@ -101,11 +101,11 @@ const PoolRow = ({
   return (
     <li>
       {current ? (
-        <div className="flex flex-col gap-2 rounded-md border border-accent bg-background p-4">{body}</div>
+        <div className="flex flex-col gap-2 rounded-md border border-accent bg-surface-sunken p-4">{body}</div>
       ) : (
         <GuardedLink
           href={v4PoolAnalysisHref(pool.id, parameters, depositUsd)}
-          className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+          className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
         >
           {body}
         </GuardedLink>

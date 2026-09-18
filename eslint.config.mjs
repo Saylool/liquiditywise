@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    /*
+     * Worktrees. A background task gets its own checkout under `.claude`, build
+     * output and all, and linting it means reporting Turbopack's generated
+     * chunks as this project's own code — hundreds of errors in files nobody
+     * wrote. Gitignored, so nothing here is ever source.
+     */
+    ".claude/**",
   ]),
 ]);
 

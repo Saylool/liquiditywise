@@ -91,7 +91,7 @@ export function WalletConnect({ strings }: { strings: Dictionary["wallet"] }) {
   };
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {strings.heading}
       </h2>

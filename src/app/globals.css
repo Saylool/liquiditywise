@@ -1,74 +1,164 @@
 @import "tailwindcss";
 
 /*
- * Three theme states, not two.
+ * The palette, in two layers.
  *
- * "System" is the default and sets no attribute at all, so `prefers-color-scheme`
- * decides — including for a reader with JavaScript disabled, who never gets an
- * attribute set and still sees the palette their machine asked for. An explicit
- * choice stamps `data-theme` on <html> and outranks the media query in both
- * directions.
+ * **Layer one is the colours themselves**, written once each under `:root` with
+ * a `--light-` or `--dark-` prefix. Nothing outside this file reads them.
  *
- * The dark palette is written twice on purpose. Plain CSS has no way to share one
- * block between a media query and an attribute selector, and the alternative —
- * resolving "system" in JavaScript and always stamping an explicit value — would
- * leave a no-JavaScript reader permanently in light mode.
+ * **Layer two is what they are for** — `--surface`, `--muted`, `--accent-soft`
+ * and so on — and that is all the application ever names. A component asks for
+ * the raised-card colour, not for "white"; the theme decides what that is.
+ *
+ * The split exists because the mapping has to be written three times and the
+ * colours should not be. Plain CSS cannot share one block between a media query
+ * and an attribute selector, and resolving "system" in JavaScript instead would
+ * leave a reader without JavaScript stuck in light mode. So the three blocks
+ * below assign, and a colour that needs changing is changed in one place.
+ *
+ * Three theme states, not two: "System" is the default and sets no attribute at
+ * all, so `prefers-color-scheme` decides. An explicit choice stamps `data-theme`
+ * on <html> and outranks the media query in both directions.
  */
 
 :root {
+  /*
+   * Light. A cool near-white page with white cards lifted off it, one indigo
+   * accent, and nothing else competing — the greys are tinted towards the
+   * accent rather than neutral, which is what stops a light interface from
+   * reading as bare paper.
+   */
+  --light-background: #f5f7fc;
+  --light-surface: #ffffff;
+  --light-surface-sunken: #f0f3fa;
+  --light-foreground: #131a2c;
+  --light-muted: #5a6478;
+  --light-subtle: #8a93a6;
+  --light-border: #e4e8f2;
+  --light-border-strong: #cfd6e6;
+  --light-accent: #4f46e5;
+  --light-accent-soft: #e7e5fb;
+  --light-accent-contrast: #453dbf;
+  /* What is legible *on* the accent. White works on the light theme's indigo
+   * and not on the dark theme's, which is lighter than the text it would carry. */
+  --light-accent-on: #ffffff;
+  --light-warning-surface: #fef6e7;
+  --light-warning-border: #f0ddb2;
+  --light-warning-foreground: #7a5a12;
+  --light-elevation-card: 0 1px 2px rgb(19 26 44 / 0.05), 0 6px 18px rgb(19 26 44 / 0.05);
+  --light-elevation-raised: 0 2px 4px rgb(19 26 44 / 0.06), 0 12px 28px rgb(19 26 44 / 0.08);
+
+  /*
+   * Dark. Deep navy rather than black: the same hue family as the light theme,
+   * so the two read as one product. Shadows do not show on a dark surface, so
+   * the card is separated by being *lighter* than the page instead, and the
+   * elevation tokens fall back to a ring of border colour.
+   */
+  --dark-background: #0e1320;
+  --dark-surface: #161c2c;
+  --dark-surface-sunken: #111726;
+  --dark-foreground: #e6eaf4;
+  --dark-muted: #99a3b8;
+  --dark-subtle: #6d7890;
+  --dark-border: #253046;
+  --dark-border-strong: #35425c;
+  --dark-accent: #8b84f5;
+  --dark-accent-soft: #232046;
+  --dark-accent-contrast: #b9b4fa;
+  --dark-accent-on: #0e1320;
+  --dark-warning-surface: #241b08;
+  --dark-warning-border: #4c3b12;
+  --dark-warning-foreground: #ebd08f;
+  --dark-elevation-card: 0 0 0 1px rgb(255 255 255 / 0.02), 0 8px 24px rgb(0 0 0 / 0.36);
+  --dark-elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.04), 0 14px 36px rgb(0 0 0 / 0.46);
+
   color-scheme: light;
 
-  --background: #ffffff;
-  --foreground: #0b0b0f;
-  --muted: #5b5b6b;
-  --border: #e6e6ec;
-  --surface: #fafafc;
-  --accent: #d6006a;
-  --warning-surface: #fff8e6;
-  --warning-border: #f0d9a0;
-  --warning-foreground: #6b4b00;
+  --background: var(--light-background);
+  --surface: var(--light-surface);
+  --surface-sunken: var(--light-surface-sunken);
+  --foreground: var(--light-foreground);
+  --muted: var(--light-muted);
+  --subtle: var(--light-subtle);
+  --border: var(--light-border);
+  --border-strong: var(--light-border-strong);
+  --accent: var(--light-accent);
+  --accent-soft: var(--light-accent-soft);
+  --accent-contrast: var(--light-accent-contrast);
+  --accent-on: var(--light-accent-on);
+  --warning-surface: var(--light-warning-surface);
+  --warning-border: var(--light-warning-border);
+  --warning-foreground: var(--light-warning-foreground);
+  --elevation-card: var(--light-elevation-card);
+  --elevation-raised: var(--light-elevation-raised);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --background: #0b0b0f;
-    --foreground: #ededf2;
-    --muted: #9a9aab;
-    --border: #26262f;
-    --surface: #131319;
-    --accent: #ff4d9d;
-    --warning-surface: #201a08;
-    --warning-border: #4a3c12;
-    --warning-foreground: #e8cf92;
+    --background: var(--dark-background);
+    --surface: var(--dark-surface);
+    --surface-sunken: var(--dark-surface-sunken);
+    --foreground: var(--dark-foreground);
+    --muted: var(--dark-muted);
+    --subtle: var(--dark-subtle);
+    --border: var(--dark-border);
+    --border-strong: var(--dark-border-strong);
+    --accent: var(--dark-accent);
+    --accent-soft: var(--dark-accent-soft);
+    --accent-contrast: var(--dark-accent-contrast);
+    --accent-on: var(--dark-accent-on);
+    --warning-surface: var(--dark-warning-surface);
+    --warning-border: var(--dark-warning-border);
+    --warning-foreground: var(--dark-warning-foreground);
+    --elevation-card: var(--dark-elevation-card);
+    --elevation-raised: var(--dark-elevation-raised);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #0b0b0f;
-  --foreground: #ededf2;
-  --muted: #9a9aab;
-  --border: #26262f;
-  --surface: #131319;
-  --accent: #ff4d9d;
-  --warning-surface: #201a08;
-  --warning-border: #4a3c12;
-  --warning-foreground: #e8cf92;
+  --background: var(--dark-background);
+  --surface: var(--dark-surface);
+  --surface-sunken: var(--dark-surface-sunken);
+  --foreground: var(--dark-foreground);
+  --muted: var(--dark-muted);
+  --subtle: var(--dark-subtle);
+  --border: var(--dark-border);
+  --border-strong: var(--dark-border-strong);
+  --accent: var(--dark-accent);
+  --accent-soft: var(--dark-accent-soft);
+  --accent-contrast: var(--dark-accent-contrast);
+  --accent-on: var(--dark-accent-on);
+  --warning-surface: var(--dark-warning-surface);
+  --warning-border: var(--dark-warning-border);
+  --warning-foreground: var(--dark-warning-foreground);
+  --elevation-card: var(--dark-elevation-card);
+  --elevation-raised: var(--dark-elevation-raised);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
   --color-border: var(--border);
-  --color-surface: var(--surface);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-on: var(--accent-on);
   --color-warning-surface: var(--warning-surface);
   --color-warning-border: var(--warning-border);
   --color-warning-foreground: var(--warning-foreground);
+  /* Named apart from the utility they feed: `--shadow-card: var(--shadow-card)`
+   * is a self-reference, and a self-reference resolves to nothing at all. */
+  --shadow-card: var(--elevation-card);
+  --shadow-raised: var(--elevation-raised);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -77,4 +167,21 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Light text on a dark surface renders heavier than the same weight the other
+ * way round, and this interface leans on small caps with wide tracking for its
+ * panel titles — exactly where that extra weight turns into a smudge. Asking
+ * for antialiasing in dark mode only keeps both themes at the same apparent
+ * weight; applying it to light mode as well would thin the body text instead.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body {
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+:root[data-theme="dark"] body {
+  -webkit-font-smoothing: antialiased;
 }

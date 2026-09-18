@@ -28,7 +28,7 @@ export default async function Home() {
 
       <EducationalDisclaimer t={t} />
 
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
           {t.home.workingTodayHeading}
         </h2>
@@ -36,7 +36,7 @@ export default async function Home() {
         <div className="flex flex-wrap gap-3">
           <Link
             href="/pool"
-            className="w-fit rounded-md border border-border bg-background px-4 py-2 text-sm font-medium"
+            className="w-fit rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-on transition-[filter] hover:brightness-110"
           >
             {t.home.analysePool}
           </Link>
@@ -61,7 +61,7 @@ export default async function Home() {
         </h2>
         <ol className="flex flex-col gap-4 sm:flex-row">
           {t.home.methodSteps.map(({ step, detail }, index) => (
-            <li key={step} className="flex-1 rounded-lg border border-border bg-surface p-4">
+            <li key={step} className="flex-1 rounded-xl border border-border bg-surface p-4 shadow-card">
               <p className="font-mono text-xs text-accent">
                 {String(index + 1).padStart(2, "0")}
               </p>

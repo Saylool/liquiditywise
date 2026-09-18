@@ -70,7 +70,7 @@ const TierRow = ({
     <li>
       <GuardedLink
         href={href}
-        className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+        className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <span className="text-base font-medium">
@@ -147,7 +147,7 @@ export function AddressHoldings({
 }) {
   if (result.status === "unavailable") {
     return (
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
           {t.holdings.heading}
         </h2>
@@ -163,7 +163,7 @@ export function AddressHoldings({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
           {t.holdings.heading}
         </h2>
@@ -206,7 +206,7 @@ export function AddressHoldings({
       </section>
 
       {pools.length === 0 ? null : (
-        <section className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-5">
+        <section className="flex flex-col gap-5 rounded-xl border border-border bg-surface p-5 shadow-card">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
             {t.holdings.poolsHeading}
           </h2>

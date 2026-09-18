@@ -94,13 +94,13 @@ const TierRow = ({
   return (
     <li>
       {current ? (
-        <div className="flex flex-col gap-2 rounded-md border border-accent bg-background p-4">
+        <div className="flex flex-col gap-2 rounded-md border border-accent bg-surface-sunken p-4">
           {body}
         </div>
       ) : (
         <GuardedLink
           href={poolAnalysisHref(tier.pool.id, parameters, depositUsd)}
-          className="flex flex-col gap-2 rounded-md border border-border bg-background p-4"
+          className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
         >
           {body}
         </GuardedLink>
@@ -204,7 +204,7 @@ export function PoolFeeTiers({
   locale: Locale;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.feeTiers.heading}
       </h2>
@@ -231,7 +231,7 @@ export function PoolFeeTiers({
  */
 export function PoolFeeTiersPending({ t }: { t: Dictionary }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.feeTiers.heading}
       </h2>

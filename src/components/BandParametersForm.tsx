@@ -60,7 +60,7 @@ const Choice = ({
     <select
       name={name}
       defaultValue={String(current)}
-      className="rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
+      className="rounded-md border border-border bg-surface-sunken px-3 py-2 font-mono text-sm"
     >
       {options.map((value) => (
         /* The value is the number as a URL writes it; only the label is localised. */
@@ -111,7 +111,7 @@ export function BandParametersForm({
     <form
       method="get"
       action={action}
-      className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card"
     >
       <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
         {t.parameters.heading}
@@ -149,7 +149,7 @@ export function BandParametersForm({
         />
         <button
           type="submit"
-          className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-on transition-[filter] hover:brightness-110"
         >
           {t.parameters.apply}
         </button>
