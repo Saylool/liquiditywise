@@ -48,12 +48,15 @@ export const LOCALE_DETAILS: Record<
 /**
  * The languages every sentence has been written in.
  *
- * The rest are published with their interface translated and their longer
- * explanations still in English, and the page says so in that language rather
- * than letting a reader discover it paragraph by paragraph. Moving a language
- * into this set is the last step of translating it, not the first.
+ * Every published language is in it as of Chinese, so the set below and
+ * `LOCALES` are the same list — which is the end state, not a reason to drop
+ * the distinction. A language is added to `LOCALES` the day its interface is
+ * translated, and its longer explanations are English until somebody writes
+ * them; while that lasts the page says so in that language rather than letting
+ * a reader discover it paragraph by paragraph. Moving a language into this set
+ * is the last step of translating it, not the first.
  */
-export const FULLY_TRANSLATED: readonly Locale[] = ["en", "tr", "de", "es", "ar", "hi"];
+export const FULLY_TRANSLATED: readonly Locale[] = ["en", "tr", "de", "es", "ar", "hi", "zh"];
 
 export const isFullyTranslated = (locale: Locale): boolean =>
   FULLY_TRANSLATED.includes(locale);

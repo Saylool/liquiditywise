@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { DataFailureNoticeSchema, DataWarningNoticeSchema } from "../../schemas";
 import { getDictionary } from "./dictionaries";
-import { LOCALES } from "./locales";
+import { LOCALES, type Locale } from "./locales";
 
 /*
  * The compiler already refuses a dictionary that is missing a code — the entries
@@ -10,6 +10,35 @@ import { LOCALES } from "./locales";
  * see is a code that was "translated" by pasting the English sentence into the
  * Turkish object, which is the failure mode this file exists for.
  */
+
+/*
+ * How short a sentence may be before it reads as a stub rather than an answer.
+ *
+ * Twenty characters is where that line falls in an alphabetic script. It is not
+ * where it falls in Chinese, where one character carries about what a syllable
+ * carries elsewhere: the shortest complete notice here is nine characters long
+ * and says exactly what English needs thirty-four for. Holding it to twenty
+ * would not be a stricter guard, it would be a guard on a different thing, and
+ * the only way to pass it would be to pad a sentence that is already whole.
+ *
+ * So the floor is per language, at roughly a quarter of that language’s median
+ * notice — which is what twenty is for English, whose median is eighty-two.
+ * Chinese medians twenty-seven, and its shortest whole sentence is nine.
+ *
+ * Written out for every language rather than as one default with an exception,
+ * so that adding a language means deciding its floor rather than inheriting a
+ * number chosen for a script it may not share — and so that there is no single
+ * default left to lower, which would weaken all seven at once and fail nothing.
+ */
+const SHORTEST_SENTENCE: Record<Locale, number> = {
+  en: 20,
+  tr: 20,
+  de: 20,
+  es: 20,
+  ar: 20,
+  hi: 20,
+  zh: 8,
+};
 
 const FAILURES = DataFailureNoticeSchema.options;
 const WARNINGS = DataWarningNoticeSchema.options;
@@ -25,7 +54,7 @@ describe("notices", () => {
     const { notices } = getDictionary(locale);
 
     for (const code of FAILURES) {
-      expect(notices.failure[code].trim().length).toBeGreaterThan(20);
+      expect(notices.failure[code].trim().length, code).toBeGreaterThan(SHORTEST_SENTENCE[locale]);
     }
   });
 
@@ -33,7 +62,7 @@ describe("notices", () => {
     const { notices } = getDictionary(locale);
 
     for (const code of WARNINGS) {
-      expect(notices.warning[code].trim().length).toBeGreaterThan(20);
+      expect(notices.warning[code].trim().length, code).toBeGreaterThan(SHORTEST_SENTENCE[locale]);
     }
   });
 

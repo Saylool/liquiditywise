@@ -91,12 +91,23 @@ const HINDI_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 
+/** And for Chinese, which keeps the same term in Latin script for the same reason. */
+const CHINESE_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the term Chinese writing about v4 keeps in Latin script"],
+  [".holdings.hookTag", "the term Chinese writing about v4 keeps in Latin script"],
+  [".search.v4Hook", "the term Chinese writing about v4 keeps in Latin script"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
   ["de", GERMAN_SAME_AS_ENGLISH],
   ["es", SPANISH_SAME_AS_ENGLISH],
   ["ar", ARABIC_SAME_AS_ENGLISH],
   ["hi", HINDI_SAME_AS_ENGLISH],
+  ["zh", CHINESE_SAME_AS_ENGLISH],
 ]);
 
 /*
@@ -173,6 +184,27 @@ describe.each(LOCALES.filter((locale) => !isFullyTranslated(locale)))(
 
       expect(notice).not.toBe(getDictionary("en").preferences.partlyTranslated);
       expect(notice.length).toBeGreaterThan(20);
+    });
+
+    /*
+     * And the claim in the other direction, which nothing held anyone to.
+     *
+     * A dictionary with every sentence already written, left out of
+     * `FULLY_TRANSLATED`, renders a page that tells its reader — in their own
+     * language — that the explanations below are still English while they are
+     * not. Nobody reading that page can tell it is wrong, because the page
+     * looks right; the only thing that can tell is this.
+     *
+     * Twenty, not one: the handful that read the same as English in every
+     * language — the protocol’s names, the placeholder’s two symbols — are
+     * counted here too, because a language still being translated has no
+     * exemption list yet. A dictionary that is genuinely part-written has
+     * hundreds.
+     */
+    it("still has English left in it, or it should be promoted", () => {
+      const untranslated = translated.filter(([path, value]) => english.get(path) === value);
+
+      expect(untranslated.length).toBeGreaterThan(20);
     });
   },
 );
