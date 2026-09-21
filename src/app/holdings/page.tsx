@@ -12,6 +12,7 @@ import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { EvmAddressSchema } from "@/schemas/primitives";
 import { HoldingsSection, HoldingsPending } from "./HoldingsSection";
 import { PositionsSection, PositionsPending } from "./PositionsSection";
+import { TelegramSection } from "./TelegramSection";
 
 /*
  * What one address holds, and the pools that opens.
@@ -102,6 +103,13 @@ export default async function HoldingsPage({
           t={t}
         />
       </Suspense>
+
+      {/*
+       * Alerts, under the positions they would be about. Reads a cookie and,
+       * when there is one, the store — a few milliseconds — so it needs no
+       * boundary of its own.
+       */}
+      <TelegramSection address={address.data} t={t} />
 
       <Suspense fallback={<HoldingsPending t={t} />}>
         <HoldingsSection

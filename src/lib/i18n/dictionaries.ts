@@ -132,7 +132,7 @@ const en = {
       },
     ],
     footer:
-      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. A wallet can be connected, and all that is asked of it is its address — there is no persistence and no account anywhere in the codebase, and nothing here can sign or send a transaction on your behalf.",
+      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. A wallet can be connected, and all that is asked of it is its address. The one thing this application keeps is a Telegram link a reader makes themselves — an address beside a chat id, gone the moment they send the bot /stop — and nothing here can sign or send a transaction on your behalf.",
   },
 
   pool: {
@@ -451,7 +451,7 @@ const en = {
   holdings: {
     heading: "What this address holds",
     intro:
-      "The tokens found at this address, and the pools they can go into. Nothing here is stored, and the address is public information — the same list is visible to anyone who looks it up.",
+      "The tokens found at this address, and the pools they can go into. Nothing here is stored unless you ask for Telegram alerts below, and the address is public information — the same list is visible to anyone who looks it up.",
     forAddress: "Address",
     loading: "Asking the token contracts what this address holds…",
     /*
@@ -692,7 +692,7 @@ const en = {
       `Uniswap ${protocol} positions could not be read this time, so every figure here is about the other protocol alone.`,
     unavailable: "This address's positions could not be read.",
     publicNote:
-      "A position's owner is on chain, so this list is public: anybody can read the same one for the same address, and it says nothing this address has not already published by holding these tokens. Nothing here is stored, and no figure on this page is a valuation — a range is not what a position is worth.",
+      "A position's owner is on chain, so this list is public: anybody can read the same one for the same address, and it says nothing this address has not already published by holding these tokens. Nothing here is stored unless you ask for Telegram alerts below, and no figure on this page is a valuation — a range is not what a position is worth.",
   },
 
   wallet: {
@@ -709,7 +709,7 @@ const en = {
      * still true is the half worth keeping, and it is the half that matters.
      */
     readOnly:
-      "Read-only. This application asks a wallet for its address and never for a signature: there is no code here that can sign a message or send a transaction, and nothing is stored between visits.",
+      "Read-only. This application asks a wallet for its address and never for a signature: there is no code here that can sign a message or send a transaction, and nothing about the wallet is stored between visits.",
     notices: {
       "wallet-not-found":
         "No wallet was found in this browser. A browser wallet extension puts one there; without it, nothing on this page changes.",
@@ -720,6 +720,44 @@ const en = {
       "wallet-no-account":
         "The wallet answered without an address, which usually means it is locked or has no account selected.",
     },
+  },
+
+  /*
+   * The alerts: what the site says about them, and what the bot says. Kept
+   * together because the bot's sentences are this interface's sentences,
+   * delivered somewhere else, and they have to agree with the page a reader
+   * links from.
+   */
+  telegram: {
+    heading: "Alerts on Telegram",
+    intro:
+      "Be told, on Telegram, when one of this address's positions leaves its range or comes back into it. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both go the moment you send the bot /stop or forget the link here. How often it is checked is up to the server this runs on.",
+    connect: "Connect Telegram",
+    connected: (address: string) => `This browser is linked: ${address} is being watched.`,
+    pending: "The link is waiting: open the bot's chat in Telegram and press Start.",
+    forget: "Forget the link",
+    notConfigured: "Telegram alerts are not set up on this server.",
+    publicNote:
+      "Nobody has to own an address to follow it — positions are public, and an alert says nothing this list does not. The bot reads the chain and sends a message; it cannot sign or send anything.",
+    linked: (address: string) =>
+      `Linked. You will hear here when a position at ${address} leaves its range or comes back. Send /stop to end it.`,
+    unknownStart:
+      "That link is not known or has expired. Press “Connect Telegram” on the site again.",
+    alreadyClaimed:
+      "That link has already been used by another chat. Press “Connect Telegram” on the site again for a fresh one.",
+    stopped: "Stopped. This chat follows nothing now, and the record is gone.",
+    nothingToStop: "This chat was not following anything.",
+    help:
+      "This bot only follows the address you linked on the site, and only says when a position leaves or re-enters its range. Send /stop to end it.",
+    storeDown: "The link could not be checked right now. Try again in a minute.",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair} (${protocol}) has left its range: ${range}. It holds a single token and earns nothing until the price comes back.`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair} (${protocol}) is back inside its range: ${range}. It is earning again.`,
+    opened: (pair: string, protocol: string, range: string) => `New position: ${pair} (${protocol}), ${range}.`,
+    closed: (protocol: string, tokenId: string) => `Closed: ${protocol} position #${tokenId}.`,
+    footer:
+      "Information only — not financial advice. Read from public on-chain data; nothing here can act for you.",
   },
 
   search: {
@@ -1242,7 +1280,7 @@ const tr: Dictionary = {
       },
     ],
     footer:
-      "Yukarıdakilerin hiçbiri henüz yok. Olan şey, bu sayfada daha yukarıda anlatılanların tamamı: adıyla bulunan bir havuz, hesaplanıp çapraz doğrulanmış sayılar, ve gösterilmeden önce doğrulanan bir metin. Cüzdan bağlanabilir ve ondan istenen tek şey adresidir — kod tabanının hiçbir yerinde kalıcı depolama ya da hesap yok, ve buradaki hiçbir şey senin adına bir işlem imzalayamaz veya gönderemez.",
+      "Yukarıdakilerin hiçbiri henüz yok. Olan, bu sayfanın üst kısmındaki her şey: adıyla bulunan bir havuz, hesaplanıp çapraz kontrol edilen rakamlar ve gösterilmeden önce doğrulanan metin. Bir cüzdan bağlanabilir ve ondan istenen tek şey adresidir. Bu uygulamanın sakladığı tek şey, okuyucunun kendisinin kurduğu bir Telegram bağlantısıdır — bir sohbet kimliğinin yanında bir adres, bota /stop yazıldığı an silinir — ve buradaki hiçbir şey senin adına işlem imzalayamaz ya da gönderemez.",
   },
 
   pool: {
@@ -1485,7 +1523,7 @@ const tr: Dictionary = {
   holdings: {
     heading: "Bu adres ne tutuyor",
     intro:
-      "Bu adreste bulunan tokenlar ve girebilecekleri havuzlar. Burada hiçbir şey saklanmıyor ve adres zaten herkese açık bilgi — aynı liste, bakan herkese görünür.",
+      "Bu adreste bulunan jetonlar ve girebilecekleri havuzlar. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve adres herkese açık bir bilgidir — aynı liste onu arayan herkese görünür.",
     forAddress: "Adres",
     loading: "Bu adresin ne tuttuğu token sözleşmelerine soruluyor…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
@@ -1645,7 +1683,7 @@ const tr: Dictionary = {
       `Bu sefer Uniswap ${protocol} pozisyonları okunamadı; buradaki bütün rakamlar yalnızca diğer protokole ait.`,
     unavailable: "Bu adresin pozisyonları okunamadı.",
     publicNote:
-      "Bir pozisyonun sahibi zincirde yazılıdır, yani bu liste herkese açık: aynı listeyi aynı adres için isteyen okuyabilir, ve bu adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Burada hiçbir şey saklanmıyor, ve bu sayfadaki hiçbir rakam bir değerleme değil — bir aralık, bir pozisyonun ne ettiği anlamına gelmez.",
+      "Bir pozisyonun sahibi zincirdedir, dolayısıyla bu liste herkese açıktır: aynı adres için aynı listeyi herkes okuyabilir ve bu liste, adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve bu sayfadaki hiçbir rakam bir değerleme değildir — bir aralık, bir pozisyonun ne ettiği değildir.",
   },
 
   wallet: {
@@ -1658,7 +1696,7 @@ const tr: Dictionary = {
     showHoldings: "Ne tuttuğunu göster",
     forget: "Bu adresi unut",
     readOnly:
-      "Salt okunur. Bu uygulama cüzdandan adresini ister, imza istemez: burada bir mesajı imzalayabilecek ya da işlem gönderebilecek hiçbir kod yok, ve ziyaretler arasında hiçbir şey saklanmıyor.",
+      "Salt okunur. Bu uygulama cüzdandan adresini ister, asla imza istemez: burada bir mesajı imzalayabilecek ya da işlem gönderebilecek hiçbir kod yoktur ve cüzdana dair hiçbir şey ziyaretler arasında saklanmaz.",
     notices: {
       "wallet-not-found":
         "Bu tarayıcıda cüzdan bulunamadı. Bir tarayıcı cüzdan eklentisi bunu sağlar; o olmadan bu sayfada hiçbir şey değişmez.",
@@ -1669,6 +1707,38 @@ const tr: Dictionary = {
       "wallet-no-account":
         "Cüzdan adres vermeden cevap verdi; bu genellikle kilitli olduğu ya da seçili bir hesabı olmadığı anlamına gelir.",
     },
+  },
+
+  telegram: {
+    heading: "Telegram'dan bildirim",
+    intro:
+      "Bu adresteki bir pozisyon aralığından çıktığında ya da geri girdiğinde Telegram'dan haber al. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de silinir. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır.",
+    connect: "Telegram'a bağla",
+    connected: (address: string) => `Bu tarayıcı bağlı: ${address} izleniyor.`,
+    pending: "Bağlantı bekliyor: Telegram'da botun sohbetini aç ve Başlat'a bas.",
+    forget: "Bağlantıyı unut",
+    notConfigured: "Bu sunucuda Telegram bildirimleri kurulu değil.",
+    publicNote:
+      "Bir adresi izlemek için sahibi olmak gerekmez — pozisyonlar herkese açıktır ve bir bildirim bu listenin söylemediği hiçbir şeyi söylemez. Bot zinciri okur ve mesaj gönderir; hiçbir şey imzalayamaz, hiçbir şey gönderemez.",
+    linked: (address: string) =>
+      `Bağlandı. ${address} adresindeki bir pozisyon aralığından çıktığında ya da geri döndüğünde burada haber alacaksın. Bitirmek için /stop gönder.`,
+    unknownStart:
+      "Bu bağlantı tanınmıyor ya da süresi dolmuş. Sitede “Telegram'a bağla” düğmesine yeniden bas.",
+    alreadyClaimed:
+      "Bu bağlantı başka bir sohbet tarafından zaten kullanılmış. Yenisi için sitede “Telegram'a bağla” düğmesine yeniden bas.",
+    stopped: "Durduruldu. Bu sohbet artık hiçbir şeyi izlemiyor ve kayıt silindi.",
+    nothingToStop: "Bu sohbet zaten hiçbir şeyi izlemiyordu.",
+    help:
+      "Bu bot yalnızca sitede bağladığın adresi izler ve yalnızca bir pozisyon aralığından çıkınca ya da geri girince konuşur. Bitirmek için /stop gönder.",
+    storeDown: "Bağlantı şu anda kontrol edilemedi. Bir dakika sonra yeniden dene.",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair} (${protocol}) aralığından çıktı: ${range}. Fiyat geri gelene kadar tek jeton tutuyor ve hiçbir şey kazanmıyor.`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair} (${protocol}) yeniden aralığında: ${range}. Yeniden kazanıyor.`,
+    opened: (pair: string, protocol: string, range: string) => `Yeni pozisyon: ${pair} (${protocol}), ${range}.`,
+    closed: (protocol: string, tokenId: string) => `Kapandı: ${protocol} #${tokenId} pozisyonu.`,
+    footer:
+      "Yalnızca bilgi — yatırım tavsiyesi değildir. Herkese açık zincir verisinden okunur; buradaki hiçbir şey senin adına işlem yapamaz.",
   },
 
   search: {
@@ -2123,7 +2193,7 @@ const de: Dictionary = {
       },
     ],
     footer:
-      "Nichts davon gibt es bisher. Was es gibt, steht weiter oben auf dieser Seite: ein über seinen Namen gefundener Pool, berechnete und gegengeprüfte Zahlen und Text, der geprüft wird, bevor er gezeigt wird. Eine Wallet lässt sich verbinden, und alles, was von ihr verlangt wird, ist ihre Adresse — es gibt in diesem Code keine Speicherung und kein Konto, und nichts hier kann in Ihrem Namen eine Transaktion signieren oder senden.",
+      "Nichts davon gibt es schon. Was es gibt, ist alles weiter oben auf dieser Seite: ein Pool, der beim Namen gefunden wird, Zahlen, die berechnet und gegengeprüft sind, und Text, der geprüft wird, bevor er gezeigt wird. Ein Wallet kann verbunden werden, und alles, was von ihm verlangt wird, ist seine Adresse. Das Einzige, was diese Anwendung aufbewahrt, ist eine Telegram-Verknüpfung, die ein Leser selbst anlegt — eine Adresse neben einer Chat-Kennung, gelöscht in dem Moment, in dem er dem Bot /stop schickt — und nichts hier kann eine Transaktion in deinem Namen signieren oder senden.",
   },
 
   pool: {
@@ -2367,7 +2437,7 @@ const de: Dictionary = {
   holdings: {
     heading: "Was diese Adresse hält",
     intro:
-      "Die an dieser Adresse gefundenen Token und die Pools, in die sie fließen können. Nichts davon wird gespeichert, und die Adresse ist öffentlich — dieselbe Liste sieht jeder, der sie nachschlägt.",
+      "Die Token, die unter dieser Adresse gefunden wurden, und die Pools, in die sie gehen können. Nichts hier wird gespeichert, sofern du unten keine Telegram-Hinweise anforderst, und die Adresse ist öffentlich — dieselbe Liste sieht jeder, der sie nachschlägt.",
     forAddress: "Adresse",
     loading: "Die Token-Verträge werden gefragt, was diese Adresse hält…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
@@ -2529,7 +2599,7 @@ const de: Dictionary = {
       `Uniswap-${protocol}-Positionen ließen sich diesmal nicht lesen, jede Zahl hier betrifft daher allein das andere Protokoll.`,
     unavailable: "Die Positionen dieser Adresse ließen sich nicht lesen.",
     publicNote:
-      "Der Inhaber einer Position steht auf der Chain, diese Liste ist also öffentlich: jeder kann dieselbe für dieselbe Adresse lesen, und sie sagt nichts, was diese Adresse nicht bereits durch das Halten dieser Token veröffentlicht hätte. Nichts davon wird gespeichert, und keine Zahl auf dieser Seite ist eine Bewertung — ein Bereich ist nicht das, was eine Position wert ist.",
+      "Der Eigentümer einer Position steht on-chain, also ist diese Liste öffentlich: jeder kann für dieselbe Adresse dieselbe lesen, und sie sagt nichts, was diese Adresse nicht schon durch das Halten dieser Token veröffentlicht hat. Nichts hier wird gespeichert, sofern du unten keine Telegram-Hinweise anforderst, und keine Zahl auf dieser Seite ist eine Bewertung — ein Bereich ist nicht, was eine Position wert ist.",
   },
 
   wallet: {
@@ -2542,7 +2612,7 @@ const de: Dictionary = {
     showHoldings: "Zeigen, was sie hält",
     forget: "Diese Adresse vergessen",
     readOnly:
-      "Nur lesend. Diese Anwendung fragt eine Wallet nach ihrer Adresse und nie nach einer Signatur: es gibt hier keinen Code, der eine Nachricht signieren oder eine Transaktion senden könnte, und zwischen Besuchen wird nichts gespeichert.",
+      "Nur lesend. Diese Anwendung bittet ein Wallet um seine Adresse und nie um eine Signatur: es gibt hier keinen Code, der eine Nachricht signieren oder eine Transaktion senden könnte, und nichts über das Wallet wird zwischen Besuchen gespeichert.",
     notices: {
       "wallet-not-found":
         "In diesem Browser wurde keine Wallet gefunden. Eine Wallet-Erweiterung bringt eine mit; ohne sie ändert sich auf dieser Seite nichts.",
@@ -2553,6 +2623,38 @@ const de: Dictionary = {
       "wallet-no-account":
         "Die Wallet hat ohne Adresse geantwortet, was meist bedeutet, dass sie gesperrt ist oder kein Konto ausgewählt hat.",
     },
+  },
+
+  telegram: {
+    heading: "Hinweise per Telegram",
+    intro:
+      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse ihren Bereich verlässt oder wieder hineinkommt. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides verschwindet, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft.",
+    connect: "Telegram verbinden",
+    connected: (address: string) => `Dieser Browser ist verknüpft: ${address} wird beobachtet.`,
+    pending: "Die Verknüpfung wartet: öffne den Chat mit dem Bot in Telegram und drücke auf Start.",
+    forget: "Verknüpfung vergessen",
+    notConfigured: "Telegram-Hinweise sind auf diesem Server nicht eingerichtet.",
+    publicNote:
+      "Niemand muss eine Adresse besitzen, um ihr zu folgen — Positionen sind öffentlich, und ein Hinweis sagt nichts, was diese Liste nicht sagt. Der Bot liest die Chain und schickt eine Nachricht; er kann nichts signieren und nichts senden.",
+    linked: (address: string) =>
+      `Verknüpft. Du erfährst hier, wenn eine Position unter ${address} ihren Bereich verlässt oder zurückkommt. Schick /stop, um das zu beenden.`,
+    unknownStart:
+      "Dieser Link ist unbekannt oder abgelaufen. Drück auf der Seite noch einmal auf „Telegram verbinden“.",
+    alreadyClaimed:
+      "Dieser Link wurde bereits von einem anderen Chat benutzt. Drück auf der Seite noch einmal auf „Telegram verbinden“ für einen neuen.",
+    stopped: "Beendet. Dieser Chat folgt nun nichts mehr, und der Eintrag ist gelöscht.",
+    nothingToStop: "Dieser Chat ist nichts gefolgt.",
+    help:
+      "Dieser Bot folgt nur der Adresse, die du auf der Seite verknüpft hast, und meldet sich nur, wenn eine Position ihren Bereich verlässt oder wieder betritt. Schick /stop, um das zu beenden.",
+    storeDown: "Die Verknüpfung konnte gerade nicht geprüft werden. Versuch es in einer Minute noch einmal.",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair} (${protocol}) hat seinen Bereich verlassen: ${range}. Es hält nur noch einen Token und verdient nichts, bis der Preis zurückkommt.`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair} (${protocol}) ist wieder in seinem Bereich: ${range}. Es verdient wieder.`,
+    opened: (pair: string, protocol: string, range: string) => `Neue Position: ${pair} (${protocol}), ${range}.`,
+    closed: (protocol: string, tokenId: string) => `Geschlossen: Position ${protocol} #${tokenId}.`,
+    footer:
+      "Nur zur Information — keine Finanzberatung. Aus öffentlichen On-Chain-Daten gelesen; nichts hier kann für dich handeln.",
   },
 
   search: {
@@ -2983,7 +3085,7 @@ const es: Dictionary = {
       },
     ],
     footer:
-      "Nada de lo anterior existe todavía. Lo que sí existe es todo lo que está más arriba en esta página: un pool encontrado por su nombre, cifras calculadas y contrastadas, y texto que se verifica antes de mostrarse. Se puede conectar una cartera, y lo único que se le pide es su dirección — no hay persistencia ni cuenta alguna en el código, y nada aquí puede firmar ni enviar una transacción en su nombre.",
+      "Nada de lo anterior existe todavía. Lo que sí existe es todo lo que hay más arriba en esta página: un pool encontrado por su nombre, cifras calculadas y contrastadas, y texto verificado antes de mostrarse. Se puede conectar una cartera, y lo único que se le pide es su dirección. Lo único que guarda esta aplicación es un enlace de Telegram que el propio lector crea — una dirección junto a un identificador de chat, borrado en cuanto envía /stop al bot — y nada de esto puede firmar ni enviar una transacción en tu nombre.",
   },
 
   pool: {
@@ -3227,7 +3329,7 @@ const es: Dictionary = {
   holdings: {
     heading: "Lo que tiene esta dirección",
     intro:
-      "Los tokens encontrados en esta dirección y los pools a los que pueden ir. Nada de esto se guarda, y la dirección es información pública — la misma lista la ve cualquiera que la consulte.",
+      "Los tokens encontrados en esta dirección, y los pools a los que pueden ir. Nada de esto se guarda salvo que pidas avisos por Telegram más abajo, y la dirección es información pública — la misma lista la ve cualquiera que la consulte.",
     forAddress: "Dirección",
     loading: "Preguntando a los contratos de token qué tiene esta dirección…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
@@ -3387,7 +3489,7 @@ const es: Dictionary = {
       `Las posiciones de Uniswap ${protocol} no pudieron leerse esta vez, así que todas las cifras de aquí se refieren únicamente al otro protocolo.`,
     unavailable: "Las posiciones de esta dirección no pudieron leerse.",
     publicNote:
-      "El titular de una posición está en la cadena, así que esta lista es pública: cualquiera puede leer la misma para la misma dirección, y no dice nada que esta dirección no haya publicado ya al tener estos tokens. Nada de esto se guarda, y ninguna cifra de esta página es una valoración — un rango no es lo que vale una posición.",
+      "El dueño de una posición está en la cadena, así que esta lista es pública: cualquiera puede leer la misma para la misma dirección, y no dice nada que esta dirección no haya publicado ya al tener estos tokens. Nada de esto se guarda salvo que pidas avisos por Telegram más abajo, y ninguna cifra de esta página es una valoración — un rango no es lo que vale una posición.",
   },
 
   wallet: {
@@ -3400,7 +3502,7 @@ const es: Dictionary = {
     showHoldings: "Mostrar lo que tiene",
     forget: "Olvidar esta dirección",
     readOnly:
-      "Solo lectura. Esta aplicación pide a una cartera su dirección y nunca una firma: aquí no hay código que pueda firmar un mensaje ni enviar una transacción, y no se guarda nada entre visitas.",
+      "Solo lectura. Esta aplicación pide a la cartera su dirección y nunca una firma: no hay aquí código que pueda firmar un mensaje ni enviar una transacción, y nada sobre la cartera se guarda entre visitas.",
     notices: {
       "wallet-not-found":
         "No se encontró ninguna cartera en este navegador. Una extensión de cartera pone una; sin ella, nada en esta página cambia.",
@@ -3411,6 +3513,38 @@ const es: Dictionary = {
       "wallet-no-account":
         "La cartera respondió sin dirección, lo que suele significar que está bloqueada o que no tiene ninguna cuenta seleccionada.",
     },
+  },
+
+  telegram: {
+    heading: "Avisos por Telegram",
+    intro:
+      "Entérate por Telegram cuando una posición de esta dirección salga de su rango o vuelva a entrar. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos desaparecen en cuanto envías /stop al bot u olvidas el enlace aquí. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto.",
+    connect: "Conectar Telegram",
+    connected: (address: string) => `Este navegador está enlazado: se vigila ${address}.`,
+    pending: "El enlace está a la espera: abre el chat del bot en Telegram y pulsa Iniciar.",
+    forget: "Olvidar el enlace",
+    notConfigured: "Los avisos por Telegram no están configurados en este servidor.",
+    publicNote:
+      "Nadie necesita ser dueño de una dirección para seguirla — las posiciones son públicas, y un aviso no dice nada que esta lista no diga. El bot lee la cadena y envía un mensaje; no puede firmar ni enviar nada.",
+    linked: (address: string) =>
+      `Enlazado. Recibirás aquí un aviso cuando una posición de ${address} salga de su rango o vuelva. Envía /stop para terminar.`,
+    unknownStart:
+      "Ese enlace no se reconoce o ha caducado. Pulsa de nuevo «Conectar Telegram» en el sitio.",
+    alreadyClaimed:
+      "Ese enlace ya lo usó otro chat. Pulsa de nuevo «Conectar Telegram» en el sitio para obtener uno nuevo.",
+    stopped: "Detenido. Este chat ya no sigue nada, y el registro se ha borrado.",
+    nothingToStop: "Este chat no seguía nada.",
+    help:
+      "Este bot solo sigue la dirección que enlazaste en el sitio, y solo habla cuando una posición sale de su rango o vuelve a entrar. Envía /stop para terminar.",
+    storeDown: "No se pudo comprobar el enlace ahora mismo. Inténtalo de nuevo en un minuto.",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair} (${protocol}) ha salido de su rango: ${range}. Mantiene un solo token y no gana nada hasta que el precio vuelva.`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair} (${protocol}) vuelve a estar en su rango: ${range}. Vuelve a ganar.`,
+    opened: (pair: string, protocol: string, range: string) => `Nueva posición: ${pair} (${protocol}), ${range}.`,
+    closed: (protocol: string, tokenId: string) => `Cerrada: posición ${protocol} #${tokenId}.`,
+    footer:
+      "Solo información — no es asesoramiento financiero. Leído de datos públicos en cadena; nada de esto puede actuar por ti.",
   },
 
   search: {
@@ -3841,7 +3975,7 @@ const ar: Dictionary = {
       },
     ],
     footer:
-      "لا شيء مما سبق موجود بعد. الموجود هو كل ما أعلى هذه الصفحة: تجمّع يُعثر عليه بالاسم، وأرقام تُحسب وتُراجَع، ونص يُتحقَّق منه قبل عرضه. ويمكن ربط محفظة، وكل ما يُطلب منها هو عنوانها — لا يوجد في الشيفرة أي حفظ ولا أي حساب، ولا شيء هنا يستطيع التوقيع أو إرسال معاملة نيابة عنك.",
+      "لا شيء مما سبق موجود بعد. الموجود هو كل ما في أعلى هذه الصفحة: مجمّع يُعثر عليه باسمه، وأرقام تُحسب وتُراجَع، ونص يُتحقق منه قبل عرضه. يمكن ربط محفظة، وكل ما يُطلب منها هو عنوانها. الشيء الوحيد الذي يحتفظ به هذا التطبيق هو ربط تيليغرام ينشئه القارئ بنفسه — عنوان إلى جانب معرّف محادثة، يُمحى لحظة إرساله /stop إلى البوت — ولا شيء هنا يستطيع توقيع معاملة أو إرسالها نيابةً عنك.",
   },
 
   pool: {
@@ -4088,7 +4222,7 @@ const ar: Dictionary = {
   holdings: {
     heading: "ما الذي يملكه هذا العنوان",
     intro:
-      "الرموز الموجودة في هذا العنوان، والتجمّعات التي يمكن أن تذهب إليها. لا يُحفظ شيء من هذا، والعنوان معلومة عامة — القائمة نفسها يراها كل من يبحث عنه.",
+      "الرموز الموجودة في هذا العنوان، والمجمّعات التي يمكن أن تدخلها. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، والعنوان معلومة علنية — القائمة نفسها يراها كل من يبحث عنه.",
     forAddress: "العنوان",
     loading: "تُسأل عقود الرموز عمّا يملكه هذا العنوان…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
@@ -4243,7 +4377,7 @@ const ar: Dictionary = {
       `تعذّرت قراءة مراكز Uniswap ${protocol} هذه المرة، فكل رقم هنا يخصّ البروتوكول الآخر وحده.`,
     unavailable: "تعذّرت قراءة مراكز هذا العنوان.",
     publicNote:
-      "مالك المركز مسجّل على السلسلة، فهذه القائمة عامة: يستطيع أي أحد قراءة مثلها للعنوان نفسه، وهي لا تقول شيئًا لم ينشره هذا العنوان أصلًا بحمله هذه الرموز. ولا يُحفظ شيء من هذا، ولا رقم في هذه الصفحة تقييم — فالنطاق ليس ما يساويه المركز.",
+      "مالك المركز مسجّل على السلسلة، فهذه القائمة علنية: يمكن لأي أحد قراءة القائمة نفسها للعنوان نفسه، وهي لا تقول شيئًا لم ينشره هذا العنوان أصلًا بحيازته هذه الرموز. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، ولا رقم في هذه الصفحة هو تقييم — النطاق ليس قيمة المركز.",
   },
 
   wallet: {
@@ -4256,7 +4390,7 @@ const ar: Dictionary = {
     showHoldings: "اعرض ما تملكه",
     forget: "انسَ هذا العنوان",
     readOnly:
-      "للقراءة فقط. يطلب هذا التطبيق من المحفظة عنوانها ولا يطلب توقيعًا أبدًا: ليست هنا شيفرة تستطيع توقيع رسالة أو إرسال معاملة، ولا يُحفظ شيء بين الزيارات.",
+      "للقراءة فقط. يطلب هذا التطبيق من المحفظة عنوانها ولا يطلب توقيعًا أبدًا: لا يوجد هنا أي كود يستطيع توقيع رسالة أو إرسال معاملة، ولا يُحفظ شيء عن المحفظة بين الزيارات.",
     notices: {
       "wallet-not-found":
         "لم يُعثر على محفظة في هذا المتصفّح. وإضافة محفظة للمتصفّح تضع واحدة؛ وبدونها لا يتغيّر شيء في هذه الصفحة.",
@@ -4265,6 +4399,38 @@ const ar: Dictionary = {
       "wallet-no-account":
         "أجابت المحفظة بلا عنوان، وهذا يعني غالبًا أنها مقفلة أو لا حساب مختارًا فيها.",
     },
+  },
+
+  telegram: {
+    heading: "تنبيهات عبر تيليغرام",
+    intro:
+      "اعرف عبر تيليغرام متى يخرج أحد مراكز هذا العنوان من نطاقه أو يعود إليه. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا.",
+    connect: "ربط تيليغرام",
+    connected: (address: string) => `هذا المتصفح مربوط: يُراقَب ${address}.`,
+    pending: "الرابط بانتظارك: افتح محادثة البوت في تيليغرام واضغط «ابدأ».",
+    forget: "نسيان الرابط",
+    notConfigured: "تنبيهات تيليغرام غير مهيأة على هذا الخادم.",
+    publicNote:
+      "لا يحتاج أحد إلى امتلاك عنوان ليتابعه — المراكز علنية، والتنبيه لا يقول شيئًا لا تقوله هذه القائمة. البوت يقرأ السلسلة ويرسل رسالة؛ ولا يستطيع توقيع شيء ولا إرسال شيء.",
+    linked: (address: string) =>
+      `تم الربط. ستُخبَر هنا عندما يخرج مركز في ${address} من نطاقه أو يعود إليه. أرسل /stop للإنهاء.`,
+    unknownStart:
+      "هذا الرابط غير معروف أو انتهت صلاحيته. اضغط «ربط تيليغرام» في الموقع مرة أخرى.",
+    alreadyClaimed:
+      "هذا الرابط استُخدم من محادثة أخرى. اضغط «ربط تيليغرام» في الموقع مرة أخرى للحصول على رابط جديد.",
+    stopped: "توقّف. هذه المحادثة لا تتابع شيئًا الآن، وقد مُحي السجل.",
+    nothingToStop: "هذه المحادثة لم تكن تتابع شيئًا.",
+    help:
+      "هذا البوت يتابع فقط العنوان الذي ربطته في الموقع، ولا يتكلم إلا عندما يخرج مركز من نطاقه أو يعود إليه. أرسل /stop للإنهاء.",
+    storeDown: "تعذّر فحص الرابط الآن. حاول مجددًا بعد دقيقة.",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ خرج ${pair} (${protocol}) من نطاقه: ${range}. يحمل رمزًا واحدًا ولا يكسب شيئًا حتى يعود السعر.`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ عاد ${pair} (${protocol}) إلى نطاقه: ${range}. يكسب من جديد.`,
+    opened: (pair: string, protocol: string, range: string) => `مركز جديد: ${pair} (${protocol})، ${range}.`,
+    closed: (protocol: string, tokenId: string) => `أُغلق: مركز ${protocol} رقم ${tokenId}.`,
+    footer:
+      "للمعلومات فقط — ليست نصيحة مالية. مقروءة من بيانات السلسلة العلنية؛ لا شيء هنا يستطيع التصرف نيابةً عنك.",
   },
 
   search: {
@@ -4682,7 +4848,7 @@ const hi: Dictionary = {
       },
     ],
     footer:
-      "ऊपर लिखा कुछ भी अभी मौजूद नहीं है। जो मौजूद है वह इस पृष्ठ पर इससे ऊपर सब कुछ है: नाम से मिला एक पूल, गिने और जाँचे गए आँकड़े, और ऐसा गद्य जो दिखाने से पहले सत्यापित होता है। एक वॉलेट जोड़ी जा सकती है, और उससे केवल उसका पता माँगा जाता है — इस कोड में न कोई भंडारण है न कोई खाता, और यहाँ कुछ भी आपकी ओर से कोई लेन-देन हस्ताक्षरित या प्रेषित नहीं कर सकता।",
+      "ऊपर लिखी कोई भी चीज़ अभी मौजूद नहीं है। जो मौजूद है, वह इस पृष्ठ के ऊपर का सब कुछ है: नाम से खोजा गया पूल, गणना करके और आपस में मिलाकर जाँचे गए आँकड़े, और दिखाने से पहले सत्यापित पाठ। एक वॉलेट जोड़ा जा सकता है, और उससे केवल उसका पता माँगा जाता है। यह ऐप जो एकमात्र चीज़ रखता है, वह पाठक का स्वयं बनाया हुआ Telegram लिंक है — एक चैट पहचान के साथ एक पता, जो बॉट को /stop भेजते ही मिट जाता है — और यहाँ कुछ भी आपकी ओर से लेन-देन पर हस्ताक्षर या उसे प्रेषित नहीं कर सकता।",
   },
 
   pool: {
@@ -4924,7 +5090,7 @@ const hi: Dictionary = {
   holdings: {
     heading: "इस पते के पास क्या है",
     intro:
-      "इस पते पर मिले टोकन, और वे पूल जिनमें वे जा सकते हैं। यहाँ कुछ भी संग्रहीत नहीं होता, और पता सार्वजनिक जानकारी है — वही सूची हर उस व्यक्ति को दिखती है जो उसे खोजे।",
+      "इस पते पर मिले टोकन, और वे पूल जिनमें वे जा सकते हैं। जब तक आप नीचे Telegram सूचनाएँ न माँगें, यहाँ कुछ भी रखा नहीं जाता, और पता सार्वजनिक जानकारी है — वही सूची उसे खोजने वाले हर किसी को दिखती है।",
     forAddress: "पता",
     loading: "टोकन कॉन्ट्रैक्ट से पूछा जा रहा है कि इस पते के पास क्या है…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
@@ -5084,7 +5250,7 @@ const hi: Dictionary = {
       `Uniswap ${protocol} की पोज़िशनें इस बार पढ़ी नहीं जा सकीं, इसलिए यहाँ का हर आँकड़ा केवल दूसरे प्रोटोकॉल के बारे में है।`,
     unavailable: "इस पते की पोज़िशनें पढ़ी नहीं जा सकीं।",
     publicNote:
-      "किसी पोज़िशन का मालिक चेन पर दर्ज है, इसलिए यह सूची सार्वजनिक है: वही सूची उसी पते के लिए कोई भी पढ़ सकता है, और यह ऐसा कुछ नहीं बताती जो यह पता इन टोकनों को रखकर पहले ही प्रकाशित न कर चुका हो। यहाँ कुछ भी संग्रहीत नहीं होता, और इस पृष्ठ का कोई आँकड़ा मूल्यांकन नहीं है — दायरा वह नहीं है जो पोज़िशन का मोल हो।",
+      "पोज़िशन का मालिक चेन पर दर्ज है, इसलिए यह सूची सार्वजनिक है: कोई भी उसी पते के लिए वही सूची पढ़ सकता है, और यह ऐसा कुछ नहीं कहती जो इस पते ने इन टोकनों को रखकर पहले ही प्रकाशित न कर दिया हो। जब तक आप नीचे Telegram सूचनाएँ न माँगें, यहाँ कुछ भी रखा नहीं जाता, और इस पृष्ठ का कोई आँकड़ा मूल्यांकन नहीं है — दायरा वह नहीं है जो पोज़िशन की कीमत है।",
   },
 
   wallet: {
@@ -5097,7 +5263,7 @@ const hi: Dictionary = {
     showHoldings: "दिखाइए कि उसके पास क्या है",
     forget: "यह पता भूल जाएँ",
     readOnly:
-      "केवल पढ़ने के लिए। यह ऐप्लिकेशन वॉलेट से उसका पता माँगता है, हस्ताक्षर कभी नहीं: यहाँ ऐसा कोई कोड नहीं है जो कोई संदेश हस्ताक्षरित कर सके या कोई लेन-देन भेज सके, और यात्राओं के बीच कुछ भी संग्रहीत नहीं होता।",
+      "केवल पढ़ने के लिए। यह ऐप वॉलेट से उसका पता माँगता है, हस्ताक्षर कभी नहीं: यहाँ ऐसा कोई कोड नहीं है जो कोई संदेश हस्ताक्षरित कर सके या लेन-देन भेज सके, और वॉलेट के बारे में कुछ भी दो यात्राओं के बीच रखा नहीं जाता।",
     notices: {
       "wallet-not-found":
         "इस ब्राउज़र में कोई वॉलेट नहीं मिली। ब्राउज़र की वॉलेट एक्सटेंशन एक रखती है; उसके बिना इस पृष्ठ पर कुछ नहीं बदलता।",
@@ -5108,6 +5274,38 @@ const hi: Dictionary = {
       "wallet-no-account":
         "वॉलेट ने बिना पते के उत्तर दिया, जिसका आम तौर पर मतलब है कि वह बंद है या उसमें कोई खाता चुना नहीं गया।",
     },
+  },
+
+  telegram: {
+    heading: "Telegram पर सूचनाएँ",
+    intro:
+      "जब इस पते की कोई पोज़िशन अपने दायरे से बाहर जाए या वापस आए, Telegram पर जानें। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों मिट जाते हैं। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है।",
+    connect: "Telegram जोड़ें",
+    connected: (address: string) => `यह ब्राउज़र जुड़ा है: ${address} पर नज़र रखी जा रही है।`,
+    pending: "लिंक प्रतीक्षा में है: Telegram में बॉट की चैट खोलें और Start दबाएँ।",
+    forget: "लिंक भूल जाएँ",
+    notConfigured: "इस सर्वर पर Telegram सूचनाएँ विन्यस्त नहीं हैं।",
+    publicNote:
+      "किसी पते पर नज़र रखने के लिए उसका मालिक होना ज़रूरी नहीं — पोज़िशनें सार्वजनिक हैं, और कोई सूचना वह नहीं कहती जो यह सूची न कहे। बॉट चेन पढ़ता है और संदेश भेजता है; वह कुछ हस्ताक्षरित या प्रेषित नहीं कर सकता।",
+    linked: (address: string) =>
+      `जुड़ गया। ${address} की कोई पोज़िशन अपने दायरे से बाहर जाएगी या लौटेगी तो यहाँ पता चलेगा। समाप्त करने के लिए /stop भेजें।`,
+    unknownStart:
+      "यह लिंक पहचाना नहीं गया या इसकी अवधि बीत चुकी है। साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
+    alreadyClaimed:
+      "यह लिंक किसी और चैट ने पहले ही इस्तेमाल कर लिया है। नए लिंक के लिए साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
+    stopped: "रोक दिया गया। यह चैट अब किसी पर नज़र नहीं रखती, और रिकॉर्ड मिटा दिया गया है।",
+    nothingToStop: "यह चैट किसी पर नज़र नहीं रख रही थी।",
+    help:
+      "यह बॉट केवल उस पते पर नज़र रखता है जो आपने साइट पर जोड़ा है, और केवल तभी बोलता है जब कोई पोज़िशन अपने दायरे से बाहर जाए या वापस आए। समाप्त करने के लिए /stop भेजें।",
+    storeDown: "लिंक अभी जाँचा नहीं जा सका। एक मिनट बाद फिर कोशिश करें।",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair} (${protocol}) अपने दायरे से बाहर निकल गई: ${range}। कीमत लौटने तक यह एक ही टोकन रखती है और कुछ नहीं कमाती।`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair} (${protocol}) फिर अपने दायरे में है: ${range}। फिर से कमा रही है।`,
+    opened: (pair: string, protocol: string, range: string) => `नई पोज़िशन: ${pair} (${protocol}), ${range}।`,
+    closed: (protocol: string, tokenId: string) => `बंद हुई: ${protocol} पोज़िशन #${tokenId}।`,
+    footer:
+      "केवल जानकारी — वित्तीय सलाह नहीं। सार्वजनिक ऑन-चेन डेटा से पढ़ा गया; यहाँ कुछ भी आपकी ओर से कार्रवाई नहीं कर सकता।",
   },
 
   search: {
@@ -5541,7 +5739,7 @@ const zh: Dictionary = {
       },
     ],
     footer:
-      "以上这些都还不存在。存在的是这一页上面的全部内容：按名字找到的资金池、经过计算并交叉核对的数字，以及在展示之前已被核验的文字。钱包可以连接，而它被要求提供的只有地址——代码库里没有任何持久化、没有任何账户，这里也没有任何东西能代你签名或发送交易。",
+      "以上这些都还不存在。存在的是这一页上面的全部内容：按名字找到的资金池、经过计算并交叉核对的数字，以及在展示之前已被核验的文字。钱包可以连接，而它被要求提供的只有地址。本应用保存的唯一东西，是读者自己建立的 Telegram 绑定——一个地址和一个对话 id，向机器人发送 /stop 的那一刻即被删除——这里也没有任何东西能代你签名或发送交易。",
   },
 
   pool: {
@@ -5859,7 +6057,7 @@ const zh: Dictionary = {
   holdings: {
     heading: "这个地址持有什么",
     intro:
-      "在这个地址上找到的代币，以及它们可以进入的资金池。这里不存储任何东西，而地址本身是公开信息——任何人去查，看到的都是同一份清单。",
+      "在这个地址上找到的代币，以及它们可以进入的资金池。除非你在下方要求 Telegram 提醒，这里不存储任何东西；而地址本身是公开信息——任何人去查，看到的都是同一份清单。",
     forAddress: "地址",
     loading: "正在向各个代币合约询问这个地址持有什么……",
     /*
@@ -6100,7 +6298,7 @@ const zh: Dictionary = {
       `这次没能读出 Uniswap ${protocol} 的仓位，所以这里的每一个数字都只关乎另一个协议。`,
     unavailable: "这个地址的仓位无法读取。",
     publicNote:
-      "一个仓位的所有者在链上，所以这份清单是公开的：任何人都能为同一个地址读出同样的一份，而且它没有透露任何这个地址不曾因为持有这些代币而公开过的东西。这里不存储任何东西，这一页上也没有任何数字是估值——一个区间不是一个仓位值多少钱。",
+      "一个仓位的所有者在链上，所以这份清单是公开的：任何人都能为同一个地址读出同样的一份，而且它没有透露任何这个地址不曾因为持有这些代币而公开过的东西。除非你在下方要求 Telegram 提醒，这里不存储任何东西；这一页上也没有任何数字是估值——一个区间不是一个仓位值多少钱。",
   },
 
   wallet: {
@@ -6117,7 +6315,7 @@ const zh: Dictionary = {
      * still true is the half worth keeping, and it is the half that matters.
      */
     readOnly:
-      "只读。本应用向钱包索取的是它的地址，从不索取签名：这里没有任何代码能签署一条消息或发送一笔交易，两次访问之间也不存储任何东西。",
+      "只读。本应用向钱包索取的是它的地址，从不索取签名：这里没有任何代码能签署一条消息或发送一笔交易，两次访问之间也不存储任何关于钱包的东西。",
     notices: {
       "wallet-not-found":
         "在这个浏览器里没有找到钱包。浏览器钱包扩展会放一个进去；没有它，这一页上什么都不会变。",
@@ -6128,6 +6326,38 @@ const zh: Dictionary = {
       "wallet-no-account":
         "钱包作出了回应但没有给出地址，这通常意味着它被锁住了，或者没有选中任何账户。",
     },
+  },
+
+  telegram: {
+    heading: "Telegram 提醒",
+    intro:
+      "当这个地址的某个仓位离开它的区间或重新回到区间内时，通过 Telegram 获知。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会被删除。检查的频率取决于运行它的服务器。",
+    connect: "连接 Telegram",
+    connected: (address: string) => `这个浏览器已绑定：正在关注 ${address}。`,
+    pending: "绑定等待中：在 Telegram 里打开机器人的对话并按下“开始”。",
+    forget: "忘记绑定",
+    notConfigured: "这台服务器上没有设置 Telegram 提醒。",
+    publicNote:
+      "关注一个地址不需要拥有它——仓位是公开的，提醒说的也不会超出这份清单所说的。机器人读取链上数据并发送消息；它无法签署或发送任何东西。",
+    linked: (address: string) =>
+      `已绑定。当 ${address} 的某个仓位离开区间或回到区间内时，你会在这里收到消息。发送 /stop 结束。`,
+    unknownStart:
+      "这个链接无法识别或已过期。请在网站上再按一次“连接 Telegram”。",
+    alreadyClaimed:
+      "这个链接已被另一个对话使用。请在网站上再按一次“连接 Telegram”获取新的链接。",
+    stopped: "已停止。这个对话现在不再关注任何东西，记录已删除。",
+    nothingToStop: "这个对话本来就没有关注任何东西。",
+    help:
+      "这个机器人只关注你在网站上绑定的地址，也只在某个仓位离开或重新进入它的区间时说话。发送 /stop 结束。",
+    storeDown: "现在无法检查绑定。请一分钟后再试。",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair}（${protocol}）已离开它的区间：${range}。在价格回来之前，它只持有一种代币，什么也赚不到。`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair}（${protocol}）回到了它的区间内：${range}。又在赚取了。`,
+    opened: (pair: string, protocol: string, range: string) => `新仓位：${pair}（${protocol}），${range}。`,
+    closed: (protocol: string, tokenId: string) => `已关闭：${protocol} 仓位 #${tokenId}。`,
+    footer:
+      "仅供参考——不构成财务建议。读自公开的链上数据；这里没有任何东西能代你操作。",
   },
 
   search: {
