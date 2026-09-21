@@ -1,12 +1,10 @@
-# LiquidityWise behind Caddy, behind Cloudflare.
+# A site block for a Caddy that already serves other sites on this machine.
+# Import it from the main Caddyfile (`import /etc/caddy/sites/*.caddy`) or
+# paste it in; nothing else in that file changes. Port: the APP_PORT the
+# service was installed with.
 #
-# Caddy obtains and renews the certificate itself (Let's Encrypt, HTTP-01;
-# Cloudflare's proxy passes the challenge through). Cloudflare's SSL mode is
-# "Full (strict)", so the edge checks that certificate on every connection.
-#
-# The application counts rate-limit requests by X-Real-IP, and behind Cloudflare
-# the visitor's address is CF-Connecting-IP — so that is what Caddy hands on.
-# Without this every visitor would be one of Cloudflare's few hundred edges.
+# The application counts rate-limit requests by X-Real-IP, and behind
+# Cloudflare the visitor's address is CF-Connecting-IP — so that is handed on.
 
 www.liquiditywise.com {
 	redir https://liquiditywise.com{uri} permanent
@@ -14,7 +12,7 @@ www.liquiditywise.com {
 
 liquiditywise.com {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:3000 {
+	reverse_proxy 127.0.0.1:3200 {
 		header_up X-Real-IP {header.CF-Connecting-IP}
 	}
 }

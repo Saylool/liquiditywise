@@ -9,7 +9,7 @@ User=liquiditywise
 Group=liquiditywise
 WorkingDirectory=/opt/liquiditywise
 Environment=NODE_ENV=production
-Environment=PORT=3000
+Environment=PORT=3200
 Environment=HOSTNAME=127.0.0.1
 # .env.local is read by Next itself at start; nothing is duplicated here.
 ExecStart=/usr/bin/npm run start
