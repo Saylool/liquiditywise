@@ -1,0 +1,20 @@
+# LiquidityWise behind Caddy, behind Cloudflare.
+#
+# Caddy obtains and renews the certificate itself (Let's Encrypt, HTTP-01;
+# Cloudflare's proxy passes the challenge through). Cloudflare's SSL mode is
+# "Full (strict)", so the edge checks that certificate on every connection.
+#
+# The application counts rate-limit requests by X-Real-IP, and behind Cloudflare
+# the visitor's address is CF-Connecting-IP — so that is what Caddy hands on.
+# Without this every visitor would be one of Cloudflare's few hundred edges.
+
+www.liquiditywise.com {
+	redir https://liquiditywise.com{uri} permanent
+}
+
+liquiditywise.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000 {
+		header_up X-Real-IP {header.CF-Connecting-IP}
+	}
+}
