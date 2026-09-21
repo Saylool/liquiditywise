@@ -11,6 +11,11 @@ import { configDefaults, defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    exclude: [...configDefaults.exclude, ".claude/**"],
+    exclude: [
+      ...configDefaults.exclude,
+      ".claude/**",
+      // Needs a port, which the sandbox cannot open. See vitest.integration.mts.
+      "src/**/*.integration.spec.ts",
+    ],
   },
 });

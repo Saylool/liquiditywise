@@ -85,6 +85,21 @@ From a machine with the bot token in its `.env.local`:
 node --env-file=.env.local scripts/setTelegramWebhook.mjs https://liquiditywise.com
 ```
 
+## Checking the store on a machine that can open a port
+
+The Redis client is covered by unit tests against a socket the tests write,
+and by one suite against a real one. That suite binds a port, which the
+sandbox this project is developed in cannot, so it is excluded from the
+default run:
+
+```bash
+npx vitest run --config vitest.integration.mts
+```
+
+Worth running on the server after a deploy: it is the only thing that
+exercises `node:net`, the connect timeout, and a reply arriving in the
+pieces a real kernel chose.
+
 ## Files
 
 - `inspect.sh` — read-only survey of the machine.
