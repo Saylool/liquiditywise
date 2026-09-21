@@ -41,6 +41,7 @@ const rawPool = ({
   id,
   feeTier,
   totalValueLockedUSD: tvl,
+  poolDayData: [{ date: 1789430400 }],
   token0: rawToken(pair[0], "USDC", "6"),
   token1: rawToken(pair[1], "WETH", "18"),
 });

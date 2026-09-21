@@ -1,4 +1,4 @@
-import { type V3PoolMetadata, V3PoolMetadataSchema } from "../../schemas";
+import { type V3PoolMetadata, V3PoolMetadataSchema, VOLATILITY_WINDOW_DAYS } from "../../schemas";
 import type { RawPoolCard } from "./v3PoolCardRawResponse";
 import { convertNonNegativeDecimal, convertSafeInteger } from "./v3SubgraphRawResponse";
 import { normalizeV3Token } from "./v3TokenAdapter";
@@ -20,6 +20,33 @@ export type PoolCard = {
    * price, which is not the same as a price of zero.
    */
   readonly ethPrice: { readonly token0: number; readonly token1: number } | null;
+  /**
+   * The start of the last UTC day anything happened in this pool, in Unix
+   * seconds, or `null` when nothing ever has.
+   */
+  readonly lastActiveDay: number | null;
+};
+
+const SECONDS_PER_DAY = 86_400;
+
+/**
+ * Whether a pool has gone quiet for longer than the analysis can see.
+ *
+ * The range is drawn from the last thirty-one completed days of prices, and
+ * a pool with no day in that window has no volatility to measure: opening it
+ * answers "not enough history", whatever the pool once was. A SYRUP/USDC
+ * pool with two hundred swaps in its life and none for six months was the
+ * first result for "syrup", and every reader who opened it met that answer.
+ *
+ * Measured against the start of the current UTC day, so a pool active on any
+ * of the last thirty-one completed days is kept — the same days the
+ * volatility is measured from.
+ */
+export const isDormant = (card: PoolCard, now: Date): boolean => {
+  if (card.lastActiveDay === null) return true;
+
+  const today = Math.floor(now.getTime() / 1_000 / SECONDS_PER_DAY) * SECONDS_PER_DAY;
+  return card.lastActiveDay < today - VOLATILITY_WINDOW_DAYS * SECONDS_PER_DAY;
 };
 
 /**
@@ -74,5 +101,8 @@ export const normalizePoolCard = (raw: RawPoolCard): PoolCard | null => {
   const ethPrice =
     price0.ok && price1.ok ? { token0: price0.value, token1: price1.value } : null;
 
-  return { pool: pool.data, tvlUsd: tvlUsd.value, ethPrice };
+  const lastDay = raw.poolDayData[0]?.date;
+  const lastActiveDay = lastDay === undefined || lastDay < 0 ? null : lastDay;
+
+  return { pool: pool.data, tvlUsd: tvlUsd.value, ethPrice, lastActiveDay };
 };

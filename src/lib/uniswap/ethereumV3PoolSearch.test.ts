@@ -25,6 +25,7 @@ const successBody = {
         id: "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
         feeTier: "500",
         totalValueLockedUSD: "415764684.5",
+        poolDayData: [{ date: 1789344000 }],
         token0: {
           id: "0x1111111111111111111111111111111111111111",
           symbol: "USDC",

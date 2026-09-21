@@ -128,6 +128,7 @@ export function PoolSearchResults({
             <p>{t.search.symbolWarning}</p>
             <p>{t.search.ordering}</p>
             <p>{t.search.windowing}</p>
+            <p>{t.search.dormantNote}</p>
           </div>
         </>
       )}

@@ -23,6 +23,9 @@ export const POOL_CARD_FRAGMENT = `fragment PoolCard on Pool {
   id
   feeTier
   totalValueLockedUSD
+  poolDayData(first: 1, orderBy: date, orderDirection: desc) {
+    date
+  }
   token0 {
     id
     symbol
@@ -71,6 +74,17 @@ export const RawPoolCardSchema = z.object({
   feeTier: z.string(),
   /** `BigDecimal!`. The provider's own dollar figure, not a verified one. */
   totalValueLockedUSD: z.string(),
+  /**
+   * The most recent day anything happened in this pool — a swap, a deposit,
+   * a withdrawal — as the start of that UTC day in Unix seconds, or an empty
+   * list for a pool nothing has ever happened in. One entry asked for, so at
+   * most one arrives; `date` is `Int!` and so a JSON number.
+   *
+   * What decides whether a pool is listed at all: a pool with no day in the
+   * volatility window has no month of prices to measure, so the analysis a
+   * listing links to would refuse it. See `isDormant`.
+   */
+  poolDayData: z.array(z.object({ date: z.number().int() })).max(1),
   token0: RawTokenSchema,
   token1: RawTokenSchema,
 });

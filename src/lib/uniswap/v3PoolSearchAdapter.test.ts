@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { POOL_SEARCH_RESULT_LIMIT, type PoolSearchTerms } from "../../schemas";
-import { normalizeV3PoolSearch } from "./v3PoolSearchAdapter";
+import { normalizeV3PoolSearch, readSearchPoolsForReserves } from "./v3PoolSearchAdapter";
 
 const FETCHED_AT = "2026-09-14T11:34:00.000Z";
 
@@ -32,16 +32,21 @@ const rawPool = ({
   tvl,
   feeTier = "3000",
   decimals = ["6", "18"],
+
+  lastActiveDay = 1789344000,
 }: {
   id: string;
   symbols: readonly [string, string];
   tvl: string;
   feeTier?: string;
   decimals?: readonly [string, string];
+  /** The last day anything happened, in Unix seconds. Defaults to the day of FETCHED_AT. */
+  lastActiveDay?: number | null;
 }) => ({
   id: address(id),
   feeTier,
   totalValueLockedUSD: tvl,
+  poolDayData: lastActiveDay === null ? [] : [{ date: lastActiveDay }],
   token0: rawToken("1", symbols[0], decimals[0]),
   token1: rawToken("2", symbols[1], decimals[1]),
 });
@@ -300,5 +305,38 @@ describe("normalizeV3PoolSearch", () => {
     const result = normalize({ errors: [{ message: "Bearer abc123 rejected" }], data: null });
 
     expect(result.status === "unavailable" && result.notice).not.toContain("abc123");
+  });
+});
+
+describe("dormant pools", () => {
+  const stale = Math.floor(Date.parse(FETCHED_AT) / 86_400_000) * 86_400 - 40 * 86_400;
+
+  it("are not listed, and the diagnostic says how many were dropped", () => {
+    const diagnostics: string[] = [];
+    const results = succeeded(
+      normalize(
+        payload([
+          rawPool({ id: "a", symbols: ["SYRUP", "USDC"], tvl: "100", lastActiveDay: stale }),
+          rawPool({ id: "b", symbols: ["SYRUP", "WETH"], tvl: "100" }),
+          rawPool({ id: "c", symbols: ["SYRUPX", "WETH"], tvl: "100", lastActiveDay: null }),
+        ]),
+        ["syrup"],
+        (detail) => diagnostics.push(detail),
+      ),
+    );
+
+    expect(results.matches.map((match) => match.pool.id)).toEqual([address("b")]);
+    expect(diagnostics).toEqual(["2 of 3 pools dormant"]);
+  });
+
+  it("have no reserves read for them", () => {
+    const pools = readSearchPoolsForReserves(
+      payload(
+        [rawPool({ id: "a", symbols: ["SYRUP", "USDC"], tvl: "100", lastActiveDay: stale })],
+        [rawPool({ id: "b", symbols: ["SYRUP", "WETH"], tvl: "100" })],
+      ),
+      new Date(FETCHED_AT),
+    );
+    expect(pools.map((pool) => pool.id)).toEqual([address("b")]);
   });
 });

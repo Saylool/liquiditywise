@@ -801,6 +801,13 @@ const en = {
     windowing:
       "This list is drawn from the pools the data source reports as the most traded for your terms, and a pool quiet enough to fall outside that set never reaches the ordering above. That is the honest limit of ranking within what a source chose to return: a pool holding a great deal but trading rarely can be missing from this page.",
     /*
+     * The other thing the list leaves out, and why. Said beside the window
+     * note because it is the same kind of fact: a pool can be missing from
+     * this page for a reason that is not "it does not exist".
+     */
+    dormantNote:
+      "A pool nothing has happened in for a month is not listed. The range is drawn from the last month of prices, and a pool without one has nothing to draw it from — opening it would only say so.",
+    /*
      * The v4 window is not the terms. The source cannot answer a search over
      * every v4 pool before this page stops waiting — measured, not assumed —
      * so the search runs over the week's busiest pool-days, and a page that
@@ -1771,6 +1778,8 @@ const tr: Dictionary = {
       "Tam olarak arattığın adı taşıyan havuzlar önce gelir. Sonrası, her havuzun gerçekte ne tuttuğuna göre sıralanır — token sözleşmelerinin kendisinden okunur ve veri kaynağının türettiği fiyatlarla tek bir ölçeğe konur. Eskiden kaynağın bildirdiği kilitli değere göre sıralanıyordu; o rakam bu listeyi yeniden dizecek kadar yanlıştı: bir havuz burada dokuz milyon dolarlık bildirilen likiditeyle yayımlanırken sözleşmeleri dokuz bin dolar tutuyordu.",
     windowing:
       "Bu liste, veri kaynağının senin terimlerin için en çok işlem gördüğünü bildirdiği havuzlardan çıkarılır; o kümenin dışında kalacak kadar sessiz bir havuz yukarıdaki sıralamaya hiç ulaşmaz. Bir kaynağın döndürmeyi seçtiği şeyin içinde sıralama yapmanın dürüst sınırı budur: çok şey tutan ama nadiren işlem gören bir havuz bu sayfada olmayabilir.",
+    dormantNote:
+      "Bir aydır hiçbir şey olmayan havuz listelenmez. Aralık son bir ayın fiyatlarından çizilir; öyle bir ayı olmayan havuzda çizecek bir şey yoktur — açmak yalnızca bunu söylerdi.",
     v4Windowing:
       "Bu liste, Ethereum mainnet'te son yedi günde en çok işlem gören v4 havuzlarından çıkarılır — en yoğun bin havuz-gün, bu da birkaç yüz havuz eder — ve bundan daha sessiz bir havuz bu sayfaya hiç ulaşmaz. Kaynak, her v4 havuzunu tarayan bir aramayı bu sayfa beklemekten vazgeçmeden cevaplayamıyor; bu yüzden pencere senin terimlerine göre değil, yakın dönemin hareketine göre: var olan ama bu hafta işlem görmemiş bir havuz burada yok.",
     symbolWarning:
@@ -2687,6 +2696,8 @@ const de: Dictionary = {
       "Pools, die genau so heißen, wie Sie gesucht haben, kommen zuerst. Danach folgt die Reihenfolge dem, was jeder Pool tatsächlich hält, aus den Token-Verträgen selbst gelesen und mithilfe der von der Datenquelle abgeleiteten Preise auf einen Maßstab gebracht. Früher folgte sie dem Wert, den die Quelle als in jedem Pool hinterlegt meldet, und diese Zahl war falsch genug, um diese Liste umzusortieren: ein Pool erschien hier mit neun Millionen Dollar gemeldeter Liquidität, während seine Verträge neuntausend hielten.",
     windowing:
       "Diese Liste stammt aus den Pools, die die Datenquelle für Ihre Suchbegriffe als die meistgehandelten meldet, und ein Pool, der ruhig genug ist, um außerhalb dieser Menge zu liegen, erreicht die obige Sortierung nie. Das ist die ehrliche Grenze einer Rangfolge innerhalb dessen, was eine Quelle zurückzugeben beschlossen hat: ein Pool, der viel hält, aber selten gehandelt wird, kann auf dieser Seite fehlen.",
+    dormantNote:
+      "Ein Pool, in dem seit einem Monat nichts geschehen ist, wird nicht aufgeführt. Der Bereich wird aus dem letzten Monat an Preisen gezeichnet, und ein Pool ohne einen solchen hat nichts, woraus er sich zeichnen ließe — ihn zu öffnen würde nur das sagen.",
     v4Windowing:
       "Diese Liste stammt aus den v4-Pools, die in den letzten sieben Tagen im Ethereum-Mainnet am meisten gehandelt wurden — den tausend geschäftigsten Pool-Tagen, was auf einige hundert Pools hinausläuft — und ein ruhigerer Pool erreicht diese Seite nie. Die Quelle kann eine Suche über jeden v4-Pool nicht beantworten, bevor diese Seite aufhört zu warten; das Fenster richtet sich daher nach der jüngsten Aktivität und nicht nach Ihren Suchbegriffen: ein Pool, den es gibt, der aber diese Woche nicht gehandelt wurde, steht nicht hier.",
     symbolWarning:
@@ -3577,6 +3588,8 @@ const es: Dictionary = {
       "Los pools que se llaman exactamente como lo que buscó van primero. Después el orden sigue lo que cada pool contiene realmente, leído de los propios contratos de token y puesto en una misma escala con los precios que deriva la fuente de datos. Antes seguía el valor que la fuente declara como bloqueado en cada pool, y esa cifra estaba lo bastante equivocada como para reordenar esta lista: un pool aparecía aquí con nueve millones de dólares de liquidez declarada mientras sus contratos contenían nueve mil.",
     windowing:
       "Esta lista se extrae de los pools que la fuente de datos declara como los más negociados para sus términos, y un pool lo bastante tranquilo como para quedar fuera de ese conjunto nunca llega al orden anterior. Ese es el límite honesto de clasificar dentro de lo que una fuente decidió devolver: un pool que contiene mucho pero se negocia poco puede faltar en esta página.",
+    dormantNote:
+      "Un pool en el que no ha pasado nada en un mes no aparece. El rango se traza a partir del último mes de precios, y un pool sin ese mes no tiene de dónde trazarlo — abrirlo solo diría eso.",
     v4Windowing:
       "Esta lista se extrae de los pools v4 que más se negociaron en la red principal de Ethereum en los últimos siete días — los mil días-pool más activos, que son unos pocos cientos de pools — y un pool más tranquilo que eso nunca llega a esta página. La fuente no puede responder a una búsqueda en todos los pools v4 antes de que esta página deje de esperar, así que la ventana va por actividad reciente y no por sus términos: un pool que existe pero que no se ha negociado esta semana no está aquí.",
     symbolWarning:
@@ -4463,6 +4476,8 @@ const ar: Dictionary = {
       "التجمّعات المسمّاة تمامًا بما بحثت عنه تأتي أولًا. وبعدها يتبع الترتيب ما يحمله كل تجمّع فعلًا، مقروءًا من عقود الرموز نفسها وموضوعًا على مقياس واحد باستعمال الأسعار التي يشتقّها مصدر البيانات. وكان يتبع سابقًا القيمة التي يعلن المصدر أنها مودعة في كل تجمّع، وكان ذلك الرقم خاطئًا بما يكفي لإعادة ترتيب هذه القائمة: فقد نُشر هنا تجمّع بتسعة ملايين دولار من السيولة المعلَنة بينما كانت عقوده تحمل تسعة آلاف.",
     windowing:
       "هذه القائمة مستمدّة من التجمّعات التي يعلن مصدر البيانات أنها الأكثر تداولًا لمصطلحاتك، والتجمّع الهادئ بما يكفي ليقع خارج تلك المجموعة لا يبلغ الترتيب أعلاه أبدًا. وهذا هو الحدّ الأمين للترتيب داخل ما اختار مصدر أن يعيده: فالتجمّع الذي يحمل الكثير ويُتداول نادرًا قد يغيب عن هذه الصفحة.",
+    dormantNote:
+      "المجمّع الذي لم يحدث فيه شيء منذ شهر لا يُدرج. النطاق يُرسم من أسعار الشهر الأخير، والمجمّع الذي لا شهر له لا شيء يُرسم منه — وفتحه لن يقول سوى ذلك.",
     v4Windowing:
       "هذه القائمة مستمدّة من تجمّعات v4 الأكثر تداولًا على شبكة إيثيريوم الرئيسية خلال الأيام السبعة الماضية — أي أنشط ألف يوم-تجمّع، وهي بضع مئات من التجمّعات — والتجمّع الأهدأ من ذلك لا يبلغ هذه الصفحة أبدًا. فالمصدر لا يستطيع الإجابة عن بحث في كل تجمّعات v4 قبل أن تكفّ هذه الصفحة عن الانتظار، ولذلك تقوم النافذة على النشاط الأخير لا على مصطلحاتك: فالتجمّع الموجود الذي لم يُتداول هذا الأسبوع ليس هنا.",
     symbolWarning:
@@ -5338,6 +5353,8 @@ const hi: Dictionary = {
       "जिन पूलों का नाम ठीक वही है जो आपने खोजा, वे पहले आते हैं। उसके बाद क्रम इस अनुसार चलता है कि हर पूल वास्तव में क्या रखता है, टोकन कॉन्ट्रैक्ट से ही पढ़कर और डेटा स्रोत की निकाली कीमतों से एक ही पैमाने पर लाकर। पहले यह उस मूल्य के अनुसार चलता था जिसे स्रोत हर पूल में जमा बताता है, और वह आँकड़ा इतना ग़लत था कि इस सूची का क्रम ही बदल जाता: एक पूल यहाँ नब्बे लाख डॉलर की बताई गई तरलता के साथ छपा था जबकि उसके कॉन्ट्रैक्ट नौ हज़ार रखे थे।",
     windowing:
       "यह सूची उन पूलों से बनी है जिन्हें डेटा स्रोत आपके शब्दों के लिए सबसे अधिक कारोबार वाला बताता है, और जो पूल इतना शांत है कि उस समूह से बाहर रह जाए वह ऊपर के क्रम तक कभी नहीं पहुँचता। किसी स्रोत ने जो लौटाना चुना उसी के भीतर क्रम लगाने की यही ईमानदार सीमा है: जो पूल बहुत कुछ रखता है पर कम कारोबार करता है, वह इस पृष्ठ से ग़ायब हो सकता है।",
+    dormantNote:
+      "जिस पूल में एक महीने से कुछ नहीं हुआ, वह सूची में नहीं आता। दायरा पिछले एक महीने की कीमतों से खींचा जाता है, और जिस पूल के पास वह महीना नहीं, उसके पास खींचने को कुछ नहीं — उसे खोलना केवल यही कहता।",
     v4Windowing:
       "यह सूची उन v4 पूलों से बनी है जिन्होंने पिछले सात दिनों में Ethereum मेननेट पर सबसे अधिक कारोबार किया — सबसे व्यस्त एक हज़ार पूल-दिन, जो कुछ सौ पूल बनते हैं — और इससे शांत पूल इस पृष्ठ तक कभी नहीं पहुँचता। स्रोत हर v4 पूल में खोज का उत्तर इस पृष्ठ के प्रतीक्षा छोड़ने से पहले नहीं दे सकता, इसलिए खिड़की आपके शब्दों के बजाय हाल की सक्रियता से तय होती है: जो पूल मौजूद है पर इस हफ़्ते कारोबार नहीं किया, वह यहाँ नहीं है।",
     symbolWarning:
@@ -6400,6 +6417,8 @@ const zh: Dictionary = {
       "名字与你所搜索的完全一致的池子排在最前。之后的顺序按每个池子实际持有什么——读自代币合约本身，并用数据来源推导出的价格换算到同一把尺子上。它以前按数据来源报告的各池锁仓价值排序，而那个数字错得足以把这份清单重新排一遍：曾有一个池子被以九百万美元的报告流动性发布在这里，而它的合约里只有九千。",
     windowing:
       "这份清单取自数据来源针对你的搜索词报告为成交最活跃的那些池子，而一个清淡到落在那个集合之外的池子，根本走不到上面那个排序里。这就是“在一个来源选择返回的东西里做排名”这件事老老实实的边界：一个持有很多但很少成交的池子，可能根本不在这一页上。",
+    dormantNote:
+      "一个月内没有任何活动的资金池不会列出。区间是从最近一个月的价格画出来的，没有这一个月的池子无从画起——打开它也只会告诉你这一点。",
     /*
      * The v4 window is not the terms. The source cannot answer a search over
      * every v4 pool before this page stops waiting — measured, not assumed —

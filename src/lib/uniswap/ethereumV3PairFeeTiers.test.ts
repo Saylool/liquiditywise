@@ -17,6 +17,7 @@ const rawPool = (id: string, feeTier: string, tvl: string) => ({
   id,
   feeTier,
   totalValueLockedUSD: tvl,
+  poolDayData: [{ date: 1789430400 }],
   token0: { id: USDC, symbol: "USDC", name: "USD Coin", decimals: "6", derivedETH: "0.0004" },
   token1: { id: WETH, symbol: "WETH", name: "Wrapped Ether", decimals: "18", derivedETH: "1" },
 });

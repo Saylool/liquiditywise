@@ -11,7 +11,7 @@ import {
   type V3PoolMetadata,
 } from "../../schemas";
 import type { PoolReserves } from "./ethereumV3PoolReserves";
-import { normalizePoolCard } from "./v3PoolCardAdapter";
+import { isDormant, normalizePoolCard } from "./v3PoolCardAdapter";
 import type { RawPoolCard } from "./v3PoolCardRawResponse";
 import { V3PoolSearchResponseSchema } from "./v3PoolSearchRawResponse";
 
@@ -43,9 +43,16 @@ const normalizeMatch = (
   raw: RawPoolCard,
   terms: PoolSearchTerms,
   reserves: ReadonlyMap<string, PoolReserves>,
-): PoolSearchMatch | null => {
+  now: Date,
+): PoolSearchMatch | "dormant" | null => {
   const card = normalizePoolCard(raw);
   if (card === null) return null;
+  /*
+   * Listed pools are links to an analysis, and a pool the analysis would
+   * refuse for want of a month of prices is a link to a refusal. Dropped here
+   * rather than by the source, which has no filter for "active lately".
+   */
+  if (isDormant(card, now)) return "dormant";
 
   return {
     pool: card.pool,
@@ -64,14 +71,15 @@ const normalizeMatch = (
  * The same card normaliser runs here and again below, so a pool the reserves
  * were read for is exactly a pool that can appear in the results.
  */
-export const readSearchPoolsForReserves = (payload: unknown): readonly V3PoolMetadata[] => {
+export const readSearchPoolsForReserves = (payload: unknown, now: Date): readonly V3PoolMetadata[] => {
   const parsed = V3PoolSearchResponseSchema.safeParse(payload);
   if (!parsed.success || parsed.data.data == null) return [];
 
   const pools = new Map<string, V3PoolMetadata>();
   for (const raw of [...parsed.data.data.forward, ...parsed.data.data.reverse]) {
     const card = normalizePoolCard(raw);
-    if (card !== null) pools.set(card.pool.id, card.pool);
+    /* No reserves are read for a pool that will not be listed. */
+    if (card !== null && !isDormant(card, now)) pools.set(card.pool.id, card.pool);
   }
 
   return [...pools.values()];
@@ -158,12 +166,18 @@ export const normalizeV3PoolSearch = ({
   if (data._meta?.hasIndexingErrors === true) return unavailable(INDEXING_ERRORS);
 
   const byPoolId = new Map<string, PoolSearchMatch>();
+  const now = new Date(fetchedAt);
   let dropped = 0;
+  let dormant = 0;
 
   for (const raw of [...data.forward, ...data.reverse]) {
-    const match = normalizeMatch(raw, terms, reserves);
+    const match = normalizeMatch(raw, terms, reserves, now);
     if (match === null) {
       dropped += 1;
+      continue;
+    }
+    if (match === "dormant") {
+      dormant += 1;
       continue;
     }
     // A pool matching both terms arrives in both selections. The two copies are
@@ -173,6 +187,9 @@ export const normalizeV3PoolSearch = ({
 
   if (dropped > 0) {
     onDiagnostic?.(`${dropped} of ${data.forward.length + data.reverse.length} pools unverifiable`);
+  }
+  if (dormant > 0) {
+    onDiagnostic?.(`${dormant} of ${data.forward.length + data.reverse.length} pools dormant`);
   }
 
   const candidate = {

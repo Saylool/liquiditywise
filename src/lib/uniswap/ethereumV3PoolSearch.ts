@@ -168,7 +168,7 @@ export const fetchEthereumV3PoolSearch = async (
    * contracts held nine thousand, above pools that genuinely held more.
    */
   const reserves = await fetchEthereumV3PoolReserves({
-    pools: readSearchPoolsForReserves(transport.payload),
+    pools: readSearchPoolsForReserves(transport.payload, request.now()),
     rpcUrl: request.rpcUrl,
     fetchImpl: request.fetchImpl,
   });
