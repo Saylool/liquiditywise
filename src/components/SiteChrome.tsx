@@ -18,7 +18,7 @@ export function SiteHeader({ locale, t }: { locale: Locale; t: Dictionary }) {
           <Link href="/" className="brand" aria-label="Uniswap Advisor">
             <BrandMark />
             <span>
-              uniswap<span className="brand-subtitle">advisor</span>
+              liquidity<span className="brand-subtitle">wise</span>
             </span>
           </Link>
           <SiteNavigation
@@ -44,7 +44,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
         <Link href="/" className="brand">
           <BrandMark />
           <span>
-            uniswap<span className="brand-subtitle">advisor</span>
+            liquidity<span className="brand-subtitle">wise</span>
           </span>
         </Link>
         <p>{copy.closingTitle}</p>

@@ -21,6 +21,9 @@ import { FULLY_TRANSLATED, isFullyTranslated, LOCALES, type Locale } from "./loc
 
 /** Paths that read the same as English on purpose, per language, and why. */
 const TURKISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".feeTiers.hook", "the word the Turkish copy uses for a hook throughout"],
@@ -44,6 +47,9 @@ const english = new Map(strings(getDictionary("en")));
 
 /** The same, for German. Mostly words German and English happen to share. */
 const GERMAN_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".preferences.themeSystem", "German for the system's own setting is the same word"],
@@ -56,6 +62,9 @@ const GERMAN_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
 
 /** And for Spanish, which keeps the English word for a hook as the others do. */
 const SPANISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".feeTiers.hook", "the word Spanish writing about v4 uses for a hook, untranslated"],
@@ -73,6 +82,9 @@ const SPANISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
  * the thing it names.
  */
 const ARABIC_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".feeTiers.hook", "the term Arabic writing about v4 keeps in Latin script"],
@@ -83,6 +95,9 @@ const ARABIC_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
 
 /** And for Hindi, which keeps the same term in Latin script for the same reason. */
 const HINDI_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".feeTiers.hook", "the term Hindi writing about v4 keeps in Latin script"],
@@ -93,6 +108,9 @@ const HINDI_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
 
 /** And for Chinese, which keeps the same term in Latin script for the same reason. */
 const CHINESE_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
   [".feeTiers.hook", "the term Chinese writing about v4 keeps in Latin script"],

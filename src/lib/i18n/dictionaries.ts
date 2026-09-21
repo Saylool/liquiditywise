@@ -25,19 +25,19 @@ import type { Locale } from "./locales";
 
 const en = {
   metadata: {
-    title: "Uniswap Strategy Advisor",
+    title: "LiquidityWise",
     description:
       "An educational AI-assisted advisor for Uniswap v3 and v4 liquidity strategies. Guidance only — not financial advice.",
-    v4Title: "A Uniswap v4 pool · Uniswap Strategy Advisor",
+    v4Title: "A Uniswap v4 pool · LiquidityWise",
     v4Description:
       "What one Uniswap v4 pool is, and what its hook is permitted to do.",
-    holdingsTitle: "What an address holds · Uniswap Strategy Advisor",
+    holdingsTitle: "What an address holds · LiquidityWise",
     holdingsDescription:
       "The tokens found at one Ethereum address, and the Uniswap v3 pools they can go into.",
-    poolTitle: "Pool range analysis · Uniswap Strategy Advisor",
+    poolTitle: "Pool range analysis · LiquidityWise",
     poolDescription:
       "A price range for one Ethereum mainnet Uniswap v3 pool, drawn from how far its price has actually moved.",
-    hooksTitle: "The hooks on Uniswap v4 · Uniswap Strategy Advisor",
+    hooksTitle: "The hooks on Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Every hook the week's busiest Uniswap v4 pools name, and what each one is permitted to do — read from its own address."
   },
@@ -76,7 +76,7 @@ const en = {
 
   home: {
     badge: "Early foundation",
-    title: "Uniswap Strategy Advisor",
+    title: "LiquidityWise",
     introBeforeV3: "An educational advisor for Uniswap ",
     introBetween: ", growing towards ",
     introAfterV4:
@@ -136,7 +136,7 @@ const en = {
   },
 
   pool: {
-    back: "← Uniswap Strategy Advisor",
+    back: "← LiquidityWise",
     invalidAddress:
       "That is not an Ethereum address. An address is 0x followed by exactly 40 hexadecimal characters.",
     loading: "Reading live Uniswap data…",
@@ -1189,19 +1189,19 @@ export type Dictionary = typeof en;
 
 const tr: Dictionary = {
   metadata: {
-    title: "Uniswap Strateji Danışmanı",
+    title: "LiquidityWise",
     description:
       "Uniswap v3 ve v4 likidite stratejileri için eğitim amaçlı, yapay zekâ destekli bir danışman. Yalnızca bilgilendirme — yatırım tavsiyesi değildir.",
-    v4Title: "Bir Uniswap v4 havuzu · Uniswap Strateji Danışmanı",
+    v4Title: "Bir Uniswap v4 havuzu · LiquidityWise",
     v4Description:
       "Bir Uniswap v4 havuzunun ne olduğu ve hook'unun neye izinli olduğu.",
-    holdingsTitle: "Bir adres ne tutuyor · Uniswap Strateji Danışmanı",
+    holdingsTitle: "Bir adres ne tutuyor · LiquidityWise",
     holdingsDescription:
       "Bir Ethereum adresinde bulunan tokenlar ve girebilecekleri Uniswap v3 havuzları.",
-    poolTitle: "Havuz aralığı analizi · Uniswap Strateji Danışmanı",
+    poolTitle: "Havuz aralığı analizi · LiquidityWise",
     poolDescription:
       "Bir Ethereum mainnet Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
-    hooksTitle: "Uniswap v4 kancaları · Uniswap Strateji Danışmanı",
+    hooksTitle: "Uniswap v4 kancaları · LiquidityWise",
     hooksDescription:
       "Haftanın en yoğun Uniswap v4 havuzlarının adını verdiği her kanca ve her birinin neye izinli olduğu — kendi adresinden okunmuş hâliyle."
   },
@@ -1231,7 +1231,7 @@ const tr: Dictionary = {
 
   home: {
     badge: "Erken aşama",
-    title: "Uniswap Strateji Danışmanı",
+    title: "LiquidityWise",
     introBeforeV3: "Uniswap ",
     introBetween: " için, ",
     introAfterV4:
@@ -1291,7 +1291,7 @@ const tr: Dictionary = {
   },
 
   pool: {
-    back: "← Uniswap Strateji Danışmanı",
+    back: "← LiquidityWise",
     invalidAddress:
       "Bu bir Ethereum adresi değil. Adres, 0x ile başlayıp tam olarak 40 onaltılık karakterle devam eder.",
     loading: "Canlı Uniswap verisi okunuyor…",
@@ -2105,18 +2105,18 @@ const tr: Dictionary = {
 
 const de: Dictionary = {
   metadata: {
-    title: "Uniswap Strategie-Ratgeber",
+    title: "LiquidityWise",
     description:
       "Ein informativer, KI-gestützter Ratgeber für Liquiditätsstrategien in Uniswap v3 und v4. Nur zur Orientierung — keine Finanzberatung.",
-    v4Title: "Ein Uniswap-v4-Pool · Uniswap Strategie-Ratgeber",
+    v4Title: "Ein Uniswap-v4-Pool · LiquidityWise",
     v4Description: "Was ein einzelner Uniswap-v4-Pool ist und was sein Hook tun darf.",
-    holdingsTitle: "Was eine Adresse hält · Uniswap Strategie-Ratgeber",
+    holdingsTitle: "Was eine Adresse hält · LiquidityWise",
     holdingsDescription:
       "Die an einer Ethereum-Adresse gefundenen Token und die Uniswap-v3-Pools, in die sie fließen können.",
-    poolTitle: "Bereichsanalyse eines Pools · Uniswap Strategie-Ratgeber",
+    poolTitle: "Bereichsanalyse eines Pools · LiquidityWise",
     poolDescription:
       "Ein Preisbereich für einen Uniswap-v3-Pool im Ethereum-Mainnet, hergeleitet daraus, wie weit sich sein Preis tatsächlich bewegt hat.",
-    hooksTitle: "Die Hooks in Uniswap v4 · Uniswap Strategie-Ratgeber",
+    hooksTitle: "Die Hooks in Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Jeder Hook, den die meistgehandelten Uniswap-v4-Pools der Woche nennen, und was jeder von ihnen tun darf — aus seiner eigenen Adresse gelesen.",
   },
@@ -2146,7 +2146,7 @@ const de: Dictionary = {
 
   home: {
     badge: "Frühes Fundament",
-    title: "Uniswap Strategie-Ratgeber",
+    title: "LiquidityWise",
     introBeforeV3: "Ein Lernwerkzeug für Uniswap ",
     introBetween: ", auf dem Weg zu ",
     introAfterV4:
@@ -2206,7 +2206,7 @@ const de: Dictionary = {
   },
 
   pool: {
-    back: "← Uniswap Strategie-Ratgeber",
+    back: "← LiquidityWise",
     invalidAddress:
       "Das ist keine Ethereum-Adresse. Eine Adresse besteht aus 0x gefolgt von genau 40 hexadezimalen Zeichen.",
     loading: "Aktuelle Uniswap-Daten werden gelesen…",
@@ -2999,18 +2999,18 @@ const de: Dictionary = {
 };
 const es: Dictionary = {
   metadata: {
-    title: "Asesor de estrategias de Uniswap",
+    title: "LiquidityWise",
     description:
       "Un asesor educativo asistido por IA para estrategias de liquidez en Uniswap v3 y v4. Solo orientación — no es asesoramiento financiero.",
-    v4Title: "Un pool de Uniswap v4 · Asesor de estrategias de Uniswap",
+    v4Title: "Un pool de Uniswap v4 · LiquidityWise",
     v4Description: "Qué es un pool concreto de Uniswap v4 y qué se le permite hacer a su hook.",
-    holdingsTitle: "Lo que tiene una dirección · Asesor de estrategias de Uniswap",
+    holdingsTitle: "Lo que tiene una dirección · LiquidityWise",
     holdingsDescription:
       "Los tokens encontrados en una dirección de Ethereum y los pools de Uniswap v3 a los que pueden ir.",
-    poolTitle: "Análisis de rango de un pool · Asesor de estrategias de Uniswap",
+    poolTitle: "Análisis de rango de un pool · LiquidityWise",
     poolDescription:
       "Un rango de precios para un pool de Uniswap v3 en la red principal de Ethereum, trazado a partir de cuánto se ha movido realmente su precio.",
-    hooksTitle: "Los hooks de Uniswap v4 · Asesor de estrategias de Uniswap",
+    hooksTitle: "Los hooks de Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Todos los hooks que nombran los pools de Uniswap v4 más activos de la semana, y qué se le permite hacer a cada uno — leído de su propia dirección.",
   },
@@ -3040,7 +3040,7 @@ const es: Dictionary = {
 
   home: {
     badge: "Base inicial",
-    title: "Asesor de estrategias de Uniswap",
+    title: "LiquidityWise",
     introBeforeV3: "Un asesor educativo para Uniswap ",
     introBetween: ", en camino hacia ",
     introAfterV4:
@@ -3100,7 +3100,7 @@ const es: Dictionary = {
   },
 
   pool: {
-    back: "← Asesor de estrategias de Uniswap",
+    back: "← LiquidityWise",
     invalidAddress:
       "Eso no es una dirección de Ethereum. Una dirección es 0x seguido de exactamente 40 caracteres hexadecimales.",
     loading: "Leyendo datos de Uniswap en vivo…",
@@ -3891,18 +3891,18 @@ const es: Dictionary = {
 };
 const ar: Dictionary = {
   metadata: {
-    title: "مرشد استراتيجيات Uniswap",
+    title: "LiquidityWise",
     description:
       "مرشد تعليمي مدعوم بالذكاء الاصطناعي لاستراتيجيات السيولة في Uniswap v3 و v4. إرشاد فقط — وليس نصيحة مالية.",
-    v4Title: "تجمّع Uniswap v4 · مرشد استراتيجيات Uniswap",
+    v4Title: "تجمّع Uniswap v4 · LiquidityWise",
     v4Description: "ما هو هذا التجمّع في Uniswap v4، وما المسموح لـ hook الخاص به أن يفعله.",
-    holdingsTitle: "ما الذي يملكه عنوان ما · مرشد استراتيجيات Uniswap",
+    holdingsTitle: "ما الذي يملكه عنوان ما · LiquidityWise",
     holdingsDescription:
       "الرموز الموجودة في عنوان إيثيريوم واحد، وتجمّعات Uniswap v3 التي يمكن أن تذهب إليها.",
-    poolTitle: "تحليل نطاق تجمّع · مرشد استراتيجيات Uniswap",
+    poolTitle: "تحليل نطاق تجمّع · LiquidityWise",
     poolDescription:
       "نطاق سعري لتجمّع Uniswap v3 على شبكة إيثيريوم الرئيسية، مرسوم من مدى تحرّك سعره فعلًا.",
-    hooksTitle: "خطّافات Uniswap v4 · مرشد استراتيجيات Uniswap",
+    hooksTitle: "خطّافات Uniswap v4 · LiquidityWise",
     hooksDescription:
       "كل hook تسمّيه أكثر تجمّعات Uniswap v4 نشاطًا هذا الأسبوع، وما المسموح لكلٍّ منها أن يفعله — مقروءًا من عنوانه نفسه.",
   },
@@ -3932,7 +3932,7 @@ const ar: Dictionary = {
 
   home: {
     badge: "أساس مبكر",
-    title: "مرشد استراتيجيات Uniswap",
+    title: "LiquidityWise",
     introBeforeV3: "مرشد تعليمي لـ Uniswap ",
     introBetween: "، في طريقه نحو ",
     introAfterV4:
@@ -3997,7 +3997,7 @@ const ar: Dictionary = {
      * back is the way the arrow that means "onward" does not point — and every
      * onward link in this dictionary carries the left-pointing one.
      */
-    back: "→ مرشد استراتيجيات Uniswap",
+    back: "← LiquidityWise",
     invalidAddress:
       "هذا ليس عنوان إيثيريوم. العنوان هو 0x يتبعه 40 حرفًا ست عشريًا بالضبط.",
     loading: "تُقرأ بيانات Uniswap الحيّة…",
@@ -4766,18 +4766,18 @@ const ar: Dictionary = {
 };
 const hi: Dictionary = {
   metadata: {
-    title: "Uniswap रणनीति सलाहकार",
+    title: "LiquidityWise",
     description:
       "Uniswap v3 और v4 की तरलता रणनीतियों के लिए एक शैक्षिक, AI-सहायित सलाहकार। केवल मार्गदर्शन — वित्तीय सलाह नहीं।",
-    v4Title: "एक Uniswap v4 पूल · Uniswap रणनीति सलाहकार",
+    v4Title: "एक Uniswap v4 पूल · LiquidityWise",
     v4Description: "यह Uniswap v4 पूल क्या है, और इसके hook को क्या करने की अनुमति है।",
-    holdingsTitle: "एक पते के पास क्या है · Uniswap रणनीति सलाहकार",
+    holdingsTitle: "एक पते के पास क्या है · LiquidityWise",
     holdingsDescription:
       "एक Ethereum पते पर मिले टोकन, और वे Uniswap v3 पूल जिनमें वे जा सकते हैं।",
-    poolTitle: "पूल के दायरे का विश्लेषण · Uniswap रणनीति सलाहकार",
+    poolTitle: "पूल के दायरे का विश्लेषण · LiquidityWise",
     poolDescription:
       "Ethereum मेननेट के एक Uniswap v3 पूल के लिए कीमत का दायरा, इस आधार पर खींचा गया कि उसकी कीमत वास्तव में कितनी हिली है।",
-    hooksTitle: "Uniswap v4 के hooks · Uniswap रणनीति सलाहकार",
+    hooksTitle: "Uniswap v4 के hooks · LiquidityWise",
     hooksDescription:
       "इस हफ़्ते के सबसे व्यस्त Uniswap v4 पूल जिन hooks का नाम लेते हैं, और हर एक को क्या करने की अनुमति है — उसके अपने पते से पढ़ा गया।",
   },
@@ -4807,7 +4807,7 @@ const hi: Dictionary = {
 
   home: {
     badge: "शुरुआती नींव",
-    title: "Uniswap रणनीति सलाहकार",
+    title: "LiquidityWise",
     introBeforeV3: "Uniswap ",
     introBetween: " के लिए एक शैक्षिक सलाहकार, और ",
     introAfterV4:
@@ -4867,7 +4867,7 @@ const hi: Dictionary = {
   },
 
   pool: {
-    back: "← Uniswap रणनीति सलाहकार",
+    back: "← LiquidityWise",
     invalidAddress:
       "यह Ethereum पता नहीं है। पता 0x के बाद ठीक 40 हेक्साडेसिमल अक्षरों का होता है।",
     loading: "Uniswap का ताज़ा डेटा पढ़ा जा रहा है…",
@@ -5653,19 +5653,19 @@ const hi: Dictionary = {
 };
 const zh: Dictionary = {
   metadata: {
-    title: "Uniswap 策略顾问",
+    title: "LiquidityWise",
     description:
       "一个面向 Uniswap v3 与 v4 流动性策略的教学型 AI 辅助顾问。仅供参考——不构成财务建议。",
-    v4Title: "一个 Uniswap v4 资金池 · Uniswap 策略顾问",
+    v4Title: "一个 Uniswap v4 资金池 · LiquidityWise",
     v4Description:
       "这一个 Uniswap v4 资金池是什么，以及它的 hook 被允许做什么。",
-    holdingsTitle: "一个地址持有什么 · Uniswap 策略顾问",
+    holdingsTitle: "一个地址持有什么 · LiquidityWise",
     holdingsDescription:
       "在某个以太坊地址上找到的代币，以及这些代币可以进入的 Uniswap v3 资金池。",
-    poolTitle: "资金池区间分析 · Uniswap 策略顾问",
+    poolTitle: "资金池区间分析 · LiquidityWise",
     poolDescription:
       "为某个以太坊主网 Uniswap v3 资金池给出的价格区间，由它的价格实际走了多远推算而来。",
-    hooksTitle: "Uniswap v4 上的 hook · Uniswap 策略顾问",
+    hooksTitle: "Uniswap v4 上的 hook · LiquidityWise",
     hooksDescription:
       "本周最活跃的 Uniswap v4 资金池所指定的每一个 hook，以及每一个被允许做什么——都从它自己的地址中读出。"
   },
@@ -5700,7 +5700,7 @@ const zh: Dictionary = {
 
   home: {
     badge: "早期基础版本",
-    title: "Uniswap 策略顾问",
+    title: "LiquidityWise",
     introBeforeV3: "一个面向 Uniswap ",
     introBetween: " 的教学型顾问，并正在向 ",
     introAfterV4:
@@ -5760,7 +5760,7 @@ const zh: Dictionary = {
   },
 
   pool: {
-    back: "← Uniswap 策略顾问",
+    back: "← LiquidityWise",
     invalidAddress:
       "那不是一个以太坊地址。地址是 0x 后面正好跟 40 个十六进制字符。",
     loading: "正在读取 Uniswap 的实时数据……",

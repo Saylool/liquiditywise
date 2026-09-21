@@ -1,4 +1,6 @@
-# Uniswap Strategy Advisor
+# LiquidityWise
+
+liquiditywise.com — an independent, educational Uniswap range advisor. Not affiliated with Uniswap Labs.
 
 An educational, AI-assisted decision-support tool for Uniswap v3 and v4 liquidity
 strategies. Name a pool — by its pair, its address or its v4 id — and the
