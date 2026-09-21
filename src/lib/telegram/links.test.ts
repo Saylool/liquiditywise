@@ -108,9 +108,9 @@ describe("Telegram links", () => {
 
   it("throws away a record it cannot read as a link", async () => {
     const store = fakeStore();
-    store.data.set(`uniswapadvisor:telegram:link:${TOKEN}`, "{not json");
+    store.data.set(`liquiditywise:telegram:link:${TOKEN}`, "{not json");
     expect(await readLink(store, TOKEN)).toBeNull();
-    store.data.set(`uniswapadvisor:telegram:link:${TOKEN}`, JSON.stringify({ address: "nope" }));
+    store.data.set(`liquiditywise:telegram:link:${TOKEN}`, JSON.stringify({ address: "nope" }));
     expect(await readLink(store, TOKEN)).toBeNull();
   });
 });

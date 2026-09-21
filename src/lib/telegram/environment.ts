@@ -1,7 +1,12 @@
 import "server-only";
 
+import { chooseStore } from "../store/chooseStore";
+import type { KeyValueStore } from "../store/keyValueStore";
+import { nodeRedisConnect } from "../store/nodeRedisSocket";
+import { createRedisClient } from "../store/redisClient";
+import { createRedisKeyValueStore } from "../store/redisKeyValueStore";
 import { createBotClient, type BotClient } from "./botApi";
-import { createUpstashKeyValueStore, type KeyValueStore } from "./upstashKeyValue";
+import { createUpstashKeyValueStore } from "./upstashKeyValue";
 
 /*
  * What a deployment needs for Telegram alerts, read from the environment.
@@ -18,8 +23,23 @@ export type TelegramEnvironment = {
   readonly TELEGRAM_BOT_USERNAME?: string | undefined;
   readonly TELEGRAM_WEBHOOK_SECRET?: string | undefined;
   readonly CRON_SECRET?: string | undefined;
+  readonly REDIS_URL?: string | undefined;
   readonly UPSTASH_REDIS_REST_URL?: string | undefined;
   readonly UPSTASH_REDIS_REST_TOKEN?: string | undefined;
+};
+
+/** Opens whichever store this deployment named. Nothing is connected until used. */
+const buildStore = (environment: TelegramEnvironment): KeyValueStore | null => {
+  const choice = chooseStore(environment);
+  if (choice === null) return null;
+
+  return choice.kind === "redis"
+    ? createRedisKeyValueStore(createRedisClient({
+        connect: nodeRedisConnect(choice.address),
+        password: choice.address.password,
+        database: choice.address.database,
+      }))
+    : createUpstashKeyValueStore({ url: choice.url, token: choice.token });
 };
 
 export type TelegramSetup = {
@@ -42,13 +62,12 @@ export const telegramSetupFrom = (environment: TelegramEnvironment): TelegramSet
   const username = present(environment.TELEGRAM_BOT_USERNAME)?.replace(/^@/, "") ?? null;
   const webhookSecret = present(environment.TELEGRAM_WEBHOOK_SECRET);
   const cronSecret = present(environment.CRON_SECRET);
-  const url = present(environment.UPSTASH_REDIS_REST_URL);
-  const storeToken = present(environment.UPSTASH_REDIS_REST_TOKEN);
+  const store = buildStore(environment);
 
-  if (!token || !username || !webhookSecret || !cronSecret || !url || !storeToken) return null;
+  if (!token || !username || !webhookSecret || !cronSecret || store === null) return null;
 
   return {
-    store: createUpstashKeyValueStore({ url, token: storeToken }),
+    store,
     bot: createBotClient({ token }),
     username,
     webhookSecret,
@@ -62,6 +81,7 @@ export const telegramSetup = (): TelegramSetup | null =>
     TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME,
     TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
+    REDIS_URL: process.env.REDIS_URL,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   });

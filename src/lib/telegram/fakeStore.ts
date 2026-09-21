@@ -1,4 +1,4 @@
-import type { KeyValueStore } from "./upstashKeyValue";
+import type { KeyValueStore } from "../store/keyValueStore";
 
 /** An in-memory store with the same contract, for tests. `down` makes every call fail. */
 export const fakeStore = (): KeyValueStore & {

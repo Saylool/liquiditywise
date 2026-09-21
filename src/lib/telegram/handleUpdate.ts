@@ -3,7 +3,7 @@ import { DEFAULT_LOCALE, type Locale, negotiateLocale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
 import { claimLink, findByChat, forgetLink } from "./links";
 import { readCommand, type TelegramUpdate } from "./update";
-import type { KeyValueStore } from "./upstashKeyValue";
+import type { KeyValueStore } from "../store/keyValueStore";
 
 /*
  * What the bot does with one message.

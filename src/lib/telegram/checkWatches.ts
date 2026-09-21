@@ -5,7 +5,7 @@ import type { BotClient } from "./botApi";
 import { listWatches, recordSnapshot } from "./links";
 import { alertText } from "./messages";
 import { positionChanges, snapshotOf } from "./positionChanges";
-import type { KeyValueStore } from "./upstashKeyValue";
+import type { KeyValueStore } from "../store/keyValueStore";
 
 /*
  * One pass over every linked address.

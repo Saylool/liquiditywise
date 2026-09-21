@@ -4,7 +4,7 @@ import { createUpstashRateLimitStore, type FetchLike } from "./upstashRateLimitS
 
 const URL_BASE = "https://example-db.upstash.io";
 const TOKEN = "upstash-token-must-never-leak";
-const KEY = "uniswapadvisor:ratelimit:203.0.113.7:60000";
+const KEY = "liquiditywise:ratelimit:203.0.113.7:60000";
 const TTL_MS = 120_000;
 
 const jsonResponse = (body: unknown, status = 200) =>

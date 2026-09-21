@@ -34,6 +34,17 @@ fi
 # sites, and the proxy in front of this one is added by hand to whatever
 # already owns ports 80 and 443 — see deploy/README.md.
 
+# Redis, for the Telegram links. Ubuntu's own package binds 127.0.0.1 by
+# default, which is where this wants it: the application reaches it over
+# loopback and nothing else on the network can. If the machine already runs
+# one — it may, for another site — this installs nothing and the existing one
+# is used, which is why REDIS_URL names a database index and every key is
+# prefixed.
+if ! command -v redis-server >/dev/null; then
+  apt-get install -y -q redis-server
+fi
+systemctl enable --quiet --now redis-server || true
+
 # A user of its own, with no shell.
 id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
 

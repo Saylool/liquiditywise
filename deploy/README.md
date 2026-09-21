@@ -51,6 +51,26 @@ Whichever server step 1 found:
 - The rate limiter keys visitors by `X-Real-IP`; both snippets fill it from
   `CF-Connecting-IP`. Without that, every visitor is one of Cloudflare's edges.
 
+## 5. Where the links are kept
+
+`setup.sh` installs Redis if the machine has none and leaves it bound to
+`127.0.0.1`, where Ubuntu's package puts it. `.env.local` names it:
+
+```
+REDIS_URL=redis://127.0.0.1:6379/1
+```
+
+Database index 1 and a `liquiditywise:` prefix on every key, so a Redis
+another site already uses stays that site's. Nothing is installed if one is
+already running. To see what is there:
+
+```bash
+redis-cli -n 1 --scan --pattern 'liquiditywise:*'
+```
+
+There is no shared rate-limit counter and none is needed: one server is one
+process, and the limiter counts in its own memory exactly.
+
 ## 5. Telegram
 
 From a machine with the bot token in its `.env.local`:

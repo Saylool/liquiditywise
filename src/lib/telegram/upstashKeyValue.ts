@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { KeyValueStore } from "../store/keyValueStore";
+
 /*
  * A handful of Redis commands over Upstash's REST API, for the Telegram links.
  *
@@ -17,15 +19,6 @@ export const DEFAULT_KEY_VALUE_TIMEOUT_MS = 2_000;
 
 export type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
-/** What the links need of a store. Small on purpose, so a fake for tests is small too. */
-export type KeyValueStore = {
-  readonly get: (key: string) => Promise<string | null | undefined>;
-  readonly set: (key: string, value: string, ttlMs?: number) => Promise<boolean>;
-  readonly del: (key: string) => Promise<boolean>;
-  readonly sadd: (key: string, member: string) => Promise<boolean>;
-  readonly srem: (key: string, member: string) => Promise<boolean>;
-  readonly smembers: (key: string) => Promise<readonly string[] | null>;
-};
 
 const ResultSchema = z.object({ result: z.unknown() });
 

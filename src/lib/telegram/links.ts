@@ -4,7 +4,7 @@ import { EvmAddressSchema, IsoTimestampSchema } from "../../schemas/primitives";
 import { isLocale, type Locale } from "../i18n/locales";
 import { isLinkToken } from "./linkToken";
 import type { PositionSnapshot } from "./positionChanges";
-import type { KeyValueStore } from "./upstashKeyValue";
+import type { KeyValueStore } from "../store/keyValueStore";
 
 /*
  * What this application keeps about a Telegram link, and for how long.
@@ -20,7 +20,7 @@ import type { KeyValueStore } from "./upstashKeyValue";
  * site, or for a year without the checker touching it.
  */
 
-const PREFIX = "uniswapadvisor:telegram:";
+const PREFIX = "liquiditywise:telegram:";
 
 /** The cookie that remembers which link this browser minted, so the page can say how it stands. */
 export const TELEGRAM_LINK_COOKIE = "telegram";

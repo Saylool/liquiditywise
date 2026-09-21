@@ -29,7 +29,7 @@ export type RateLimitStore = {
  * Namespaces the keys, so a store shared with anything else cannot collide with
  * a counter, and a counter cannot read something else's value as one.
  */
-export const RATE_LIMIT_KEY_PREFIX = "uniswapadvisor:ratelimit:";
+export const RATE_LIMIT_KEY_PREFIX = "liquiditywise:ratelimit:";
 
 export type SharedWindowOptions = {
   /** Requests allowed per window. The same number the local limiter uses. */
