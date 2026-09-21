@@ -1,10 +1,14 @@
+import { getRangePreferenceState } from "../lib/advisor/requestRangePreferences";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import { isFullyTranslated, type Locale } from "../lib/i18n/locales";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { RangePreferences } from "./RangePreferences";
 import { ThemeToggle } from "./ThemeToggle";
 
-/** Language and theme controls, shown on every page. */
-export function PreferenceBar({ locale, t }: { locale: Locale; t: Dictionary }) {
+/** Language, range and theme controls, shown on every page. */
+export async function PreferenceBar({ locale, t }: { locale: Locale; t: Dictionary }) {
+  const range = await getRangePreferenceState();
+
   return (
     <div className="preferences">
       {/*
@@ -17,6 +21,13 @@ export function PreferenceBar({ locale, t }: { locale: Locale; t: Dictionary }) 
       )}
       <div className="preference-controls">
         <LocaleSwitcher key={locale} current={locale} label={t.preferences.selectLanguage} />
+        <RangePreferences
+          key={`${locale}:${range.current.parameters.horizonDays}:${range.current.parameters.standardDeviationMultiplier}:${range.current.depositUsd}`}
+          current={range.current}
+          hasPreference={range.hasPreference}
+          t={t}
+          locale={locale}
+        />
         <ThemeToggle
           label={t.preferences.themeLabel}
           optionLabels={{

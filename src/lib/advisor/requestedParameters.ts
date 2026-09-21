@@ -58,6 +58,26 @@ export const DEPOSIT_PARAMETER = "usd";
 /** A decimal, written the way a URL writes one. No exponent, no sign, no comma. */
 const DECIMAL = /^\d+(?:\.\d+)?$/;
 
+/**
+ * What a field falls back to when the URL does not name it.
+ *
+ * Two layers rather than one: the application's own defaults, and — above
+ * them — what the reader chose in their preferences, which arrives from a
+ * cookie. A link that names a horizon still wins over both, because a link is
+ * a particular reading of a particular pool and the reader following it
+ * should see the reading it names.
+ */
+export type RangeDefaults = {
+  readonly parameters: PriceBandParameters;
+  readonly depositUsd: number;
+};
+
+/** The application's own defaults, beneath any preference. */
+export const APPLICATION_RANGE_DEFAULTS: RangeDefaults = {
+  parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+  depositUsd: DEFAULT_DEPOSIT_USD,
+};
+
 export type RequestedParameters = {
   readonly parameters: PriceBandParameters;
   /**
@@ -108,6 +128,11 @@ const readField = (
 /**
  * Reads both band parameters out of what arrived, falling back per field.
  *
+ * The fallback is `defaults` — the reader's preferences when they have set
+ * any, the application's own otherwise — and it applies field by field: a URL
+ * naming only a horizon takes its width and deposit from the preferences, not
+ * from the application.
+ *
  * A repeated query parameter arrives as an array; only a single value is an
  * answer, and an array is treated as unreadable rather than having one of its
  * values picked.
@@ -116,13 +141,14 @@ export const readRequestedParameters = (
   horizon: string | string[] | undefined,
   multiplier: string | string[] | undefined,
   deposit: string | string[] | undefined,
+  defaults: RangeDefaults = APPLICATION_RANGE_DEFAULTS,
 ): RequestedParameters => {
   const single = (value: string | string[] | undefined): string | undefined =>
     value === undefined || typeof value === "string" ? value : "";
 
   const horizonDays = readField(
     single(horizon),
-    DEFAULT_PRICE_BAND_PARAMETERS.horizonDays,
+    defaults.parameters.horizonDays,
     (value) =>
       PriceBandParametersSchema.safeParse({
         ...DEFAULT_PRICE_BAND_PARAMETERS,
@@ -132,7 +158,7 @@ export const readRequestedParameters = (
 
   const standardDeviationMultiplier = readField(
     single(multiplier),
-    DEFAULT_PRICE_BAND_PARAMETERS.standardDeviationMultiplier,
+    defaults.parameters.standardDeviationMultiplier,
     (value) =>
       PriceBandParametersSchema.safeParse({
         ...DEFAULT_PRICE_BAND_PARAMETERS,
@@ -141,7 +167,7 @@ export const readRequestedParameters = (
   );
 
   /* Its own schema, because it is its own figure and not part of the band. */
-  const depositUsd = readField(single(deposit), DEFAULT_DEPOSIT_USD, (value) =>
+  const depositUsd = readField(single(deposit), defaults.depositUsd, (value) =>
     DepositUsdSchema.safeParse(value).success,
   );
 

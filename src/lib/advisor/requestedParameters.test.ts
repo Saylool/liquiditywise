@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DEPOSIT_USD_MAXIMUM, MAX_HORIZON_DAYS } from "../../schemas";
 import { DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
 import {
+  APPLICATION_RANGE_DEFAULTS,
   HORIZON_CHOICES,
   HORIZON_PARAMETER,
   MULTIPLIER_CHOICES,
@@ -11,14 +12,65 @@ import {
   DEPOSIT_PARAMETER,
   poolAnalysisHref,
   readRequestedParameters,
+  type RangeDefaults,
   v4PoolAnalysisHref,
 } from "./requestedParameters";
+
+/** A reader who set a preference: a week ahead, wide, and a large deposit. */
+const preferred: RangeDefaults = {
+  parameters: { horizonDays: 7, standardDeviationMultiplier: 3 },
+  depositUsd: 1_000_000,
+};
 
 const read = (
   horizon?: string | string[],
   multiplier?: string | string[],
   deposit?: string | string[],
 ) => readRequestedParameters(horizon, multiplier, deposit);
+
+describe("readRequestedParameters, beneath a preference", () => {
+  it("opens at the preference when the URL names nothing", () => {
+    expect(readRequestedParameters(undefined, undefined, undefined, preferred)).toEqual({
+      parameters: preferred.parameters,
+      depositUsd: preferred.depositUsd,
+      fellBack: false,
+    });
+  });
+
+  it("lets a link that names its own band win over the preference", () => {
+    expect(readRequestedParameters("90", "1", "1000", preferred)).toEqual({
+      parameters: { horizonDays: 90, standardDeviationMultiplier: 1 },
+      depositUsd: 1_000,
+      fellBack: false,
+    });
+  });
+
+  it("falls back field by field, to the preference and not to the application", () => {
+    const read = readRequestedParameters("90", undefined, undefined, preferred);
+
+    expect(read.parameters).toEqual({ horizonDays: 90, standardDeviationMultiplier: 3 });
+    expect(read.depositUsd).toBe(1_000_000);
+    expect(read.fellBack).toBe(false);
+  });
+
+  it("falls to the preference, and says so, when a field is unreadable", () => {
+    expect(readRequestedParameters("soon", "3", undefined, preferred)).toEqual({
+      parameters: preferred.parameters,
+      depositUsd: preferred.depositUsd,
+      fellBack: true,
+    });
+  });
+
+  it("uses the application's own defaults when no preference is passed", () => {
+    expect(APPLICATION_RANGE_DEFAULTS).toEqual({
+      parameters: DEFAULT_PRICE_BAND_PARAMETERS,
+      depositUsd: DEFAULT_DEPOSIT_USD,
+    });
+    expect(readRequestedParameters(undefined, undefined, undefined)).toEqual(
+      readRequestedParameters(undefined, undefined, undefined, APPLICATION_RANGE_DEFAULTS),
+    );
+  });
+});
 
 describe("readRequestedParameters", () => {
   it("uses the defaults when nothing was asked for", () => {

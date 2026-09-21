@@ -5,7 +5,7 @@ import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { AddressLookupForm } from "@/components/AddressLookupForm";
 import { WalletConnect } from "@/components/WalletConnect";
 import { getInterfaceCopy } from "@/lib/i18n/interface";
-import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
+import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -64,6 +64,8 @@ export default async function HoldingsPage({
   const { locale, t } = await getRequestDictionary();
   const params = await searchParams;
   const requested = params.address;
+  /* Every link out of this page carries a band, and it should be the reader's. */
+  const { parameters } = await getRangePreferences();
   const address = EvmAddressSchema.safeParse(single(requested));
 
   if (!address.success) {
@@ -95,7 +97,7 @@ export default async function HoldingsPage({
       <Suspense fallback={<PositionsPending t={t} />}>
         <PositionsSection
           address={address.data}
-          parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+          parameters={parameters}
           locale={locale}
           t={t}
         />
@@ -104,7 +106,7 @@ export default async function HoldingsPage({
       <Suspense fallback={<HoldingsPending t={t} />}>
         <HoldingsSection
           address={address.data}
-          parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+          parameters={parameters}
           locale={locale}
           t={t}
         />

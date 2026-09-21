@@ -10,6 +10,7 @@ import {
   DEPOSIT_PARAMETER,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
+import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -75,6 +76,7 @@ export default async function V4PoolPage({
     params[HORIZON_PARAMETER],
     params[MULTIPLIER_PARAMETER],
     params[DEPOSIT_PARAMETER],
+    await getRangePreferences(),
   );
 
   if (!poolId.success) {

@@ -11,6 +11,7 @@ import { PoolSearchPending } from "@/components/PoolSearchResults";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { V4PoolSearchPending } from "@/components/V4PoolSearchResults";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
+import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import {
   HORIZON_PARAMETER,
   MULTIPLIER_PARAMETER,
@@ -97,12 +98,15 @@ export default async function PoolRangePage({
   if (address.success) {
     /*
      * The band's two parameters come from the URL like the pool does, so a
-     * particular reading of a particular pool is one link.
+     * particular reading of a particular pool is one link — and what the URL
+     * does not name comes from the reader's preferences, so a pool reached
+     * from a search opens the way they asked every pool to.
      */
     const requested = readRequestedParameters(
       params[HORIZON_PARAMETER],
       params[MULTIPLIER_PARAMETER],
       params[DEPOSIT_PARAMETER],
+      await getRangePreferences(),
     );
     const result = await getPoolRangeAnalysis(
       "v3",

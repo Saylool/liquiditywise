@@ -57,6 +57,15 @@ const en = {
     themeSystem: "System",
     themeLight: "Light",
     themeDark: "Dark",
+    /*
+     * The band every pool opens at, set once in the header rather than on
+     * every pool. A link naming its own band still wins over it.
+     */
+    rangeLabel: "Range preferences",
+    rangeIntro:
+      "The horizon, width and deposit every pool opens at. A link that names its own still wins, and the form under each analysis changes that page only.",
+    rangeSave: "Save",
+    rangeReset: "Forget",
   },
 
   disclaimer: {
@@ -434,6 +443,9 @@ const en = {
     note: "The horizon says how far the measured movement is laid forward. It does not change the measurement: volatility always comes from the last 30 completed days, whichever horizon is chosen. The width multiplies that movement; a wider range is left less often, and it is not a confidence level.",
     fellBack:
       "Part of what was asked for could not be read, so the default was used where that happened. The horizon and width actually used are shown above.",
+    /** Under the form: which of the two things that set a band this one is. */
+    preferenceHint:
+      "This changes this page. To change what every pool opens at, use the range preferences in the header.",
   },
 
   holdings: {
@@ -1159,6 +1171,11 @@ const tr: Dictionary = {
     themeSystem: "Sistem",
     themeLight: "Açık",
     themeDark: "Koyu",
+    rangeLabel: "Aralık tercihleri",
+    rangeIntro:
+      "Her havuzun açıldığı ufuk, genişlik ve tutar. Kendi değerini taşıyan bir bağlantı yine öne geçer; her analizin altındaki form ise yalnızca o sayfayı değiştirir.",
+    rangeSave: "Kaydet",
+    rangeReset: "Unut",
   },
 
   disclaimer: {
@@ -1461,6 +1478,8 @@ const tr: Dictionary = {
     note: "Ufuk, ölçülen hareketin ne kadar ileriye taşındığını söyler. Ölçümün kendisini değiştirmez: hangi ufuk seçilirse seçilsin volatilite her zaman tamamlanmış son 30 günden gelir. Genişlik o hareketi çarpar; daha geniş bir aralık daha seyrek terk edilir ve bir güven düzeyi değildir.",
     fellBack:
       "İstenenlerin bir kısmı okunamadı, o alanda varsayılan kullanıldı. Gerçekten kullanılan ufuk ve genişlik yukarıda yazıyor.",
+    preferenceHint:
+      "Bu yalnızca bu sayfayı değiştirir. Her havuzun açılış değerlerini değiştirmek için üstteki aralık tercihlerini kullanın.",
   },
 
   holdings: {
@@ -2033,6 +2052,11 @@ const de: Dictionary = {
     themeSystem: "System",
     themeLight: "Hell",
     themeDark: "Dunkel",
+    rangeLabel: "Bereichseinstellungen",
+    rangeIntro:
+      "Horizont, Breite und Einsatz, mit denen jeder Pool geöffnet wird. Ein Link mit eigenen Werten hat weiterhin Vorrang, und das Formular unter jeder Analyse ändert nur diese Seite.",
+    rangeSave: "Speichern",
+    rangeReset: "Vergessen",
   },
 
   disclaimer: {
@@ -2336,6 +2360,8 @@ const de: Dictionary = {
     note: "Der Zeithorizont sagt, wie weit die gemessene Bewegung nach vorn gelegt wird. Er ändert die Messung nicht: die Volatilität stammt immer aus den letzten 30 abgeschlossenen Tagen, welcher Horizont auch gewählt ist. Die Breite vervielfacht diese Bewegung; ein breiterer Bereich wird seltener verlassen, und er ist kein Konfidenzniveau.",
     fellBack:
       "Ein Teil des Angeforderten ließ sich nicht lesen, deshalb wurde dort der Standard verwendet. Der tatsächlich verwendete Zeithorizont und die Breite stehen oben.",
+    preferenceHint:
+      "Das ändert nur diese Seite. Womit jeder Pool geöffnet wird, legen die Bereichseinstellungen in der Kopfzeile fest.",
   },
 
   holdings: {
@@ -2886,6 +2912,11 @@ const es: Dictionary = {
     themeSystem: "Sistema",
     themeLight: "Claro",
     themeDark: "Oscuro",
+    rangeLabel: "Preferencias de rango",
+    rangeIntro:
+      "El horizonte, la anchura y el depósito con los que se abre cada pool. Un enlace que trae los suyos sigue teniendo prioridad, y el formulario bajo cada análisis cambia solo esa página.",
+    rangeSave: "Guardar",
+    rangeReset: "Olvidar",
   },
 
   disclaimer: {
@@ -3189,6 +3220,8 @@ const es: Dictionary = {
     note: "El horizonte dice hasta dónde se proyecta hacia adelante el movimiento medido. No cambia la medición: la volatilidad siempre sale de los últimos 30 días completos, sea cual sea el horizonte elegido. La amplitud multiplica ese movimiento; un rango más ancho se abandona menos a menudo, y no es un nivel de confianza.",
     fellBack:
       "Parte de lo solicitado no pudo leerse, así que ahí se usó el valor por defecto. El horizonte y la amplitud realmente usados se muestran arriba.",
+    preferenceHint:
+      "Esto cambia solo esta página. Para cambiar con qué se abre cada pool, usa las preferencias de rango de la cabecera.",
   },
 
   holdings: {
@@ -3737,6 +3770,11 @@ const ar: Dictionary = {
     themeSystem: "النظام",
     themeLight: "فاتح",
     themeDark: "داكن",
+    rangeLabel: "تفضيلات النطاق",
+    rangeIntro:
+      "الأفق والعرض والإيداع التي يُفتح بها كل مجمّع. الرابط الذي يحمل قيمه الخاصة يبقى له الأولوية، والنموذج أسفل كل تحليل يغيّر تلك الصفحة وحدها.",
+    rangeSave: "حفظ",
+    rangeReset: "نسيان",
   },
 
   disclaimer: {
@@ -4043,6 +4081,8 @@ const ar: Dictionary = {
     note: "الأفق يقول إلى أي مدى تُمدّ الحركة المقيسة إلى الأمام. وهو لا يغيّر القياس: فالتقلّب يأتي دائمًا من آخر 30 يومًا مكتملًا، أيًّا كان الأفق المختار. والاتساع يضاعف تلك الحركة؛ والنطاق الأوسع يُغادَر أقل، وهو ليس مستوى ثقة.",
     fellBack:
       "تعذّرت قراءة جزء مما طُلب، فاستُخدم الإعداد الافتراضي حيث حدث ذلك. والأفق والاتساع المستخدمان فعلًا معروضان أعلاه.",
+    preferenceHint:
+      "هذا يغيّر هذه الصفحة وحدها. لتغيير ما يُفتح به كل مجمّع، استخدم تفضيلات النطاق في الترويسة.",
   },
 
   holdings: {
@@ -4571,6 +4611,11 @@ const hi: Dictionary = {
     themeSystem: "सिस्टम",
     themeLight: "उजला",
     themeDark: "गहरा",
+    rangeLabel: "दायरे की प्राथमिकताएँ",
+    rangeIntro:
+      "वह अवधि, चौड़ाई और राशि जिनसे हर पूल खुलता है। अपने मान लिए हुए लिंक फिर भी आगे रहता है, और हर विश्लेषण के नीचे का फ़ॉर्म केवल उसी पृष्ठ को बदलता है।",
+    rangeSave: "सहेजें",
+    rangeReset: "भूल जाएँ",
   },
 
   disclaimer: {
@@ -4872,6 +4917,8 @@ const hi: Dictionary = {
     note: "अवधि बताती है कि मापी गई हलचल कितनी आगे तक बिछाई जाए। वह माप को नहीं बदलती: अस्थिरता हमेशा पिछले 30 पूरे दिनों से आती है, अवधि चाहे कोई भी चुनी जाए। चौड़ाई उस हलचल को गुणा करती है; चौड़ा दायरा कम बार छूटता है, और वह कोई विश्वास-स्तर नहीं है।",
     fellBack:
       "जो माँगा गया था उसका कुछ हिस्सा पढ़ा नहीं जा सका, इसलिए वहाँ डिफ़ॉल्ट इस्तेमाल हुआ। वास्तव में इस्तेमाल हुई अवधि और चौड़ाई ऊपर दिखाई गई हैं।",
+    preferenceHint:
+      "यह केवल इस पृष्ठ को बदलता है। हर पूल किन मानों से खुले, यह बदलने के लिए ऊपर की दायरे की प्राथमिकताएँ इस्तेमाल करें।",
   },
 
   holdings: {
@@ -5423,6 +5470,11 @@ const zh: Dictionary = {
     themeSystem: "跟随系统",
     themeLight: "浅色",
     themeDark: "深色",
+    rangeLabel: "区间偏好",
+    rangeIntro:
+      "每个资金池打开时所用的时间跨度、宽度和投入金额。自带参数的链接仍然优先；每份分析下方的表单只改变那一页。",
+    rangeSave: "保存",
+    rangeReset: "忘记",
   },
 
   disclaimer: {
@@ -5800,6 +5852,8 @@ const zh: Dictionary = {
     note: "时间跨度说的是把测出来的走势往前摊多远。它不改变测量本身：无论选哪个时间跨度，波动率始终来自最近 30 个完整的日子。宽度则把那个走势乘上一个倍数；更宽的区间被离开的次数更少，而它不是一个置信水平。",
     fellBack:
       "所请求的内容有一部分无法读取，所以在那些地方用了默认值。实际用到的时间跨度和宽度显示在上面。",
+    preferenceHint:
+      "这只改变本页。要改变每个资金池打开时的参数，请使用页眉里的区间偏好。",
   },
 
   holdings: {
