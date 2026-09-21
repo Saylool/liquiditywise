@@ -39,9 +39,8 @@ export function ThemeToggle({
   const theme = useSyncExternalStore(subscribeToTheme, readTheme, readServerTheme);
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs uppercase tracking-widest text-muted">{label}</span>
-      <div role="group" aria-label={label} className="flex rounded-md border border-border">
+    <div className="theme-toggle">
+      <div role="group" aria-label={label} className="theme-options">
         {THEMES.map((option) => (
           <button
             key={option}
@@ -50,11 +49,12 @@ export function ThemeToggle({
               chooseTheme(option, document.documentElement);
             }}
             aria-pressed={theme === option}
-            className={`px-2 py-1 text-xs first:rounded-l-md last:rounded-r-md ${
-              theme === option ? "bg-surface font-medium text-foreground" : "text-muted"
-            }`}
+            aria-label={optionLabels[option]}
+            title={optionLabels[option]}
           >
-            {optionLabels[option]}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {option === "system" ? <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></> : option === "light" ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" /></> : <path d="M20.5 14a9 9 0 0 1-10.5-10.5A9 9 0 1 0 20.5 14Z" />}
+            </svg>
           </button>
         ))}
       </div>

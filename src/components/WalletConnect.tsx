@@ -91,8 +91,9 @@ export function WalletConnect({ strings }: { strings: Dictionary["wallet"] }) {
   };
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+    <section className="wallet-card">
+      <div className="wallet-symbol" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M20 7H5a2 2 0 0 1 0-4h13v4M4 5v14a2 2 0 0 0 2 2h14V7" /><path d="M20 11h-5v6h5" /><circle cx="16.5" cy="14" r=".7" fill="currentColor" /></svg></div>
+      <h2>
         {strings.heading}
       </h2>
       <p className="text-sm leading-relaxed text-muted">{strings.intro}</p>
@@ -136,7 +137,7 @@ export function WalletConnect({ strings }: { strings: Dictionary["wallet"] }) {
         <p className="text-sm leading-relaxed">{strings.notices[connection.notice]}</p>
       ) : null}
 
-      <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
+      <p className="wallet-note">
         {strings.readOnly}
       </p>
     </section>

@@ -28,10 +28,10 @@ export function LocaleSwitcher({ current, label }: { current: Locale; label: str
     <details className="group/lang relative">
       <summary
         aria-label={label}
-        className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-2 py-1 text-xs text-muted [&::-webkit-details-marker]:hidden"
+        className="locale-trigger"
       >
-        <span aria-hidden="true">{chosen.flag}</span>
-        <span className="font-medium text-foreground">{chosen.name}</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18" /></svg>
+        <span className="locale-name">{chosen.name}</span>
 
         {/* Both of these belong to the summary, so clicking either one closes. */}
         <span className="fixed inset-0 z-40 hidden bg-foreground/40 group-open/lang:block" />

@@ -23,54 +23,50 @@
 
 :root {
   /*
-   * Light. A cool near-white page with white cards lifted off it, one indigo
-   * accent, and nothing else competing — the greys are tinted towards the
-   * accent rather than neutral, which is what stops a light interface from
-   * reading as bare paper.
+   * Light. A rose-tinted canvas and quiet panels, with a deep rose accent.
    */
-  --light-background: #f5f7fc;
-  --light-surface: #ffffff;
-  --light-surface-sunken: #f0f3fa;
-  --light-foreground: #131a2c;
-  --light-muted: #5a6478;
-  --light-subtle: #8a93a6;
-  --light-border: #e4e8f2;
-  --light-border-strong: #cfd6e6;
-  --light-accent: #4f46e5;
-  --light-accent-soft: #e7e5fb;
-  --light-accent-contrast: #453dbf;
-  /* What is legible *on* the accent. White works on the light theme's indigo
-   * and not on the dark theme's, which is lighter than the text it would carry. */
+  --light-background: #faf8fa;
+  --light-surface: #fffdfd;
+  --light-surface-sunken: #f2edf1;
+  --light-foreground: #281c27;
+  --light-muted: #746570;
+  --light-subtle: #827580;
+  --light-border: #e7dfe5;
+  --light-border-strong: #95798d;
+  --light-accent: #bd3b74;
+  --light-accent-soft: #f8e5ee;
+  --light-accent-contrast: #a32960;
+  /* Foreground for controls filled with the theme's accent. */
   --light-accent-on: #ffffff;
-  --light-warning-surface: #fef6e7;
-  --light-warning-border: #f0ddb2;
-  --light-warning-foreground: #7a5a12;
-  --light-elevation-card: 0 1px 2px rgb(19 26 44 / 0.05), 0 6px 18px rgb(19 26 44 / 0.05);
-  --light-elevation-raised: 0 2px 4px rgb(19 26 44 / 0.06), 0 12px 28px rgb(19 26 44 / 0.08);
+  --light-warning-surface: #f6f0ee;
+  --light-warning-border: #e5d7d1;
+  --light-warning-foreground: #77604d;
+  --light-elevation-card: 0 3px 18px rgb(40 28 39 / 0.025);
+  --light-elevation-raised: 0 12px 42px rgb(40 28 39 / 0.12);
 
   /*
-   * Dark. Deep navy rather than black: the same hue family as the light theme,
+   * Dark. Blackened plum: the same hue family as the light theme,
    * so the two read as one product. Shadows do not show on a dark surface, so
    * the card is separated by being *lighter* than the page instead, and the
    * elevation tokens fall back to a ring of border colour.
    */
-  --dark-background: #0e1320;
-  --dark-surface: #161c2c;
-  --dark-surface-sunken: #111726;
-  --dark-foreground: #e6eaf4;
-  --dark-muted: #99a3b8;
-  --dark-subtle: #6d7890;
-  --dark-border: #253046;
-  --dark-border-strong: #35425c;
-  --dark-accent: #8b84f5;
-  --dark-accent-soft: #232046;
-  --dark-accent-contrast: #b9b4fa;
-  --dark-accent-on: #0e1320;
-  --dark-warning-surface: #241b08;
-  --dark-warning-border: #4c3b12;
-  --dark-warning-foreground: #ebd08f;
-  --dark-elevation-card: 0 0 0 1px rgb(255 255 255 / 0.02), 0 8px 24px rgb(0 0 0 / 0.36);
-  --dark-elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.04), 0 14px 36px rgb(0 0 0 / 0.46);
+  --dark-background: #120f14;
+  --dark-surface: #1c171e;
+  --dark-surface-sunken: #171219;
+  --dark-foreground: #f5edf3;
+  --dark-muted: #b5a6b3;
+  --dark-subtle: #a0929e;
+  --dark-border: #352b35;
+  --dark-border-strong: #776374;
+  --dark-accent: #ee9cbe;
+  --dark-accent-soft: #37202e;
+  --dark-accent-contrast: #f9b7d2;
+  --dark-accent-on: #2a1521;
+  --dark-warning-surface: #211b19;
+  --dark-warning-border: #41352d;
+  --dark-warning-foreground: #c6b5a0;
+  --dark-elevation-card: 0 4px 24px rgb(0 0 0 / 0.08);
+  --dark-elevation-raised: 0 14px 36px rgb(0 0 0 / 0.36);
 
   color-scheme: light;
 

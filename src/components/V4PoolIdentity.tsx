@@ -114,9 +114,9 @@ export function V4PoolIdentity({
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-5 rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h2 className="text-3xl font-semibold tracking-tight">
             {pool.token0.symbol} / {pool.token1.symbol}
-          </h1>
+          </h2>
           <p className="text-sm leading-relaxed text-muted">{t.v4.intro}</p>
         </div>
 

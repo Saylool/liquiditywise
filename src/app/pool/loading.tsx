@@ -17,7 +17,7 @@ export default async function Loading() {
   const { t } = await getRequestDictionary();
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-12 sm:py-16">
+    <main id="main" tabIndex={-1} className="workspace-main flex flex-col gap-8" aria-busy="true">
       <p className="font-mono text-xs uppercase tracking-widest text-muted">{t.pool.loading}</p>
       <div className="flex flex-col gap-4" aria-hidden="true">
         {[0, 1, 2].map((index) => (

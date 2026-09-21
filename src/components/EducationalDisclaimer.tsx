@@ -12,7 +12,7 @@ export function EducationalDisclaimer({ t }: { t: Dictionary }) {
   return (
     <aside
       aria-label={t.disclaimer.ariaLabel}
-      className="rounded-lg border border-warning-border bg-warning-surface px-4 py-3 text-sm text-warning-foreground"
+      className="education-notice"
     >
       <p className="font-medium">{t.disclaimer.title}</p>
       <p className="mt-1 leading-relaxed">{t.disclaimer.body}</p>

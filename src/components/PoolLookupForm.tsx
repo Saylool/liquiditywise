@@ -1,6 +1,7 @@
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { PoolSearchRejection } from "../lib/search/poolSearchInput";
 import { MAX_SEARCH_TERM_LENGTH, MIN_SEARCH_TERM_LENGTH } from "../schemas";
+import { ArrowIcon } from "./BrandMark";
 
 /**
  * The one box: a pair to search for, or a pool's own id to go straight to.
@@ -47,12 +48,14 @@ export function PoolLookupForm({
     <form
       method="get"
       action="/pool"
-      className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-card"
+      className="pool-lookup"
     >
-      <label htmlFor="q" className="text-sm font-medium">
+      <label htmlFor="q">
         {t.search.label}
       </label>
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="lookup-row">
+        <div className="lookup-input">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.5" /><path d="m16 16 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
         <input
           id="q"
           name="q"
@@ -63,18 +66,20 @@ export function PoolLookupForm({
           maxLength={MAX_LOOKUP_LENGTH}
           placeholder={t.search.placeholder}
           defaultValue={value ?? ""}
-          className="flex-1 rounded-md border border-border bg-surface-sunken px-3 py-2 font-mono text-sm"
+          aria-describedby={rejection === undefined ? "lookup-help" : "lookup-help lookup-error"}
+          aria-invalid={rejection !== undefined || undefined}
         />
+        </div>
         <button
           type="submit"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-on transition-[filter] hover:brightness-110"
+          className="button-primary"
         >
-          {t.search.submit}
+          {t.search.submit}<ArrowIcon />
         </button>
       </div>
-      <p className="text-xs leading-relaxed text-muted">{t.search.help}</p>
+      <p id="lookup-help" className="lookup-help">{t.search.help}</p>
       {rejection === undefined ? null : (
-        <p className="text-sm leading-relaxed text-muted">{rejectionMessage(rejection, t)}</p>
+        <p id="lookup-error" role="alert" className="lookup-error">{rejectionMessage(rejection, t)}</p>
       )}
     </form>
   );

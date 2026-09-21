@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./redesign.css";
 
 import { ErrorCopyProvider } from "@/components/ErrorCopyProvider";
+import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { directionOf } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme/theme";
@@ -34,6 +36,13 @@ const geistMono = localFont({
   display: "swap",
 });
 
+const displayFont = localFont({
+  src: "./fonts/InstrumentSerif-Regular.ttf",
+  variable: "--font-display",
+  weight: "400",
+  display: "swap",
+});
+
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getRequestDictionary();
 
@@ -55,7 +64,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
        * reads from the right, which is how a mirrored layout comes apart.
        */
       dir={directionOf(locale)}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} h-full antialiased`}
       /*
        * The boot script below stamps `data-theme` on this element before React
        * hydrates, so the server's markup and the browser's DOM differ here by
@@ -79,7 +88,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
          * it: worked out here, where the request still exists, and handed down
          * as data. It wraps everything because the boundary can be anywhere.
          */}
+        <SiteHeader locale={locale} t={t} />
         <ErrorCopyProvider copy={t.error}>{children}</ErrorCopyProvider>
+        <SiteFooter locale={locale} />
       </body>
     </html>
   );

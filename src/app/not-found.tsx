@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { PreferenceBar } from "@/components/PreferenceBar";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 
 /**
@@ -15,11 +14,10 @@ import { getRequestDictionary } from "@/lib/i18n/requestLocale";
  * arrive here is putting one in the path.
  */
 export default async function NotFound() {
-  const { locale, t } = await getRequestDictionary();
+  const { t } = await getRequestDictionary();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12 sm:py-16">
-      <PreferenceBar locale={locale} t={t} />
+    <main id="main" tabIndex={-1} className="workspace-main">
 
       <section className="flex flex-col gap-4">
         <h1 className="text-3xl font-semibold tracking-tight">{t.notFound.title}</h1>

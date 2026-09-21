@@ -33,6 +33,10 @@ yarn-error.log*
 # local editor/tooling config, not project code
 .claude/
 
+# Local design instructions, generation masters and review artifacts
+/.design/
+/10k-websites-skill.zip
+
 # env files
 .env*
 # ...except the placeholder-only template, which must be committed.

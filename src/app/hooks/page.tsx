@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { HookDirectory } from "@/components/HookDirectory";
-import { PreferenceBar } from "@/components/PreferenceBar";
+import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getHookDirectory } from "@/lib/advisor/getHookDirectory";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -32,14 +30,8 @@ export default async function HooksPage() {
   const result = await getHookDirectory();
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-12 sm:py-16">
-      <PreferenceBar locale={locale} t={t} />
-      <Link href="/" className="w-fit font-mono text-xs uppercase tracking-widest text-muted">
-        {t.pool.back}
-      </Link>
-      <EducationalDisclaimer t={t} />
-
-      <h1 className="text-3xl font-semibold tracking-tight">{t.hooks.heading}</h1>
+    <WorkspaceShell locale={locale} t={t} section="hooks">
+      <h2 className="text-lg font-medium tracking-tight">{t.hooks.heading}</h2>
 
       <HookDirectory
         result={result}
@@ -47,6 +39,6 @@ export default async function HooksPage() {
         t={t}
         locale={locale}
       />
-    </main>
+    </WorkspaceShell>
   );
 }
