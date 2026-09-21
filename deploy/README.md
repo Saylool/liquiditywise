@@ -34,15 +34,21 @@ Updating later is the same command; it pulls `main`, rebuilds, restarts.
 
 ## 3. Put the domain in front of it
 
-Whichever server step 1 found:
+On the machine this runs on, nginx already serves other sites, so:
 
-- **nginx** — copy `nginx-liquiditywise.conf` to
-  `/etc/nginx/sites-available/liquiditywise.com`, adjust the port, symlink
-  it into `sites-enabled`, `nginx -t && systemctl reload nginx`, then
-  `certbot --nginx -d liquiditywise.com -d www.liquiditywise.com`.
-- **Caddy** — add the block in `Caddyfile` to the existing configuration
-  (an `import` line, or paste it), `caddy validate`, `systemctl reload caddy`.
-  Caddy fetches the certificate itself.
+```bash
+bash /opt/liquiditywise/deploy/nginx-site.sh
+```
+
+It writes one file, symlinks it, tests the *whole* configuration and reloads
+only if the test passed — a mistake here cannot take another site down. Then
+it asks certbot for a certificate, which needs the name to resolve to this
+machine: while Cloudflare proxies it, it does not, so the script says so and
+stops. Set both A records to **DNS only**, run it again, then turn the proxy
+back on.
+
+For a machine running Caddy instead, `Caddyfile` holds the same site as one
+block to import; Caddy fetches the certificate itself.
 
 ## 4. Cloudflare
 
