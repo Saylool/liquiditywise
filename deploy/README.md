@@ -109,6 +109,20 @@ Worth running on the server after a deploy: it is the only thing that
 exercises `node:net`, the connect timeout, and a reply arriving in the
 pieces a real kernel chose.
 
+## Replacing the bot token
+
+If the token ever leaks — or just to rotate it — ask @BotFather for a new
+one with `/revoke`, then on the server:
+
+```bash
+bash /opt/liquiditywise/deploy/set-telegram-token.sh
+```
+
+It prompts for the token without echoing it, checks Telegram accepts it
+before writing anything, rewrites that one line of `.env.local`, restarts
+the service and registers the webhook again. The token never appears in the
+shell's history, in a `ps` listing or in any log.
+
 ## Files
 
 - `inspect.sh` — read-only survey of the machine.
