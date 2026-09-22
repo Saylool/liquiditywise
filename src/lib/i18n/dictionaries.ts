@@ -1059,6 +1059,10 @@ const en = {
         "The pool configuration assembled from its two sources could not be verified.",
       "pool-history-insufficient":
         "This pool does not have enough completed daily price history to analyse yet.",
+      "pool-history-never-traded":
+        "This pool exists, but nothing has ever traded in it, so there are no daily prices to measure a range from.",
+      "pool-history-dormant":
+        "This pool stopped trading before the period these daily prices are read from, so there is no recent history to measure a range from. Waiting will not change that — only the pool being used again would.",
       "volatility-invalid-input":
         "The price history supplied for this calculation is not a valid normalized history.",
       "volatility-insufficient-history":
@@ -1977,6 +1981,10 @@ const tr: Dictionary = {
         "Havuzun iki kaynaktan derlenen yapılandırması doğrulanamadı.",
       "pool-history-insufficient":
         "Bu havuzun analiz için yeterli tamamlanmış günlük fiyat geçmişi henüz yok.",
+      "pool-history-never-traded":
+        "Bu havuz var, ama içinde hiç işlem yapılmamış; dolayısıyla bir aralığın ölçülebileceği günlük fiyat yok.",
+      "pool-history-dormant":
+        "Bu havuz, bu günlük fiyatların okunduğu dönem başlamadan önce işlem görmeyi bırakmış; bir aralığın ölçülebileceği yakın geçmiş yok. Beklemek bunu değiştirmez — ancak havuz yeniden kullanılırsa değişir.",
       "volatility-invalid-input":
         "Bu hesaplama için verilen fiyat geçmişi geçerli bir normalize geçmiş değil.",
       "volatility-insufficient-history":
@@ -2885,6 +2893,10 @@ const de: Dictionary = {
         "Die aus den beiden Quellen zusammengesetzte Pool-Konfiguration ließ sich nicht prüfen.",
       "pool-history-insufficient":
         "Dieser Pool hat noch nicht genug abgeschlossene tägliche Preishistorie, um analysiert zu werden.",
+      "pool-history-never-traded":
+        "Diesen Pool gibt es, aber in ihm wurde nie gehandelt, also gibt es keine Tagespreise, aus denen sich eine Spanne messen ließe.",
+      "pool-history-dormant":
+        "Dieser Pool hörte auf zu handeln, bevor der Zeitraum beginnt, aus dem diese Tagespreise gelesen werden, also gibt es keine jüngere Historie, aus der sich eine Spanne messen ließe. Warten ändert daran nichts — nur eine erneute Nutzung des Pools würde es.",
       "volatility-invalid-input":
         "Die für diese Berechnung gelieferte Preishistorie ist keine gültige normalisierte Historie.",
       "volatility-insufficient-history":
@@ -3777,6 +3789,10 @@ const es: Dictionary = {
         "La configuración del pool compuesta a partir de sus dos fuentes no pudo verificarse.",
       "pool-history-insufficient":
         "Este pool todavía no tiene suficiente historial diario de precios completado para analizarse.",
+      "pool-history-never-traded":
+        "Este pool existe, pero nunca se ha intercambiado nada en él, así que no hay precios diarios con los que medir un rango.",
+      "pool-history-dormant":
+        "Este pool dejó de operarse antes del periodo del que se leen estos precios diarios, así que no hay historial reciente con el que medir un rango. Esperar no lo cambiará; solo lo cambiaría que el pool volviera a usarse.",
       "volatility-invalid-input":
         "El historial de precios aportado para este cálculo no es un historial normalizado válido.",
       "volatility-insufficient-history":
@@ -4657,6 +4673,10 @@ const ar: Dictionary = {
         "تعذّر التحقق من إعدادات التجمّع المجمّعة من مصدريها.",
       "pool-history-insufficient":
         "لا يملك هذا التجمّع بعدُ تاريخًا يوميًا مكتملًا كافيًا من الأسعار ليُحلَّل.",
+      "pool-history-never-traded":
+        "هذا التجمّع موجود، لكن لم تجرِ فيه أي مبادلة قط، فلا توجد أسعار يومية يُقاس منها نطاق.",
+      "pool-history-dormant":
+        "توقّف التداول في هذا التجمّع قبل بداية الفترة التي تُقرأ منها هذه الأسعار اليومية، فلا يوجد تاريخ حديث يُقاس منه نطاق. الانتظار لن يغيّر ذلك؛ وحده استخدام التجمّع من جديد يغيّره.",
       "volatility-invalid-input":
         "تاريخ الأسعار المقدَّم لهذا الحساب ليس تاريخًا معياريًا صالحًا.",
       "volatility-insufficient-history":
@@ -5539,6 +5559,10 @@ const hi: Dictionary = {
         "पूल का वह विन्यास जो उसके दो स्रोतों से जोड़ा गया, सत्यापित नहीं हो सका।",
       "pool-history-insufficient":
         "विश्लेषण के लिए इस पूल के पास अभी पर्याप्त पूरा दैनिक कीमत इतिहास नहीं है।",
+      "pool-history-never-traded":
+        "यह पूल मौजूद है, पर इसमें कभी कोई अदला-बदली हुई ही नहीं, इसलिए दायरा मापने के लिए कोई दैनिक कीमत नहीं है।",
+      "pool-history-dormant":
+        "जिस अवधि से ये दैनिक कीमतें पढ़ी जाती हैं, वह शुरू होने से पहले ही इस पूल में लेन-देन रुक गया था, इसलिए दायरा मापने के लिए हाल का कोई इतिहास नहीं है। इंतज़ार करने से यह नहीं बदलेगा — पूल दोबारा इस्तेमाल होने पर ही बदलेगा।",
       "volatility-invalid-input":
         "इस गणना के लिए दिया गया कीमत इतिहास वैध सामान्यीकृत इतिहास नहीं है।",
       "volatility-insufficient-history":
@@ -6671,6 +6695,10 @@ const zh: Dictionary = {
         "从两个来源拼出来的池配置无法核验。",
       "pool-history-insufficient":
         "这个池子还没有足够多的完整每日价格历史可供分析。",
+      "pool-history-never-traded":
+        "这个池子存在，但从未发生过任何兑换，所以没有可用来测量区间的每日价格。",
+      "pool-history-dormant":
+        "这个池子在读取这些每日价格的那段时间开始之前就停止了交易，所以没有可用来测量区间的近期历史。等待不会改变这一点——只有池子重新被使用才会。",
       "volatility-invalid-input":
         "为这次计算提供的价格历史，不是一份有效的规范化历史。",
       "volatility-insufficient-history":
@@ -7826,6 +7854,10 @@ const ru: Dictionary = {
         "Конфигурацию пула, собранную из двух его источников, не удалось проверить.",
       "pool-history-insufficient":
         "У этого пула пока недостаточно завершённой дневной истории цен, чтобы его анализировать.",
+      "pool-history-never-traded":
+        "Этот пул существует, но в нём никогда не было ни одного обмена, поэтому нет дневных цен, по которым можно измерить диапазон.",
+      "pool-history-dormant":
+        "Этот пул перестал торговаться до начала периода, из которого читаются эти дневные цены, поэтому недавней истории для измерения диапазона нет. Ожидание этого не изменит — изменит только то, что пулом снова начнут пользоваться.",
       "volatility-invalid-input":
         "История цен, поданная для этого расчёта, не является корректной нормализованной историей.",
       "volatility-insufficient-history":
@@ -8982,6 +9014,10 @@ const pt: Dictionary = {
         "Não foi possível verificar a configuração do pool montada a partir das duas fontes dele.",
       "pool-history-insufficient":
         "Este pool ainda não tem histórico diário de preços completo o bastante para ser analisado.",
+      "pool-history-never-traded":
+        "Este pool existe, mas nunca houve nenhuma troca nele, então não há preços diários para medir uma faixa.",
+      "pool-history-dormant":
+        "Este pool parou de ser negociado antes de começar o período de onde estes preços diários são lidos, então não há histórico recente para medir uma faixa. Esperar não vai mudar isso — só mudaria se o pool voltasse a ser usado.",
       "volatility-invalid-input":
         "O histórico de preços fornecido para este cálculo não é um histórico normalizado válido.",
       "volatility-insufficient-history":
@@ -10121,6 +10157,10 @@ const zhHant: Dictionary = {
         "從兩個來源拼出來的池配置無法核驗。",
       "pool-history-insufficient":
         "這個池子還沒有足夠多的完整每日價格歷史可供分析。",
+      "pool-history-never-traded":
+        "這個池子存在，但從未發生過任何兌換，所以沒有可用來測量區間的每日價格。",
+      "pool-history-dormant":
+        "這個池子在讀取這些每日價格的那段期間開始之前就停止了交易，所以沒有可用來測量區間的近期歷史。等待不會改變這一點——只有池子重新被使用才會。",
       "volatility-invalid-input":
         "為這次計算提供的價格歷史，不是一份有效的規範化歷史。",
       "volatility-insufficient-history":

@@ -74,6 +74,8 @@ export const DataFailureNoticeSchema = z.enum([
   "pool-contract-not-found",
   "pool-configuration-inconsistent",
   "pool-history-insufficient",
+  "pool-history-never-traded",
+  "pool-history-dormant",
 
   /* The deterministic calculations. */
   "volatility-invalid-input",

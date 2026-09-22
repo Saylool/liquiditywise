@@ -19,7 +19,8 @@ const DAY = 86_400;
 
 const successBody = {
   data: {
-    pool: { id: POOL_ADDRESS },
+    // The query asks for the pool's last day whatever the window holds.
+    pool: { id: POOL_ADDRESS, lastDay: [{ date: WINDOW.rangeStartUnixSeconds }] },
     poolDayDatas: Array.from({ length: DAILY_HISTORY_DAYS }, (_unused, index) => ({
       id: `${POOL_ADDRESS}-${index}`,
       date: WINDOW.rangeStartUnixSeconds + index * DAY,
@@ -123,6 +124,23 @@ describe("request construction", () => {
     const { body } = await captureRequest();
 
     expect(body.query).toContain("pool(id: $poolId)");
+  });
+
+  /*
+   * The one field whose absence would be quiet rather than loud in the wrong
+   * way. An empty `lastDay` means a pool that has never traded, so a query
+   * that stopped asking under that alias — a rename, a tidy-up — would
+   * describe every thin pool as one nothing ever touched. The schema does
+   * require the field, so a missing one fails as malformed; this pins the
+   * alias and the ordering, which the schema cannot see.
+   */
+  it("asks for the pool's own last day, unbounded by the window", async () => {
+    const { body } = await captureRequest();
+
+    expect(body.query).toContain("lastDay: poolDayData(");
+    expect(body.query).toContain("orderDirection: desc");
+    // Within the pool selection, so no window bound reaches it.
+    expect(/pool\(id: \$poolId\)\s*\{[^}]*lastDay: poolDayData\(/.test(body.query)).toBe(true);
   });
 
   it("filters, orders and caps the daily rows in the query itself", async () => {

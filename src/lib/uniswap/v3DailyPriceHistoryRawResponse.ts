@@ -61,9 +61,17 @@ const RawPoolDayDataSchema = z.object({
   pool: z.object({ id: z.string() }),
 });
 
-/** Only the pool's identity is requested; its metadata is not part of a series. */
+/**
+ * The pool's identity, and the one fact about it a series cannot supply: when
+ * it last traded at all.
+ *
+ * `lastDay` is capped at one row by the query and carries only `date`, an
+ * `Int!` and so a JSON number. An empty array is a pool that has never had a
+ * day indexed, which is a real answer rather than a missing one.
+ */
 const RawPoolIdentitySchema = z.object({
   id: z.string(),
+  lastDay: z.array(z.object({ date: z.number().int() })).max(1),
 });
 
 export const V3DailyPriceHistoryResponseSchema = z.object({

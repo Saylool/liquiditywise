@@ -45,10 +45,22 @@ const rawMeta = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+/**
+ * The pool as the query asks for it: its id, and the last day it traded at
+ * all, which the query fetches without the window's bounds.
+ *
+ * The default is a pool that traded on the window's first day — still active,
+ * the ordinary case. `null` is a pool that has never had a day indexed.
+ */
+const rawPool = (lastDayUnix: number | null = WINDOW.rangeStartUnixSeconds) => ({
+  id: POOL_ADDRESS,
+  lastDay: lastDayUnix === null ? [] : [{ date: lastDayUnix }],
+});
+
 const payload = (
   poolDayDatas: unknown = fullDays(),
   meta: unknown = rawMeta(),
-  pool: unknown = { id: POOL_ADDRESS },
+  pool: unknown = rawPool(),
 ) => ({ data: { pool, poolDayDatas, _meta: meta } });
 
 /** Non-null by construction: the fixture address is a valid v3 pool address. */
@@ -200,6 +212,89 @@ describe("insufficient history", () => {
     });
   });
 
+  /*
+   * The same absence, three things to say about it.
+   *
+   * For years all three got one sentence: not enough history to analyse
+   * *yet*. For a pool opened this week that is true. For a pool abandoned
+   * months ago it is a falsehood with a deadline in it — the reader is sent
+   * away to wait for something that will never arrive. Which one it is cannot
+   * be read from the window's own days, because in all three cases there are
+   * none; it takes the pool's last day, fetched without the window's bounds.
+   */
+  describe("telling a young pool from an abandoned one", () => {
+    const DAY = 86_400;
+
+    /*
+     * Required, not defaulted. An empty `lastDay` is a real answer — a pool
+     * nothing ever touched — so a schema that supplied `[]` for a response
+     * that simply did not carry the field would turn every absent field into
+     * that answer, and describe thin pools as untouched ones on no evidence.
+     * A response without it is malformed, which is loud.
+     */
+    it("refuses a response whose pool does not carry the field at all", () => {
+      expect(normalize(payload([], rawMeta(), { id: POOL_ADDRESS }))).toMatchObject({
+        status: "unavailable",
+        reason: "invalid-response",
+        notice: "market-data-malformed",
+      });
+    });
+
+    it("says a pool has never traded when it has no day at all", () => {
+      expect(normalize(payload([], rawMeta(), rawPool(null)))).toMatchObject({
+        status: "unavailable",
+        reason: "insufficient-data",
+        notice: "pool-history-never-traded",
+      });
+    });
+
+    it("says a pool has gone quiet when its last day is before the window", () => {
+      const lastTraded = WINDOW.rangeStartUnixSeconds - 200 * DAY;
+
+      expect(normalize(payload([], rawMeta(), rawPool(lastTraded)))).toMatchObject({
+        notice: "pool-history-dormant",
+      });
+    });
+
+    /*
+     * The boundary belongs to the window. A pool that traded on the window's
+     * first day has a day inside the period being read, so nothing about it
+     * is dormant — and the query that fetched those days used this very
+     * number as its lower bound, so answering otherwise would have the
+     * request and the reply disagree about the same instant.
+     */
+    it("counts the window's first day as inside it", () => {
+      expect(normalize(payload([], rawMeta(), rawPool(WINDOW.rangeStartUnixSeconds)))).toMatchObject({
+        notice: "pool-history-insufficient",
+      });
+      expect(
+        normalize(payload([], rawMeta(), rawPool(WINDOW.rangeStartUnixSeconds - 1))),
+      ).toMatchObject({ notice: "pool-history-dormant" });
+    });
+
+    /*
+     * A pool that opened yesterday: one closed day, and that day is recent.
+     * This is the case the original wording was written for, and the only one
+     * where "yet" is a promise this application can keep.
+     */
+    it("keeps the unchanged wording for a pool that is merely new", () => {
+      const yesterday = WINDOW.rangeEndExclusiveUnixSeconds - DAY;
+
+      expect(normalize(payload([dayRow(0)], rawMeta(), rawPool(yesterday)))).toMatchObject({
+        notice: "pool-history-insufficient",
+      });
+    });
+
+    /*
+     * A pool with enough days is never described at all. The last day is read
+     * only to explain an absence, so a working pool must not be reached by
+     * any of this.
+     */
+    it("says none of it about a pool with history", () => {
+      expect(normalize(payload(fullDays(), rawMeta(), rawPool(null))).status).toBe("success");
+    });
+  });
+
   it("becomes usable at two points", () => {
     expect(normalize(payload([dayRow(0), dayRow(1)])).status).toBe("partial");
   });
@@ -333,8 +428,8 @@ describe("failing closed", () => {
     ["a missing data envelope", {}],
     ["a null data envelope", { data: null }],
     ["a non-object payload", 42],
-    ["a missing poolDayDatas list", { data: { pool: { id: POOL_ADDRESS }, _meta: rawMeta() } }],
-    ["poolDayDatas as an object", { data: { pool: { id: POOL_ADDRESS }, poolDayDatas: {}, _meta: rawMeta() } }],
+    ["a missing poolDayDatas list", { data: { pool: rawPool(), _meta: rawMeta() } }],
+    ["poolDayDatas as an object", { data: { pool: rawPool(), poolDayDatas: {}, _meta: rawMeta() } }],
   ])("refuses %s", (_label, body) => {
     expect(normalize(body)).toMatchObject({ status: "unavailable", reason: "invalid-response" });
   });
@@ -564,7 +659,7 @@ describe("normalizeDailyPriceHistory for a v4 pool", () => {
     });
 
   it("stamps the pool and the source as v4", () => {
-    const result = normalizeV4(payload(v4Days(), rawMeta(), { id: POOL_ID }));
+    const result = normalizeV4(payload(v4Days(), rawMeta(), { id: POOL_ID, lastDay: [{ date: WINDOW.rangeStartUnixSeconds }] }));
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;

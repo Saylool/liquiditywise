@@ -23,6 +23,8 @@ const MALFORMED = "market-data-malformed";
 const INDEXING_ERRORS = "market-data-indexing-errors";
 const NOT_FOUND = "pool-not-found";
 const INSUFFICIENT = "pool-history-insufficient";
+const NEVER_TRADED = "pool-history-never-traded";
+const DORMANT = "pool-history-dormant";
 
 /**
  * Raised when the source indexed fewer days than the window covers.
@@ -195,9 +197,38 @@ export const normalizeDailyPriceHistory = ({
     });
   }
 
-  // A single close yields no return at all, and none yields nothing to measure.
-  // The pool exists, so this is a shortage of history, not a missing pool.
-  if (points.length <= 1) return unavailable("insufficient-data", INSUFFICIENT);
+  /*
+   * A single close yields no return at all, and none yields nothing to measure.
+   * The pool exists, so this is a shortage of history rather than a missing
+   * pool — but "a shortage" covers two opposite situations, and for a long
+   * time both were told the same thing: that there is not enough history
+   * *yet*.
+   *
+   * For a pool opened this week that is true and useful. For a pool that
+   * stopped trading months ago it is a falsehood with a deadline in it: the
+   * reader is told to come back for something that is never going to arrive.
+   * The first result for "syrup" was such a pool, and search now hides it —
+   * but a link, a bookmark or a typed address still reaches this page, and it
+   * still has to say something true.
+   *
+   * The pool's own last day, which the query asks for without the window's
+   * bounds, is what separates them.
+   */
+  if (points.length <= 1) {
+    const lastDay = data.pool.lastDay[0];
+
+    if (lastDay === undefined) return unavailable("insufficient-data", NEVER_TRADED);
+
+    /*
+     * Compared against the window's own start, not against a clock. The window
+     * came from an injected clock already, and taking the time again here
+     * would let a pool whose last day sits on the boundary be described one
+     * way by the query and the other way by the answer.
+     */
+    return lastDay.date < window.rangeStartUnixSeconds
+      ? unavailable("insufficient-data", DORMANT)
+      : unavailable("insufficient-data", INSUFFICIENT);
+  }
 
   const candidate = {
     pool: {

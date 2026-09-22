@@ -22,7 +22,13 @@ import {
  * `date` is `Int!` on `PoolDayData`, hence `Int!` bounds.
  *
  * The top-level `pool { id }` is requested so an unknown pool is distinguishable
- * from a known pool with no indexed days. Each daily row repeats `pool { id }` so
+ * from a known pool with no indexed days, and its `lastDay` — the pool's most
+ * recent day, unbounded by the window — so that a pool with no days *in* the
+ * window can be told apart from a pool too young to have filled one. Those are
+ * the same absence and opposite things to say about it: one will be answerable
+ * tomorrow and the other never. The field is `poolDayData` on `Pool` in both
+ * protocols' schemas, checked by introspection against both deployments rather
+ * than assumed from the v3 one. Each daily row repeats `pool { id }` so
  * its ownership can be verified individually: a filter is a request, not proof of
  * what came back. `first` caps the result at the window size, which is why no
  * `skip` pagination is needed.
@@ -40,6 +46,9 @@ export const DAILY_PRICE_HISTORY_QUERY = `query PoolDailyPriceHistory(
 ) {
   pool(id: $poolId) {
     id
+    lastDay: poolDayData(first: 1, orderBy: date, orderDirection: desc) {
+      date
+    }
   }
   poolDayDatas(
     where: { pool: $poolRef, date_gte: $rangeStart, date_lt: $rangeEndExclusive }
