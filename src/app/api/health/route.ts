@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { takeAppReadings } from "@/lib/health/appReadings";
 import { readOutsideReadings } from "@/lib/health/outsideReadings";
 import { problemsFrom } from "@/lib/health/problems";
+import { upstreamProbes } from "@/lib/health/upstreamEnvironment";
+import { readUpstreamReport } from "@/lib/health/upstreamProbe";
 import { telegramSetup } from "@/lib/telegram/environment";
 import { sameSecret } from "@/lib/telegram/secrets";
 
@@ -37,7 +39,22 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
   }
 
   const inside = await takeAppReadings({ store: setup.store, now: new Date() });
-  const problems = problemsFrom({ ...inside, ...readOutsideReadings(request.nextUrl.searchParams) });
+
+  /*
+   * The two paid credentials, asked at most once an hour and remembered in
+   * between. `null` is a deployment with nothing configured to ask about,
+   * which leaves the readings absent rather than claiming they are fine.
+   */
+  const probes = upstreamProbes();
+  const upstream = probes === null ? null : await readUpstreamReport(setup.store, probes);
+
+  const problems = problemsFrom({
+    ...inside,
+    ...(upstream === null
+      ? {}
+      : { marketDataStatus: upstream.marketData, chainDataStatus: upstream.chainData }),
+    ...readOutsideReadings(request.nextUrl.searchParams),
+  });
 
   return NextResponse.json({ ok: problems.length === 0, problems });
 };

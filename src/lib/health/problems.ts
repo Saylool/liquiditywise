@@ -19,13 +19,17 @@
  * for readers.
  */
 
+import type { UpstreamStatus } from "./upstreamProbe";
+
 /** Each problem has a stable id, so the same fault is not reported twice. */
 export type ProblemId =
   | "store-unreachable"
   | "store-not-durable"
   | "alerts-not-running"
   | "certificate-expiring"
-  | "disk-nearly-full";
+  | "disk-nearly-full"
+  | "market-data-key-refused"
+  | "chain-data-key-refused";
 
 export type Problem = { readonly id: ProblemId; readonly message: string };
 
@@ -45,6 +49,10 @@ export type Readings = {
   readonly certificateDays?: number | undefined;
   /** Percentage of the filesystem in use. */
   readonly diskPercent?: number | undefined;
+  /** What the subgraph gateway said to a probe, or absent when none was made. */
+  readonly marketDataStatus?: UpstreamStatus | undefined;
+  /** What the Ethereum RPC endpoint said to a probe. */
+  readonly chainDataStatus?: UpstreamStatus | undefined;
 };
 
 /**
@@ -117,6 +125,29 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
     problems.push({
       id: "certificate-expiring",
       message: `The TLS certificate expires in ${certificateDays} days and certbot has not renewed it. Run \`certbot renew --dry-run\` to see why.`,
+    });
+  }
+
+  /*
+   * A refused key is the quietest way this application breaks. Every page
+   * still renders, each one saying it could not reach its source, and the
+   * only person who can fix it is the one nobody told. Rate limits and
+   * unreachable providers are deliberately not here: those pass, and a
+   * message about them would teach its reader to ignore the ones that do not.
+   */
+  if (readings.marketDataStatus === "credentials-rejected") {
+    problems.push({
+      id: "market-data-key-refused",
+      message:
+        "The Graph is refusing THE_GRAPH_API_KEY (401/403). Every pool page will say it cannot reach its source. Check the key's status and billing at thegraph.com/studio.",
+    });
+  }
+
+  if (readings.chainDataStatus === "credentials-rejected") {
+    problems.push({
+      id: "chain-data-key-refused",
+      message:
+        "The Ethereum RPC endpoint is refusing ETHEREUM_RPC_URL (401/403). v4 pool pages cannot be shown at all, and v3 pages lose their tick spacing. Check the provider's dashboard.",
     });
   }
 

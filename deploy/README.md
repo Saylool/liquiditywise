@@ -176,6 +176,9 @@ broken and is going to stay broken:
 - Redis is not answering, so links cannot be saved and no alert can go out;
 - Redis has stopped writing an append-only log, so a new link is a restart
   away from being lost;
+- The Graph or the Ethereum RPC endpoint is refusing its key, which is the
+  quietest way this breaks: every page still renders and every one of them
+  says it could not reach its source;
 - the scheduled alert pass has not run for half an hour;
 - the TLS certificate has under ten days left and certbot has not renewed it;
 - the disk is over 90% full — this machine serves other sites too.
@@ -199,6 +202,15 @@ look at it.
 The one thing it cannot cover is the machine being off, because it runs on
 that machine. If that matters, point an outside uptime service at the site
 as well; everything short of it is here.
+
+The two paid credentials are asked about rather than waited for, at most
+once an hour, with the answer kept in Redis in between. The questions are the
+cheapest ones that still prove a key — `_meta` on the subgraph, which touches
+no entity, and `eth_blockNumber` on the node — and only a 401 or 403 is
+reported. A rate limit passes on its own and a provider having a bad minute is
+not something you can act on; a message about either would teach you to ignore
+the one that matters. Neither the key nor the RPC URL leaves the probe: it
+resolves to an HTTP status and nothing else.
 
 The thresholds and the wording are not in the script. It measures what only
 it can see — the certificate, the disk, whether the site answers at all —
