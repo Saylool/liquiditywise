@@ -19,6 +19,9 @@ APP_USER="liquiditywise"
 # The port the application listens on, loopback only. Pick one nothing else
 # on this machine uses: `bash deploy/inspect.sh` lists what is taken.
 APP_PORT="${APP_PORT:-3200}"
+# Only the health check uses this, to find the certificate whose expiry it
+# reports. Nothing here issues or edits one; deploy/nginx-site.sh does that.
+DOMAIN="${DOMAIN:-liquiditywise.com}"
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
@@ -84,9 +87,15 @@ systemctl daemon-reload
 systemctl enable --quiet liquiditywise
 systemctl restart liquiditywise
 
-# The Telegram check, every five minutes. The secret stays in .env.local.
+# The two scheduled jobs, every five minutes. Both read their secrets from
+# .env.local at run time, so this file stays world-readable and holds none.
 install -m 755 "$APP_DIR/deploy/telegram-check.sh" /usr/local/bin/liquiditywise-telegram-check
-echo "*/5 * * * * root APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check" > /etc/cron.d/liquiditywise
+install -m 755 "$APP_DIR/deploy/health-check.sh" /usr/local/bin/liquiditywise-health
+install -d -m 755 /var/lib/liquiditywise
+{
+  echo "*/5 * * * * root APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check"
+  echo "*/5 * * * * root APP_PORT=$APP_PORT DOMAIN=$DOMAIN /usr/local/bin/liquiditywise-health"
+} > /etc/cron.d/liquiditywise
 chmod 644 /etc/cron.d/liquiditywise
 
 sleep 3

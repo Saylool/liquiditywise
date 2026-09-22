@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
+import { recordAlertRun } from "@/lib/health/appReadings";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { checkWatches } from "@/lib/telegram/checkWatches";
 import { telegramSetup } from "@/lib/telegram/environment";
@@ -39,6 +40,14 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
     readPositions: getAddressPositions,
     dictionary: getDictionary,
   });
+
+  /*
+   * The pass finished. The mark it leaves is what lets the health check tell
+   * a schedule that has stopped from one that is merely quiet, and it is
+   * written after the work rather than before so that a pass which dies
+   * halfway leaves no claim that it ran.
+   */
+  if (!summary.storeUnavailable) await recordAlertRun(setup.store, new Date());
 
   return NextResponse.json({ ok: !summary.storeUnavailable, ...summary });
 };

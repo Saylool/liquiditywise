@@ -142,6 +142,43 @@ JPG, so it is rendered once and uploaded with `setMyProfilePhoto`. Neither
 was done in a browser canvas at 512x512, quality 0.9, about 11 KB — so
 render it wherever you have a rasteriser and upload the file.
 
+## When something breaks
+
+`setup.sh` installs a second cron entry, `liquiditywise-health`, which runs
+every five minutes and writes to your own Telegram chat when something is
+broken and is going to stay broken:
+
+- the site is not answering on its port;
+- Redis is not answering, so links cannot be saved and no alert can go out;
+- the scheduled alert pass has not run for half an hour;
+- the TLS certificate has under ten days left and certbot has not renewed it;
+- the disk is over 90% full — this machine serves other sites too.
+
+Set `TELEGRAM_OPERATOR_CHAT_ID` in `.env.local` to the numeric id of your
+chat with the bot, then prove it arrives:
+
+```bash
+liquiditywise-health --hello
+```
+
+Only changes are sent. A fault reported once is not reported again while it
+lasts, and one line goes out when it clears. An outage over a weekend is two
+messages.
+
+What it deliberately does not do is guess. While the site is down its other
+readings cannot be taken, so they are carried forward rather than declared
+recovered — you will not be told the disk is fine by a check that could not
+look at it.
+
+The one thing it cannot cover is the machine being off, because it runs on
+that machine. If that matters, point an outside uptime service at the site
+as well; everything short of it is here.
+
+The thresholds and the wording are not in the script. It measures what only
+it can see — the certificate, the disk, whether the site answers at all —
+and hands those to `/api/health`, which holds the judgement in
+`src/lib/health/problems.ts` where it is covered by tests.
+
 ## Files
 
 - `inspect.sh` — read-only survey of the machine.
@@ -150,3 +187,4 @@ render it wherever you have a rasteriser and upload the file.
 - `nginx-liquiditywise.conf`, `Caddyfile` — one site block each, for the
   server the machine already runs.
 - `telegram-check.sh` — one pass of the alert check; the cron entry calls it.
+- `health-check.sh` — the five-minute health check described above.
