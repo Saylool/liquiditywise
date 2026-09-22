@@ -498,7 +498,22 @@ main:focus {
   height: 48px;
   background: transparent;
   font-family: var(--font-geist-mono), monospace;
-  font-size: 11px;
+  /*
+   * 14px, and the number is measured rather than chosen. What goes in here
+   * is a hex address somebody pasted and then checks character by character,
+   * which is the one place on the site where small monospace costs something
+   * real. The narrowest of these fields is the one on the front page, 356px,
+   * and a 42-character address needs 328px at 13, 353px at 14 and 378px at
+   * 15 — so 14 is the largest size at which a whole address is still visible
+   * at once, rather than scrolling inside the field while being read.
+   *
+   * A 66-character v4 pool id does not fit that field at any size, including
+   * the 11px this was, so nothing is lost there that was not already.
+   *
+   * The narrow-screen block sets 16px instead, which is not a disagreement:
+   * below 16 iOS Safari zooms the page when this field takes focus.
+   */
+  font-size: 14px;
   color: var(--foreground);
   outline: none;
 }
