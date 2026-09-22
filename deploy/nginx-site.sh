@@ -28,6 +28,19 @@ if [ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$port/")" != "2
 fi
 
 # Only this site's file is written, and only this site's link is made.
+#
+# Except when certbot has already written to it. From that point the file
+# carries the certificate paths and the redirects certbot added, and
+# overwriting it would take the site back to plain HTTP — which, with
+# Cloudflare set to Full (strict), is the whole site down until certbot runs
+# again and succeeds. It is no longer this script's file to rewrite.
+if [ -f "$SITE" ] && grep -q "ssl_certificate" "$SITE"; then
+  echo "$SITE already carries a certificate; leaving it alone."
+  echo "To rebuild it from the repository: rm $SITE and run this again."
+  nginx -t && systemctl reload nginx
+  exit 0
+fi
+
 sed "s#127\.0\.0\.1:3200#127.0.0.1:$port#" "$APP_DIR/deploy/nginx-liquiditywise.conf" > "$SITE"
 ln -sfn "$SITE" "$LINK"
 
