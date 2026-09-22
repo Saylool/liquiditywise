@@ -119,6 +119,19 @@ const CHINESE_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 
+/** And for Russian, which keeps the same term in Latin script for the same reason. */
+const RUSSIAN_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the term Russian writing about v4 keeps in Latin script"],
+  [".holdings.hookTag", "the term Russian writing about v4 keeps in Latin script"],
+  [".search.v4Hook", "the term Russian writing about v4 keeps in Latin script"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
   ["de", GERMAN_SAME_AS_ENGLISH],
@@ -126,6 +139,7 @@ const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["ar", ARABIC_SAME_AS_ENGLISH],
   ["hi", HINDI_SAME_AS_ENGLISH],
   ["zh", CHINESE_SAME_AS_ENGLISH],
+  ["ru", RUSSIAN_SAME_AS_ENGLISH],
 ]);
 
 /*

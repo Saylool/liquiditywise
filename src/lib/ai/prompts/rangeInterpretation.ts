@@ -71,6 +71,7 @@ const LANGUAGE_NAMES: Record<Locale, string> = {
   ar: "Arabic",
   hi: "Hindi",
   zh: "Chinese (Simplified)",
+  ru: "Russian",
 };
 
 /**
@@ -99,6 +100,7 @@ const TERMINOLOGY: Record<Locale, readonly string[]> = {
   ar: [],
   hi: [],
   zh: [],
+  ru: [],
   tr: [
     'the pool: "havuz"',
     'token, plural: "tokenlar"',

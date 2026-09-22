@@ -9,8 +9,8 @@ import {
 } from "./locales";
 
 describe("LOCALES", () => {
-  it("publishes seven languages, with English as the fallback", () => {
-    expect(LOCALES).toEqual(["en", "tr", "de", "es", "ar", "hi", "zh"]);
+  it("publishes eight languages, with English as the fallback", () => {
+    expect(LOCALES).toEqual(["en", "tr", "de", "es", "ar", "hi", "zh", "ru"]);
     expect(DEFAULT_LOCALE).toBe("en");
   });
 });

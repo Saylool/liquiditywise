@@ -12,7 +12,7 @@
  * English, and the interface around them speaks the reader's language.
  */
 
-export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh"] as const;
+export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh", "ru"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -43,6 +43,7 @@ export const LOCALE_DETAILS: Record<
   ar: { name: "العربية", flag: "🇸🇦", direction: "rtl" },
   hi: { name: "हिन्दी", flag: "🇮🇳", direction: "ltr" },
   zh: { name: "中文", flag: "🇨🇳", direction: "ltr" },
+  ru: { name: "Русский", flag: "🇷🇺", direction: "ltr" },
 };
 
 /**
@@ -56,7 +57,16 @@ export const LOCALE_DETAILS: Record<
  * a reader discover it paragraph by paragraph. Moving a language into this set
  * is the last step of translating it, not the first.
  */
-export const FULLY_TRANSLATED: readonly Locale[] = ["en", "tr", "de", "es", "ar", "hi", "zh"];
+export const FULLY_TRANSLATED: readonly Locale[] = [
+  "en",
+  "tr",
+  "de",
+  "es",
+  "ar",
+  "hi",
+  "zh",
+  "ru",
+];
 
 export const isFullyTranslated = (locale: Locale): boolean =>
   FULLY_TRANSLATED.includes(locale);
