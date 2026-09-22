@@ -32,6 +32,15 @@ step 1 showed free.
 
 Updating later is the same command; it pulls `main`, rebuilds, restarts.
 
+**`raw.githubusercontent.com` caches a branch for a few minutes.** A run
+started right after a push can fetch the previous version of this script and
+fail in a way that has already been fixed — which cost an hour once. When
+that matters, fetch the commit instead of the branch:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Saylool/liquiditywise/<sha>/deploy/setup.sh | APP_PORT=3200 bash
+```
+
 ## 3. Put the domain in front of it
 
 On the machine this runs on, nginx already serves other sites, so:
