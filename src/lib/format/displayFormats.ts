@@ -47,6 +47,7 @@ const byLocale = <T,>(build: (tag: string) => T): Record<Locale, T> => ({
   hi: build("hi-IN"),
   zh: build("zh-CN"),
   ru: build("ru-RU"),
+  pt: build("pt-BR"),
 });
 
 const standardPrice = byLocale(

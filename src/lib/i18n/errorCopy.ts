@@ -138,4 +138,17 @@ export const ERROR_COPY: Record<Locale, ErrorCopy> = {
     globalBody:
       "Страницу не удалось собрать вообще, поэтому этот экран не знает, на каком языке вы её читали.",
   },
+  pt: {
+    title: "Não foi possível ler esta página",
+    body: "Algo falhou de um jeito para o qual este aplicativo não tem mensagem. É uma falha aqui ou em uma das fontes que ele lê — não algo que você fez — e a mesma página pode muito bem funcionar numa segunda tentativa.",
+    nothingKept:
+      "Nada foi salvo. Aqui não há conta nem registro do que alguém consulta, então não há nada seu que possa ter se perdido.",
+    retry: "Tentar de novo",
+    home: "Voltar ao início",
+    referenceLabel: "Identificador",
+    referenceNote: "Nomeia esta falha no log do servidor. Não diz nada sobre você.",
+    globalTitle: "Algo deu errado",
+    globalBody:
+      "A página não pôde ser montada de jeito nenhum, então esta tela não sabe em que idioma você a estava lendo.",
+  },
 };

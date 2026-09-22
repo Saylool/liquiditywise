@@ -303,6 +303,44 @@ const copy: Record<Locale, InterfaceCopy> = {
     current: "Текущая цена",
     range: "Ваш диапазон",
   },
+  pt: {
+    pools: "Explorar pools",
+    positions: "Suas posições",
+    hooks: "Hooks do v4",
+    skip: "Ir para o conteúdo",
+    eyebrow: "Análise independente do Uniswap",
+    headline: "Liquidez,",
+    headlineAccent: "sem mistério.",
+    intro:
+      "Entenda seu pool. Explore sua faixa. Veja as trocas antes do próximo passo.",
+    how: "Veja como funciona",
+    chain: "Rede principal do Ethereum",
+    readOnly: "Análise somente leitura",
+    searchKicker: "COMECE POR UM POOL",
+    searchTitle: "Seu próximo passo começa aqui.",
+    examples: "Experimente um par",
+    rangeKicker: "UM POUCO DE PERSPECTIVA",
+    rangeTitle: "Encontre sua faixa.",
+    rangeBody:
+      "Uma faixa mais estreita concentra sua liquidez. Uma mais larga cobre mais preços. Explore o formato e depois analise um pool de verdade para entender o que se troca pelo quê.",
+    rangeLabel: "Largura da faixa",
+    narrow: "Estreita",
+    wide: "Larga",
+    illustration: "Apenas ilustração. Não são dados de mercado nem previsão.",
+    methodTitle: "Feito sobre fatos. Explicado com clareza.",
+    toolsKicker: "OLHE MAIS DE PERTO",
+    toolsTitle: "A diferença está nos detalhes.",
+    hookIntro:
+      "Olhe além do par. Veja quais permissões um hook do v4 tem antes de explorar o pool dele.",
+    closingTitle: "Clareza antes do compromisso.",
+    independence:
+      "Um projeto educativo independente. Sem ligação com a Uniswap Labs.",
+    addressLabel: "Endereço Ethereum público",
+    addressAction: "Ver posições",
+    menu: "Navegação",
+    current: "Preço atual",
+    range: "Sua faixa",
+  },
 };
 
 export const getInterfaceCopy = (locale: Locale): InterfaceCopy => copy[locale];

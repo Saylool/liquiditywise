@@ -39,6 +39,7 @@ const SHORTEST_SENTENCE: Record<Locale, number> = {
   hi: 20,
   zh: 8,
   ru: 20,
+  pt: 20,
 };
 
 const FAILURES = DataFailureNoticeSchema.options;

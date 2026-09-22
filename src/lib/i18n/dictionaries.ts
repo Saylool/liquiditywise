@@ -7945,6 +7945,1162 @@ const ru: Dictionary = {
   error: ERROR_COPY.ru,
 };
 
+const pt: Dictionary = {
+  metadata: {
+    title: "LiquidityWise",
+    description:
+      "Um orientador educativo, assistido por IA, para estratégias de liquidez no Uniswap v3 e v4. Apenas orientação — não é recomendação financeira.",
+    v4Title: "Um pool do Uniswap v4 · LiquidityWise",
+    v4Description:
+      "O que é um pool do Uniswap v4 e o que o hook dele tem permissão para fazer.",
+    holdingsTitle: "O que um endereço tem · LiquidityWise",
+    holdingsDescription:
+      "Os tokens encontrados em um endereço Ethereum e os pools do Uniswap v3 em que eles podem entrar.",
+    poolTitle: "Análise da faixa de um pool · LiquidityWise",
+    poolDescription:
+      "Uma faixa de preço para um pool do Uniswap v3 na rede principal do Ethereum, tirada de quanto o preço dele realmente andou.",
+    hooksTitle: "Os hooks do Uniswap v4 · LiquidityWise",
+    hooksDescription:
+      "Cada hook citado pelos pools do Uniswap v4 mais movimentados da semana, e o que cada um tem permissão para fazer — lido do próprio endereço dele."
+  },
+
+  preferences: {
+    languageLabel: "Idioma",
+    selectLanguage: "Escolher idioma",
+    closeLanguages: "Fechar",
+    /*
+     * Said in the reader's own language, at the moment they choose it, rather
+     * than left to be discovered paragraph by paragraph. A reader who is told
+     * can decide; one who meets it halfway down a page cannot.
+     */
+    partlyTranslated:
+      "Este idioma ainda está sendo traduzido. Os menus, rótulos e títulos já estão nele; as explicações mais longas continuam em inglês.",
+    themeLabel: "Tema",
+    themeSystem: "Do sistema",
+    themeLight: "Claro",
+    themeDark: "Escuro",
+    /*
+     * The band every pool opens at, set once in the header rather than on
+     * every pool. A link naming its own band still wins over it.
+     */
+    rangeLabel: "Preferências de faixa",
+    rangeIntro:
+      "O horizonte, a largura e o valor com que cada pool abre. Um link que traz os seus próprios continua tendo precedência, e o formulário abaixo de cada análise muda só aquela página.",
+    rangeSave: "Salvar",
+    rangeReset: "Esquecer",
+  },
+
+  disclaimer: {
+    ariaLabel: "Aviso importante",
+    title: "Ferramenta educativa — não é recomendação financeira.",
+    body: "Este aplicativo explica como o Uniswap funciona e ajuda a pensar na escolha dos parâmetros. Ele não prevê preços, não garante retorno e não consegue verificar se um contrato inteligente é seguro. Fornecer liquidez tem riscos reais, inclusive perda impermanente e perda total do dinheiro. Confira você mesmo os endereços dos contratos e faça sua própria pesquisa.",
+  },
+
+  home: {
+    badge: "Base inicial",
+    title: "LiquidityWise",
+    introBeforeV3: "Um orientador educativo para o Uniswap ",
+    introBetween: ", crescendo em direção ao ",
+    introAfterV4:
+      ". Encontre um pool pelo par, veja uma faixa de preço calculada a partir de quanto esse par realmente andou e leia a explicação em linguagem simples. Todo número é calculado e conferido antes de um modelo ter permissão para descrevê-lo — e o modelo nunca tem permissão para dizer um número.",
+    workingTodayHeading: "O que já funciona",
+    workingTodayBody:
+      "Busque um pool pelo par, ou cole o endereço de um pool v3 ou o id de um pool v4. Você recebe a configuração verificada do pool e o estado atual dele, o último mês de preços diários desenhado sobre uma faixa sugerida, quanto o par realmente andou e a faixa que sai disso — com o horizonte e a largura nas suas mãos. Ao lado: quanto o pool cobrou e quanto de fato recolheu, como os dias recentes dele ficaram em relação à faixa, o que o mesmo método fez em dias que ele nunca viu, o que uma posição abre mão em comparação com simplesmente segurar, o que cada uma das outras larguras teria feito e — para um valor de depósito que você define — quanto ele teria ficado das taxas cobradas nos dias em que o preço não saiu da faixa. E a mesma faixa lida ao contrário: cada metade dela é uma posição de um lado só, e a página diz a que preço cada uma converteria se o preço a atravessasse. Quanto custa um swap pelo pool, para o maior que dá para precificar sem supor nada. E um diretório de cada hook citado pelos pools v4 mais movimentados da semana, com o que cada um tem permissão para fazer, lido do próprio endereço dele. Uma página de pool v4 também diz, em palavras simples, o que o hook dele pode fazer, lendo isso do endereço do próprio hook. Dá para consultar um endereço para ver os pools em que os tokens dele podem entrar e as posições Uniswap v3 que ele já tem — cada uma com os preços que cobre e se o pool está dentro deles agora. E então uma explicação de tudo isso em linguagem simples. Nenhum modelo encosta em nenhum desses números, nenhum deles é estimado para tapar buraco, e o texto não tem onde colocar um número próprio.",
+    analysePool: "Encontrar um pool →",
+    methodHeading: "Como funciona",
+    methodSteps: [
+      {
+        step: "Dados verificados",
+        detail:
+          "Os fatos do pool vêm dos subgraphs do Uniswap e são lidos na rede, nunca supostos. O preço é conferido contra o estado que o próprio pool informa sobre si.",
+      },
+      {
+        step: "Contas determinísticas",
+        detail:
+          "A volatilidade, a banda de preço e a faixa da posição são calculadas em TypeScript puro, então o mesmo pool sempre dá os mesmos números.",
+      },
+      {
+        step: "Interpretação por IA",
+        detail:
+          "Um modelo explica o que esses números querem dizer. Ele os recebe já conferidos, e o contrato sob o qual responde não tem onde colocar um número.",
+      },
+    ],
+    coverageHeading: "Ainda não feito",
+    coverage: [
+      {
+        version: "Uniswap v3",
+        features: [
+          {
+            name: "Gas e o custo de correr atrás do preço",
+            summary:
+              "Uma faixa que o preço deixou precisa ser fechada e reaberta para acompanhá-lo, o que custa gas e transforma uma divergência no papel em uma já realizada. Nada disso é contado em lugar nenhum aqui.",
+          },
+        ],
+      },
+      {
+        version: "Uniswap v4",
+        features: [
+          {
+            name: "O que um hook realmente faz",
+            summary:
+              "Uma página v4 diz o que um hook tem permissão para fazer, porque é isso que o protocolo impõe e é isso que se lê do endereço do próprio hook. Ler o contrato para dizer o que ele faz com essas permissões é outro problema, e este aplicativo não tenta resolvê-lo.",
+          },
+          {
+            name: "Estratégias no estilo TWAMM",
+            summary:
+              "Espalhar uma ordem grande ao longo do tempo em vez de executá-la contra um único ponto de liquidez. A metade disso que uma página de análise já responde está aqui: quanto custa um swap contra a liquidez no preço atual e de que tamanho é o maior swap que dá para precificar. Agendar uma ordem ao longo do tempo é trabalho de um hook, e este aplicativo não modela o comportamento de hooks.",
+          },
+        ],
+      },
+    ],
+    footer:
+      "Nada do que está acima existe ainda. O que existe é tudo o que está mais acima nesta página: um pool encontrado pelo nome, números calculados e conferidos e um texto verificado antes de ser mostrado. Dá para conectar uma carteira, e tudo o que se pede a ela é o endereço. A única coisa que este aplicativo guarda é um vínculo com o Telegram que o próprio leitor cria — um endereço ao lado de um id de conversa, que some no instante em que ele manda /stop ao bot — e nada aqui consegue assinar nem enviar uma transação em seu nome.",
+  },
+
+  pool: {
+    back: "← LiquidityWise",
+    invalidAddress:
+      "Isso não é um endereço Ethereum. Um endereço é 0x seguido de exatamente 40 caracteres hexadecimais.",
+    loading: "Lendo os dados ao vivo do Uniswap…",
+  },
+
+  /*
+   * Facts about the pool, and the sentence that keeps them from being read as
+   * something else. The gap between "the pool collected this" and "you would
+   * have earned this" is where a reader is likeliest to fill in a number nobody
+   * gave them.
+   */
+  activity: {
+    heading: "O que o pool realmente fez",
+    volume24h: "Volume, 24 h",
+    volume7d: "Volume, 7 dias",
+    volume30d: "Volume, 30 dias",
+    fees30d: "Taxas cobradas, 30 dias",
+    feesNote: "Do pool inteiro, divididas entre todos cuja liquidez estava ativa.",
+    tvl: "Valor total bloqueado",
+    occupancySentence: (days: string, inside: string, outside: string, crossed: string) =>
+      `Dos últimos ${days} dias, ${inside} ficaram inteiramente dentro desta faixa, ${outside} ficaram inteiramente fora dela e ${crossed} cruzaram uma borda.`,
+    undeterminedNote:
+      "Um dia que cruzou uma borda passou parte dele dentro e parte fora, e a máxima e a mínima diárias da fonte não dizem quanto foi de cada.",
+    feesWhileInside: "Taxas cobradas nos dias inteiramente dentro",
+    /*
+     * Shown instead of that figure when the pool's hook may take a share of a
+     * swap. The fees are still real; what cannot be stated is their relationship
+     * to a position, which is the only reason anyone reads the figure.
+     */
+    feesWithheld: "Não mostrado para este pool",
+    feesWithheldNote:
+      "O hook deste pool tem permissão para ficar com uma parte do swap, e nada na fonte separa a parte do hook da parte de quem fornece liquidez. As taxas acima são o que o pool cobrou, e isso é um fato; amarrar uma fração delas a esta faixa seria afirmar algo sobre uma posição que ninguém consegue conferir.",
+    inSample:
+      "Estes são os mesmos dias de que a faixa foi tirada, então eles mostram como ela foi ajustada e não testam se ela se sustenta — e a faixa está centrada no preço de hoje, que ninguém teria como ter aberto um mês atrás. Leia isso como a posição do movimento recente do pool em relação à faixa, não como um backtest.",
+    notYourEarnings:
+      "Nada disso é o que uma posição ganharia: é o que o pool inteiro cobrou. Quanto um depósito teria ficado disso — a parte dele na liquidez ativa enquanto os swaps aconteciam — está no bloco logo abaixo, e mesmo ali são taxas e nada mais.",
+  },
+
+  /*
+   * The half of the fee question this application used to refuse.
+   *
+   * The refusal was honest while it lasted: the figures above are the pool's,
+   * and turning them into a position's needs a size and a share of the active
+   * liquidity. Both are read now, so the page answers instead of declining —
+   * and every sentence here exists to stop the answer being read as a yield.
+   */
+  deposit: {
+    heading: "Quanto um depósito teria recolhido",
+    unavailable: "Para este pool não dá para calcular quanto um depósito teria ficado dessas taxas.",
+    withheldNote:
+      "Pelo mesmo motivo do número acima: um hook aqui pode ficar com uma parte do swap, e nada na fonte separa a parte dele da de quem fornece. Uma fração de um total que não pode ser atribuído a esta faixa também não pode ser atribuída a um depósito nela.",
+    deposited: "Depósito",
+    depositedNote: "O tamanho para o qual isso foi calculado. Mude no formulário acima.",
+    collected: "Taxas que ele teria ficado",
+    collectedNote: (days: string) =>
+      `Ao longo dos ${days} ${days === "1" ? "dia" : "dias"} em que o preço nunca saiu da faixa.`,
+    ofDeposit: "Sobre o depósito",
+    ofDepositNote:
+      "Essas taxas em relação ao dinheiro aplicado, naqueles dias e em nenhum outro. Não é uma taxa anual, e nada aqui a transforma em uma.",
+    sentence: (deposit: string, days: string, poolFees: string, yourFees: string) =>
+      `Nos ${days} ${days === "1" ? "dia" : "dias"} em que o preço nunca saiu desta faixa, o pool cobrou ${poolFees} em taxas. Um depósito de ${deposit} colocado na faixa teria ficado com cerca de ${yourFees} disso — pela própria liquidez dele como parte da liquidez que esteve de fato ativa em cada um desses dias.`,
+    unmeasurableNote: (days: string) =>
+      `Outros ${days} ${days === "1" ? "dia ficou" : "dias ficaram"} dentro da faixa, mas a fonte não publicou taxas nem liquidez ativa para eles, então não entram no total.`,
+    dilution:
+      "Um depósito maior não recolhe proporcionalmente mais. A parte é a sua liquidez sobre a de todo mundo, incluindo a sua, então a partir de certo tamanho a maior parte do que você acrescenta dilui o que você já tem — e é por isso que os valores oferecidos estão a um fator de mil um do outro.",
+    caveat:
+      "Só taxas, e só dias que já aconteceram. Supõe que a posição esteve aberta em cada um deles e que nada se mexeu em reação a ela, e não diz nada sobre quanto os próximos trinta dias vão pagar. O que uma posição abre mão em comparação com simplesmente segurar os dois tokens é a comparação mais abaixo nesta página, e as duas precisam ser lidas juntas.",
+  },
+
+  realizedFee: {
+    heading: "Quanto ele cobrou de verdade",
+    intro:
+      "A taxa que o pool declara é um número só. Isto aqui é o que quem fez swap pagou de fato, dividido de volta a partir dos mesmos dias dos números acima: as taxas de um dia sobre o volume daquele dia. Não precisa de requisição extra nem de nada vindo do hook.",
+    declared: "Taxa declarada",
+    /** How a stated fee was arrived at, where the protocol takes a cut on top. */
+    statedNote: (lp: string, protocol: string) =>
+      `${lp} para quem fornece liquidez e ${protocol} para o protocolo, somados do jeito que o PoolManager os cobra — que é o que quem faz swap paga, e é disso que as taxas acima são feitas.`,
+    noDeclared: "Nenhuma",
+    noDeclaredNote: "A chave deste pool não traz taxa. O hook dele define uma a cada swap.",
+    median: "Dia típico",
+    spread: "Do dia mais baixo ao mais alto",
+    spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
+    aggregate: "Janela inteira",
+    aggregateNote:
+      "As taxas da janela sobre o volume da janela, então um dia movimentado pesa mais que um dia parado.",
+    daysMeasured: "Dias medidos",
+    daysMeasuredNote: (skipped: string) =>
+      `Mais ${skipped} ${skipped === "1" ? "dia na janela não negociou" : "dias na janela não negociaram"} nada, ou estavam sem algum número, então não dava para tirar uma taxa deles.`,
+    /*
+     * The three verdicts. They exist as separate sentences rather than one with
+     * a number in it because they are three different things to know, and the
+     * one that matters most is the one a single wording would blur.
+     */
+    verdictMatches:
+      "Elas batem em todos os dias medidos. A taxa declarada é a taxa que foi cobrada.",
+    verdictDiffers: (differing: string, measured: string) =>
+      `Elas não batem. Em ${differing} de ${measured} dias medidos o pool cobrou algo diferente da taxa que declara, então o nível acima descreve com o que o pool foi criado e não quanto custa um swap.`,
+    verdictNoneDeclared:
+      "Não há com o que comparar: este pool não declara taxa nenhuma. Os números aqui são o que o hook dele de fato definiu.",
+    notLpShare:
+      "Nada disso é o que chega a quem fornece liquidez. O hook deste pool tem permissão para ficar com uma parte do swap, e a fonte não separa a parte do hook da de quem fornece. O que esses números dizem é quanto um swap custou, não quem recebeu.",
+    unavailableHeading: "Não foi possível medir quanto este pool cobra",
+  },
+
+  outOfSample: {
+    heading: "Testado em dias que ele nunca viu",
+    showFolds: "Mostrar cada trecho",
+    intro: (horizon: string) =>
+      `Todo número acima está ajustado aos dias que descreve. Estes não estão. O método foi recuado em ${horizon}, rodado de novo só sobre os preços anteriores àquele ponto e centrado no preço daquele ponto — um que alguém parado ali teria mesmo visto. Depois foi sobreposto aos dias que vieram a seguir, e tudo isso foi repetido para trás na história tantas vezes quantas couberam.`,
+    folds: "Rodadas",
+    foldsNote: "Quantas vezes a história teve espaço para ajustar uma banda e depois testá-la.",
+    fullyInside: "Dias inteiramente dentro",
+    fullyOutside: "Dias inteiramente fora",
+    undetermined: "Dias que cruzaram uma borda",
+    verdict: (inside: string, measured: string, folds: string) =>
+      `Ao longo de ${folds} rodadas, ${inside} de ${measured} dias ficaram inteiramente dentro da banda que este método teria desenhado.`,
+    foldPeriod: "Dias conferidos",
+    foldVolatility: "Volatilidade ajustada",
+    foldVerdict: "Dentro / fora / cruzaram",
+    foldsCaption: "Cada trecho em que o método foi testado, do mais antigo para o mais recente",
+    foldColumns:
+      "Cada linha é uma rodada: os dias em que foi conferida, a volatilidade que o próprio ajuste dela mediu — não o número acima — e como esses dias ficaram em relação à banda que aquele ajuste produziu.",
+    /*
+     * The two sentences that stop a total becoming a claim about the method.
+     * Nobody held these bands, and the folds are not independent of each other.
+     */
+    notIndependent:
+      "Algumas rodadas em um pool não medem com que frequência o método se sustenta, e não dizem nada sobre o que vem depois. Ajustes consecutivos também se sobrepõem — um ajuste de 31 fechamentos é mais longo que um passo de um horizonte — então as rodadas não são independentes entre si.",
+    notHeld:
+      "Ninguém segurou essas bandas. Cada uma é o que o método teria sugerido naquele momento, sobreposta a preços que então aconteceram — e os dias acima, de que a faixa sugerida foi tirada, não são estes dias.",
+    unavailableHeading: "Não foi possível conferir este pool fora da amostra",
+  },
+
+  divergence: {
+    heading: "Comparado com simplesmente segurar",
+    intro:
+      "Quanto uma posição nesta faixa valeria em comparação com simplesmente segurar os dois tokens, a cada preço. Aritmética exata e não uma estimativa — mas ela conta o movimento do preço e nada mais. Não diz nada sobre as taxas que uma posição ganharia, e taxas são exatamente o que se paga a quem fornece liquidez por essa diferença.",
+    price: (base: string) => `Preço de ${base}`,
+    loss: "Posição contra segurar",
+    entryRow: "O preço a partir do qual isso é medido — o preço atual do pool.",
+    impermanentNote:
+      "É isso que costuma ser chamado de perda impermanente. Ela só é impermanente se o preço voltar: uma posição fechada a um preço diferente daquele em que foi aberta já a realizou.",
+  },
+
+  /*
+   * The other thing the same range can be. It was on the front page's list of
+   * what this application could not do, and what it needed turned out to be no
+   * data at all: a range order's average price is fixed by the protocol's own
+   * formulas and falls out of the two bounds already on the page.
+   */
+  rangeOrder: {
+    heading: "Vendendo e comprando através da faixa",
+    intro:
+      "A faixa acima tem dois lados: dinheiro dos dois lados do preço, ganhando taxas enquanto o preço ficar entre eles. Corte-a no preço e cada metade vira um instrumento diferente. Uma posição inteiramente acima do preço segura um token e mais nada, e o pool vende esse token pelo outro conforme o preço sobe através da banda. Abaixo do preço acontece o contrário. É isso que é uma ordem por faixa, e as duas metades desta faixa são exatamente isso.",
+    selling: (token: string) => `Vendendo ${token}`,
+    buying: (token: string) => `Comprando ${token}`,
+    band: "Banda",
+    bandNote:
+      "Onde a posição fica. A borda interna dela é o primeiro passo de preço depois daquele em que o preço está, então ela começa sem nada daquilo em que está se convertendo.",
+    average: "Preço médio",
+    averageNote: "A que preço a conversão sai, se o preço atravessar a banda inteira.",
+    against: "Em relação ao preço atual",
+    exact:
+      "Essa média é a média geométrica das duas bordas — exatamente, e em qualquer ordem em que os preços estejam escritos. Ela sai das próprias fórmulas do protocolo sobre o que uma posição segura em cada ponta da banda dela, e o valor aplicado se cancela: cem dólares e um milhão convertem ao mesmo preço.",
+    onlyIfThrough:
+      "E só se o preço atravessar a banda inteira. Um que volte para dentro deixa a posição com um pouco de cada, a preço nenhum em particular — que é justamente para o que serve a faixa acima dela, só que alcançado por acaso.",
+    notAnOrderBook:
+      "Nada aqui agenda a conversão e nada a garante. Isto não é um livro de ofertas: uma ordem que o preço nunca alcança é o desfecho comum e não uma falha, e não existe fila nem contraparte esperando. O que existe, em vez disso, é que a posição recolhe as taxas do pool enquanto o preço está dentro da banda, em vez de pagá-las.",
+    unavailable: "Esta faixa não tem metade de um lado só para descrever.",
+  },
+
+  /*
+   * The one panel about using a pool rather than providing to it.
+   *
+   * It exists because nothing else here answers the first question anybody asks
+   * of a pool, and it stops where the certainty does: at the edge of the price
+   * step, because liquidity beyond it is a thing this application has not read.
+   */
+  swapDepth: {
+    heading: "Quanto custa um swap aqui",
+    intro:
+      "Tudo acima é sobre fornecer liquidez. Isto é sobre usá-la. A liquidez de um pool é constante entre os passos de preço sobre os quais ele é construído, então um swap que fica dentro do passo em que o preço está pode ser precificado pelas próprias fórmulas do protocolo sem supor nada — e um passo adiante não pode, porque ali a liquidez de outra posição pode começar e este aplicativo não lê a liquidez em cada preço.",
+    /*
+     * "into the pool", because the panel above this one also has a leg called
+     * "Selling WETH" and it means something else there: a position that sells as
+     * the price passes it, rather than a swap sent now. Two labels reading the
+     * same on one page is a reader mistaking one for the other.
+     */
+    selling: (token: string) => `Vendendo ${token} para o pool`,
+    amount: (amount: string, symbol: string) => `${amount} ${symbol}`,
+    largest: "Maior swap precificável aqui",
+    largestNote:
+      "Quanto entra antes de o preço chegar ao fim do passo em que está. Não é um limite: um swap maior funciona, e esta página não tem como dizer quanto ele custa.",
+    cost: "Do que ele abre mão",
+    costNote: "A que distância a média do swap fica do preço que está na tela.",
+    oneSideOnly:
+      "Só uma direção é mostrada. O preço está perto o bastante do fim do passo dele para que o espaço no outro sentido seja um erro de arredondamento e não um swap, e esta página não imprime um número que não consegue conferir.",
+    geometric:
+      "Essa média é a média geométrica do preço agora e do preço em que o swap termina — a mesma identidade em que se apoiam as posições de um lado só acima, vista do outro lado da negociação. Um swap que atravessa uma banda a paga; uma posição que está nessa banda a recebe.",
+    whyItDiffers:
+      "As duas direções não têm o mesmo tamanho porque o preço está em algum ponto dentro do passo dele e não no meio. O que vale comparar entre pools é o tamanho em si: é o que este mercado absorve antes de se mexer, e é a razão pela qual se quebra uma ordem grande em várias pequenas em vez de mandá-la de uma vez.",
+    unavailable: "Para este pool não dá para calcular quanto um swap custaria.",
+  },
+
+  feeTiers: {
+    heading: "Onde mais este par é negociado",
+    intro: (pair: string) =>
+      `${pair} é negociado em mais de um nível de taxa. Cada um é um pool separado, com a própria liquidez, o próprio histórico de preços e a própria faixa — os números acima descrevem só este.`,
+    onlyOne: (pair: string) =>
+      `${pair} é negociado só neste nível de taxa na rede principal do Ethereum. Tudo acima vale para o par inteiro, porque o par é este único pool.`,
+    thisOne: "Você está lendo sobre este",
+    feeTier: "Nível de taxa",
+    holds: "Tem",
+    reservesUnread: "Não foi possível ler da rede o que este pool tem.",
+    open: "Analisar este nível",
+    /*
+     * The sentence the panel exists to carry. A list of pools ordered beside
+     * dollar figures invites exactly one conclusion, and it is the wrong one.
+     */
+    biggerIsNotBetter:
+      "Um nível com mais liquidez é uma multidão maior dividindo as mesmas taxas de swap, não um lugar melhor. Qual deles serve a uma posição depende de quanto o preço anda e com que frequência, e isso se mede pool a pool — então o jeito honesto de compará-los é abrir cada um e ler os números dele. O horizonte e o multiplicador que você escolheu vão junto com o link.",
+    reservesNote:
+      "Estes são os saldos que os dois contratos de token informam para cada pool, lidos da rede e não de um indexador. O número do próprio indexador foi medido contra eles e exagera o que existe ali entre 1,3 e 13 vezes, então não é mostrado. Duas quantidades de token em vez de um valor em dólares, porque todo nível aqui tem os mesmos dois tokens e nada precisa ser precificado para compará-los.",
+    unavailableHeading: "Não foi possível ler os outros níveis de taxa do par",
+
+    /*
+     * The other protocol. On a v3 page the same two token contracts on v4; on
+     * a v4 page, v4's other pools of the pair and then v3's. Both lists say
+     * what "same pair" means here — the same two contracts — because ether and
+     * wrapped ether are two different tokens to a pool, whatever they are to
+     * a person.
+     */
+    onV3: "No Uniswap v3",
+    onV4: "No Uniswap v4",
+    v4Intro: (pair: string) =>
+      `Os pools v4 que negociam ${pair} — os mesmos dois contratos. Um par no v4 pode ser muitos pools: a taxa é qualquer número, o passo de preço é livre, e cada hook cria mais um.`,
+    v4None: (pair: string) => `Nenhum pool do Uniswap v4 negocia ${pair} com estes dois contratos.`,
+    v4OnlyThis: (pair: string) => `No v4, ${pair} é negociado só neste pool.`,
+    v3Intro: (pair: string) => `Os pools v3 que negociam ${pair} — os mesmos dois contratos de token, em cada nível de taxa.`,
+    v3None: (pair: string) => `Nenhum pool do Uniswap v3 negocia ${pair} com estes dois contratos.`,
+    v3NoNative:
+      "Este pool tem o ether da própria rede, e o v3 não consegue: toda moeda no v3 é um contrato de token. Os pools v3 mais próximos dele negociam ether empacotado, que para um pool é outro token.",
+    depth: "Profundidade no preço atual",
+    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    stateUnread: "Não foi possível ler da rede a liquidez do pool.",
+    hook: "hook",
+    noHook: "sem hook",
+    hookAltersSwaps: "pode mudar quanto custa um swap",
+    priceStep: (step: string) => `passo ${step}`,
+    v4Ordering:
+      "Ordenado pela profundidade no preço atual — a liquidez ativa do pool e o preço dele, lidos do armazenamento do PoolManager — porque um par no v4 é em boa parte feito de pools que alguém criou e abandonou, e a profundidade é o que distingue uns dos outros. Ela diz de quanto um swap pode se valer, e nada sobre qual pool é melhor: um pool mais fundo é uma multidão maior dividindo as mesmas taxas.",
+    moreNotShown: (count: string) => `Mais ${count} não são mostrados; são mais rasos que estes.`,
+    v4Unavailable: "Não foi possível ler os pools v4 do par",
+    v3Unavailable: "Não foi possível ler os pools v3 do par",
+  },
+
+  /*
+   * The same method at every width the form offers, on one page. The two day
+   * counts are different kinds of figure, and the note under the table says
+   * which is which: the first is the fit, the second the check.
+   */
+  widths: {
+    heading: "As outras larguras",
+    intro:
+      "O mesmo método em cada largura que o formulário oferece, para que a troca seja vista em vez de contada: uma faixa mais larga abriga mais dias e espalha o mesmo depósito por mais preços — que é a última coluna, e é aritmética do protocolo e não uma estimativa.",
+    width: "Largura",
+    range: "Faixa",
+    recent: (days: string) => `Dentro, dos últimos ${days} dias`,
+    unseen: "Dentro, em dias que ele nunca viu",
+    insideOf: (inside: string, total: string) => `${inside} de ${total}`,
+    unseenNone: "histórico insuficiente",
+    feeShare: "Parte das taxas enquanto dentro",
+    feeShareValue: (times: string) => `${times}×`,
+    chosen: "mostrado acima",
+    columnsNote:
+      "A primeira contagem é sobre os dias de que cada faixa foi tirada, então ela diz como aquela largura foi ajustada e não como ela se sustentou. A segunda é a conferência acima, rodada para cada largura: o método recuado um horizonte e sobreposto aos dias que vieram depois.",
+    /*
+     * The one column that is a comparison rather than a reading, and the one
+     * most easily read as a promise. It is exact arithmetic about a day inside
+     * the range, and it says nothing about the days outside it — which is the
+     * half the column beside it measures.
+     */
+    feeShareNote:
+      "A última coluna é quanto o mesmo depósito ficaria das taxas cobradas num dia em que o preço fica dentro daquela faixa, em relação à largura mostrada acima — por isso aquela marca um. É a própria aritmética de posições do protocolo e não uma estimativa: uma faixa mais estreita transforma o mesmo dinheiro em mais liquidez sobre menos preços. Ela supõe que o resto da liquidez do pool não mudou, o que um depósito grande o bastante para movê-la não deixaria verdadeiro, e não diz nada sobre os dias que o preço passa fora.",
+    notAdvice:
+      "Nenhuma delas é recomendação. Uma faixa mais estreita fica com uma parte maior nos dias em que se sustenta e com nada nos dias em que não, e qual dos dois importa mais depende de para que serve a posição — coisa que nada aqui sabe.",
+  },
+
+  parameters: {
+    heading: "Mudar a faixa",
+    apply: "Recalcular",
+    /*
+     * The same words label the figures in "how this range was drawn", so a
+     * reader changing one can see which number they are changing.
+     */
+    horizonLabel: "Até quando à frente",
+    widthLabel: "Quão larga",
+    depositLabel: "Quanto",
+    days: (days: string) => `${days} ${days === "1" ? "dia" : "dias"}`,
+    sigma: (value: string) => `${value}σ`,
+    /** A word for the offered widths; a width typed into the URL gets none. */
+    widthChoice: (sigma: string, word: string | null) =>
+      word === null ? sigma : `${word} (${sigma})`,
+    widthWords: { tight: "Estreita", medium: "Média", wide: "Larga", veryWide: "Muito larga" },
+    note: "O horizonte diz até onde à frente o movimento medido é estendido. Ele não muda a medição: a volatilidade sempre vem dos últimos 30 dias completos, qualquer que seja o horizonte escolhido. A largura multiplica esse movimento; uma faixa mais larga é deixada com menos frequência, e não é um nível de confiança.",
+    fellBack:
+      "Parte do que foi pedido não pôde ser lida, então ali foi usado o valor padrão. O horizonte e a largura realmente usados estão mostrados acima.",
+    /** Under the form: which of the two things that set a band this one is. */
+    preferenceHint:
+      "Isto muda esta página. Para mudar com o que cada pool abre, use as preferências de faixa no cabeçalho.",
+  },
+
+  holdings: {
+    heading: "O que este endereço tem",
+    intro:
+      "Os tokens encontrados neste endereço e os pools em que eles podem entrar. Nada aqui é guardado, a menos que você peça os avisos por Telegram abaixo, e o endereço é informação pública — a mesma lista fica visível para qualquer um que o consulte.",
+    forAddress: "Endereço",
+    loading: "Perguntando aos contratos dos tokens o que este endereço tem…",
+    /*
+     * The sentence that keeps the answer honest. Nothing can list an address's
+     * tokens, so the width of the search is part of the answer.
+     */
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
+      `O saldo de um token mora dentro do contrato do próprio token, então não existe uma lista do que um endereço possui — só tokens que podem ser perguntados, um de cada vez. Foram perguntados ${tokens} deles: cada token dos ${v3Pools} pools do Uniswap v3 mais negociados na rede principal do Ethereum${v4Pools === null ? "" : `, e cada moeda dos ${v4Pools} pools v4 que mais negociaram nos últimos sete dias, incluindo o ether da própria rede`}. Se algo é mantido fora desse conjunto, ele não falta nesta página porque o endereço não o tenha.`,
+    /*
+     * Said out loud when the v4 net could not be cast, because a page that
+     * listed only v3 pools and said nothing would read as "no v4 pool takes
+     * what you hold", which nobody checked.
+     */
+    v4NotSearched:
+      "Os pools do Uniswap v4 não foram pesquisados: não foi possível ler a lista deles. O ether e as moedas dos pools v4 estão ausentes desta página por esse motivo e por nenhum outro.",
+    /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
+    hookTag: "hook",
+    holdingsHeading: "Tokens encontrados",
+    nothingFound:
+      "Nenhum dos tokens conferidos foi encontrado neste endereço. Isso não é o mesmo que uma carteira vazia — veja acima como a busca foi feita.",
+    poolsHeading: "Pools em que estes tokens podem entrar",
+    bothSides: "Você tem os dois lados",
+    oneSide: "Você tem um lado",
+    bothSidesNote:
+      "Os dois tokens deste pool foram encontrados no endereço, então uma posição aqui não precisa de swap antes.",
+    oneSideNote:
+      "Um dos dois tokens deste pool foi encontrado. Uma posição aqui precisa também do outro lado, o que significa trocar parte do que você tem.",
+    moreNotShown: (count: string) =>
+      `Mais ${count} não são mostrados. Os acima são os mais negociados entre eles, na ordem em que a fonte de dados informa — o que é uma afirmação sobre o quanto um pool é movimentado e sobre nada mais.`,
+    analyse: "Analisar este pool",
+    notAdvice:
+      "Esta é uma lista do que é possível, não uma lista do que vale a pena fazer. Qual destes pools serve a quê depende dos números na página de cada pool e de para que serve a posição — e esta lista não sabe nem uma coisa nem outra.",
+    unavailableHeading: "Não foi possível ler este endereço",
+    invalidAddress: "Isso não é um endereço Ethereum, então nada foi consultado.",
+    noAddress: "Conecte uma carteira na página inicial e esta página mostrará o que ela tem.",
+  },
+
+  v4: {
+    heading: "Um pool do Uniswap v4",
+    intro:
+      "O que este pool é, lido da chave dele. Um pool v4 não é um contrato próprio: ele mora dentro de um PoolManager e é nomeado por um hash das cinco coisas que o definem — as duas moedas, a taxa, o passo de preço e o hook.",
+    poolId: "id do pool",
+    pair: "Moedas",
+    fee: "Taxa",
+    /*
+     * Read from the pool's own key on the chain — the log that created it —
+     * and never from the indexer, whose figure was measured to be the total
+     * fee of the latest swap rather than the key's fee.
+     */
+    feeNote: (swap: string, lp: string, protocol: string) =>
+      `Lido da chave do próprio pool na rede. Um swap paga ${swap}: destes, ${lp} para quem fornece liquidez e ${protocol} para o protocolo por cima.`,
+    feeNoteNoProtocol:
+      "Lido da chave do próprio pool na rede. O protocolo não pega nada por cima, então isto é o que um swap paga.",
+    dynamicFee: "Definida pelo hook, a cada swap",
+    dynamicFeeNote:
+      "A chave deste pool traz a marca de taxa dinâmica em vez de uma taxa, então quanto um swap custa é decidido pelo hook no momento em que ele acontece. Esta leitura não presenciou nenhum, e não há taxa aqui para informar.",
+    /*
+     * A list row for a pool whose key the chain did not answer for. The fee is
+     * a fact about the pool that this read does not have, and nothing else —
+     * not the indexer's figure — stands in for it.
+     */
+    feeUnread: "taxa não lida",
+    feeUnreadNote:
+      "A taxa do pool mora na chave com que ele foi criado, na rede, e esta leitura não conseguiu buscá-la. Nada mais serve de substituto.",
+    protocolFee: "Taxa do protocolo",
+    protocolFeeNone: "Nenhuma",
+    protocolFeeNote:
+      "Cobrada pelo protocolo por cima da taxa do pool, em cada swap. Definida pela governança e lida do estado do pool na rede.",
+    protocolFeeByDirection: (token0: string, token1: string) =>
+      `Varia conforme a direção: a primeira quando ${token0} é vendido, a segunda quando é ${token1}.`,
+    priceStep: "Passo de preço",
+    priceStepNote: (spacing: string) =>
+      `O passo mais fino em que as bordas de uma posição podem ser colocadas neste pool — o espaçamento de ticks dele, de ${spacing}. No v4 isso faz parte da chave do pool, então, ao contrário do v3, não precisa de uma chamada de contrato separada.`,
+    nativeCurrency: "Ether nativo",
+    nativeCurrencyNote:
+      "O endereço zero aqui não é um campo faltando. O v4 deixa um pool ter o ether da própria rede em vez de um token empacotado, e é isso que está acontecendo.",
+    hookHeading: "O hook",
+    noHook: "Este pool funciona sem hook.",
+    noHookNote:
+      "Nada roda junto com os swaps nem com os depósitos dele, então ele se comporta como um pool v3.",
+    hookMay: "O que ele tem permissão para fazer",
+    /*
+     * One sentence per permission, under the moment a reader can picture it
+     * at, with the protocol's own names folded away beneath. The names say
+     * where in the protocol's code a hook is called; what a reader needs is
+     * what that lets it do to a swap, a deposit or a withdrawal of theirs.
+     * Every sentence is a "may": the address grants the moment, not the act.
+     */
+    permissionTopics: {
+      swaps: "Em torno dos swaps",
+      liquidity: "Em torno de depósitos e retiradas",
+      creation: "Quando o pool foi criado",
+      donations: "Em torno de doações",
+    } satisfies Record<HookTopic, string>,
+    permissionWords: {
+      beforeSwap:
+        "Roda antes de cada swap, quando pode recusar o swap e, num pool com taxa dinâmica, definir quanto aquele swap paga.",
+      afterSwap: "Roda depois de cada swap, quando ainda pode recusar o swap.",
+      beforeSwapReturnsDelta:
+        "Tirar tokens de um swap, ou colocar os dele, antes de o pool precificá-lo — então um swap aqui não precisa seguir a curva do próprio pool.",
+      afterSwapReturnsDelta: "Ficar com uma parte de um swap depois de o pool tê-lo precificado.",
+      beforeAddLiquidity: "Roda antes de cada depósito, quando pode recusar o depósito.",
+      afterAddLiquidity: "Roda depois de cada depósito, quando ainda pode recusar o depósito.",
+      afterAddLiquidityReturnsDelta:
+        "Tirar tokens de um depósito no momento em que ele é feito, ou acrescentar tokens a ele.",
+      beforeRemoveLiquidity: "Roda antes de cada retirada, quando pode recusar a retirada.",
+      afterRemoveLiquidity: "Roda depois de cada retirada, quando ainda pode recusar a retirada.",
+      afterRemoveLiquidityReturnsDelta:
+        "Ficar com uma parte de uma retirada no momento em que ela é feita, ou acrescentar tokens a ela.",
+      beforeInitialize: "Roda uma vez, antes de o pool ser criado. Isso já aconteceu.",
+      afterInitialize: "Roda uma vez, depois de o pool ser criado. Isso já aconteceu.",
+      beforeDonate:
+        "Roda antes de uma doação a quem fornece ao pool, quando pode recusar a doação.",
+      afterDonate:
+        "Roda depois de uma doação a quem fornece ao pool, quando ainda pode recusar a doação.",
+    } satisfies Record<HookPermission, string>,
+    noPermissions:
+      "Nada em torno de swaps, depósitos ou doações: o protocolo não o chama em nenhum desses momentos. O que um hook assim ainda pode fazer é definir a taxa de um pool cuja taxa é dinâmica.",
+    permissionNames: "Os nomes que o próprio protocolo dá a isso",
+    /*
+     * The other side of the swap warning. A hook that runs when a provider
+     * withdraws can refuse the withdrawal — a hook that reverts reverts the
+     * withdrawal with it — and one holding the returns-delta flag can take a
+     * share of what comes out. Said above the list, like the swap warning,
+     * for the reader who stops reading.
+     */
+    withdrawalWarning: (share: boolean): string =>
+      share
+        ? "Este hook roda quando quem fornece retira. Ele tem permissão para recusar uma retirada e para ficar com uma parte do que é retirado. Se alguma vez faz isso, não dá para saber daqui."
+        : "Este hook roda quando quem fornece retira, e tem permissão para recusar uma retirada. Se alguma vez faz isso, não dá para saber daqui.",
+    /*
+     * The sentence this whole page exists to carry. A hook's permissions are not
+     * stored anywhere — the address is the permission list — so this is the one
+     * claim about a hook that can be made without trusting somebody.
+     */
+    hookAddressIsThePermission:
+      "Isto é lido do endereço do próprio hook. O v4 não guarda as permissões de um hook em lugar nenhum: um hook é publicado em um endereço cujos últimos catorze bits soletram quais retornos de chamada o PoolManager vai acionar, e o PoolManager confere esses bits em vez de perguntar ao contrato. Então isto diz o que o hook pode fazer, nunca o que ele faz — um que tem permissão para reescrever a taxa em cada swap pode sempre devolver a mesma taxa, e daqui não dá para saber.",
+    alterSwapWarning:
+      "Este hook tem permissão para mudar quanto um swap custa ou paga. Qualquer número tirado do histórico de preços — uma faixa sugerida, um nível de taxa, uma comparação com simplesmente segurar — supõe que o pool cobra o que diz e paga o que a curva diz. Nenhuma das duas suposições é segura aqui, e nada disso aparece numa série de preços.",
+    /*
+     * Replaced the line saying there was no analysis, on the day there was one.
+     * What it has to do now is harder: say why a band drawn from price history
+     * is as true here as anywhere, without letting that cover the fees, which
+     * are the part a hook can move.
+     */
+    analysisScope:
+      "Abaixo está a análise da faixa. A faixa vem de preços que já aconteceram, então ela vale aqui exatamente como vale para um pool sem hook — um hook não consegue mudar retroativamente por onde o preço andou. O que um hook consegue mudar é quanto custa um swap, então a taxa que este pool cobrou é medida a partir do que ele recolheu, e não tirada da taxa acima.",
+    unavailableHeading: "Não foi possível ler este pool",
+    invalidId:
+      "Isso não é um id de pool v4. Um pool v4 é nomeado por um hash de 32 bytes — 0x seguido de 64 caracteres hexadecimais — e não por um endereço de contrato.",
+    noId: "Cole um id de pool v4 para ver o que o pool é e o que o hook dele pode fazer.",
+    loading: "Lendo este pool v4, no indexador e na rede…",
+  },
+
+  /*
+   * The page a reader reaches by following something that is not here: an old
+   * link, a typo, an address pasted into the path instead of the box. The
+   * framework's own answer is an unstyled English line, which on a site
+   * published in two languages is the one screen that forgets which it is in.
+   */
+  notFound: {
+    title: "Não há página aqui",
+    body: "O endereço que você seguiu não nomeia nada do que este aplicativo serve. Chega-se a um pool pelo endereço dele ou, no v4, pelo id — e os dois vão no campo de busca, não no caminho.",
+    search: "Encontrar um pool →",
+  },
+
+  /*
+   * The directory, and the line it will not cross.
+   *
+   * Every sentence here is about what the protocol enforces, because that is the
+   * only thing about a hook this application can check. A name, a category, a
+   * "verified" badge — all of them would be somebody's claim republished, and
+   * the reader would have no way to tell which parts of the page were which.
+   */
+  hooks: {
+    heading: "Os hooks rodando no Uniswap v4",
+    loading: "Lendo os pools v4 mais movimentados da semana…",
+    intro:
+      "Todo pool v4 pode citar um hook: um contrato que o PoolManager chama em momentos fixos de um swap, de um depósito, de uma retirada. Quais momentos não é uma promessa que alguém faça. Isso está minerado no endereço do hook — os catorze bits mais baixos são a lista, e o protocolo se recusa a chamar o contrato para qualquer coisa fora dela.",
+    onlyPermissions:
+      "Isso é tudo o que esta página sabe, e vale a pena saber justamente porque é imposto e não apenas alegado. O que um hook faz com uma permissão está no código dele. Este aplicativo não lê código e não mantém nenhuma lista de hooks por quem alguém tenha respondido — as duas coisas seriam uma afirmação que ele não consegue conferir, ao lado de números que consegue.",
+    /*
+     * Phrased so no count is followed by a noun that would have to agree with
+     * it. A list of one pool is not a case this page will meet — the week's
+     * busiest days name hundreds — but "1 pools" is the kind of sentence that
+     * only ever appears in front of somebody.
+     */
+    window: (pools: string, hooked: string, hookless: string) =>
+      `Lido dos pools dos dias v4 mais movimentados desta semana, no total de ${pools}. Citam um hook: ${hooked}; não citam nenhum: ${hookless}, e se comportam como um pool v3.`,
+    ordering:
+      "Ordenado por em quantos desses pools cada hook roda. Isso é uma contagem de pools e nada mais: um hook em muitos deles é um hook com que alguém publicou muitos pools.",
+    runs: (count: string) => `Roda em ${count} deles`,
+    poolsHeading: "Onde ele roda",
+    moreNotShown: (count: string) => `e mais ${count}`,
+    none: "Nenhum pool dos dias v4 mais movimentados desta semana cita um hook.",
+    unavailable: "Não foi possível ler os pools v4 da semana, então não há diretório para mostrar.",
+    fromHome: "Ver todos os hooks →",
+  },
+
+  /*
+   * The one panel here that describes somebody's own money.
+   *
+   * It says so, and it says what that does and does not mean: the same list is
+   * public, anybody can read it for any address, and nothing about it is kept.
+   */
+  positions: {
+    heading: "Posições que este endereço já tem",
+    intro:
+      "Tudo acima é o que este endereço poderia fazer — que pools os tokens dele abrem. Isto é o que ele já fez. Uma posição de qualquer um dos protocolos é um token guardado por um contrato, e os dois contratos são perguntados sobre o que é cada token. O do v3 também consegue listar os tokens de um endereço; o do v4 não, então aquela lista vem de um indexador e cada id dela é levado de volta à rede, a quem se pergunta de quem é.",
+    none: "Este endereço não tem tokens de posição do Uniswap, de nenhum dos dois protocolos.",
+    noneOpen:
+      "Todo token de posição que este endereço tem já foi fechado. Um fechado é o recibo de uma posição que existiu, não uma posição.",
+    counts: (held: string, open: string, closed: string) =>
+      `${held} tokens de posição, dos quais ${open} ainda têm liquidez dentro e ${closed} foram fechados.`,
+    inRange: "Ganhando agora",
+    outOfRange: "Fora da faixa dela",
+    rangeUnknown: "Ninguém fez swap aqui",
+    analyse: "Analisar este pool →",
+    /*
+     * Read from the pool's own fee accounting and differenced, not estimated.
+     * Deliberately not a rate: it says what has accrued, not over how long or
+     * at what pace, because neither follows from the figure.
+     */
+    feesEarned: (amount0: string, symbol0: string, amount1: string, symbol1: string) =>
+      `Ganho e ainda não retirado: ${amount0} ${symbol0} e ${amount1} ${symbol1}.`,
+    feesNone: "Ainda não há nada ganho para retirar.",
+    feesUnread: "Não foi possível ler quanto ela ganhou.",
+    everyPrice: "Todo preço que este pool consegue exprimir",
+    moreNotShown: (count: string) => `Mais ${count} estão abertas e não listadas aqui.`,
+    readCap: (read: string, held: string) =>
+      `Foram lidas ${read} de ${held}. As demais não estão nesta página, e isso é um limite da página e não do endereço.`,
+    /*
+     * Two protocols mean two ways to fail. The counts beside this cover the
+     * other protocol only, and saying so is the difference between a partial
+     * answer and a wrong one.
+     */
+    unreadProtocol: (protocol: string) =>
+      `Desta vez não foi possível ler as posições Uniswap ${protocol}, então todo número aqui é sobre o outro protocolo apenas.`,
+    unavailable: "Não foi possível ler as posições deste endereço.",
+    publicNote:
+      "O dono de uma posição está na rede, então esta lista é pública: qualquer um consegue ler a mesma para o mesmo endereço, e ela não diz nada que este endereço já não tenha publicado ao ter estes tokens. Nada aqui é guardado, a menos que você peça os avisos por Telegram abaixo, e nenhum número desta página é uma avaliação — uma faixa não é quanto vale uma posição.",
+  },
+
+  wallet: {
+    heading: "Conectar uma carteira",
+    intro:
+      "Conecte uma carteira e esta página consegue ver quais tokens o endereço tem e mostrar os pools em que esses tokens podem entrar. Ela lê o endereço; é só isso que se pede a uma carteira aqui.",
+    connect: "Conectar carteira",
+    connecting: "Esperando a carteira…",
+    connectedAs: "Conectado como",
+    showHoldings: "Mostrar o que ela tem",
+    forget: "Esquecer este endereço",
+    /*
+     * The sentence that replaced "never connects a wallet". The half that is
+     * still true is the half worth keeping, and it is the half that matters.
+     */
+    readOnly:
+      "Somente leitura. Este aplicativo pede o endereço a uma carteira e nunca uma assinatura: não existe aqui código capaz de assinar uma mensagem ou enviar uma transação, e nada sobre a carteira é guardado entre visitas.",
+    notices: {
+      "wallet-not-found":
+        "Nenhuma carteira foi encontrada neste navegador. Uma extensão de carteira coloca uma ali; sem ela, nada nesta página muda.",
+      "wallet-request-declined":
+        "O pedido foi recusado na carteira. Nada foi lido e nada foi enviado.",
+      "wallet-request-failed":
+        "Não foi possível pedir um endereço à carteira. Nada foi lido e nada foi enviado.",
+      "wallet-no-account":
+        "A carteira respondeu sem um endereço, o que normalmente quer dizer que ela está bloqueada ou sem conta selecionada.",
+    },
+  },
+
+  /*
+   * The alerts: what the site says about them, and what the bot says. Kept
+   * together because the bot's sentences are this interface's sentences,
+   * delivered somewhere else, and they have to agree with the page a reader
+   * links from.
+   */
+  telegram: {
+    heading: "Avisos no Telegram",
+    intro:
+      "Ser avisado, no Telegram, quando uma das posições deste endereço sair da faixa dela ou voltar para dentro. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois somem no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui. Com que frequência a conferência acontece depende do servidor em que isto roda.",
+    connect: "Conectar o Telegram",
+    connected: (address: string) => `Este navegador está vinculado: ${address} está sendo acompanhado.`,
+    pending: "O vínculo está esperando: abra a conversa do bot no Telegram e aperte Iniciar.",
+    forget: "Esquecer o vínculo",
+    notConfigured: "Os avisos por Telegram não estão configurados neste servidor.",
+    publicNote:
+      "Não é preciso ser dono de um endereço para acompanhá-lo — as posições são públicas, e um aviso não diz nada que esta lista já não diga. O bot lê a rede e manda uma mensagem; ele não consegue assinar nem enviar nada.",
+    linked: (address: string) =>
+      `Vinculado. Você saberá por aqui quando uma posição em ${address} sair da faixa dela ou voltar. Mande /stop para encerrar.`,
+    unknownStart:
+      "Esse vínculo não é conhecido ou expirou. Aperte “Conectar o Telegram” no site outra vez.",
+    alreadyClaimed:
+      "Esse vínculo já foi usado por outra conversa. Aperte “Conectar o Telegram” no site outra vez para receber um novo.",
+    stopped: "Encerrado. Esta conversa não acompanha mais nada, e o registro foi apagado.",
+    nothingToStop: "Esta conversa não estava acompanhando nada.",
+    help:
+      "Este bot só acompanha o endereço que você vinculou no site, e só fala quando uma posição sai da faixa dela ou volta para dentro. Mande /stop para encerrar.",
+    storeDown: "Não foi possível conferir o vínculo agora. Tente de novo daqui a um minuto.",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair} (${protocol}) saiu da faixa dela: ${range}. Ela está com um token só e não ganha nada até o preço voltar.`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair} (${protocol}) voltou para dentro da faixa dela: ${range}. Está ganhando de novo.`,
+    opened: (pair: string, protocol: string, range: string) => `Nova posição: ${pair} (${protocol}), ${range}.`,
+    closed: (protocol: string, tokenId: string) => `Fechada: posição ${protocol} nº ${tokenId}.`,
+    footer:
+      "Apenas informação — não é recomendação financeira. Lido de dados públicos da rede; nada aqui consegue agir por você.",
+  },
+
+  search: {
+    label: "Um par, um endereço de pool v3 ou um id de pool v4",
+    placeholder: "WETH/USDC",
+    help: "Digite um par como WETH/USDC, cole o endereço de um contrato de pool v3 ou cole um id de pool v4 — o hash de 32 bytes pelo qual um pool v4 é nomeado. Somente leitura: este aplicativo nunca assina nada e nunca envia uma transação.",
+    submit: "Encontrar pools",
+
+    heading: "Pools do Uniswap v3 correspondentes",
+    resultsFor: (terms: string) => `Pools cujos tokens correspondem a ${terms}.`,
+    empty: (terms: string) =>
+      `Nenhum pool do Uniswap v3 na rede principal do Ethereum tem um token correspondente a ${terms}.`,
+    emptyHint: "Confira a grafia, ou cole o endereço do pool se você o tiver.",
+
+    /*
+     * The v4 list, beneath the v3 one. Two lists rather than one merged list,
+     * because they are ordered by different numbers — what a pool holds, and
+     * what its active liquidity is worth — and one order over both would be
+     * comparing them.
+     */
+    v4Heading: "Pools do Uniswap v4 correspondentes",
+    v4Empty: (terms: string) =>
+      `Nenhum pool do Uniswap v4 na rede principal do Ethereum tem uma moeda correspondente a ${terms}.`,
+    v4Depth: "Profundidade no preço atual",
+    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthNote:
+      "Quanto vale agora a liquidez ativa do pool, lida do próprio armazenamento do PoolManager — e não o que o pool tem, coisa que nenhum pool v4 informa por conta própria.",
+    v4StateUnread: "Não foi possível ler da rede a liquidez do pool.",
+    v4Hook: "Hook",
+    v4NoHook: "nenhum",
+    v4HookAltersSwaps: "pode mudar quanto custa um swap",
+    v4Ordering:
+      "Pools chamados exatamente pelo que você buscou vêm primeiro. Depois disso a ordem segue a profundidade de cada pool no preço atual dele — a liquidez ativa e o preço, lidos do armazenamento do PoolManager e postos numa escala só usando os preços que a fonte de dados deriva. Não é o que o pool tem: os tokens de todos os pools v4 ficam juntos no mesmo PoolManager, e nada na rede os informa por pool. O número de liquidez do próprio indexador foi conferido contra a rede e estava quinze por cento errado em um dos pools mais movimentados, e é por isso que não é usado.",
+
+    /*
+     * The ordering is the one claim a list makes, so it is stated rather than
+     * left to be inferred from the order itself.
+     */
+    ordering:
+      "Pools chamados exatamente pelo que você buscou vêm primeiro. Depois disso a ordem segue o que cada pool de fato tem, lido dos próprios contratos dos tokens e posto numa escala só usando os preços que a fonte de dados deriva. Antes ela seguia o valor que a fonte informa como bloqueado em cada pool, e esse número estava errado o bastante para reordenar esta lista: um pool foi publicado aqui com nove milhões de dólares de liquidez informada enquanto os contratos dele tinham nove mil.",
+    windowing:
+      "Esta lista é tirada dos pools que a fonte de dados informa como os mais negociados para os seus termos, e um pool parado o bastante para ficar fora desse conjunto nunca chega à ordenação acima. Esse é o limite honesto de classificar dentro do que uma fonte decidiu devolver: um pool que tem muita coisa mas negocia pouco pode estar ausente desta página.",
+    /*
+     * The other thing the list leaves out, and why. Said beside the window
+     * note because it is the same kind of fact: a pool can be missing from
+     * this page for a reason that is not "it does not exist".
+     */
+    dormantNote:
+      "Um pool em que nada aconteceu por um mês não é listado. A faixa é tirada do último mês de preços, e um pool sem esse mês não tem de onde tirá-la — abri-lo só diria isso.",
+    /*
+     * The v4 window is not the terms. The source cannot answer a search over
+     * every v4 pool before this page stops waiting — measured, not assumed —
+     * so the search runs over the week's busiest pool-days, and a page that
+     * did not say so would let a reader conclude a pool does not exist.
+     */
+    v4Windowing:
+      "Esta lista é tirada dos pools v4 que mais negociaram na rede principal do Ethereum nos últimos sete dias — os mil pares pool-dia mais movimentados, que dão algumas centenas de pools — e um pool mais parado que isso nunca chega a esta página. A fonte não consegue responder a uma busca em todos os pools v4 antes de esta página parar de esperar, então a janela é por atividade recente e não pelos seus termos: um pool que existe mas não negociou esta semana não está aqui.",
+    /*
+     * The sentence that does the real work on this page. Search is what lets
+     * someone reach a pool they did not go looking for.
+     */
+    symbolWarning:
+      "Um símbolo vem do contrato do próprio token, e publicar um token que se chama USDC não custa nada. Os endereços de contrato embaixo de cada par são o que distingue dois tokens.",
+
+    feeTier: "Nível de taxa",
+    holds: "Tem",
+    reservesUnread: "Não foi possível ler da rede o que este pool tem.",
+    moreNotShown: (count: string) =>
+      `Mais ${count} não são mostrados. Os acima são os mais negociados entre eles, na ordem em que a fonte de dados informa — o que é uma afirmação sobre o quanto um pool é movimentado e sobre nada mais.`,
+    analyse: "Analisar este pool",
+    /** Under the v4 list: where each row's fee came from, and why the row can say it was not read. */
+    v4FeeNote:
+      "A taxa de cada pool é lida da chave com que ele foi criado, na rede, e não da fonte de dados — cujo número de taxa foi medido e se mostrou ser o total que o último swap pagou, corte do protocolo incluído, e não a taxa do próprio pool. Uma linha cuja chave não pôde ser lida diz isso.",
+
+    unavailableHeading: "Não foi possível rodar a busca",
+    rejected: {
+      empty: "Digite um par como WETH/USDC, ou um endereço de pool.",
+      length: (min: number, max: number) =>
+        `Um termo de busca tem entre ${min} e ${max} caracteres.`,
+      unsupportedCharacters:
+        "Um termo de busca pode ter letras, dígitos e os sinais que aparecem dentro de tickers — e nada mais.",
+    },
+  },
+
+  report: {
+    steps: {
+      pool: "a configuração do pool era lida",
+      snapshot: "o estado de mercado atual do pool era lido",
+      history: "o histórico diário de preços do pool era lido",
+      volatility: "se media quanto o preço andou",
+      band: "a banda de preço era construída",
+      range: "a banda era encaixada nos preços que este pool consegue exprimir",
+      divergence: "essa faixa era comparada com segurar os dois tokens",
+      activity: "se lia o que o pool fez na janela medida",
+    },
+    noRangeHeading: "Sem faixa para este pool",
+    stoppedWhile: (step: string) => `Isto parou enquanto ${step}.`,
+    poolSummary: (protocol: string, fee: string) =>
+      `Uniswap ${protocol} · rede principal do Ethereum · ${fee}`,
+    feePerSwap: (fee: string) => `taxa de ${fee} em cada swap`,
+    /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
+    feePlusProtocol: (fee: string, protocol: string) =>
+      `taxa de ${fee} em cada swap, mais ${protocol} para o protocolo`,
+    /** Stands where the fee would, for a v4 pool whose hook sets one per swap. */
+    noDeclaredFee: "taxa definida pelo hook dele em cada swap",
+    caveatsHeading: (count: number) =>
+      count === 1 ? "Uma ressalva se aplica a estes números." : `${count} ressalvas se aplicam a estes números.`,
+    caveatsAriaLabel: "Ressalvas",
+
+    /*
+     * The range, as two prices. Every price on the page is written the way
+     * round that makes it at least one — one unit of the dearer token, priced
+     * in the cheaper — and the intro says which token that is, so the figures
+     * under it can be read without a second thought. The ticks those prices
+     * encode are in the technical details at the end, where a reader who
+     * wants to check them can, and a reader who does not is never made to.
+     */
+    contentsHeading: "Nesta página",
+    contentsLabel: "As seções desta análise",
+    rangeHeading: "Faixa de preço sugerida",
+    rangeIntro: (base: string, quote: string) =>
+      `Onde uma posição neste pool estaria ativa, como o preço de um ${base} em ${quote}.`,
+    rangeValue: (lower: string, upper: string, quote: string, base: string) =>
+      `${lower} – ${upper} ${quote} por ${base}`,
+    rangeDistances: (down: string, up: string) =>
+      `${down} abaixo e ${up} acima do preço atual.`,
+    rangeMeaning:
+      "Entre estes dois preços uma posição ganha a parte dela nas taxas de swap do pool. Fora deles ela fica com um token só e não ganha nada até o preço voltar.",
+    priceSentence: (base: string, price: string, quote: string) => `1 ${base} = ${price} ${quote}`,
+    currentPrice: "Preço atual",
+    inRangeYes: "O preço atual está dentro desta faixa.",
+    inRangeNo: "O preço atual está fora desta faixa.",
+    inRangeYesNote: "Uma posição aberta aqui estaria ativa imediatamente.",
+    inRangeNoNote:
+      "Uma posição aberta aqui ficaria com um token só e não ganharia nada até o preço voltar para dentro.",
+    beyondEdges: (below: string, above: string) =>
+      `Se o preço cair abaixo da faixa, a posição acaba só com ${below}; se subir acima dela, só com ${above}.`,
+    lowerTruncatedNote:
+      "A borda de baixo para no preço mais baixo que este pool consegue exprimir, aquém de onde a banda a teria colocado.",
+    upperTruncatedNote:
+      "A borda de cima para no preço mais alto que este pool consegue exprimir, aquém de onde a banda a teria colocado.",
+    /*
+     * The month drawn through the range. The caption says what each mark is,
+     * once, in the words the page uses for the same things; the day counts a
+     * few panels down are the same days, counted.
+     */
+    chartLabel: "Os preços do último mês sobre a faixa sugerida",
+    chartCaption: (days: string) =>
+      `Cada um dos últimos ${days} dias: o fechamento dele e o intervalo da mínima à máxima. A banda sombreada é a faixa sugerida; a linha cheia é o preço de hoje.`,
+    chartLegend:
+      "Um ponto cheio é um dia que ficou inteiramente dentro da faixa; um vazado é um que a deixou ou cruzou uma borda.",
+
+    /*
+     * Where the range came from, in the words a reader has: how much the price
+     * moves on a typical day, and what that comes to over the horizon. The
+     * standard deviation is named in the notes, not in the labels.
+     */
+    basisHeading: "Como esta faixa foi traçada",
+    basisIntro: (base: string, days: string) =>
+      `A partir de quanto o preço de ${base} realmente andou nos últimos ${days} dias completos — e não de uma previsão de para onde ele vai.`,
+    dailyMove: "Movimento diário típico",
+    dailyMoveNote: "O desvio padrão da variação de preço de um dia, ao longo da janela.",
+    horizonMove: (days: string) => `Em ${days} ${days === "1" ? "dia" : "dias"}`,
+    horizonMoveNote:
+      "O mesmo movimento esticado pelo horizonte escolhido abaixo: um desvio padrão para cada lado.",
+    widthValue: (multiplier: string) => `${multiplier}× isso, para cada lado`,
+    widthNote:
+      "Escolhida abaixo. Uma faixa mais larga é deixada com menos frequência, e o mesmo depósito espalhado por ela fica mais fino em qualquer preço isolado.",
+    measuredOver: "Medido sobre",
+    measuredOverNote: (returns: string) => `Entraram nisto ${returns} variações diárias.`,
+    epilogue:
+      "A faixa está centrada no preço de hoje e traçada à mesma distância para cima e para baixo em termos de razão — cair pela metade e dobrar são o mesmo movimento —, e é por isso que as duas porcentagens diferem. Ela descreve quanto o preço andou, não para onde ele vai: não é previsão, e a largura não é um nível de confiança. Nada aqui dimensiona uma posição nem diz quanto depositar de cada token.",
+  },
+
+  /*
+   * Everything a reader checking the page against the chain would want, and
+   * nothing a reader opening a position needs: the ticks the prices encode,
+   * the blocks the figures were read at, the figures in the pool's own
+   * direction. Folded away at the end of the report.
+   */
+  technical: {
+    heading: "Detalhes técnicos",
+    summary: "Os ticks, blocos e números contra os quais a página acima é conferida.",
+    lowerTick: "Tick de baixo",
+    upperTick: "Tick de cima",
+    currentTick: "Tick atual",
+    sourceReportedTick: (tick: string) => `A fonte informou ${tick}.`,
+    noSourceTick:
+      "A fonte não informou um tick próprio, então esta conversão não está verificada.",
+    tickSpacing: "Espaçamento de ticks",
+    tickSpacingNote: (step: string) => `Um passo de preço de ${step} entre bordas utilizáveis.`,
+    width: "Largura",
+    widthValue: (ticks: string, spacings: string) => `${ticks} ticks · ${spacings} espaçamentos`,
+    poolPrice: "Preço como o pool o cota",
+    quotePerBase: (quote: string, base: string) => `${quote} por ${base}`,
+    bandLower: "Limite inferior da banda",
+    bandUpper: "Limite superior da banda",
+    bandNote: "Antes de encaixar na grade de ticks, na direção do próprio pool.",
+    annualised: "Volatilidade anualizada",
+    annualisedNote:
+      "Desvio padrão amostral dos retornos logarítmicos diários, multiplicado por sqrt(365).",
+    coverage: "Cobertura",
+    coverageNote: "Quanto da janela teve preços diários consecutivos por trás.",
+    sourceBlock: "Bloco da fonte",
+    noBlockTime: "Nenhum horário de bloco informado.",
+    fetchedAt: "Buscado em",
+    fetchedAtNote: "Quando a resposta chegou, não o que ela descreve.",
+    lowerEdge: "Borda de baixo",
+    upperEdge: "Borda de cima",
+    truncated: "Truncada",
+    asAsked: "Como pedida",
+  },
+
+  explanation: {
+    heading: "Explicação",
+    pending: "Escrevendo a explicação…",
+    unavailable: "Não há explicação disponível para esta análise.",
+    /*
+     * The two states a single paragraph can be in while the rest of the answer
+     * is still arriving. Both keep the heading, so the reading order stays put
+     * rather than the sections below jumping as each one lands.
+     */
+    sectionWriting: "Ainda sendo escrita…",
+    sectionMissing: "Não foi possível escrever esta parte.",
+    /*
+     * Names the author, and draws the line. Prose written by a model sitting
+     * under figures that were computed and cross-checked should say which is
+     * which, or a reader is entitled to assume the same hand produced both.
+     */
+    writtenBy: (model: string) => `Escrito por ${model}. Os números acima não.`,
+    sections: {
+      whatThisRangeMeans: "O que esta faixa quer dizer",
+      ifPriceLeavesTheRange: "Se o preço sair da faixa",
+      whatTheVolatilitySays: "O que a volatilidade diz",
+      whatThisDoesNotCover: "O que isto não cobre",
+    },
+  },
+
+  /*
+   * Every sentence this application says about a read that did not go well.
+   *
+   * They lived in the data layer until search made a second language matter:
+   * an adapter raised an English sentence and it travelled, unchanged, to a page
+   * being read in Turkish. Now the adapter raises a code and the wording is
+   * here, where all the other wording is.
+   *
+   * `satisfies` is what keeps this honest. Add a code to `notices.ts` and this
+   * object stops compiling until it says something about it, in both languages.
+   */
+  notices: {
+    failure: {
+      "invalid-pool-address":
+        "O endereço do pool precisa ser 0x seguido de 40 caracteres hexadecimais, e não pode ser o endereço zero.",
+      "invalid-search-terms":
+        "Uma busca de pool aceita um ou dois termos curtos feitos de letras, dígitos e os sinais que aparecem dentro de tickers.",
+      "market-data-not-configured":
+        "Os dados de mercado do Uniswap v3 não estão configurados neste servidor.",
+      "chain-data-not-configured":
+        "As leituras na rede não estão configuradas neste servidor.",
+      "explanation-not-configured":
+        "Este aplicativo não está configurado para escrever explicações, então nenhuma é mostrada.",
+      "market-data-timed-out":
+        "A requisição de dados de mercado estourou o tempo.",
+      "market-data-unreachable":
+        "Não foi possível alcançar a fonte de dados de mercado.",
+      "market-data-credentials-rejected":
+        "A fonte de dados de mercado recusou as credenciais configuradas.",
+      "market-data-rate-limited":
+        "O limite de requisições da fonte de dados de mercado foi ultrapassado.",
+      "market-data-unreadable":
+        "A fonte de dados de mercado devolveu uma resposta ilegível.",
+      "market-data-malformed":
+        "A fonte de dados de mercado devolveu uma resposta que este aplicativo não consegue verificar.",
+      "market-data-indexing-errors":
+        "A fonte de dados de mercado informou erros de indexação, então os números dela não podem ser tratados como verificados.",
+      "market-data-stale":
+        "A fonte de dados de mercado está atrasada demais em relação à rede para estes números serem tratados como atuais.",
+      "market-data-future-block-time":
+        "A fonte de dados de mercado informou um horário de bloco à frente do relógio deste servidor, então os números dela não podem ser verificados.",
+      "chain-data-timed-out":
+        "A requisição de dados na rede estourou o tempo.",
+      "chain-data-unreachable":
+        "Não foi possível alcançar a fonte de dados na rede.",
+      "chain-data-credentials-rejected":
+        "A fonte de dados na rede recusou as credenciais configuradas.",
+      "chain-data-rate-limited":
+        "O limite de requisições da fonte de dados na rede foi ultrapassado.",
+      "chain-data-unreadable":
+        "A fonte de dados na rede devolveu uma resposta ilegível.",
+      "chain-data-malformed":
+        "A fonte de dados na rede devolveu uma resposta que este aplicativo não consegue verificar.",
+      "chain-aggregator-unverified":
+        "Os saldos são lidos por um contrato auxiliar na rede, e o código no endereço dele não é o código em que este aplicativo foi feito para confiar, então nada foi lido por ele.",
+      "pool-not-found":
+        "Nenhum pool do Uniswap v3 foi encontrado para este endereço na rede principal do Ethereum.",
+      "pool-contract-not-found":
+        "Nenhum contrato de pool do Uniswap v3 respondeu neste endereço na rede principal do Ethereum.",
+      "pool-configuration-inconsistent":
+        "Não foi possível verificar a configuração do pool montada a partir das duas fontes dele.",
+      "pool-history-insufficient":
+        "Este pool ainda não tem histórico diário de preços completo o bastante para ser analisado.",
+      "volatility-invalid-input":
+        "O histórico de preços fornecido para este cálculo não é um histórico normalizado válido.",
+      "volatility-insufficient-history":
+        "Este pool não tem preços diários consecutivos suficientes para medir a volatilidade.",
+      "volatility-unverifiable":
+        "O cálculo de volatilidade produziu um resultado que este aplicativo não consegue verificar.",
+      "band-invalid-input":
+        "Os dados de mercado fornecidos para esta banda de preço não são válidos, ou o instantâneo e a volatilidade descrevem pools diferentes.",
+      "band-no-current-price":
+        "O preço atual deste pool não está disponível, então não há onde centrar uma banda de preço.",
+      "band-unverifiable":
+        "O cálculo da banda de preço produziu um resultado que este aplicativo não consegue verificar.",
+      "range-invalid-input":
+        "O pool, a banda de preço e o instantâneo fornecidos para esta faixa não são válidos, ou não descrevem todos o mesmo pool e a mesma observação.",
+      "range-price-unrepresentable":
+        "O preço atual deste pool fica fora do intervalo que o Uniswap consegue exprimir, então não dá para construir uma faixa de posição a partir dele.",
+      "range-tick-disagreement":
+        "O preço que a fonte informa para este pool e o estado que ela informa não descrevem o mesmo momento, então nenhuma faixa é publicada.",
+      "range-too-narrow":
+        "A banda de preço é mais estreita que o menor passo que este pool permite entre duas bordas, então ela não descreve duas fronteiras de posição distintas.",
+      "range-unverifiable":
+        "O cálculo da faixa produziu um resultado que este aplicativo não consegue verificar.",
+      "divergence-unverifiable":
+        "A comparação com segurar produziu um resultado que este aplicativo não consegue verificar.",
+      "activity-unverifiable":
+        "A atividade recente do pool produziu um resultado que este aplicativo não consegue verificar.",
+      "fee-rate-unmeasurable":
+        "Este pool não negociou em nenhum dia indexado da janela, então a taxa que ele cobra não pode ser deduzida do que ele recolheu.",
+      "deposit-share-unpriceable":
+        "A fonte não precifica o que este pool tem, então um depósito em dólares não pode ser transformado numa posição nele.",
+      "deposit-share-no-days":
+        "O preço saiu desta faixa em todos os dias que a fonte conseguiu responder, então não há dia em que um depósito nela tivesse recolhido algo.",
+      "deposit-share-unverifiable":
+        "Quanto um depósito teria ficado não passou na própria conferência, então não é mostrado.",
+      "range-order-no-room":
+        "Esta faixa é estreita demais para abrigar uma posição de um lado só em qualquer um dos lados do preço atual.",
+      "range-order-unverifiable":
+        "As metades de um lado só desta faixa não passaram na própria conferência, então não são mostradas.",
+      "swap-depth-no-liquidity":
+        "Este pool informa não ter liquidez no preço atual dele, então não há swap aqui para precificar.",
+      "swap-depth-tick-disagreement":
+        "O tick da própria fonte coloca este pool num passo de preço diferente do preço mostrado, então a liquidez que ela informou não pode ser atribuída a este passo.",
+      "swap-depth-unverifiable":
+        "Quanto um swap custaria não passou na própria conferência, então não é mostrado.",
+      "out-of-sample-insufficient-history":
+        "Este pool não tem histórico indexado suficiente para ajustar uma banda no passado e ainda sobrar um horizonte inteiro de dias para conferi-la.",
+      "out-of-sample-unverifiable":
+        "A conferência fora da amostra produziu um resultado que este aplicativo não consegue verificar.",
+      "hook-directory-unverifiable":
+        "Os hooks dos pools v4 desta semana não passaram na própria conferência, então o diretório não é mostrado.",
+      "positions-manager-unverified":
+        "O contrato que guarda as posições do Uniswap v3 não respondeu com o código contra o qual este aplicativo foi escrito, então nada do que ele disse é mostrado.",
+      "positions-unreadable":
+        "A rede não respondeu sobre as posições deste endereço, então nenhuma é mostrada — o que não é o mesmo que não ter nenhuma.",
+      "positions-unverifiable":
+        "As posições deste endereço não passaram na própria conferência, então não são mostradas.",
+      "holdings-unverifiable":
+        "O que este endereço tem produziu um resultado que este aplicativo não consegue verificar.",
+      "explanation-key-rejected":
+        "O serviço de explicações não aceitou a chave configurada, então nenhuma explicação é mostrada.",
+      "explanation-model-not-permitted":
+        "A chave configurada não tem permissão para usar o modelo escolhido, então nenhuma explicação é mostrada.",
+      "explanation-model-unknown":
+        "O modelo escolhido não está disponível para a chave configurada, então nenhuma explicação é mostrada.",
+      "explanation-rate-limited":
+        "O serviço de explicações está limitando requisições agora, então nenhuma explicação é mostrada.",
+      "explanation-unreachable":
+        "Não foi possível alcançar o serviço de explicações, então nenhuma explicação é mostrada.",
+      "explanation-request-refused":
+        "O serviço de explicações recusou esta requisição, então nenhuma explicação é mostrada.",
+      "explanation-declined":
+        "O modelo se recusou a explicar os números deste pool, então nenhuma explicação é mostrada.",
+      "explanation-truncated":
+        "A explicação foi cortada antes de ficar completa, então não é mostrada.",
+      "explanation-malformed":
+        "A explicação voltou numa forma que este aplicativo não consegue verificar, então não é mostrada.",
+    } satisfies Record<DataFailureNotice, string>,
+
+    warning: {
+      "block-time-unreported":
+        "A fonte de dados não informou um horário de bloco, então não foi possível verificar o quanto estes números são atuais.",
+      "history-window-incomplete":
+        "A fonte de dados não informou um preço para cada dia desta janela; os dias que faltam estão ausentes, não estimados.",
+      "volatility-window-incomplete":
+        "Alguns dias desta janela não tiveram preço, então a volatilidade é medida com menos retornos diários do que a janela cobre; os dias que faltam foram pulados, não estimados.",
+      "band-window-incomplete":
+        "Alguns dias da janela de volatilidade não tiveram preço, então esta banda se apoia em menos retornos diários do que a janela cobre.",
+      "band-price-block-time-unreported":
+        "A fonte do preço atual não informou um horário de bloco, então o quanto ele é atual não pôde ser verificado de forma independente.",
+      "band-volatility-block-time-unreported":
+        "A fonte da volatilidade não informou um horário de bloco, então o quanto ela é atual não pôde ser verificado de forma independente.",
+      /*
+       * Neither names an edge. The codes name the pool's edges, and the page
+       * writes its prices the reader's way round, which can be the other way —
+       * so the sentence points at the range panel, which says which edge in
+       * the direction shown.
+       */
+      "range-lower-edge-truncated":
+        "Uma borda da faixa para onde terminam os preços que este pool consegue exprimir — a borda em que o primeiro token do pool está mais barato —, então a faixa não chega tão longe quanto a banda chegaria. O bloco da faixa diz qual borda é essa na direção mostrada.",
+      "range-upper-edge-truncated":
+        "Uma borda da faixa para onde terminam os preços que este pool consegue exprimir — a borda em que o primeiro token do pool está mais caro —, então a faixa não chega tão longe quanto a banda chegaria. O bloco da faixa diz qual borda é essa na direção mostrada.",
+      "range-tick-unverified":
+        "A fonte do preço não informou o estado do próprio pool, então o preço que ela implica não pôde ser conferido contra ele.",
+      "range-excludes-current-price":
+        "O preço atual do pool fica fora desta faixa, então uma posição construída a partir dela ficaria com um token só e não ganharia nada até o preço voltar.",
+    } satisfies Record<DataWarningNotice, string>,
+  },
+
+  rateLimited: {
+    title: "Requisições demais",
+    body: (limit: number) =>
+      `Esta página lê dados ao vivo do Uniswap a cada visita, então está limitada a ${limit} análises por minuto.`,
+    retry: (seconds: number) => `Tente de novo em ${seconds} s.`,
+    back: "Voltar ao orientador",
+  },
+
+  error: ERROR_COPY.pt,
+};
+
 const dictionaries: Record<Locale, Dictionary> = {
   en,
   tr,
@@ -7954,6 +9110,7 @@ const dictionaries: Record<Locale, Dictionary> = {
   hi,
   zh,
   ru,
+  pt,
 };
 
 export const getDictionary = (locale: Locale): Dictionary => dictionaries[locale];

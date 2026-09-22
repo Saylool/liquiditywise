@@ -12,7 +12,7 @@
  * English, and the interface around them speaks the reader's language.
  */
 
-export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh", "ru"] as const;
+export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh", "ru", "pt"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -44,6 +44,7 @@ export const LOCALE_DETAILS: Record<
   hi: { name: "हिन्दी", flag: "🇮🇳", direction: "ltr" },
   zh: { name: "中文", flag: "🇨🇳", direction: "ltr" },
   ru: { name: "Русский", flag: "🇷🇺", direction: "ltr" },
+  pt: { name: "Português", flag: "🇧🇷", direction: "ltr" },
 };
 
 /**
@@ -66,6 +67,7 @@ export const FULLY_TRANSLATED: readonly Locale[] = [
   "hi",
   "zh",
   "ru",
+  "pt",
 ];
 
 export const isFullyTranslated = (locale: Locale): boolean =>
