@@ -123,6 +123,25 @@ before writing anything, rewrites that one line of `.env.local`, restarts
 the service and registers the webhook again. The token never appears in the
 shell's history, in a `ps` listing or in any log.
 
+## What the bot looks like
+
+Everything a person sees before pressing Start is set from the server over
+the Bot API — no clicking through BotFather:
+
+```bash
+bash /opt/liquiditywise/deploy/set-bot-profile.sh
+```
+
+Name, the "What can this bot do?" text, the one-line blurb and the command
+menu, each in English and Turkish. Idempotent.
+
+The photo is `bot-avatar.svg`: the site's mark on a square background,
+square because Telegram crops a profile photo to a circle. Telegram wants a
+JPG, so it is rendered once and uploaded with `setMyProfilePhoto`. Neither
+`rsvg-convert` nor ImageMagick is installed on the server — the first render
+was done in a browser canvas at 512x512, quality 0.9, about 11 KB — so
+render it wherever you have a rasteriser and upload the file.
+
 ## Files
 
 - `inspect.sh` — read-only survey of the machine.

@@ -1,0 +1,18 @@
+<!--
+  The bot's profile photo, and the site's icon: the same mark.
+
+  Square rather than the rounded rectangle of src/app/icon.svg, because
+  Telegram crops a profile photo to a circle and rounded corners would only
+  be cropped away — leaving a thin dark ring where the background should be.
+
+  Telegram wants a JPG, so this is rendered once and uploaded; the README
+  says how. Kept as SVG because that is the form the mark can be re-rendered
+  from at any size, which a 512-pixel JPEG is not.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="512" height="512">
+  <rect width="48" height="48" fill="#20151f"/>
+  <g transform="translate(7 7)" stroke="#f6a4c6" fill="none" stroke-width="2.5" stroke-linecap="round">
+    <path d="M8 9v10a9 9 0 0 0 18 0V9M13 6v13a4 4 0 0 0 8 0V6"/>
+    <circle cx="26" cy="6" r="1"/>
+  </g>
+</svg>
