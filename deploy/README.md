@@ -142,6 +142,30 @@ JPG, so it is rendered once and uploaded with `setMyProfilePhoto`. Neither
 was done in a browser canvas at 512x512, quality 0.9, about 11 KB — so
 render it wherever you have a rasteriser and upload the file.
 
+## Making the store keep what it is given
+
+Out of the box this Redis saves with `save 3600 1`: one changed key reaches
+the disk an hour later. A reader who links a chat is told so immediately, and
+a restart inside that hour takes the link with it and says nothing — they go
+on believing they are being watched.
+
+```bash
+bash /opt/liquiditywise/deploy/redis-durability.sh
+```
+
+It turns on the append-only log with `appendfsync everysec`, so at most a
+second of writes can be lost, and writes the setting back to `redis.conf` so
+it survives the restart it exists for.
+
+It is separate from `setup.sh` on purpose. `setup.sh` installs a Redis only
+when the machine has none, because the one it finds may belong to another
+site — and persistence is not a per-database setting, so turning it on
+reaches every user of the instance. This script therefore looks at who else
+is in there first and **refuses** if any database but ours holds keys, rather
+than making that decision on somebody else's behalf.
+
+The health check below reports it if the setting ever goes back.
+
 ## When something breaks
 
 `setup.sh` installs a second cron entry, `liquiditywise-health`, which runs
@@ -150,6 +174,8 @@ broken and is going to stay broken:
 
 - the site is not answering on its port;
 - Redis is not answering, so links cannot be saved and no alert can go out;
+- Redis has stopped writing an append-only log, so a new link is a restart
+  away from being lost;
 - the scheduled alert pass has not run for half an hour;
 - the TLS certificate has under ten days left and certbot has not renewed it;
 - the disk is over 90% full — this machine serves other sites too.
@@ -188,3 +214,4 @@ and hands those to `/api/health`, which holds the judgement in
   server the machine already runs.
 - `telegram-check.sh` — one pass of the alert check; the cron entry calls it.
 - `health-check.sh` — the five-minute health check described above.
+- `redis-durability.sh` — turns on the append-only log, if the Redis is ours.

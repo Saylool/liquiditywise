@@ -74,6 +74,18 @@ if [ -n "$disk" ]; then
   query="${query:+$query&}diskPercent=$disk"
 fi
 
+# Whether Redis is writing as it goes. Taken here rather than by the
+# application because it is a fact about the server, not about the data, and
+# redis-cli is here — the store's own interface is six commands and is not
+# widened for a monitor.
+if command -v redis-cli >/dev/null; then
+  aof="$(redis-cli INFO persistence 2>/dev/null | sed -n 's/^aof_enabled:\([01]\).*/\1/p')"
+  # No answer at all is not a reading. A Redis that is down is already
+  # reported by the round trip the route makes, and guessing "not durable"
+  # from a failed command would add a second message about one fault.
+  [ -n "$aof" ] && query="${query:+$query&}storeDurable=$aof"
+fi
+
 # --- ask the application ------------------------------------------------
 
 body="$(curl -sS --max-time 30 -w '\n%{http_code}' \

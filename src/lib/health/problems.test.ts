@@ -31,6 +31,27 @@ describe("what a monitor is allowed to report", () => {
     expect(ids({ storeAnswered: true })).toEqual([]);
   });
 
+  /*
+   * The store can be answering perfectly and still be about to lose what it
+   * was given. That is not an outage, and it is the only fault here that is
+   * true of a machine where nothing has gone wrong yet — so it has to be
+   * reported on its own rather than folded into the store being down.
+   */
+  it("reports a store that answers but does not write to disk", () => {
+    expect(ids({ storeAnswered: true, storeDurable: false })).toEqual(["store-not-durable"]);
+    expect(ids({ storeAnswered: true, storeDurable: true })).toEqual([]);
+  });
+
+  it("says nothing about durability nobody measured", () => {
+    expect(ids({ storeAnswered: true })).toEqual([]);
+  });
+
+  it("points at the script that fixes it, since the reader will not guess", () => {
+    const [problem] = problemsFrom({ storeDurable: false });
+
+    expect(problem?.message).toContain("redis-durability.sh");
+  });
+
   it("names the service to look at, because the message is all the reader gets", () => {
     const [problem] = problemsFrom({ storeAnswered: false });
 
@@ -129,6 +150,7 @@ describe("several faults at once", () => {
     expect(
       ids({
         storeAnswered: false,
+        storeDurable: false,
         lastAlertRunMs: NOW - 3 * ALERT_SILENCE_LIMIT_MS,
         nowMs: NOW,
         certificateDays: 2,
@@ -136,6 +158,7 @@ describe("several faults at once", () => {
       }),
     ).toEqual([
       "store-unreachable",
+      "store-not-durable",
       "alerts-not-running",
       "certificate-expiring",
       "disk-nearly-full",

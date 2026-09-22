@@ -22,6 +22,7 @@
 /** Each problem has a stable id, so the same fault is not reported twice. */
 export type ProblemId =
   | "store-unreachable"
+  | "store-not-durable"
   | "alerts-not-running"
   | "certificate-expiring"
   | "disk-nearly-full";
@@ -32,6 +33,8 @@ export type Problem = { readonly id: ProblemId; readonly message: string };
 export type Readings = {
   /** Whether a value written to the store came back. */
   readonly storeAnswered?: boolean | undefined;
+  /** Whether the store writes to disk as it goes, rather than hours later. */
+  readonly storeDurable?: boolean | undefined;
   /**
    * When the scheduled alert pass last finished, in milliseconds since the
    * epoch, or `null` when it never has.
@@ -74,6 +77,21 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
       id: "store-unreachable",
       message:
         "Redis is not answering. Telegram links cannot be read or written and no alert will go out. Check `systemctl status redis-server`.",
+    });
+  }
+
+  /*
+   * Not an outage — the store is answering and the site works. It is a
+   * promise that cannot be kept: a reader who links a chat is told so at
+   * once, and without a log on disk that link is a restart away from being
+   * lost with nothing to say so. Reported for the same reason as the rest,
+   * that nobody would otherwise find out.
+   */
+  if (readings.storeDurable === false) {
+    problems.push({
+      id: "store-not-durable",
+      message:
+        "Redis is not writing an append-only log, so a Telegram link made in the last hour would not survive a restart. Run deploy/redis-durability.sh.",
     });
   }
 
