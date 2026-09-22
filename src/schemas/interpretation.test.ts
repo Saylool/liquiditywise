@@ -42,6 +42,74 @@ describe("RangeInterpretationSchema", () => {
     ).toBe(false);
   });
 
+  /*
+   * The explanation is written in the reader's own language, and three of the
+   * ten this interface publishes do not write figures with 0-9. `\\d` matched
+   * only those, so "النطاق يغطي ٣٠ يومًا" — a figure the model invented, in
+   * Arabic — passed the one rule the whole contract exists for. Each of these
+   * was checked against the old rule and got through it.
+   */
+  it.each([
+    ["Arabic-Indic digits", "النطاق يغطي ٣٠ يومًا من الأسعار المرصودة، وهي النافذة التي يقيس بها هذا التحليل مدى تحرك السعر عادة قبل رسم النطاق حول المستوى الحالي."],
+    ["Devanagari digits", "यह दायरा ३० दिनों की कीमतों पर आधारित है, और यही वह अवधि है जिससे यह विश्लेषण मापता है कि कीमत आमतौर पर कितनी दूर तक जाती है इस बैंड को खींचने से पहले।"],
+    ["Persian digits", "این محدوده ۳۰ روز قیمت را پوشش می‌دهد و همین بازه است که این تحلیل با آن اندازه می‌گیرد قیمت معمولا چقدر جابه‌جا می‌شود پیش از آنکه باند ترسیم شود."],
+    ["fullwidth digits", "この範囲は３０日ぶんの終値にもとづいており、価格がふだんどれだけ動くかをこの分析が測るための窓として使われている期間そのものです。ここに書かれた数字は本文の役目ではありません。"],
+  ])("rejects prose stating a figure with %s", (_label, prose) => {
+    expect(
+      RangeInterpretationSchema.safeParse({ ...valid, whatThisRangeMeans: prose }).success,
+    ).toBe(false);
+  });
+
+  /*
+   * Not only the decimal digits. A fraction, a superscript, an enclosed
+   * numeral and the CJK zero are all figures a model can reach for, and none
+   * of them has an innocent use in a paragraph about a price range — so the
+   * rule is the whole Number category, and these pin that choice rather than
+   * leaving it to whichever of two plausible categories was typed first.
+   */
+  it.each([
+    ["a vulgar fraction", "The band was drawn ½ as wide as the movement measured over the window, which is what makes it sit this close to the current price rather than further out."],
+    ["an enclosed numeral", "Reading them in order: ① the band, then how far the pair has actually travelled, and then what either of those leaves out, which is the part most worth your attention."],
+    ["the CJK zero in a year", "この分析は二〇二六年の日次終値にもとづいており、価格がどれだけ動いたかを測る窓として使われています。数字そのものはこの文章の隣に表示されます。"],
+  ])("rejects prose stating %s", (_label, prose) => {
+    expect(
+      RangeInterpretationSchema.safeParse({ ...valid, whatThisRangeMeans: prose }).success,
+    ).toBe(false);
+  });
+
+  /*
+   * The boundary, stated on purpose. A number spelled as a word is not caught,
+   * in any language, because "one" and 一 are ordinary parts of a sentence and
+   * a rule that rejected them would reject nearly every paragraph. The brief
+   * forbids figures in words too; this rule is the backstop for the form a
+   * backstop can recognise, and pretending otherwise would be worse than
+   * saying so.
+   */
+  it("does not pretend to catch a number spelled out as a word", () => {
+    const spelled = {
+      ...valid,
+      whatThisRangeMeans:
+        "The band was scaled over thirty days, which is the window this analysis uses when it works out how far the price has tended to travel before it settles again.",
+    };
+
+    expect(RangeInterpretationSchema.safeParse(spelled).success).toBe(true);
+  });
+
+  /*
+   * Non-Latin prose that states no figure must still pass. A rule that
+   * rejected Arabic or Chinese wholesale would take the explanation away from
+   * those readers entirely, which is the opposite of what it is for.
+   */
+  it.each([
+    ["Arabic", "يغطي هذا النطاق حركة السعر التي رُصدت خلال النافذة المعروضة أعلاه، والنطاق مرسوم حول السعر الحالي بما يتناسب مع مدى تلك الحركة كما تظهر بجانب هذا النص."],
+    ["Chinese", "这个区间是围绕上方显示的当前价格画出的，宽度取自所显示窗口内价格实际走过的幅度，具体数字就在这段文字旁边，不由这里复述。"],
+    ["Hindi", "यह दायरा ऊपर दिखाई गई मौजूदा कीमत के आसपास खींचा गया है, और इसकी चौड़ाई उस अवधि में कीमत की वास्तविक गति से ली गई है जो साथ में दिखाई गई है।"],
+  ])("accepts %s prose that states no figure", (_label, prose) => {
+    expect(
+      RangeInterpretationSchema.safeParse({ ...valid, whatThisRangeMeans: prose }).success,
+    ).toBe(true);
+  });
+
   it("still allows the protocol's own version names", () => {
     // "Uniswap v3" is a name, not a figure, and has to remain writable.
     const withVersion = {

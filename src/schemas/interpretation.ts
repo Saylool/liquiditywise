@@ -36,7 +36,35 @@ export const INTERPRETATION_METHOD = "verified-figures-plain-language-explanatio
  */
 const PROTOCOL_VERSION = /\bv[34]\b/gi;
 
-const containsFigure = (prose: string): boolean => /\d/.test(prose.replace(PROTOCOL_VERSION, ""));
+/**
+ * Every decimal digit in every script, not `\d`.
+ *
+ * `\d` is `[0-9]` and nothing else, including under the `u` flag. This
+ * explanation is written in the reader's own language, and three of the ten
+ * this interface publishes are written with digits that are not those: Arabic
+ * uses ٠١٢٣, Hindi ०१२३, and a model reaching for a wide form types ０１２３.
+ * Checked rather than assumed — "النطاق يغطي ٣٠ يومًا" passed this rule, and
+ * a figure the model made up would have reached the page in the one place the
+ * whole application promises none ever does.
+ *
+ * `\p{N}` is the whole Number category rather than `\p{Nd}`, the decimal
+ * digits alone. The difference is ½, ², ① and 〇 — a fraction, a superscript,
+ * an enclosed numeral and the CJK zero that writes 二〇二六. Every one of them
+ * is a figure, and none has an innocent use in a paragraph explaining a price
+ * range, so the wider category is the right boundary and not merely a
+ * stricter one.
+ *
+ * What it deliberately does not catch is a number spelled as a word — "thirty
+ * days", "otuz gün", 三十天. That boundary is not laziness: 一 and "one" are
+ * ordinary parts of a sentence in those languages, and a rule that rejected
+ * them would reject almost every paragraph. The instruction forbids stating
+ * figures at all, in words as much as in digits; this is the backstop for the
+ * form a backstop can recognise.
+ */
+const ANY_NUMERAL = /\p{N}/u;
+
+const containsFigure = (prose: string): boolean =>
+  ANY_NUMERAL.test(prose.replace(PROTOCOL_VERSION, ""));
 
 /**
  * The most characters one section may run to.
