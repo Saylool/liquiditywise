@@ -48,12 +48,27 @@ const Choice = ({
   options: readonly number[];
   format: (value: number) => string;
 }) => (
-  <label className="flex flex-col gap-1">
+  /*
+   * `min-w-0` is what makes this fit a phone.
+   *
+   * A flex item will not shrink below the natural width of its content, and a
+   * `select` takes its natural width from its longest option — "Çok geniş
+   * (2,5σ)", "$1.000.000". Three of those side by side reach past 430px, and
+   * on a 375px screen the row was not scrolled but clipped — the document
+   * sets `overflow-x: clip` — so the control was simply unreachable rather
+   * than merely off to the side.
+   *
+   * Only the minimum is removed, and no width is imposed: the controls stay
+   * as wide as what they say, which is what keeps three of them sitting
+   * neatly side by side on a desktop instead of stretching to a third of the
+   * row each.
+   */
+  <label className="flex min-w-0 flex-col gap-1">
     <span className="text-xs uppercase tracking-widest text-muted">{label}</span>
     <select
       name={name}
       defaultValue={String(current)}
-      className="rounded-md border border-border bg-surface-sunken px-3 py-2 font-mono text-sm"
+      className="w-full min-w-0 rounded-md border border-border bg-surface-sunken px-3 py-2 font-mono text-sm"
     >
       {options.map((value) => (
         /* The value is the number as a URL writes it; only the label is localised. */

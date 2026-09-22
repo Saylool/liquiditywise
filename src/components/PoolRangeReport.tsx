@@ -617,7 +617,7 @@ export function PoolRangeReport({
        */}
       <Panel id="widths" title={t.widths.heading}>
         <p className="text-sm leading-relaxed text-muted">{t.widths.intro}</p>
-        <div className="overflow-x-auto">
+        <div className="scroll-hint overflow-x-auto">
           <table className="w-full min-w-max text-sm">
             <caption className="sr-only">{t.widths.heading}</caption>
             <thead>
@@ -834,7 +834,7 @@ export function PoolRangeReport({
               {t.outOfSample.showFolds}
             </summary>
             {/* One row per fold, oldest first, so a run of them can be scanned. */}
-            <div className="mt-3 overflow-x-auto">
+            <div className="scroll-hint mt-3 overflow-x-auto">
               <table className="w-full min-w-max text-sm">
                 <caption className="sr-only">{t.outOfSample.foldsCaption}</caption>
                 <thead>

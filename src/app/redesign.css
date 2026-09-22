@@ -1432,3 +1432,34 @@ main:focus {
     transform: none;
   }
 }
+
+/*
+ * A table wider than the phone it is being read on, and the one thing the
+ * reader has to know about it: that there is more to the side.
+ *
+ * The comparison tables run past a thousand pixels — five measured columns
+ * for every width the form offers — and on a 375px screen about a third of
+ * one is visible. They scrolled already; nothing said so, and `overflow-x:
+ * clip` on the document means a reader who tries to drag the page gets no
+ * hint either.
+ *
+ * Four gradients, no script. The two covers scroll with the content
+ * (`background-attachment: local`); the two shadows stay with the box
+ * (`scroll`). So a shadow is only visible where its cover has slid away —
+ * which is exactly the side that has content hidden behind it — and it
+ * follows the finger without anything listening for a scroll event.
+ *
+ * The shadow is drawn in `--border-strong` rather than black, because black
+ * on the dark theme's surface is not a shadow, it is nothing.
+ */
+.scroll-hint {
+  background-image:
+    linear-gradient(to right, var(--surface) 30%, transparent),
+    linear-gradient(to left, var(--surface) 30%, transparent),
+    linear-gradient(to right, var(--border-strong), transparent),
+    linear-gradient(to left, var(--border-strong), transparent);
+  background-position: 0 0, 100% 0, 0 0, 100% 0;
+  background-repeat: no-repeat;
+  background-size: 28px 100%, 28px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}

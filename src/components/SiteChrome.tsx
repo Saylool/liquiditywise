@@ -15,7 +15,14 @@ export function SiteHeader({ locale, t }: { locale: Locale; t: Dictionary }) {
       </a>
       <header className="site-header">
         <div className="header-inner">
-          <Link href="/" className="brand" aria-label="Uniswap Advisor">
+          {/*
+            * The label is the name, not a description, and it is spelled out
+            * because the mark beside the wordmark would otherwise read as
+            * nothing. It was left behind at the rename and still said
+            * "Uniswap Advisor" — invisible on screen, and the first thing a
+            * screen reader announced on every page.
+            */}
+          <Link href="/" className="brand" aria-label="LiquidityWise">
             <BrandMark />
             <span>
               liquidity<span className="brand-subtitle">wise</span>
