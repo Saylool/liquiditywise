@@ -48,12 +48,18 @@ systemctl enable --quiet --now redis-server || true
 # A user of its own, with no shell.
 id -u "$APP_USER" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
 
-# The code: clone the first time, fast-forward after.
+# The code, fetched *as the user that owns it*. Git refuses to work in a
+# repository owned by somebody else — rightly, since a directory another
+# account can write is a directory another account can put hooks in — and
+# running as root here would mean either that refusal or an exception that
+# waves it away. The directory belongs to the application user, so the clone
+# and the fetch do too.
+install -d -o "$APP_USER" -g "$APP_USER" -m 755 "$APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" fetch --quiet origin main
-  git -C "$APP_DIR" reset --quiet --hard origin/main
+  sudo -u "$APP_USER" -H git -C "$APP_DIR" fetch --quiet origin main
+  sudo -u "$APP_USER" -H git -C "$APP_DIR" reset --quiet --hard origin/main
 else
-  git clone --quiet "$REPO" "$APP_DIR"
+  sudo -u "$APP_USER" -H git clone --quiet "$REPO" "$APP_DIR"
 fi
 
 # The credentials: yours to write, never this script's.
