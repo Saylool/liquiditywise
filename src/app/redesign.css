@@ -653,7 +653,10 @@ main:focus {
   border-top: 1px solid var(--border);
   padding-top: 14px;
   color: var(--muted);
-  font-size: 9px;
+  /* A statement, not a caption: it is what stops the drawing above it from
+     being read as this pool's own prices. Set with the other prose rather
+     than with the decorative labels. */
+  font-size: 12px;
   line-height: 1.7;
 }
 .method-wrap {
@@ -749,7 +752,9 @@ main:focus {
   margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-  font-size: 10px;
+  /* "Read-only … never a signature" is the promise someone checks before
+     connecting a wallet. It is not fine print. */
+  font-size: 12px;
 }
 .wallet-symbol {
   width: 37px;
@@ -1168,10 +1173,10 @@ main:focus {
     justify-content: space-between;
   }
   .site-nav a {
-    font-size: 11px;
+    font-size: 13px;
   }
   .locale-trigger {
-    font-size: 11px;
+    font-size: 13px;
   }
   .locale-trigger > .locale-name {
     max-width: 50px;
@@ -1211,7 +1216,7 @@ main:focus {
     padding: 60px 25px 125px;
   }
   .hero-eyebrow {
-    font-size: 8px;
+    font-size: 11px;
     letter-spacing: 1.3px;
     gap: 8px;
     margin-bottom: 28px;
@@ -1231,12 +1236,12 @@ main:focus {
     margin-top: 26px;
   }
   .hero-secondary {
-    font-size: 11px;
+    font-size: 13px;
   }
   .hero-proof {
     gap: 12px;
     margin-top: 28px;
-    font-size: 9px;
+    font-size: 11px;
     flex-wrap: wrap;
   }
   .hero-proof span + span {
@@ -1246,13 +1251,13 @@ main:focus {
     inset-inline: 25px;
     bottom: 24px;
     gap: 18px;
-    font-size: 8px;
+    font-size: 11px;
   }
   .landing-section {
     padding: 60px 24px;
   }
   .section-kicker {
-    font-size: 9px;
+    font-size: 11px;
     letter-spacing: 1.4px;
     margin-bottom: 17px;
   }
@@ -1268,7 +1273,7 @@ main:focus {
     gap: 12px;
   }
   .pool-lookup label {
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.7;
   }
   .lookup-row {
@@ -1280,13 +1285,16 @@ main:focus {
     justify-content: space-between;
   }
   .lookup-input input {
-    font-size: 10px;
+    /* 16px exactly: below it, iOS Safari zooms the page when this
+       field takes focus, and leaves the reader zoomed in and
+       scrolled sideways on a page that fits. */
+    font-size: 16px;
   }
   .lookup-help {
-    font-size: 9px;
+    font-size: 12px;
   }
   .pair-shortcuts {
-    font-size: 9px;
+    font-size: 12px;
     gap: 7px;
   }
   .pair-shortcuts > span {
@@ -1353,7 +1361,7 @@ main:focus {
   }
   .education-notice {
     padding: 17px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .site-footer {
     padding: 30px 24px;
@@ -1369,12 +1377,12 @@ main:focus {
     font-size: 29px;
   }
   .footer-top > .text-link {
-    font-size: 11px;
+    font-size: 12px;
   }
   .footer-bottom {
     flex-direction: column;
     gap: 12px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .workspace-main {
     padding: 32px 20px 48px;
