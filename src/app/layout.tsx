@@ -22,11 +22,35 @@ import { THEME_BOOT_SCRIPT } from "@/lib/theme/theme";
  * These are the variable builds, so one file per family covers the whole
  * 100-900 weight range.
  */
+/*
+ * `optional`, and only this one of the three.
+ *
+ * A metric-adjusted fallback matches a font's vertical metrics — Next builds
+ * one for each of these from the file itself — but it cannot match the width
+ * of every character. So paragraphs wrap at different words in the fallback
+ * and at different words again once the real font arrives, and the page
+ * changes height under the reader mid-sentence. Measured on the front page:
+ * the footer moves 44px, and all 44 of them come from this family. The mono
+ * and the display serif each move it by zero, because one sets short fixed
+ * strings and the other sets headings that fit on their line either way.
+ *
+ * `optional` gives the font about a hundred milliseconds to arrive. If it
+ * does — which it usually has, since Next preloads it — it is used from the
+ * first paint. If it does not, the fallback is kept for that page view and
+ * never swapped. Both roads end with no shift at all, where `swap` guarantees
+ * one whenever the font is late.
+ *
+ * The cost is real and it is the reason the other two keep `swap`: a
+ * first-time reader on a slow connection reads that page in the fallback.
+ * For body text, which the adjusted fallback already resembles closely, that
+ * is a far smaller thing than the page moving while it is being read. For the
+ * display serif in the hero it would not be, so that one still swaps.
+ */
 const geistSans = localFont({
   src: "./fonts/Geist-Variable.woff2",
   variable: "--font-geist-sans",
   weight: "100 900",
-  display: "swap",
+  display: "optional",
 });
 
 const geistMono = localFont({
