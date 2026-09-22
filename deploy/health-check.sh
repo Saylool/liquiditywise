@@ -130,4 +130,9 @@ done <<< "$(comm -13 <(printf '%s\n' "$now_ids") <(printf '%s\n' "$old_ids"))"
 
 # Written last, so a run that dies while sending reports the same fault again
 # rather than swallowing it.
-printf '%s\n' "$now_ids" | grep -v '^$' > "$STATE_FILE"
+#
+# sed rather than grep, and the difference is the exit status: grep answers 1
+# when it matches nothing, which on a healthy machine is every line — so the
+# script would end in failure precisely when nothing is wrong, and cron would
+# report the monitor as broken five times an hour.
+printf '%s' "$now_ids" | sed '/^$/d' > "$STATE_FILE"
