@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sets up, or updates, LiquidityWise on one Ubuntu server. Run as root:
 #
-#   curl -fsSL https://raw.githubusercontent.com/Saylool/uniswapadvisor/main/deploy/setup.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Saylool/liquiditywise/main/deploy/setup.sh | bash
 #
 # or, once the repository is on the machine:
 #
@@ -13,7 +13,7 @@
 # never prints them.
 set -euo pipefail
 
-REPO="https://github.com/Saylool/uniswapadvisor.git"
+REPO="https://github.com/Saylool/liquiditywise.git"
 APP_DIR="/opt/liquiditywise"
 APP_USER="liquiditywise"
 # The port the application listens on, loopback only. Pick one nothing else

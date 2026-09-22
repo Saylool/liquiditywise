@@ -10,7 +10,7 @@ server or edits another site's configuration.
 As root:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Saylool/uniswapadvisor/main/deploy/inspect.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Saylool/liquiditywise/main/deploy/inspect.sh | bash
 ```
 
 Read-only. It lists what listens on 80/443 and 3000–3999, which web server
@@ -20,7 +20,7 @@ can be chosen to fit.
 ## 2. Install the application
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Saylool/uniswapadvisor/main/deploy/setup.sh | APP_PORT=3200 bash
+curl -fsSL https://raw.githubusercontent.com/Saylool/liquiditywise/main/deploy/setup.sh | APP_PORT=3200 bash
 ```
 
 Installs Node 22 if the machine has none, clones to `/opt/liquiditywise`,
