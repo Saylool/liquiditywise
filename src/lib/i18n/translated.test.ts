@@ -145,6 +145,25 @@ const PORTUGUESE_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 
+/**
+ * And for Traditional Chinese, which keeps the same six as the Simplified.
+ *
+ * It is not exempt from the check that it differs from *English*, which is
+ * the one this file runs. Whether it differs from Simplified Chinese is a
+ * different question, and `traditionalChinese.test.ts` is where it is asked.
+ */
+const TRADITIONAL_CHINESE_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
+  [".metadata.title", "the product's name, which is not translated"],
+  [".home.title", "the product's name, which is not translated"],
+  [".pool.back", "the product's name behind an arrow, which is not translated"],
+  [".home.coverage[0].version", "the protocol's own name, which is not translated"],
+  [".home.coverage[1].version", "the protocol's own name, which is not translated"],
+  [".feeTiers.hook", "the term Chinese writing about v4 keeps in Latin script"],
+  [".holdings.hookTag", "the term Chinese writing about v4 keeps in Latin script"],
+  [".search.v4Hook", "the term Chinese writing about v4 keeps in Latin script"],
+  [".search.placeholder", "two token symbols, which are not words"],
+]);
+
 const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["tr", TURKISH_SAME_AS_ENGLISH],
   ["de", GERMAN_SAME_AS_ENGLISH],
@@ -154,6 +173,7 @@ const EXEMPT: ReadonlyMap<Locale, ReadonlyMap<string, string>> = new Map([
   ["zh", CHINESE_SAME_AS_ENGLISH],
   ["ru", RUSSIAN_SAME_AS_ENGLISH],
   ["pt", PORTUGUESE_SAME_AS_ENGLISH],
+  ["zh-Hant", TRADITIONAL_CHINESE_SAME_AS_ENGLISH],
 ]);
 
 /*

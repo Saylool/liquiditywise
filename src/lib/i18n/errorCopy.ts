@@ -151,4 +151,16 @@ export const ERROR_COPY: Record<Locale, ErrorCopy> = {
     globalBody:
       "A página não pôde ser montada de jeito nenhum, então esta tela não sabe em que idioma você a estava lendo.",
   },
+  "zh-Hant": {
+    title: "無法讀取此頁面",
+    body: "有些東西以本應用無從說明的方式失敗了。這是這裡、或它所讀取的某個來源的故障——不是你做錯了什麼——同一個頁面再試一次很可能就能開啟。",
+    nothingKept:
+      "沒有儲存任何東西。這裡沒有帳戶，也不記錄任何人查詢了什麼，所以沒有屬於你的東西會丟失。",
+    retry: "重試",
+    home: "返回起點",
+    referenceLabel: "識別碼",
+    referenceNote: "它在伺服器日誌中標識這次故障，不會透露關於你的任何資訊。",
+    globalTitle: "出了點問題",
+    globalBody: "頁面完全沒能構建出來，因此這個介面不知道你是用哪種語言閱讀的。",
+  },
 };

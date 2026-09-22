@@ -9,8 +9,8 @@ import {
 } from "./locales";
 
 describe("LOCALES", () => {
-  it("publishes nine languages, with English as the fallback", () => {
-    expect(LOCALES).toEqual(["en", "tr", "de", "es", "ar", "hi", "zh", "ru", "pt"]);
+  it("publishes ten languages, with English as the fallback", () => {
+    expect(LOCALES).toEqual(["en", "tr", "de", "es", "ar", "hi", "zh", "ru", "pt", "zh-Hant"]);
     expect(DEFAULT_LOCALE).toBe("en");
   });
 });
@@ -54,6 +54,33 @@ describe("negotiateLocale", () => {
   it("treats a missing q as the strongest preference", () => {
     // An entry with no weight means 1, which outranks an explicit 0.9.
     expect(negotiateLocale("en;q=0.9,tr")).toBe("tr");
+  });
+
+  /*
+   * Chinese is the one language here published in two scripts, and the primary
+   * subtag cannot tell them apart. A reader in Taipei sends zh-TW and would
+   * otherwise be handed Simplified for no better reason than that both begin
+   * "zh".
+   */
+  it("tells the two Chinese scripts apart", () => {
+    expect(negotiateLocale("zh-TW")).toBe("zh-Hant");
+    expect(negotiateLocale("zh-HK")).toBe("zh-Hant");
+    expect(negotiateLocale("zh-MO")).toBe("zh-Hant");
+    expect(negotiateLocale("zh-Hant")).toBe("zh-Hant");
+    expect(negotiateLocale("zh-Hant-TW")).toBe("zh-Hant");
+  });
+
+  it("leaves plain and mainland Chinese on the Simplified one", () => {
+    expect(negotiateLocale("zh")).toBe("zh");
+    expect(negotiateLocale("zh-CN")).toBe("zh");
+    expect(negotiateLocale("zh-SG")).toBe("zh");
+    // A region that only begins with the same letters is not Taiwan.
+    expect(negotiateLocale("zh-TWX")).toBe("zh");
+  });
+
+  it("honours the weights between the two scripts like any other pair", () => {
+    expect(negotiateLocale("zh-CN,zh-TW;q=0.9")).toBe("zh");
+    expect(negotiateLocale("zh-CN;q=0.5,zh-TW;q=0.9")).toBe("zh-Hant");
   });
 
   it("skips a language it does not publish", () => {

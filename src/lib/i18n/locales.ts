@@ -12,7 +12,7 @@
  * English, and the interface around them speaks the reader's language.
  */
 
-export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh", "ru", "pt"] as const;
+export const LOCALES = ["en", "tr", "de", "es", "ar", "hi", "zh", "ru", "pt", "zh-Hant"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -45,6 +45,7 @@ export const LOCALE_DETAILS: Record<
   zh: { name: "中文", flag: "🇨🇳", direction: "ltr" },
   ru: { name: "Русский", flag: "🇷🇺", direction: "ltr" },
   pt: { name: "Português", flag: "🇧🇷", direction: "ltr" },
+  "zh-Hant": { name: "繁體中文", flag: "🇹🇼", direction: "ltr" },
 };
 
 /**
@@ -68,6 +69,7 @@ export const FULLY_TRANSLATED: readonly Locale[] = [
   "zh",
   "ru",
   "pt",
+  "zh-Hant",
 ];
 
 export const isFullyTranslated = (locale: Locale): boolean =>
@@ -136,12 +138,26 @@ const parseAcceptLanguage = (header: string): readonly LanguageRange[] => {
 };
 
 /**
+ * Chinese is published twice, and the primary subtag cannot tell them apart.
+ *
+ * `zh` alone means Simplified here, as it does almost everywhere. What marks
+ * the other one is the script — `zh-Hant` — or a place that writes it:
+ * Taiwan, Hong Kong and Macau. A reader in Taipei sends `zh-TW` and must not
+ * be handed Simplified merely because both begin `zh`, which is what matching
+ * on the primary subtag alone would do.
+ *
+ * Everything else here is matched by its primary subtag, because nothing else
+ * here is published in two scripts.
+ */
+const TRADITIONAL_CHINESE = /^zh-(hant|tw|hk|mo)\b/;
+
+/**
  * Picks the best supported language from an `Accept-Language` header.
  *
  * Matches the primary subtag, so `tr-TR` and `tr-CY` both select Turkish — a
  * reader asking for Turkish as spoken in Cyprus is better served Turkish than
- * English. `*` is ignored: it means "anything", which is what the default
- * already is.
+ * English. The exception is Chinese, above. `*` is ignored: it means
+ * "anything", which is what the default already is.
  *
  * Returns `null` when the header names nothing this interface publishes, so the
  * caller can tell "no preference expressed" from "preferred the default".
@@ -150,6 +166,8 @@ export const negotiateLocale = (acceptLanguage: string | null | undefined): Loca
   if (acceptLanguage === null || acceptLanguage === undefined) return null;
 
   for (const { tag } of parseAcceptLanguage(acceptLanguage)) {
+    if (TRADITIONAL_CHINESE.test(tag)) return "zh-Hant";
+
     const primary = tag.split("-")[0];
     if (isLocale(primary)) return primary;
   }

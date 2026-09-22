@@ -9101,6 +9101,1144 @@ const pt: Dictionary = {
   error: ERROR_COPY.pt,
 };
 
+const zhHant: Dictionary = {
+  metadata: {
+    title: "LiquidityWise",
+    description:
+      "一個面向 Uniswap v3 與 v4 流動性策略的教學型 AI 輔助顧問。僅供參考——不構成財務建議。",
+    v4Title: "一個 Uniswap v4 資金池 · LiquidityWise",
+    v4Description:
+      "這一個 Uniswap v4 資金池是什麼，以及它的 hook 被允許做什麼。",
+    holdingsTitle: "一個地址持有什麼 · LiquidityWise",
+    holdingsDescription:
+      "在某個以太坊地址上找到的代幣，以及這些代幣可以進入的 Uniswap v3 資金池。",
+    poolTitle: "資金池區間分析 · LiquidityWise",
+    poolDescription:
+      "為某個以太坊主網 Uniswap v3 資金池給出的價格區間，由它的價格實際走了多遠推算而來。",
+    hooksTitle: "Uniswap v4 上的 hook · LiquidityWise",
+    hooksDescription:
+      "本週最活躍的 Uniswap v4 資金池所指定的每一個 hook，以及每一個被允許做什麼——都從它自己的地址中讀出。"
+  },
+
+  preferences: {
+    languageLabel: "語言",
+    selectLanguage: "選擇語言",
+    closeLanguages: "關閉",
+    /*
+     * Said in the reader's own language, at the moment they choose it, rather
+     * than left to be discovered paragraph by paragraph. A reader who is told
+     * can decide; one who meets it halfway down a page cannot.
+     */
+    partlyTranslated:
+      "這門語言仍在翻譯中。選單、標籤和標題已是該語言；較長的說明文字目前仍為英文。",
+    themeLabel: "主題",
+    themeSystem: "跟隨系統",
+    themeLight: "淺色",
+    themeDark: "深色",
+    rangeLabel: "區間偏好",
+    rangeIntro:
+      "每個資金池開啟時所用的時間跨度、寬度和投入金額。自帶參數的連結仍然優先；每份分析下方的表單只改變那一頁。",
+    rangeSave: "儲存",
+    rangeReset: "忘記",
+  },
+
+  disclaimer: {
+    ariaLabel: "重要聲明",
+    title: "教學工具——不構成財務建議。",
+    body: "本應用講解 Uniswap 的運作機制，幫助你思考參數的選擇。它不預測價格，不保證任何收益，也無法驗證某個智慧合約是否安全。提供流動性存在真實風險，包括無常損失以及本金的全部損失。請始終自行核對合約地址，並獨立研究。",
+  },
+
+  home: {
+    badge: "早期基礎版本",
+    title: "LiquidityWise",
+    introBeforeV3: "一個面向 Uniswap ",
+    introBetween: " 的教學型顧問，並正在向 ",
+    introAfterV4:
+      " 延伸。按交易對找到一個資金池，讀到一個由該交易對實際走了多遠推算出來的價格區間，並用平實的語言把它講清楚。每一個數字都先被計算並交叉核對，模型才被允許去描述它——而模型永遠不被允許說出任何一個數字。",
+    workingTodayHeading: "現在就能用的",
+    workingTodayBody:
+      "按交易對搜尋一個資金池，或者貼上一個 v3 池地址、一個 v4 池 id。你會得到這個池已核驗的配置與當前狀態、最近一個月的每日價格畫在建議區間上的圖、這個交易對實際走了多遠，以及由此得出的區間——時間跨度和寬度都由你來改。旁邊還有：這個池收了多少手續費、實際又收到了多少，它最近這些天相對區間處在什麼位置，同一套方法在它從未見過的日子裡表現如何，一個倉位相比單純持有放棄了什麼，其他每一種寬度換作它們會怎樣，以及——對於一筆由你決定大小的資金——在價格始終停留在區間內的那些日子裡，它本可以從所收取的手續費中分到多少。還有把同一個區間反過來讀：它的每一半都是一個單邊倉位，頁面會說明價格若整段穿過，每一半會按什麼價格完成轉換。以及通過這個池做一筆兌換要付出什麼代價——取的是在不假設任何東西的前提下還能定價的最大一筆。再加上一份名錄，收錄本週最活躍的 v4 資金池所指定的每一個 hook，每一個被允許做什麼都從它自己的地址中讀出。一個 v4 池還會用平實的話說明它的 hook 被允許做什麼，同樣讀自 hook 自己的地址。一個地址可以被查詢：它持有的代幣能進入哪些資金池，以及它已經持有的 Uniswap v3 倉位——每一個都附帶它覆蓋的價格，以及這個池此刻是否落在其中。最後是把這一切用平實語言講一遍的說明，英文或土耳其文。沒有任何模型碰過上述任何一個數字，沒有一個數字是為了填補空缺而估出來的，那段文字裡也沒有地方能放進它自己編的數字。",
+    analysePool: "找一個資金池 →",
+    methodHeading: "它是怎麼工作的",
+    methodSteps: [
+      {
+        step: "已核驗的資料",
+        detail:
+          "資金池的事實來自 Uniswap 子圖並在鏈上讀取，從不靠假設。價格會與這個池自己報告的狀態交叉核對。",
+      },
+      {
+        step: "確定性的計算",
+        detail:
+          "波動率、價格帶和倉位區間都用純粹的 TypeScript 計算，所以同一個池永遠得出同樣的數字。",
+      },
+      {
+        step: "AI 的解讀",
+        detail:
+          "由模型來解釋這些數字的含義。交到它手上的數字已經核對過，而它所遵守的約定裡沒有任何地方能放進一個數字。",
+      },
+    ],
+    coverageHeading: "還沒有做的",
+    coverage: [
+      {
+        version: "Uniswap v3",
+        features: [
+          {
+            name: "gas，以及追著價格跑的代價",
+            summary:
+              "價格離開的區間必須關掉再重開才能跟上它，這要花 gas，也把紙面上的偏離變成了已經兌現的偏離。這裡任何地方都沒有把它算進去。",
+          },
+        ],
+      },
+      {
+        version: "Uniswap v4",
+        features: [
+          {
+            name: "一個 hook 實際上做了什麼",
+            summary:
+              "v4 頁面會說一個 hook 被允許做什麼，因為協議強制的就是這一層，而且它讀自 hook 自己的地址。讀懂合約程式碼、說出它拿這些權限做了什麼，是另一個問題，本應用不去嘗試。",
+          },
+          {
+            name: "TWAMM 式的策略",
+            summary:
+              "把一筆大單攤到一段時間裡執行，而不是一次性撞向某一個價格點上的流動性。其中分析頁已經能回答的那一半就在這裡：一筆兌換相對當前價格處的流動性要付出什麼，以及它最多能給多大一筆兌換定價。把一筆單子排到時間上去執行是 hook 的事，而本應用不對 hook 的行為建模。",
+          },
+        ],
+      },
+    ],
+    footer:
+      "以上這些都還不存在。存在的是這一頁上面的全部內容：按名字找到的資金池、經過計算並交叉核對的數字，以及在展示之前已被核驗的文字。錢包可以連接，而它被要求提供的只有地址。本應用儲存的唯一東西，是讀者自己建立的 Telegram 綁定——一個地址和一個對話 id，向機器人傳送 /stop 的那一刻即被刪除——這裡也沒有任何東西能代你簽名或傳送交易。",
+  },
+
+  pool: {
+    back: "← LiquidityWise",
+    invalidAddress:
+      "那不是一個以太坊地址。地址是 0x 後面正好跟 40 個十六進位制字元。",
+    loading: "正在讀取 Uniswap 的即時資料……",
+  },
+
+  /*
+   * Facts about the pool, and the sentence that keeps them from being read as
+   * something else. The gap between "the pool collected this" and "you would
+   * have earned this" is where a reader is likeliest to fill in a number nobody
+   * gave them.
+   */
+  activity: {
+    heading: "這個資金池實際做了什麼",
+    volume24h: "成交量，24 小時",
+    volume7d: "成交量，7 天",
+    volume30d: "成交量，30 天",
+    fees30d: "收取的手續費，30 天",
+    feesNote: "整個池子的，由當時流動性處於活躍狀態的所有人分享。",
+    tvl: "總鎖倉價值",
+    occupancySentence: (days: string, inside: string, outside: string, crossed: string) =>
+      `最近 ${days} 天裡，有 ${inside} 天全天都在這個區間內，${outside} 天全天都在區間外，還有 ${crossed} 天越過了某一邊。`,
+    undeterminedNote:
+      "越過某一邊的那一天，有一部分時間在區間內、一部分在區間外，而資料來源給出的當日最高價和最低價說不出各佔多少。",
+    feesWhileInside: "全天都在區間內的那些日子所收取的手續費",
+    /*
+     * Shown instead of that figure when the pool's hook may take a share of a
+     * swap. The fees are still real; what cannot be stated is their relationship
+     * to a position, which is the only reason anyone reads the figure.
+     */
+    feesWithheld: "這個池子不予顯示",
+    feesWithheldNote:
+      "這個池子的 hook 被允許從一筆兌換中抽取一份，而資料來源裡沒有任何東西能把 hook 的那一份和流動性提供者的那一份分開。上面的手續費是這個池子收取的金額，這是事實；把其中一部分歸到這個區間上，則是一個誰也無法核對的、關於某個倉位的說法。",
+    inSample:
+      "這些正是畫出這個區間所依據的同一批日子，所以它們展示的是區間被如何擬合出來的，而不是在檢驗它是否站得住腳——而且這個區間以今天的價格為中心，一個月前誰也開不出這樣一個倉位。請把它們讀作這個池子最近的走勢與區間的相對位置，而不是一次回測。",
+    notYourEarnings:
+      "這些都不是一個倉位會賺到的：它們是整個池子收取的。一筆資金本可以從中分到多少——它在這些兌換發生時佔活躍流動性的份額——就在正下方那一塊，而且即便是那個，也只有手續費，再無其他。",
+  },
+
+  /*
+   * The half of the fee question this application used to refuse.
+   *
+   * The refusal was honest while it lasted: the figures above are the pool's,
+   * and turning them into a position's needs a size and a share of the active
+   * liquidity. Both are read now, so the page answers instead of declining —
+   * and every sentence here exists to stop the answer being read as a yield.
+   */
+  deposit: {
+    heading: "一筆資金本可以收到多少",
+    unavailable: "對這個池子，算不出一筆資金本可以從那些手續費中分到多少。",
+    withheldNote:
+      "原因和上面那個數字一樣：這裡的 hook 可能從兌換中抽走一份，而資料來源沒有把它的份額和提供者的份額分開。一個無法歸到這個區間上的總額，其中的一部分同樣無法歸到投進這個區間的一筆資金上。",
+    deposited: "投入金額",
+    depositedNote: "這一塊是按這個金額算出來的。在上面的表單裡改它。",
+    collected: "它本可以分到的手續費",
+    collectedNote: (days: string) => `在價格從未離開區間的那 ${days} 天裡。`,
+    ofDeposit: "相對投入金額",
+    ofDepositNote:
+      "這些手續費相對投進去的錢，只針對那些日子，別的日子不算。這不是年化利率，這裡也沒有任何東西把它變成年化。",
+    sentence: (deposit: string, days: string, poolFees: string, yourFees: string) =>
+      `在價格從未離開這個區間的那 ${days} 天裡，這個池子收取了 ${poolFees} 的手續費。投進這個區間的 ${deposit} 資金本可以分到其中大約 ${yourFees}——按它自己的流動性佔那幾天裡實際處於活躍狀態的流動性的份額計算。`,
+    unmeasurableNote: (days: string) =>
+      `另有 ${days} 天也落在區間內，但資料來源沒有公佈這些天的手續費或活躍流動性，所以它們沒有計入總額。`,
+    dilution:
+      "投得更多，並不會按比例收到更多。份額是你的流動性除以包括你自己在內的所有人的流動性，所以超過一定規模之後，你新加進去的大部分只是在稀釋你已經有的那部分——這也正是為什麼可選的金額之間相差一千倍。",
+    caveat:
+      "只有手續費，只有已經發生過的日子。它假設倉位在每一天都是開著的，而且沒有任何東西因它而改變，它也沒有說接下來的三十天會付出多少。一個倉位相比單純持有這兩種代幣放棄了什麼，是這一頁更下面的那個對比，兩者必須放在一起讀。",
+  },
+
+  realizedFee: {
+    heading: "它實際收取了多少",
+    intro:
+      "這個池子聲明的費率是一個數字。而這裡是兌換者實際付出的：用上面同樣那批日子，把它反除回去——某一天的手續費除以那一天的成交量。它不需要額外的請求，也不需要 hook 提供任何東西。",
+    declared: "聲明的費率",
+    /** How a stated fee was arrived at, where the protocol takes a cut on top. */
+    statedNote: (lp: string, protocol: string) =>
+      `${lp} 給流動性提供者，${protocol} 給協議，按 PoolManager 收取它們的方式合起來——這就是一個兌換者所付的，也是上面那些手續費的構成。`,
+    noDeclared: "無",
+    noDeclaredNote: "這個池子的 key 裡沒有帶費率。它的 hook 每筆兌換各設一個。",
+    median: "典型的一天",
+    spread: "最低到最高的一天",
+    spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
+    aggregate: "整個窗口",
+    aggregateNote:
+      "整個窗口的手續費除以整個窗口的成交量，所以繁忙的一天比清淡的一天權重更大。",
+    daysMeasured: "被測到的天數",
+    daysMeasuredNote: (skipped: string) =>
+      `窗口裡另有 ${skipped} 天沒有任何成交，或者缺少某個數字，所以無法從中除出一個費率。`,
+    /*
+     * The three verdicts. They exist as separate sentences rather than one with
+     * a number in it because they are three different things to know, and the
+     * one that matters most is the one a single wording would blur.
+     */
+    verdictMatches:
+      "在每一個被測到的日子裡，兩者都是一致的。聲明的費率就是實際收取的費率。",
+    verdictDiffers: (differing: string, measured: string) =>
+      `兩者並不一致。在被測到的 ${measured} 天裡，有 ${differing} 天這個池子收取的不是它聲明的費率，所以上面那個費率檔描述的是這個池子被建立時的樣子，而不是一筆兌換的實際代價。`,
+    verdictNoneDeclared:
+      "沒有可供對照的東西：這個池子根本沒有聲明任何費率。這裡的數字是它的 hook 實際設定的。",
+    notLpShare:
+      "這些都不是最終到達流動性提供者手上的。這個池子的 hook 被允許從一筆兌換中抽取一份，而資料來源沒有把 hook 的那一份和提供者的那一份分開。這些數字說的是一筆兌換花了多少，而不是誰收到了它。",
+    unavailableHeading: "這個池子收取多少，無法測出",
+  },
+
+  outOfSample: {
+    heading: "在它從未見過的日子裡檢驗",
+    showFolds: "顯示每一段",
+    intro: (horizon: string) =>
+      `上面每一個數字都是對它所描述的那些日子擬合出來的。這裡的不是。這套方法被往回退了 ${horizon}，只用那個時點之前的價格重跑了一遍，並以那個時點的價格為中心——那是一個站在當時的人真的能看到的價格。然後把它蓋在隨後發生的那些日子上，整件事再沿著歷史往回重複，能重複多少次就重複多少次。`,
+    folds: "檢驗輪數",
+    foldsNote: "歷史長度夠先擬合出一條價格帶、再檢驗它，這樣的次數有多少。",
+    fullyInside: "全天在內的天數",
+    fullyOutside: "全天在外的天數",
+    undetermined: "越過了某一邊的天數",
+    verdict: (inside: string, measured: string, folds: string) =>
+      `在 ${folds} 輪檢驗中，被測到的 ${measured} 天裡有 ${inside} 天完全落在這套方法當時會畫出的價格帶內。`,
+    foldPeriod: "被檢驗的天數",
+    foldVolatility: "擬合出的波動率",
+    foldVerdict: "內 / 外 / 越過",
+    foldsCaption: "這套方法被檢驗過的每一段，最早的在前",
+    foldColumns:
+      "每一行是一輪：它被檢驗過的天數、它自己那次擬合測出的波動率——不是上面那個數字——以及那些日子相對這次擬合產出的價格帶處在什麼位置。",
+    /*
+     * The two sentences that stop a total becoming a claim about the method.
+     * Nobody held these bands, and the folds are not independent of each other.
+     */
+    notIndependent:
+      "在一個池子上跑幾輪，並不能衡量這套方法多久成立一次，也說不出接下來會發生什麼。而且相鄰的擬合彼此重疊——一次用 31 個收盤價的擬合，比往前邁一個時間跨度要長——所以這些輪次之間並不互相獨立。",
+    notHeld:
+      "沒有人持有過這些價格帶。每一條都是這套方法在那一刻本會建議的東西，蓋在隨後確實發生的價格上——而上面那些日子，也就是建議區間所依據的那些日子，並不是這裡這些日子。",
+    unavailableHeading: "這個池子無法做樣本外檢驗",
+  },
+
+  divergence: {
+    heading: "與單純持有相比",
+    intro:
+      "在每一個價格上，這個區間裡的一個倉位相比單純持有這兩種代幣會值多少。這是精確的算術而非估算——但它只計入價格的變動，別的一概不算。它沒有說一個倉位會賺到多少手續費，而手續費恰恰就是流動性提供者為承擔這個差額所得到的報酬。",
+    price: (base: string) => `${base} 的價格`,
+    loss: "倉位相對持有",
+    entryRow: "這是它的衡量起點——這個池子的當前價格。",
+    impermanentNote:
+      "這通常被稱為無常損失。只有價格回來了它才是「無常」的：在與開倉時不同的價格上關掉的倉位，已經把它兌現了。",
+  },
+
+  /*
+   * The other thing the same range can be. It was on the front page's list of
+   * what this application could not do, and what it needed turned out to be no
+   * data at all: a range order's average price is fixed by the protocol's own
+   * formulas and falls out of the two bounds already on the page.
+   */
+  rangeOrder: {
+    heading: "透過這個區間賣出與買入",
+    intro:
+      "上面那個區間是雙邊的：價格兩側都有錢，只要價格停在兩者之間就一直在賺手續費。把它在當前價格處切開，每一半都是一種不同的工具。完全落在價格上方的倉位只持有一種代幣、別的什麼都沒有，當價格向上穿過這條帶子時，池子會把那種代幣賣成另一種。在價格下方則反過來。這就是所謂的區間掛單，而這個區間的兩半都各是一個。",
+    selling: (token: string) => `賣出 ${token}`,
+    buying: (token: string) => `買入 ${token}`,
+    band: "價格帶",
+    bandNote:
+      "這個倉位所處的位置。它的內側邊緣是越過當前價格所在那一格之後的第一個價格步長，所以一開始它一點都不持有它要換成的那種東西。",
+    average: "平均價格",
+    averageNote: "如果價格整段穿過這條帶子，這次轉換折算下來是什麼價。",
+    against: "相對當前價格",
+    exact:
+      "那個平均值是兩個邊界的幾何平均數——精確如此，而且不管兩個價格寫成哪個方向都一樣。它由協議自己關於一個倉位在帶子兩端各持有什麼的公式推出，而投入的金額會從中約掉：一百美元和一百萬美元按同樣的價格轉換。",
+    onlyIfThrough:
+      "而且只有價格整段穿過這條帶子才成立。中途折返的價格會讓這個倉位兩種代幣各持有一些，根本沒有單一的成交價——而那恰恰就是它上面那個區間要做的事，只不過是誤打誤撞碰上的。",
+    notAnOrderBook:
+      "這裡沒有任何東西為這次轉換排期，也沒有任何東西保證它發生。這不是訂單簿：價格永遠沒走到的一筆單子是再正常不過的結果，而不是失敗，這裡既沒有排隊也沒有等著的對手方。取而代之的是：當價格在帶子內時，這個倉位是在收取這個池子的手續費，而不是在支付它們。",
+    unavailable: "這個區間沒有可以描述的單邊部分。",
+  },
+
+  /*
+   * The one panel about using a pool rather than providing to it.
+   *
+   * It exists because nothing else here answers the first question anybody asks
+   * of a pool, and it stops where the certainty does: at the edge of the price
+   * step, because liquidity beyond it is a thing this application has not read.
+   */
+  swapDepth: {
+    heading: "在這裡做一筆兌換要付出什麼",
+    intro:
+      "上面的一切都是關於提供流動性的。這一塊是關於使用它的。一個池子的流動性在它所依託的兩個價格步長之間是恆定的，所以只要一筆兌換停留在當前價格所在的那一格之內，就能用協議自己的公式給它定價、不必假設任何東西——而再往外一格就不行了，因為另一個倉位的流動性可能從那裡開始，而本應用並不讀取每一個價格上的流動性。",
+    /*
+     * "into the pool", because the panel above this one also has a leg called
+     * "Selling WETH" and it means something else there: a position that sells as
+     * the price passes it, rather than a swap sent now. Two labels reading the
+     * same on one page is a reader mistaking one for the other.
+     */
+    selling: (token: string) => `把 ${token} 賣進這個池子`,
+    amount: (amount: string, symbol: string) => `${amount} ${symbol}`,
+    largest: "這裡能定價的最大一筆兌換",
+    largestNote:
+      "在價格走到它所在那一格的盡頭之前，能投進去多少。這不是上限：更大的一筆照樣能成交，只是這一頁說不出它的代價。",
+    cost: "它放棄了什麼",
+    costNote: "這筆兌換的平均成交價離螢幕上那個價格有多遠。",
+    oneSideOnly:
+      "只顯示了一個方向。價格離它所在那一格的盡頭已經近到：另一個方向剩下的餘地是個捨入誤差而不是一筆兌換，而這一頁不會列印它無法核對的數字。",
+    geometric:
+      "那個平均值是當前價格與這筆兌換結束時價格的幾何平均數——和上面那些單邊倉位所依據的是同一個恆等式，只是從交易的另一側看過去。穿過一條帶子的兌換支付它；坐在那條帶子裡的倉位收取它。",
+    whyItDiffers:
+      "兩個方向的規模不一樣，是因為價格落在它那一格裡的某個位置，而不是正中間。真正值得在不同池子之間比較的是這個規模本身：它是這個市場在價格移動之前能吸收的量，也正是為什麼有人會把一筆大單拆成很多小單，而不是一次發出去。",
+    unavailable: "對這個池子，算不出一筆兌換要付出什麼。",
+  },
+
+  feeTiers: {
+    heading: "這個交易對還在哪裡交易",
+    intro: (pair: string) =>
+      `${pair} 在不止一個費率檔上交易。每一個都是獨立的資金池，有自己的流動性、自己的價格歷史和自己的區間——上面那些數字只描述這一個。`,
+    onlyOne: (pair: string) =>
+      `在以太坊主網上，${pair} 只在這一個費率檔上交易。上面的一切都是關於整個交易對的，因為這個交易對就是這一個池子。`,
+    thisOne: "你正在讀的就是這一個",
+    feeTier: "費率檔",
+    holds: "持有",
+    reservesUnread: "這個池子持有什麼，無法從鏈上讀出。",
+    open: "分析這個費率檔",
+    /*
+     * The sentence the panel exists to carry. A list of pools ordered beside
+     * dollar figures invites exactly one conclusion, and it is the wrong one.
+     */
+    biggerIsNotBetter:
+      "一個流動性更多的費率檔，只是有更大一群人在分同樣那些兌換手續費，而不是一個更好的去處。哪一個適合一個倉位，取決於價格走多遠、多久走一次，而那是逐池測量的——所以老老實實的比較辦法是把每一個都開啟、讀它自己的數字。你選的時間跨度和倍數會隨連結一起帶過去。",
+    reservesNote:
+      "這些是兩個代幣合約為每個池子報出的餘額，讀自鏈上而不是索引器。索引器自己的數字曾與它們對照過，把實際存在的量高估了 1.3 到 13 倍，所以不予顯示。之所以給兩個代幣數量而不是一個美元數字，是因為這裡每一個費率檔持有的都是同樣兩種代幣，比較它們不需要給任何東西定價。",
+    unavailableHeading: "這個交易對的其他費率檔無法讀取",
+
+    /*
+     * The other protocol. On a v3 page the same two token contracts on v4; on
+     * a v4 page, v4's other pools of the pair and then v3's. Both lists say
+     * what "same pair" means here — the same two contracts — because ether and
+     * wrapped ether are two different tokens to a pool, whatever they are to
+     * a person.
+     */
+    onV3: "在 Uniswap v3 上",
+    onV4: "在 Uniswap v4 上",
+    v4Intro: (pair: string) =>
+      `交易 ${pair} 的那些 v4 資金池——同樣的兩個合約。一個 v4 交易對可以有很多個池子：費率是任意數值，價格步長是自由的，而且每一個 hook 都會再造出一個。`,
+    v4None: (pair: string) => `沒有任何 Uniswap v4 資金池用這兩個合約交易 ${pair}。`,
+    v4OnlyThis: (pair: string) => `在 v4 上，${pair} 只在這一個池子裡交易。`,
+    v3Intro: (pair: string) => `交易 ${pair} 的那些 v3 資金池——同樣的兩個代幣合約，在各個費率檔上。`,
+    v3None: (pair: string) => `沒有任何 Uniswap v3 資金池用這兩個合約交易 ${pair}。`,
+    v3NoNative:
+      "這個池子持有的是鏈自己的以太幣，而 v3 做不到：v3 的每一種貨幣都是一個代幣合約。與它最接近的那些 v3 池子交易的是包裝以太幣，對一個池子來說那是另一種代幣。",
+    depth: "當前價格處的深度",
+    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    stateUnread: "這個池子的流動性無法從鏈上讀出。",
+    hook: "hook",
+    noHook: "無 hook",
+    hookAltersSwaps: "可能改變一筆兌換的代價",
+    priceStep: (step: string) => `步長 ${step}`,
+    v4Ordering:
+      "按當前價格處的深度排序——也就是這個池子的活躍流動性與價格，讀自 PoolManager 的儲存——因為一個 v4 交易對大多是些有人初始化之後就撂下的池子，而深度正是能把它們區分開的東西。它說明一筆兌換能動用多少，卻完全沒說哪個池子更好：更深的池子只是有更大一群人在分同樣那些手續費。",
+    moreNotShown: (count: string) => `另有 ${count} 個未顯示；它們比這些更淺。`,
+    v4Unavailable: "這個交易對的 v4 資金池無法讀取",
+    v3Unavailable: "這個交易對的 v3 資金池無法讀取",
+  },
+
+  /*
+   * The same method at every width the form offers, on one page. The two day
+   * counts are different kinds of figure, and the note under the table says
+   * which is which: the first is the fit, the second the check.
+   */
+  widths: {
+    heading: "其他幾種寬度",
+    intro:
+      "同一套方法在表單提供的每一種寬度上各跑一遍，這樣取捨是看得見的而不是被告知的：更寬的區間能容納更多的日子，也把同樣一筆資金攤到更多價格上——那就是最後一列，而它是協議的算術而非估算。",
+    width: "寬度",
+    range: "區間",
+    recent: (days: string) => `在內，佔最近 ${days} 天`,
+    unseen: "在內，在它從未見過的日子裡",
+    insideOf: (inside: string, total: string) => `${total} 天中的 ${inside} 天`,
+    unseenNone: "歷史不夠長",
+    feeShare: "在區間內時的手續費份額",
+    feeShareValue: (times: string) => `${times}×`,
+    chosen: "上面顯示的就是這個",
+    columnsNote:
+      "第一個天數是在每個區間各自所依據的那些日子上數出來的，所以它說的是那種寬度被如何擬合出來，而不是它撐得住撐不住。第二個是上面那項檢驗，對每一種寬度各跑一遍：把方法往回退一個時間跨度，再蓋到隨後發生的日子上。",
+    /*
+     * The one column that is a comparison rather than a reading, and the one
+     * most easily read as a promise. It is exact arithmetic about a day inside
+     * the range, and it says nothing about the days outside it — which is the
+     * half the column beside it measures.
+     */
+    feeShareNote:
+      "最後一列是：在價格停留在那個區間內的一天裡，同樣一筆資金會分到多少手續費，相對上面顯示的那種寬度——所以那一行是 1 倍。這是協議自己的倉位算術而不是估算：更窄的區間把同樣的錢變成更多流動性，鋪在更少的價格上。它假設這個池子其餘的流動性沒有變化，而一筆大到足以撼動它的資金不會讓這句話繼續成立；它也完全沒有說價格待在區間外的那些日子。",
+    notAdvice:
+      "這些沒有一個是推薦。更窄的區間在它撐住的那些日子裡分到更大的份額，在它沒撐住的日子裡則什麼都分不到，而這兩者哪一個更要緊，取決於這個倉位是為了什麼——那是這裡任何東西都不知道的。",
+  },
+
+  parameters: {
+    heading: "調整區間",
+    apply: "重新計算",
+    /*
+     * The same words label the figures in "how this range was drawn", so a
+     * reader changing one can see which number they are changing.
+     */
+    horizonLabel: "看多遠",
+    widthLabel: "多寬",
+    depositLabel: "多少",
+    days: (days: string) => `${days} 天`,
+    sigma: (value: string) => `${value}σ`,
+    /** A word for the offered widths; a width typed into the URL gets none. */
+    widthChoice: (sigma: string, word: string | null) =>
+      word === null ? sigma : `${word}（${sigma}）`,
+    widthWords: { tight: "窄", medium: "中等", wide: "寬", veryWide: "很寬" },
+    note: "時間跨度說的是把測出來的走勢往前攤多遠。它不改變測量本身：無論選哪個時間跨度，波動率始終來自最近 30 個完整的日子。寬度則把那個走勢乘上一個倍數；更寬的區間被離開的次數更少，而它不是一個置信水平。",
+    fellBack:
+      "所請求的內容有一部分無法讀取，所以在那些地方用了預設值。實際用到的時間跨度和寬度顯示在上面。",
+    preferenceHint:
+      "這隻改變本頁。要改變每個資金池開啟時的參數，請使用頁首裡的區間偏好。",
+  },
+
+  holdings: {
+    heading: "這個地址持有什麼",
+    intro:
+      "在這個地址上找到的代幣，以及它們可以進入的資金池。除非你在下方要求 Telegram 提醒，這裡不儲存任何東西；而地址本身是公開資訊——任何人去查，看到的都是同一份清單。",
+    forAddress: "地址",
+    loading: "正在向各個代幣合約詢問這個地址持有什麼……",
+    /*
+     * The sentence that keeps the answer honest. Nothing can list an address's
+     * tokens, so the width of the search is part of the answer.
+     */
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
+      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：以太坊主網上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
+    /*
+     * Said out loud when the v4 net could not be cast, because a page that
+     * listed only v3 pools and said nothing would read as "no v4 pool takes
+     * what you hold", which nobody checked.
+     */
+    v4NotSearched:
+      "沒有搜尋 Uniswap v4 資金池：它們的清單讀不出來。以太幣和 v4 資金池的各種貨幣沒有出現在這一頁上，原因僅此而已。",
+    /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
+    hookTag: "hook",
+    holdingsHeading: "找到的代幣",
+    nothingFound:
+      "被檢查的代幣裡，沒有一種在這個地址上被找到。這和一個空錢包不是一回事——請看上面這次搜尋是怎麼做的。",
+    poolsHeading: "這些代幣可以進入的資金池",
+    bothSides: "兩邊你都持有",
+    oneSide: "你只持有一邊",
+    bothSidesNote:
+      "這個池子的兩種代幣都在這個地址上找到了，所以在這裡建倉不需要先做兌換。",
+    oneSideNote:
+      "這個池子的兩種代幣中找到了一種。在這裡建倉還需要另一邊，也就是要把你持有的一部分換掉。",
+    moreNotShown: (count: string) =>
+      `另有 ${count} 個未顯示。上面這些是其中成交最活躍的，按資料來源報告的順序排列——那是一個關於某個池子有多忙的說法，除此之外什麼也不是。`,
+    analyse: "分析這個資金池",
+    notAdvice:
+      "這是一份「可以做什麼」的清單，不是一份「值得做什麼」的清單。這些池子裡哪一個適合什麼，取決於每個池子自己頁面上的那些數字，以及這個倉位是為了什麼——這兩件事這份清單都不知道。",
+    unavailableHeading: "這個地址無法讀取",
+    invalidAddress: "那不是一個以太坊地址，所以什麼都沒有去查。",
+    noAddress: "在首頁連接一個錢包，這一頁就會顯示它持有什麼。",
+  },
+
+  v4: {
+    heading: "一個 Uniswap v4 資金池",
+    intro:
+      "從它自己的 key 讀出來的、關於這個池子是什麼。一個 v4 池子不是一份獨立的合約：它住在同一個 PoolManager 裡面，由定義它的五樣東西的雜湊來命名——兩種貨幣、費率、價格步長，以及 hook。",
+    poolId: "池 id",
+    pair: "貨幣",
+    fee: "費率",
+    /*
+     * Read from the pool's own key on the chain — the log that created it —
+     * and never from the indexer, whose figure was measured to be the total
+     * fee of the latest swap rather than the key's fee.
+     */
+    feeNote: (swap: string, lp: string, protocol: string) =>
+      `讀自鏈上這個池子自己的 key。一筆兌換支付 ${swap}：其中 ${lp} 給流動性提供者，另外還有 ${protocol} 給協議。`,
+    feeNoteNoProtocol:
+      "讀自鏈上這個池子自己的 key。協議在此之上不另外抽取，所以這就是一筆兌換所支付的。",
+    dynamicFee: "由 hook 逐筆兌換設定",
+    dynamicFeeNote:
+      "這個池子的 key 裡帶的是動態費率標誌而不是一個費率，所以一筆兌換的代價由 hook 在它發生的那一刻決定。這次讀取沒有觀察到任何一筆，這裡也沒有可以報告的費率。",
+    /*
+     * A list row for a pool whose key the chain did not answer for. The fee is
+     * a fact about the pool that this read does not have, and nothing else —
+     * not the indexer's figure — stands in for it.
+     */
+    feeUnread: "費率未讀出",
+    feeUnreadNote:
+      "這個池子的費率存放在它被建立時的 key 裡、在鏈上，而這次讀取沒能取到它。別的東西都不能替代它。",
+    protocolFee: "協議費",
+    protocolFeeNone: "無",
+    protocolFeeNote:
+      "在這個池子的費率之上，由協議在每一筆兌換中另外抽取。由治理設定，讀自鏈上這個池子的狀態。",
+    protocolFeeByDirection: (token0: string, token1: string) =>
+      `按方向不同而不同：賣出 ${token0} 時是前一個，賣出 ${token1} 時是後一個。`,
+    priceStep: "價格步長",
+    priceStepNote: (spacing: string) =>
+      `在這個池子裡，一個倉位的兩條邊緣所能放置的最細步長——也就是它 ${spacing} 的 tick 間距。在 v4 裡它是這個池子 key 的一部分，所以和 v3 不同，不需要另外呼叫合約。`,
+    nativeCurrency: "原生以太幣",
+    nativeCurrencyNote:
+      "這裡的零地址不是一個漏填的欄位。v4 允許一個池子持有鏈自己的以太幣而不是一個包裝代幣，這裡就是這種情況。",
+    hookHeading: "這個 hook",
+    noHook: "這個池子在執行時沒有 hook。",
+    noHookNote:
+      "沒有任何東西伴隨它的兌換或存取執行，所以它的行為和一個 v3 池子一樣。",
+    hookMay: "它被允許做什麼",
+    /*
+     * One sentence per permission, under the moment a reader can picture it
+     * at, with the protocol's own names folded away beneath. The names say
+     * where in the protocol's code a hook is called; what a reader needs is
+     * what that lets it do to a swap, a deposit or a withdrawal of theirs.
+     * Every sentence is a "may": the address grants the moment, not the act.
+     */
+    permissionTopics: {
+      swaps: "圍繞兌換",
+      liquidity: "圍繞存入與取出",
+      creation: "在這個池子被建立時",
+      donations: "圍繞捐贈",
+    } satisfies Record<HookTopic, string>,
+    permissionWords: {
+      beforeSwap:
+        "在每一筆兌換之前執行，它可以在此拒絕這筆兌換，並且在費率為動態的池子上，設定這筆兌換要付多少。",
+      afterSwap: "在每一筆兌換之後執行，它在此仍然可以拒絕這筆兌換。",
+      beforeSwapReturnsDelta:
+        "在池子給一筆兌換定價之前，從中取走代幣，或者投入它自己的代幣——所以這裡的一筆兌換不一定沿著這個池子自己的曲線走。",
+      afterSwapReturnsDelta: "在池子給一筆兌換定價之後，從中抽取一份。",
+      beforeAddLiquidity: "在每一次存入之前執行，它可以在此拒絕這次存入。",
+      afterAddLiquidity: "在每一次存入之後執行，它在此仍然可以拒絕這次存入。",
+      afterAddLiquidityReturnsDelta:
+        "在一次存入進行時從中取走代幣，或者往裡面追加代幣。",
+      beforeRemoveLiquidity: "在每一次取出之前執行，它可以在此拒絕這次取出。",
+      afterRemoveLiquidity: "在每一次取出之後執行，它在此仍然可以拒絕這次取出。",
+      afterRemoveLiquidityReturnsDelta:
+        "在一次取出進行時從中抽取一份，或者往裡面追加代幣。",
+      beforeInitialize: "在這個池子被建立之前執行一次。那已經發生過了。",
+      afterInitialize: "在這個池子被建立之後執行一次。那已經發生過了。",
+      beforeDonate:
+        "在向這個池子的提供者捐贈之前執行，它可以在此拒絕這次捐贈。",
+      afterDonate:
+        "在向這個池子的提供者捐贈之後執行，它在此仍然可以拒絕這次捐贈。",
+    } satisfies Record<HookPermission, string>,
+    noPermissions:
+      "圍繞兌換、存取或捐贈都沒有任何權限：協議在這些時刻一個都不會呼叫它。像這樣的 hook 仍然能做的，是為一個費率為動態的池子設定費率。",
+    permissionNames: "協議對這些東西自己的叫法",
+    /*
+     * The other side of the swap warning. A hook that runs when a provider
+     * withdraws can refuse the withdrawal — a hook that reverts reverts the
+     * withdrawal with it — and one holding the returns-delta flag can take a
+     * share of what comes out. Said above the list, like the swap warning,
+     * for the reader who stops reading.
+     */
+    withdrawalWarning: (share: boolean): string =>
+      share
+        ? "當一個提供者取出時，這個 hook 會執行。它被允許拒絕一次取出，也被允許從取出的東西裡抽取一份。它究竟有沒有這樣做過，從這裡是無從得知的。"
+        : "當一個提供者取出時，這個 hook 會執行，並且被允許拒絕一次取出。它究竟有沒有這樣做過，從這裡是無從得知的。",
+    /*
+     * The sentence this whole page exists to carry. A hook's permissions are not
+     * stored anywhere — the address is the permission list — so this is the one
+     * claim about a hook that can be made without trusting somebody.
+     */
+    hookAddressIsThePermission:
+      "這些都是從這個 hook 自己的地址裡讀出來的。v4 不把一個 hook 的權限存放在任何地方：一個 hook 被部署到某個地址上，這個地址的最後十四個位元就拼寫出 PoolManager 會呼叫哪些回調，而 PoolManager 檢查的是這些位元，並不去問合約。所以這裡說的是這個 hook 可以做什麼，絕不是它做了什麼——一個被允許在每筆兌換上重寫費率的 hook，完全可能永遠返回同一個費率，而那從這裡是無從得知的。",
+    alterSwapWarning:
+      "這個 hook 被允許改變一筆兌換的成本或收益。任何從價格歷史推出來的數字——一個建議區間、一個費率檔、一個與單純持有的對比——都假設這個池子按它聲明的收費、按曲線所說的支付。在這裡這兩個假設都不安全，而這一切在一串價格序列裡都看不見。",
+    /*
+     * Replaced the line saying there was no analysis, on the day there was one.
+     * What it has to do now is harder: say why a band drawn from price history
+     * is as true here as anywhere, without letting that cover the fees, which
+     * are the part a hook can move.
+     */
+    analysisScope:
+      "下面是區間分析。這個區間來自已經發生過的價格，所以它在這裡和在一個沒有 hook 的池子上一樣成立——hook 沒法追溯地改變價格走到過哪裡。hook 能改變的是一筆兌換的代價，所以這個池子實際收取的費率，是從它收到了多少測出來的，而不是取自上面那個費率。",
+    unavailableHeading: "這個資金池無法讀取",
+    invalidId:
+      "那不是一個 v4 池 id。一個 v4 池子由一個 32 位元組的雜湊來命名——0x 後面跟 64 個十六進位制字元——而不是由一個合約地址來命名。",
+    noId: "貼上一個 v4 池 id，就能看到這個池子是什麼、它的 hook 可以做什麼。",
+    loading: "正在從索引器和鏈上讀取這個 v4 資金池……",
+  },
+
+  /*
+   * The page a reader reaches by following something that is not here: an old
+   * link, a typo, an address pasted into the path instead of the box. The
+   * framework's own answer is an unstyled English line, which on a site
+   * published in two languages is the one screen that forgets which it is in.
+   */
+  notFound: {
+    title: "這裡沒有頁面",
+    body: "你跟過來的這個地址，沒有指向本應用提供的任何東西。一個資金池是通過它的地址、或者對 v4 來說通過它的 id 開啟的——這兩者都填進搜尋框，而不是填進路徑裡。",
+    search: "找一個資金池 →",
+  },
+
+  /*
+   * The directory, and the line it will not cross.
+   *
+   * Every sentence here is about what the protocol enforces, because that is the
+   * only thing about a hook this application can check. A name, a category, a
+   * "verified" badge — all of them would be somebody's claim republished, and
+   * the reader would have no way to tell which parts of the page were which.
+   */
+  hooks: {
+    heading: "正在 Uniswap v4 上執行的那些 hook",
+    loading: "正在讀取本週最活躍的 v4 資金池……",
+    intro:
+      "每一個 v4 資金池都可以指定一個 hook：一份合約，PoolManager 會在一筆兌換、一次存入、一次取出中的固定時刻呼叫它。至於是哪些時刻，那不是誰作出的承諾。它被挖進了這個 hook 的地址裡——低十四位就是那份清單，而協議拒絕為清單之外的任何事去呼叫這份合約。",
+    onlyPermissions:
+      "這就是這一頁所知道的全部，而它之所以值得知道，恰恰因為它是被強制執行的而不是被聲稱的。一個 hook 拿這項權限做了什麼，寫在它的程式碼裡。本應用不讀程式碼，也不儲存任何人背書過的 hook 名單——那兩樣都會是它無法核對的說法，卻擺在它能核對的數字旁邊。",
+    /*
+     * Phrased so no count is followed by a noun that would have to agree with
+     * it. A list of one pool is not a case this page will meet — the week's
+     * busiest days name hundreds — but "1 pools" is the kind of sentence that
+     * only ever appears in front of somebody.
+     */
+    window: (pools: string, hooked: string, hookless: string) =>
+      `讀自本週最活躍的那些 v4 日子裡的資金池——共 ${pools} 個。其中 ${hooked} 個指定了 hook；${hookless} 個沒有指定，行為和一個 v3 池子一樣。`,
+    ordering:
+      "按這些池子裡有多少個執行著各個 hook 來排序。那是一個池子數量，除此之外什麼也不是：跑在很多池子上的 hook，只是有人用它部署了很多池子。",
+    runs: (count: string) => `執行在其中 ${count} 個上`,
+    poolsHeading: "它在哪裡執行",
+    moreNotShown: (count: string) => `另有 ${count} 個`,
+    none: "本週最活躍的那些 v4 日子裡，沒有任何池子指定了 hook。",
+    unavailable: "本週的 v4 資金池無法讀取，所以沒有名錄可以顯示。",
+    fromHome: "檢視每一個 hook →",
+  },
+
+  /*
+   * The one panel here that describes somebody's own money.
+   *
+   * It says so, and it says what that does and does not mean: the same list is
+   * public, anybody can read it for any address, and nothing about it is kept.
+   */
+  positions: {
+    heading: "這個地址已經持有的倉位",
+    intro:
+      "上面的一切都是這個地址可以做什麼——它的代幣能開啟哪些池子。這一塊則是它已經做了什麼。兩個協議的倉位都是被某一份合約持有的一個代幣，而這兩份合約都會被問到每一個代幣是什麼。v3 那一份還能列出一個地址名下的代幣；v4 那一份不能，所以那份清單來自索引器，而其中每一個 id 都會被放回鏈上，去問它歸誰所有。",
+    none: "這個地址不持有任何一個協議的 Uniswap 倉位代幣。",
+    noneOpen:
+      "這個地址持有的每一個倉位代幣都已經關閉了。已關閉的那個是一張「曾經有過一個倉位」的憑據，而不是一個倉位。",
+    counts: (held: string, open: string, closed: string) =>
+      `${held} 個倉位代幣，其中 ${open} 個裡面還有流動性，${closed} 個已經關閉。`,
+    inRange: "此刻正在賺取",
+    outOfRange: "在它的區間之外",
+    rangeUnknown: "這裡還沒有人做過兌換",
+    analyse: "分析這個資金池 →",
+    /*
+     * Read from the pool's own fee accounting and differenced, not estimated.
+     * Deliberately not a rate: it says what has accrued, not over how long or
+     * at what pace, because neither follows from the figure.
+     */
+    feesEarned: (amount0: string, symbol0: string, amount1: string, symbol1: string) =>
+      `已賺到但尚未取出：${amount0} ${symbol0} 和 ${amount1} ${symbol1}。`,
+    feesNone: "目前還沒有賺到可以取出的東西。",
+    feesUnread: "它賺到了多少，無法讀出。",
+    everyPrice: "這個池子能表達的每一個價格",
+    moreNotShown: (count: string) => `另有 ${count} 個是開著的，沒有列在這裡。`,
+    readCap: (read: string, held: string) =>
+      `${held} 個裡讀了 ${read} 個。其餘的不在這一頁上，這是這一頁的限制，而不是這個地址的限制。`,
+    /*
+     * Two protocols mean two ways to fail. The counts beside this cover the
+     * other protocol only, and saying so is the difference between a partial
+     * answer and a wrong one.
+     */
+    unreadProtocol: (protocol: string) =>
+      `這次沒能讀出 Uniswap ${protocol} 的倉位，所以這裡的每一個數字都只關乎另一個協議。`,
+    unavailable: "這個地址的倉位無法讀取。",
+    publicNote:
+      "一個倉位的所有者在鏈上，所以這份清單是公開的：任何人都能為同一個地址讀出同樣的一份，而且它沒有透露任何這個地址不曾因為持有這些代幣而公開過的東西。除非你在下方要求 Telegram 提醒，這裡不儲存任何東西；這一頁上也沒有任何數字是估值——一個區間不是一個倉位值多少錢。",
+  },
+
+  wallet: {
+    heading: "連接一個錢包",
+    intro:
+      "連接一個錢包，這一頁就能看到這個地址持有哪些代幣，並把這些代幣可以進入的資金池顯示給你。它讀取地址；在這裡，對一個錢包的要求僅此而已。",
+    connect: "連接錢包",
+    connecting: "正在等待錢包……",
+    connectedAs: "已連接為",
+    showHoldings: "顯示它持有什麼",
+    forget: "忘掉這個地址",
+    /*
+     * The sentence that replaced "never connects a wallet". The half that is
+     * still true is the half worth keeping, and it is the half that matters.
+     */
+    readOnly:
+      "唯讀。本應用向錢包索取的是它的地址，從不索取簽名：這裡沒有任何程式碼能簽署一條訊息或傳送一筆交易，兩次訪問之間也不儲存任何關於錢包的東西。",
+    notices: {
+      "wallet-not-found":
+        "在這個瀏覽器裡沒有找到錢包。瀏覽器錢包擴展會放一個進去；沒有它，這一頁上什麼都不會變。",
+      "wallet-request-declined":
+        "這個請求在錢包裡被拒絕了。什麼都沒有讀取，也什麼都沒有傳送。",
+      "wallet-request-failed":
+        "無法向這個錢包索取地址。什麼都沒有讀取，也什麼都沒有傳送。",
+      "wallet-no-account":
+        "錢包作出了回應但沒有給出地址，這通常意味著它被鎖住了，或者沒有選中任何帳戶。",
+    },
+  },
+
+  telegram: {
+    heading: "Telegram 提醒",
+    intro:
+      "當這個地址的某個倉位離開它的區間或重新回到區間內時，通過 Telegram 獲知。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會被刪除。檢查的頻率取決於執行它的伺服器。",
+    connect: "連接 Telegram",
+    connected: (address: string) => `這個瀏覽器已綁定：正在關注 ${address}。`,
+    pending: "綁定等待中：在 Telegram 裡開啟機器人的對話並按下「開始」。",
+    forget: "忘記綁定",
+    notConfigured: "這臺伺服器上沒有設定 Telegram 提醒。",
+    publicNote:
+      "關注一個地址不需要擁有它——倉位是公開的，提醒說的也不會超出這份清單所說的。機器人讀取鏈上資料併傳送訊息；它無法簽署或傳送任何東西。",
+    linked: (address: string) =>
+      `已綁定。當 ${address} 的某個倉位離開區間或回到區間內時，你會在這裡收到訊息。傳送 /stop 結束。`,
+    unknownStart:
+      "這個連結無法識別或已過期。請在網站上再按一次「連接 Telegram」。",
+    alreadyClaimed:
+      "這個連結已被另一個對話使用。請在網站上再按一次「連接 Telegram」獲取新的連結。",
+    stopped: "已停止。這個對話現在不再關注任何東西，記錄已刪除。",
+    nothingToStop: "這個對話本來就沒有關注任何東西。",
+    help:
+      "這個機器人只關注你在網站上綁定的地址，也只在某個倉位離開或重新進入它的區間時說話。傳送 /stop 結束。",
+    storeDown: "現在無法檢查綁定。請一分鐘後再試。",
+    left: (pair: string, protocol: string, range: string) =>
+      `⚠️ ${pair}（${protocol}）已離開它的區間：${range}。在價格回來之前，它只持有一種代幣，什麼也賺不到。`,
+    entered: (pair: string, protocol: string, range: string) =>
+      `✅ ${pair}（${protocol}）回到了它的區間內：${range}。又在賺取了。`,
+    opened: (pair: string, protocol: string, range: string) => `新倉位：${pair}（${protocol}），${range}。`,
+    closed: (protocol: string, tokenId: string) => `已關閉：${protocol} 倉位 #${tokenId}。`,
+    footer:
+      "僅供參考——不構成財務建議。讀自公開的鏈上資料；這裡沒有任何東西能代你操作。",
+  },
+
+  search: {
+    label: "一個交易對、一個 v3 池地址，或一個 v4 池 id",
+    placeholder: "WETH/USDC",
+    help: "輸入一個像 WETH/USDC 這樣的交易對，貼上一份 v3 池合約的地址，或者貼上一個 v4 池 id——也就是一個 v4 池子被命名所用的那個 32 位元組雜湊。唯讀：本應用從不簽署任何東西，也從不傳送交易。",
+    submit: "查詢資金池",
+
+    heading: "匹配的 Uniswap v3 資金池",
+    resultsFor: (terms: string) => `代幣與 ${terms} 匹配的資金池。`,
+    empty: (terms: string) =>
+      `以太坊主網上沒有任何 Uniswap v3 資金池的代幣與 ${terms} 匹配。`,
+    emptyHint: "請檢查拼寫，或者直接貼上該池的地址。",
+
+    /*
+     * The v4 list, beneath the v3 one. Two lists rather than one merged list,
+     * because they are ordered by different numbers — what a pool holds, and
+     * what its active liquidity is worth — and one order over both would be
+     * comparing them.
+     */
+    v4Heading: "匹配的 Uniswap v4 資金池",
+    v4Empty: (terms: string) =>
+      `以太坊主網上沒有任何 Uniswap v4 資金池的貨幣與 ${terms} 匹配。`,
+    v4Depth: "當前價格處的深度",
+    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthNote:
+      "這個池子此刻的活躍流動性值多少，讀自 PoolManager 自己的儲存——不是這個池子持有什麼，那是任何 v4 池子都不會自行報告的。",
+    v4StateUnread: "這個池子的流動性無法從鏈上讀出。",
+    v4Hook: "Hook",
+    v4NoHook: "無",
+    v4HookAltersSwaps: "可能改變一筆兌換的代價",
+    v4Ordering:
+      "名字與你所搜尋的完全一致的池子排在最前。之後的順序按每個池子在其當前價格處的深度——也就是它的活躍流動性與價格，讀自 PoolManager 的儲存，並用資料來源推匯出的價格換算到同一把尺子上。這不是這個池子持有什麼：每一個 v4 池子的代幣都一起躺在同一個 PoolManager 裡，鏈上沒有任何東西按池子報告它們。索引器自己的流動性數字曾與鏈上對照過，在其中一個最活躍的池子上差了百分之十五，這就是它不被採用的原因。",
+
+    /*
+     * The ordering is the one claim a list makes, so it is stated rather than
+     * left to be inferred from the order itself.
+     */
+    ordering:
+      "名字與你所搜尋的完全一致的池子排在最前。之後的順序按每個池子實際持有什麼——讀自代幣合約本身，並用資料來源推匯出的價格換算到同一把尺子上。它以前按資料來源報告的各池鎖倉價值排序，而那個數字錯得足以把這份清單重新排一遍：曾有一個池子被以九百萬美元的報告流動性發布在這裡，而它的合約裡只有九千。",
+    windowing:
+      "這份清單取自資料來源針對你的搜尋詞報告為成交最活躍的那些池子，而一個清淡到落在那個集合之外的池子，根本走不到上面那個排序裡。這就是「在一個來源選擇返回的東西裡做排名」這件事老老實實的邊界：一個持有很多但很少成交的池子，可能根本不在這一頁上。",
+    dormantNote:
+      "一個月內沒有任何活動的資金池不會列出。區間是從最近一個月的價格畫出來的，沒有這一個月的池子無從畫起——開啟它也只會告訴你這一點。",
+    /*
+     * The v4 window is not the terms. The source cannot answer a search over
+     * every v4 pool before this page stops waiting — measured, not assumed —
+     * so the search runs over the week's busiest pool-days, and a page that
+     * did not say so would let a reader conclude a pool does not exist.
+     */
+    v4Windowing:
+      "這份清單取自最近七天在以太坊主網上成交最多的那些 v4 資金池——最活躍的一千個「池子·日」，合起來是幾百個池子——而比這更清淡的池子走不到這一頁上。資料來源沒法在這一頁停止等待之前，答完一次橫跨每一個 v4 池子的搜尋，所以這個窗口是按近期活躍度劃的，而不是按你的搜尋詞劃的：一個存在但本週沒有成交的池子，不在這裡。",
+    /*
+     * The sentence that does the real work on this page. Search is what lets
+     * someone reach a pool they did not go looking for.
+     */
+    symbolWarning:
+      "一個符號來自這個代幣自己的合約，而部署一個自稱 USDC 的代幣不花一分錢。每個交易對下面的合約地址，才是把兩種代幣區分開的東西。",
+
+    feeTier: "費率檔",
+    holds: "持有",
+    reservesUnread: "這個池子持有什麼，無法從鏈上讀出。",
+    moreNotShown: (count: string) =>
+      `另有 ${count} 個未顯示。上面這些是其中成交最活躍的，按資料來源報告的順序排列——那是一個關於某個池子有多忙的說法，除此之外什麼也不是。`,
+    analyse: "分析這個資金池",
+    /** Under the v4 list: where each row's fee came from, and why the row can say it was not read. */
+    v4FeeNote:
+      "每個池子的費率讀自鏈上它被建立時的 key，而不是讀自資料來源——資料來源那個費率數字曾被測出是最近一筆兌換所付的總額、包含協議抽成在內，並不是這個池子自己的費率。key 讀不出來的那一行會明說。",
+
+    unavailableHeading: "這次搜尋無法執行",
+    rejected: {
+      empty: "輸入一個像 WETH/USDC 這樣的交易對，或者一個池地址。",
+      length: (min: number, max: number) =>
+        `一個搜尋詞的長度在 ${min} 到 ${max} 個字元之間。`,
+      unsupportedCharacters:
+        "一個搜尋詞可以包含字母、數字，以及出現在代幣符號裡的那些標記——別的都不行。",
+    },
+  },
+
+  report: {
+    steps: {
+      pool: "讀取這個池子的配置",
+      snapshot: "讀取這個池子當前的市場狀態",
+      history: "讀取這個池子的每日價格歷史",
+      volatility: "測量價格走了多少",
+      band: "構建價格帶",
+      range: "把價格帶對齊到這個池子能表達的價格上",
+      divergence: "把這個區間與持有兩種代幣作對比",
+      activity: "讀取這個池子在所測窗口內做了什麼",
+    },
+    noRangeHeading: "這個池子沒有區間",
+    stoppedWhile: (step: string) => `這件事在${step}時停了下來。`,
+    poolSummary: (protocol: string, fee: string) =>
+      `Uniswap ${protocol} · 以太坊主網 · ${fee}`,
+    feePerSwap: (fee: string) => `每筆兌換收取 ${fee} 手續費`,
+    /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
+    feePlusProtocol: (fee: string, protocol: string) =>
+      `每筆兌換收取 ${fee} 手續費，另加 ${protocol} 給協議`,
+    /** Stands where the fee would, for a v4 pool whose hook sets one per swap. */
+    noDeclaredFee: "費率由它的 hook 在每筆兌換上設定",
+    caveatsHeading: (count: number) =>
+      count === 1 ? "有一條附註適用於這些數字。" : `有 ${count} 條附註適用於這些數字。`,
+    caveatsAriaLabel: "附註",
+
+    /*
+     * The range, as two prices. Every price on the page is written the way
+     * round that makes it at least one — one unit of the dearer token, priced
+     * in the cheaper — and the intro says which token that is, so the figures
+     * under it can be read without a second thought. The ticks those prices
+     * encode are in the technical details at the end, where a reader who
+     * wants to check them can, and a reader who does not is never made to.
+     */
+    contentsHeading: "本頁內容",
+    contentsLabel: "這份分析的各個部分",
+    rangeHeading: "建議價格區間",
+    rangeIntro: (base: string, quote: string) =>
+      `這個池子裡的一個倉位會在哪裡處於活躍狀態，以 1 ${base} 摺合多少 ${quote} 來表示。`,
+    rangeValue: (lower: string, upper: string, quote: string, base: string) =>
+      `${lower} – ${upper} ${quote}/${base}`,
+    rangeDistances: (down: string, up: string) =>
+      `比當前價格低 ${down}，高 ${up}。`,
+    rangeMeaning:
+      "在這兩個價格之間，一個倉位賺取它在這個池子兌換手續費中的份額。在它們之外，它只持有一種代幣，並且在價格回來之前什麼也賺不到。",
+    priceSentence: (base: string, price: string, quote: string) => `1 ${base} = ${price} ${quote}`,
+    currentPrice: "當前價格",
+    inRangeYes: "當前價格落在這個區間內。",
+    inRangeNo: "當前價格落在這個區間之外。",
+    inRangeYesNote: "在這裡開的倉位會立刻處於活躍狀態。",
+    inRangeNoNote:
+      "在這裡開的倉位只會持有一種代幣，並且在價格回到區間內之前什麼也賺不到。",
+    beyondEdges: (below: string, above: string) =>
+      `如果價格跌到區間下方，這個倉位最後只持有 ${below}；如果漲到區間上方，則只持有 ${above}。`,
+    lowerTruncatedNote:
+      "下邊緣停在了這個池子能表達的最低價格上，沒能走到價格帶本會把它放到的位置。",
+    upperTruncatedNote:
+      "上邊緣停在了這個池子能表達的最高價格上，沒能走到價格帶本會把它放到的位置。",
+    /*
+     * The month drawn through the range. The caption says what each mark is,
+     * once, in the words the page uses for the same things; the day counts a
+     * few panels down are the same days, counted.
+     */
+    chartLabel: "最近一個月的價格與建議區間的對照",
+    chartCaption: (days: string) =>
+      `最近 ${days} 天中的每一天：它的收盤價，以及從當日最低到當日最高的跨度。陰影帶是建議區間；實線是今天的價格。`,
+    chartLegend:
+      "實心點表示這一天全天都留在區間內；空心點表示它離開了區間或越過了某一邊。",
+
+    /*
+     * Where the range came from, in the words a reader has: how much the price
+     * moves on a typical day, and what that comes to over the horizon. The
+     * standard deviation is named in the notes, not in the labels.
+     */
+    basisHeading: "這個區間是怎麼畫出來的",
+    basisIntro: (base: string, days: string) =>
+      `來自 ${base} 的價格在最近 ${days} 個完整的日子裡實際走了多少——而不是來自對它接下來往哪走的預測。`,
+    dailyMove: "典型的單日波動",
+    dailyMoveNote: "在這個窗口內，一天價格變化的標準差。",
+    horizonMove: (days: string) => `在 ${days} 天裡`,
+    horizonMoveNote:
+      "把同樣的波動攤到下面所選的時間跨度上：一個標準差，上下各一個。",
+    widthValue: (multiplier: string) => `上下各為其 ${multiplier} 倍`,
+    widthNote:
+      "在下面選擇。更寬的區間被離開的次數更少，而攤在上面的同樣一筆資金，在任何單個價格上都更薄。",
+    measuredOver: "測量範圍",
+    measuredOverNote: (returns: string) => `有 ${returns} 個單日變化進入了計算。`,
+    epilogue:
+      "這個區間以今天的價格為中心，並按比例向上和向下畫出同樣的距離——減半和翻倍是同一種幅度——這也是那兩個百分比不一樣的原因。它描述的是價格已經走了多遠，而不是它會走到哪裡：它不是預測，寬度也不是置信水平。這裡沒有任何東西為一個倉位定規模，也沒有說該存入多少哪一種代幣。",
+  },
+
+  /*
+   * Everything a reader checking the page against the chain would want, and
+   * nothing a reader opening a position needs: the ticks the prices encode,
+   * the blocks the figures were read at, the figures in the pool's own
+   * direction. Folded away at the end of the report.
+   */
+  technical: {
+    heading: "技術細節",
+    summary: "上面這一頁所對照核查的那些 tick、區塊和數字。",
+    lowerTick: "下邊 tick",
+    upperTick: "上邊 tick",
+    currentTick: "當前 tick",
+    sourceReportedTick: (tick: string) => `資料來源報的是 ${tick}。`,
+    noSourceTick:
+      "資料來源沒有報出它自己的 tick，所以這次換算未經核驗。",
+    tickSpacing: "tick 間距",
+    tickSpacingNote: (step: string) => `可用邊緣之間 ${step} 的價格步長。`,
+    width: "寬度",
+    widthValue: (ticks: string, spacings: string) => `${ticks} 個 tick · ${spacings} 個間距`,
+    poolPrice: "這個池子自己報的價格",
+    quotePerBase: (quote: string, base: string) => `${quote}/${base}`,
+    bandLower: "價格帶下界",
+    bandUpper: "價格帶上界",
+    bandNote: "對齊到 tick 網格之前的值，按這個池子自己的方向。",
+    annualised: "年化波動率",
+    annualisedNote:
+      "每日對數收益率的樣本標準差，乘以 sqrt(365) 放大。",
+    coverage: "覆蓋率",
+    coverageNote: "這個窗口裡有多少是有連續每日價格支撐的。",
+    sourceBlock: "來源區塊",
+    noBlockTime: "沒有報出區塊時間。",
+    fetchedAt: "取得於",
+    fetchedAtNote: "這是響應到達的時間，而不是它所描述的時間。",
+    lowerEdge: "下邊緣",
+    upperEdge: "上邊緣",
+    truncated: "已截斷",
+    asAsked: "與所請求的一致",
+  },
+
+  explanation: {
+    heading: "說明",
+    pending: "正在撰寫說明……",
+    unavailable: "這份分析沒有可用的說明。",
+    /*
+     * The two states a single paragraph can be in while the rest of the answer
+     * is still arriving. Both keep the heading, so the reading order stays put
+     * rather than the sections below jumping as each one lands.
+     */
+    sectionWriting: "仍在撰寫中……",
+    sectionMissing: "這一部分沒能寫出來。",
+    /*
+     * Names the author, and draws the line. Prose written by a model sitting
+     * under figures that were computed and cross-checked should say which is
+     * which, or a reader is entitled to assume the same hand produced both.
+     */
+    writtenBy: (model: string) => `由 ${model} 撰寫。上面那些數字不是。`,
+    sections: {
+      whatThisRangeMeans: "這個區間意味著什麼",
+      ifPriceLeavesTheRange: "如果價格離開了這個區間",
+      whatTheVolatilitySays: "波動率說明了什麼",
+      whatThisDoesNotCover: "這份說明沒有涵蓋什麼",
+    },
+  },
+
+  /*
+   * Every sentence this application says about a read that did not go well.
+   *
+   * They lived in the data layer until search made a second language matter:
+   * an adapter raised an English sentence and it travelled, unchanged, to a page
+   * being read in Turkish. Now the adapter raises a code and the wording is
+   * here, where all the other wording is.
+   *
+   * `satisfies` is what keeps this honest. Add a code to `notices.ts` and this
+   * object stops compiling until it says something about it, in both languages.
+   */
+  notices: {
+    failure: {
+      "invalid-pool-address":
+        "池地址必須是 0x 後面跟 40 個十六進位制字元，而且不能是零地址。",
+      "invalid-search-terms":
+        "一次資金池搜尋接受一到兩個短的搜尋詞，由字母、數字，以及出現在代幣符號裡的那些標記組成。",
+      "market-data-not-configured":
+        "這臺伺服器上沒有配置 Uniswap v3 的行情資料。",
+      "chain-data-not-configured":
+        "這臺伺服器上沒有配置鏈上讀取。",
+      "explanation-not-configured":
+        "本應用沒有被配置為撰寫說明，所以不顯示任何說明。",
+      "market-data-timed-out":
+        "行情資料請求超時。",
+      "market-data-unreachable":
+        "無法連接到行情資料來源。",
+      "market-data-credentials-rejected":
+        "行情資料來源拒絕了所配置的憑據。",
+      "market-data-rate-limited":
+        "超出了行情資料來源的速率限制。",
+      "market-data-unreadable":
+        "行情資料來源返回了一個無法讀取的響應。",
+      "market-data-malformed":
+        "行情資料來源返回了一個本應用無法核驗的響應。",
+      "market-data-indexing-errors":
+        "行情資料來源報告了索引錯誤，所以它的數字不能當作已核驗的。",
+      "market-data-stale":
+        "行情資料來源落後鏈太多，這些數字不能當作是當前的。",
+      "market-data-future-block-time":
+        "行情資料來源報出的區塊時間比這臺伺服器的時鐘還靠前，所以它的數字無法核驗。",
+      "chain-data-timed-out":
+        "鏈上資料請求超時。",
+      "chain-data-unreachable":
+        "無法連接到鏈上資料來源。",
+      "chain-data-credentials-rejected":
+        "鏈上資料來源拒絕了所配置的憑據。",
+      "chain-data-rate-limited":
+        "超出了鏈上資料來源的速率限制。",
+      "chain-data-unreadable":
+        "鏈上資料來源返回了一個無法讀取的響應。",
+      "chain-data-malformed":
+        "鏈上資料來源返回了一個本應用無法核驗的響應。",
+      "chain-aggregator-unverified":
+        "餘額是通過鏈上的一份輔助合約讀取的，而那個地址上的程式碼不是本應用當初信任的那份程式碼，所以沒有通過它讀取任何東西。",
+      "pool-not-found":
+        "在以太坊主網上，沒有為這個地址找到任何 Uniswap v3 資金池。",
+      "pool-contract-not-found":
+        "在以太坊主網上，這個地址上沒有任何 Uniswap v3 池合約作出回應。",
+      "pool-configuration-inconsistent":
+        "從兩個來源拼出來的池配置無法核驗。",
+      "pool-history-insufficient":
+        "這個池子還沒有足夠多的完整每日價格歷史可供分析。",
+      "volatility-invalid-input":
+        "為這次計算提供的價格歷史，不是一份有效的規範化歷史。",
+      "volatility-insufficient-history":
+        "這個池子沒有足夠多連續的每日價格來測量波動率。",
+      "volatility-unverifiable":
+        "波動率計算得出了一個本應用無法核驗的結果。",
+      "band-invalid-input":
+        "為這條價格帶提供的行情資料無效，或者快照和波動率描述的不是同一個池子。",
+      "band-no-current-price":
+        "這個池子的當前價格不可用，所以無法為一條價格帶定中心。",
+      "band-unverifiable":
+        "價格帶計算得出了一個本應用無法核驗的結果。",
+      "range-invalid-input":
+        "為這個區間提供的池子、價格帶和快照無效，或者它們描述的不全是同一個池子和同一次觀測。",
+      "range-price-unrepresentable":
+        "這個池子的當前價格落在 Uniswap 所能表達的範圍之外，所以無法由它構建任何倉位區間。",
+      "range-tick-disagreement":
+        "資料來源為這個池子報出的價格和它報出的狀態描述的不是同一個時刻，所以不發佈任何區間。",
+      "range-too-narrow":
+        "這條價格帶比這個池子允許的兩條邊緣之間最小的步長還要窄，所以它並不描述兩條互不相同的倉位邊界。",
+      "range-unverifiable":
+        "區間計算得出了一個本應用無法核驗的結果。",
+      "divergence-unverifiable":
+        "與持有的對比得出了一個本應用無法核驗的結果。",
+      "activity-unverifiable":
+        "這個池子近期的活動得出了一個本應用無法核驗的結果。",
+      "fee-rate-unmeasurable":
+        "在這個窗口裡被索引到的每一天，這個池子都沒有任何成交，所以無法從它收到的金額中除出它收取的費率。",
+      "deposit-share-unpriceable":
+        "資料來源沒有為這個池子持有的東西定價，所以無法把一筆以美元計的資金換算成這裡的一個倉位。",
+      "deposit-share-no-days":
+        "在資料來源能作答的每一天裡，價格都離開了這個區間，所以沒有哪一天投在其中的資金本可以收到什麼。",
+      "deposit-share-unverifiable":
+        "一筆資金本可以分到多少，沒有通過它自己的檢查，所以不予顯示。",
+      "range-order-no-room":
+        "這個區間太窄了，在當前價格的任何一側都容不下一個單邊倉位。",
+      "range-order-unverifiable":
+        "這個區間的兩個單邊部分沒有通過它們自己的檢查，所以不予顯示。",
+      "swap-depth-no-liquidity":
+        "這個池子在它的當前價格處報告沒有流動性，所以這裡沒有可以定價的兌換。",
+      "swap-depth-tick-disagreement":
+        "資料來源自己的 tick 把這個池子放在了與所顯示價格不同的價格步長裡，所以它報出的流動性不能歸到這一格上。",
+      "swap-depth-unverifiable":
+        "一筆兌換要付出什麼，沒有通過它自己的檢查，所以不予顯示。",
+      "out-of-sample-insufficient-history":
+        "這個池子被索引到的歷史不夠長，無法既在過去擬合出一條價格帶，又留下一個完整時間跨度的日子來檢驗它。",
+      "out-of-sample-unverifiable":
+        "樣本外檢驗得出了一個本應用無法核驗的結果。",
+      "hook-directory-unverifiable":
+        "本週這些 v4 資金池的 hook 沒有通過它們自己的檢查，所以不顯示這份名錄。",
+      "positions-manager-unverified":
+        "持有 Uniswap v3 倉位的那份合約，回應時給出的程式碼不是本應用當初據以構建的那份，所以它說的任何東西都不予顯示。",
+      "positions-unreadable":
+        "鏈沒有為這個地址的倉位作出回應，所以一個也不顯示——這和「一個都沒有持有」不是一回事。",
+      "positions-unverifiable":
+        "這個地址的倉位沒有通過它們自己的檢查，所以不予顯示。",
+      "holdings-unverifiable":
+        "這個地址持有什麼，得出了一個本應用無法核驗的結果。",
+      "explanation-key-rejected":
+        "說明服務不接受所配置的金鑰，所以不顯示任何說明。",
+      "explanation-model-not-permitted":
+        "所配置的金鑰沒有被允許使用所選的模型，所以不顯示任何說明。",
+      "explanation-model-unknown":
+        "所選的模型對所配置的金鑰不可用，所以不顯示任何說明。",
+      "explanation-rate-limited":
+        "說明服務此刻處於速率限制中，所以不顯示任何說明。",
+      "explanation-unreachable":
+        "無法連接到說明服務，所以不顯示任何說明。",
+      "explanation-request-refused":
+        "說明服務拒絕了這個請求，所以不顯示任何說明。",
+      "explanation-declined":
+        "模型謝絕解釋這個池子的數字，所以不顯示任何說明。",
+      "explanation-truncated":
+        "這段說明在寫完之前就被截斷了，所以不予顯示。",
+      "explanation-malformed":
+        "這段說明返回時的形式是本應用無法核驗的，所以不予顯示。",
+    } satisfies Record<DataFailureNotice, string>,
+
+    warning: {
+      "block-time-unreported":
+        "資料來源沒有報出區塊時間，所以無法核驗這些數字有多新。",
+      "history-window-incomplete":
+        "資料來源沒有為這個窗口裡的每一天都報出價格；缺失的那些日子是缺著的，而不是估出來的。",
+      "volatility-window-incomplete":
+        "這個窗口裡有些日子沒有價格，所以波動率是用比窗口所覆蓋的更少的單日收益率測出來的；缺失的那些日子被跳過了，而不是估出來的。",
+      "band-window-incomplete":
+        "波動率窗口裡有些日子沒有價格，所以這條價格帶所依據的單日收益率比窗口所覆蓋的要少。",
+      "band-price-block-time-unreported":
+        "當前價格的來源沒有報出區塊時間，所以無法獨立核驗它有多新。",
+      "band-volatility-block-time-unreported":
+        "波動率的來源沒有報出區塊時間，所以無法獨立核驗它有多新。",
+      /*
+       * Neither names an edge. The codes name the pool's edges, and the page
+       * writes its prices the reader's way round, which can be the other way —
+       * so the sentence points at the range panel, which says which edge in
+       * the direction shown.
+       */
+      "range-lower-edge-truncated":
+        "這個區間的一條邊緣停在了這個池子所能表達的價格的盡頭——也就是這個池子第一種代幣最便宜的那一邊——所以這個區間沒有伸到價格帶本會到達的地方。區間那一塊會說明，在所顯示的方向上那是哪一條邊緣。",
+      "range-upper-edge-truncated":
+        "這個區間的一條邊緣停在了這個池子所能表達的價格的盡頭——也就是這個池子第一種代幣最貴的那一邊——所以這個區間沒有伸到價格帶本會到達的地方。區間那一塊會說明，在所顯示的方向上那是哪一條邊緣。",
+      "range-tick-unverified":
+        "價格來源沒有報出這個池子自己的狀態，所以由它推出的價格無法與之對照核驗。",
+      "range-excludes-current-price":
+        "這個池子的當前價格落在這個區間之外，所以由它建出的倉位只會持有一種代幣，並且在價格回來之前什麼也賺不到。",
+    } satisfies Record<DataWarningNotice, string>,
+  },
+
+  rateLimited: {
+    title: "請求過多",
+    body: (limit: number) =>
+      `這一頁每次訪問都會讀取 Uniswap 的即時資料，所以它被限制為每分鐘 ${limit} 次分析。`,
+    retry: (seconds: number) => `請在 ${seconds} 秒後重試。`,
+    back: "返回顧問首頁",
+  },
+
+  error: ERROR_COPY["zh-Hant"],
+};
 const dictionaries: Record<Locale, Dictionary> = {
   en,
   tr,
@@ -9111,6 +10249,7 @@ const dictionaries: Record<Locale, Dictionary> = {
   zh,
   ru,
   pt,
+  "zh-Hant": zhHant,
 };
 
 export const getDictionary = (locale: Locale): Dictionary => dictionaries[locale];
