@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { InterfaceCopy } from "../lib/i18n/interface";
+import { readConnection, shouldLoadHeroVideo } from "../lib/media/heroVideo";
 import { ArrowIcon } from "./BrandMark";
 
 const STATIC_GATES = [
@@ -110,6 +111,17 @@ export function LiquidityHero({
     };
     const load = async () => {
       if (loaded || controller || failed) return;
+      /*
+       * Asked once, here rather than in the media queries above, because this
+       * is not about the shape of the screen: it is about what the download
+       * would cost this reader. A connection the browser calls slow, or a
+       * data saver they turned on themselves, means the still image is the
+       * whole hero and nobody is charged three megabytes for a flourish.
+       */
+      if (!shouldLoadHeroVideo(readConnection(navigator))) {
+        failed = true;
+        return;
+      }
       controller = new AbortController();
       const timer = window.setTimeout(() => controller?.abort(), 20000);
       try {
