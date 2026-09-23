@@ -373,6 +373,9 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
 - `health-check.sh` — the five-minute health check described above.
 - `set-server-watch-token.sh` — stores Server Watch's token, as root, after
   checking it is not the product bot's and that your chat can receive from it.
+- `cloudflare-only.sh`, `cloudflare_only.py` — let only Cloudflare's ranges reach the
+  HTTPS block, so CF-Connecting-IP (what the rate limit counts) cannot be forged
+  by connecting to the machine directly. Weekly from cron.
 - `backup.sh` — the daily encrypted backup of the Telegram links, described above.
 - `store-backup.mts` — copies the links out of Redis and back, under plain Node.
 - `set-backup-secret.sh` — makes the secret the backup is sent with.

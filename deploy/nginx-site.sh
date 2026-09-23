@@ -38,6 +38,8 @@ if [ -f "$SITE" ] && grep -q "ssl_certificate" "$SITE"; then
   echo "$SITE already carries a certificate; leaving it alone."
   echo "To rebuild it from the repository: rm $SITE and run this again."
   nginx -t && systemctl reload nginx
+  # Only Cloudflare may reach the HTTPS block; see cloudflare-only.sh.
+  bash "$APP_DIR/deploy/cloudflare-only.sh"
   exit 0
 fi
 
@@ -69,6 +71,10 @@ certbot --nginx --non-interactive --agree-tos --redirect \
   -m "$EMAIL" -d "$DOMAIN" -d "www.$DOMAIN"
 
 nginx -t && systemctl reload nginx
+
+# From here only Cloudflare may reach the HTTPS block. Not before: the
+# certificate above was issued with the name pointed straight at this machine.
+bash "$APP_DIR/deploy/cloudflare-only.sh"
 echo
 echo "https://$DOMAIN is served from this machine. Turn the Cloudflare proxy back"
-echo "on and set SSL/TLS to Full (strict)."
+echo "on and set SSL/TLS to Full (strict) — until then, only Cloudflare can reach it."

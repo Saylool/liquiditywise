@@ -97,6 +97,8 @@ install -d -m 755 /var/lib/liquiditywise
 {
   echo "*/5 * * * * root APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check"
   echo "*/5 * * * * root APP_PORT=$APP_PORT DOMAIN=$DOMAIN /usr/local/bin/liquiditywise-health"
+  # Cloudflare's address list, weekly: the site answers nothing else.
+  echo "23 4 * * 1 root /bin/bash $APP_DIR/deploy/cloudflare-only.sh > /dev/null"
   # Off the five-minute marks, and quiet until set-backup-secret.sh has run.
   echo "17 3 * * * root PATH=$(dirname "$(command -v node)"):/usr/bin:/bin /usr/local/bin/liquiditywise-backup --if-set-up > /dev/null"
 } > /etc/cron.d/liquiditywise
