@@ -22,6 +22,11 @@ case "$ours" in ''|*[!0-9]*) ours=0 ;; esac
 echo "this application uses database $ours"
 
 command -v redis-cli >/dev/null || { echo "no redis-cli on this machine"; exit 1; }
+
+# Once redis-password.sh has run, REDIS_URL carries the password; redis-cli
+# takes it from its environment, never as an argument others could read.
+redis_url="$(grep -E '^REDIS_URL=' "$APP_DIR/.env.local" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+case "$redis_url" in redis://:*@*) p="${redis_url#redis://:}"; export REDISCLI_AUTH="${p%%@*}"; unset p ;; esac
 redis-cli PING >/dev/null 2>&1 || { echo "redis is not answering"; exit 1; }
 
 # Who else is in there. A database with keys that is not ours means the

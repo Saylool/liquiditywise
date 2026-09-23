@@ -384,4 +384,6 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
 - `backup-recipient.pem` — the certificate backups are encrypted to. Public;
   its private key is kept off the server.
 - `redis-durability.sh` — turns on the append-only log, if the Redis is ours.
+- `redis-password.sh` — puts a password on the Redis, if it is ours, and hands it to
+  the application in REDIS_URL. Made on the server, never typed or shown.
 - `uptime-worker/` — the outside check, on Cloudflare, for all three sites and for when the machine is off.

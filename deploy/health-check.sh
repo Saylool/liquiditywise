@@ -108,7 +108,12 @@ fi
 # redis-cli is here — the store's own interface is six commands and is not
 # widened for a monitor.
 if command -v redis-cli >/dev/null; then
-  aof="$(redis-cli INFO persistence 2>/dev/null | sed -n 's/^aof_enabled:\([01]\).*/\1/p')"
+  # The password, when REDIS_URL carries one, goes to redis-cli in its
+  # environment — readable by root and nobody else — not as an argument.
+  redis_url="$(setting REDIS_URL)"
+  redis_password=""
+  case "$redis_url" in redis://:*@*) redis_password="${redis_url#redis://:}"; redis_password="${redis_password%%@*}" ;; esac
+  aof="$(REDISCLI_AUTH="$redis_password" redis-cli INFO persistence 2>/dev/null | sed -n 's/^aof_enabled:\([01]\).*/\1/p')"
   # No answer at all is not a reading. A Redis that is down is already
   # reported by the round trip the route makes, and guessing "not durable"
   # from a failed command would add a second message about one fault.
