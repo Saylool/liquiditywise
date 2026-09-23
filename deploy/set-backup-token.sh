@@ -31,10 +31,13 @@ IFS= read -rs token || true
 printf '\n'
 token="$(printf '%s' "$token" | tr -d '[:space:]')"
 
-if ! printf '%s' "$token" | grep -qE '^[A-Za-z0-9_-]{30,200}$'; then
+# Opaque to this script, and Cloudflare has more than one format — some with
+# a dot in them. This only turns away an empty clipboard or a sentence; the
+# token is judged by Cloudflare itself below.
+if ! printf '%s' "$token" | grep -qE '^[A-Za-z0-9._-]{30,300}$'; then
   # Its shape, never its content: enough to tell an empty clipboard from a
   # token in a format this does not expect.
-  odd="$(printf '%s' "$token" | tr -d 'A-Za-z0-9_-' | fold -w1 | sort -u | tr -d '\n')"
+  odd="$(printf '%s' "$token" | tr -d 'A-Za-z0-9._-' | fold -w1 | sort -u | tr -d '\n')"
   echo "That does not look like a Cloudflare API token (${#token} characters${odd:+, including \"$odd\"}). Nothing was changed."
   exit 1
 fi
