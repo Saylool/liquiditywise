@@ -49,6 +49,13 @@ describe("readings that arrive from outside as text", () => {
     expect(from("diskPercent=1000")).toEqual({});
   });
 
+  it("reads the hours since the last backup, zero included", () => {
+    expect(from("backupHours=30")).toEqual({ backupHours: 30 });
+    expect(from("backupHours=0")).toEqual({ backupHours: 0 });
+    expect(problemsFrom(from("backupHours=30")).map((p) => p.id)).toEqual(["backup-stale"]);
+    expect(from("backupHours=-1")).toEqual({});
+  });
+
   it("ignores parameters it was not given", () => {
     expect(from("diskPercent=50&unrelated=1")).toEqual({ diskPercent: 50 });
   });

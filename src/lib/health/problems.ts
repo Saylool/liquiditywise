@@ -28,6 +28,7 @@ export type ProblemId =
   | "alerts-not-running"
   | "certificate-expiring"
   | "disk-nearly-full"
+  | "backup-stale"
   | "market-data-key-refused"
   | "chain-data-key-refused";
 
@@ -49,6 +50,8 @@ export type Readings = {
   readonly certificateDays?: number | undefined;
   /** Percentage of the filesystem in use. */
   readonly diskPercent?: number | undefined;
+  /** Hours since the last backup that was stored and read back, when backups are set up. */
+  readonly backupHours?: number | undefined;
   /** What the subgraph gateway said to a probe, or absent when none was made. */
   readonly marketDataStatus?: UpstreamStatus | undefined;
   /** What the Ethereum RPC endpoint said to a probe. */
@@ -69,6 +72,13 @@ export const CERTIFICATE_WARNING_DAYS = 10;
 
 /** Below this the machine still works; above it, something soon will not. */
 export const DISK_WARNING_PERCENT = 90;
+
+/**
+ * A backup runs once a day. Twenty-six hours is one run missed, with two
+ * hours for a slow one — so a backup that stopped is reported the morning it
+ * first fails to happen, not after a week of copies expired unreplaced.
+ */
+export const BACKUP_STALE_HOURS = 26;
 
 /**
  * The problems these readings show, worst first.
@@ -156,6 +166,19 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
     problems.push({
       id: "disk-nearly-full",
       message: `The filesystem is ${diskPercent}% full. This machine serves other sites too.`,
+    });
+  }
+
+  /*
+   * The backups expire after seven days on their own. A backup that stopped
+   * does not fail loudly anywhere: it leaves the copies there are to run out
+   * one by one, until the day one is needed and there is none.
+   */
+  const { backupHours } = readings;
+  if (backupHours !== undefined && backupHours > BACKUP_STALE_HOURS) {
+    problems.push({
+      id: "backup-stale",
+      message: `The last backup of the Telegram links was stored ${backupHours} hours ago; one should be stored every day. Run \`liquiditywise-backup\` to see why.`,
     });
   }
 

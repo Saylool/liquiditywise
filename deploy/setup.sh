@@ -87,14 +87,18 @@ systemctl daemon-reload
 systemctl enable --quiet liquiditywise
 systemctl restart liquiditywise
 
-# The two scheduled jobs, every five minutes. Both read their secrets from
-# .env.local at run time, so this file stays world-readable and holds none.
+# The scheduled jobs: two every five minutes, and the backup once a day. All
+# read their secrets from .env.local at run time, so this file stays
+# world-readable and holds none.
 install -m 755 "$APP_DIR/deploy/telegram-check.sh" /usr/local/bin/liquiditywise-telegram-check
 install -m 755 "$APP_DIR/deploy/health-check.sh" /usr/local/bin/liquiditywise-health
+install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/liquiditywise-backup
 install -d -m 755 /var/lib/liquiditywise
 {
   echo "*/5 * * * * root APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check"
   echo "*/5 * * * * root APP_PORT=$APP_PORT DOMAIN=$DOMAIN /usr/local/bin/liquiditywise-health"
+  # Off the five-minute marks, and quiet until set-backup-token.sh has run.
+  echo "17 3 * * * root PATH=$(dirname "$(command -v node)"):/usr/bin:/bin /usr/local/bin/liquiditywise-backup --if-set-up > /dev/null"
 } > /etc/cron.d/liquiditywise
 chmod 644 /etc/cron.d/liquiditywise
 

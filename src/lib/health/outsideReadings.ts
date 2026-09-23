@@ -22,6 +22,7 @@ const OutsideSchema = z.object({
   /** Negative once a certificate has expired, which is still worth reporting. */
   certificateDays: z.coerce.number().int().min(-3650).max(3650).optional(),
   diskPercent: z.coerce.number().int().min(0).max(100).optional(),
+  backupHours: z.coerce.number().int().min(0).max(1_000_000).optional(),
   storeDurable: z
     .enum(["0", "1"])
     .transform((value) => value === "1")
@@ -43,6 +44,7 @@ export const readOutsideReadings = (searchParams: URLSearchParams): Readings => 
   const parsed = OutsideSchema.safeParse({
     certificateDays: given(searchParams.get("certificateDays")),
     diskPercent: given(searchParams.get("diskPercent")),
+    backupHours: given(searchParams.get("backupHours")),
     storeDurable: given(searchParams.get("storeDurable")),
   });
 

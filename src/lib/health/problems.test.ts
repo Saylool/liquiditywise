@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALERT_SILENCE_LIMIT_MS,
+  BACKUP_STALE_HOURS,
   CERTIFICATE_WARNING_DAYS,
   DISK_WARNING_PERCENT,
   problemsFrom,
@@ -140,6 +141,31 @@ describe("a filesystem filling up", () => {
   });
 });
 
+describe("a backup that has stopped", () => {
+  it("is reported past a day and a missed run, and not at the limit", () => {
+    expect(ids({ backupHours: BACKUP_STALE_HOURS + 1 })).toEqual(["backup-stale"]);
+    expect(ids({ backupHours: BACKUP_STALE_HOURS })).toEqual([]);
+    expect(ids({ backupHours: 0 })).toEqual([]);
+  });
+
+  /*
+   * A threshold at a day exactly would page on every run that took a minute
+   * longer than yesterday's. The limit has to be past one day, and not so far
+   * past it that a second run could be missed.
+   */
+  it("allows one slow run and not a missed one", () => {
+    expect(BACKUP_STALE_HOURS).toBeGreaterThan(24);
+    expect(BACKUP_STALE_HOURS).toBeLessThan(48);
+  });
+
+  it("says how old the last one is, and what to run", () => {
+    const [problem] = problemsFrom({ backupHours: 50 });
+
+    expect(problem?.message).toContain("50 hours");
+    expect(problem?.message).toContain("liquiditywise-backup");
+  });
+});
+
 describe("several faults at once", () => {
   /*
    * An outage rarely arrives alone — a full disk stops Redis writing, which
@@ -155,6 +181,7 @@ describe("several faults at once", () => {
         nowMs: NOW,
         certificateDays: 2,
         diskPercent: 99,
+        backupHours: 72,
       }),
     ).toEqual([
       "store-unreachable",
@@ -162,6 +189,7 @@ describe("several faults at once", () => {
       "alerts-not-running",
       "certificate-expiring",
       "disk-nearly-full",
+      "backup-stale",
     ]);
   });
 

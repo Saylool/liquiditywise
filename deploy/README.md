@@ -235,6 +235,61 @@ and hands those to `/api/health`, which holds the judgement in
 The one thing it cannot cover is the machine being off, because it runs on
 that machine. That is what `uptime-worker/` is for — see below.
 
+## Backups
+
+The Telegram links — an address and a chat id per reader, and the set the
+alert pass walks — are the one thing this application keeps, and Redis keeps
+them on one disk. The append-only log covers a crash; nothing else covered
+losing the machine. `backup.sh`, installed as `liquiditywise-backup`, runs at
+03:17 every day:
+
+1. `store-backup.mts` copies every key under `liquiditywise:telegram:` out of
+   Redis as JSON, each with the moment it expires — nothing else in Redis, and
+   nothing of the other sites'. The copy is read back the way a restore reads
+   it before anything is stored.
+2. It is gzipped and encrypted to `backup-recipient.pem`. The private key is
+   not on the server: the server can write a backup and cannot read one.
+3. It goes into the `liquiditywise-backups` KV namespace as `backup/<day>`,
+   which Cloudflare deletes seven days later on its own, and is read back and
+   compared before the run counts as done.
+
+Seven days is also what readers are told: a link is deleted from the server
+at once, and from the backups within seven days. A test holds the script's
+retention and that sentence together.
+
+A backup that stopped is reported by the health check through Server Watch
+once the last one is more than 26 hours old.
+
+To set it up, create a Cloudflare API token with **Account → Workers KV
+Storage → Edit** and nothing else, copy it, and:
+
+```bash
+pbpaste | ssh root@<server> "bash /opt/liquiditywise/deploy/set-backup-token.sh"
+```
+
+It finds the account, makes the namespace, stores the three settings and
+takes the first backup on the spot.
+
+To restore, on the machine that holds the private key:
+
+```bash
+ssh root@<server> "liquiditywise-backup --list"
+ssh root@<server> "liquiditywise-backup --fetch 2026-09-24" > backup.p7m
+deploy/restore-backup.sh backup.p7m ~/path/to/LiquidityWise-backup-key.pem > snapshot.json
+```
+
+and on the server that should hold the links:
+
+```bash
+REDIS_URL=redis://127.0.0.1:6379/1 node /opt/liquiditywise/deploy/store-backup.mts restore < snapshot.json
+```
+
+It refuses a store that already holds links unless given `--replace`, and
+restores each key with the expiry it had, not a fresh one. With no server to
+fetch from, download `backup/<day>` from the namespace in the Cloudflare
+dashboard. `snapshot.json` is every reader's address and chat id in plain
+text: delete it once it is restored.
+
 ## When the machine itself is off
 
 `deploy/uptime-worker/` is a Cloudflare Worker that asks every site this
@@ -300,5 +355,11 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
 - `health-check.sh` — the five-minute health check described above.
 - `set-server-watch-token.sh` — stores Server Watch's token, as root, after
   checking it is not the product bot's and that your chat can receive from it.
+- `backup.sh` — the daily encrypted backup of the Telegram links, described above.
+- `store-backup.mts` — copies the links out of Redis and back, under plain Node.
+- `set-backup-token.sh` — stores the Cloudflare token the backup writes with.
+- `restore-backup.sh` — opens a backup, where the private key is.
+- `backup-recipient.pem` — the certificate backups are encrypted to. Public;
+  its private key is kept off the server.
 - `redis-durability.sh` — turns on the append-only log, if the Redis is ours.
 - `uptime-worker/` — the outside check, on Cloudflare, for all three sites and for when the machine is off.

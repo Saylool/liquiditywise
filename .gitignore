@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+# The one certificate that belongs here: public, what backups are encrypted to.
+# Its private key is never in this repository.
+!deploy/backup-recipient.pem
 
 # debug
 npm-debug.log*

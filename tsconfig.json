@@ -12,6 +12,11 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    /*
+     * deploy/store-backup.mts runs under plain Node, which resolves no
+     * extensionless import, so it names the .ts files it imports.
+     */
+    "allowImportingTsExtensions": true,
 
     /*
      * Strictness beyond `strict`. External market data (subgraphs, hook

@@ -18,6 +18,10 @@ import type { KeyValueStore } from "../store/keyValueStore";
  * A pending link — minted, not yet presented to the bot — lives half an hour.
  * A claimed one lives until `/stop`, or until the reader forgets it from the
  * site, or for a year without the checker touching it.
+ *
+ * The daily backup (deploy/backup.sh) holds a copy for seven days more,
+ * encrypted to a key that is not on the server. That is what readers are told:
+ * deleted from the server at once, and from the backups within seven days.
  */
 
 const PREFIX = "liquiditywise:telegram:";

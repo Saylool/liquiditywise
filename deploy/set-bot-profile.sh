@@ -26,13 +26,13 @@ api() {
 
 DESC_EN='This bot follows the Uniswap positions of one Ethereum address and tells you when one of them leaves its price range or comes back into it.
 
-You link an address on liquiditywise.com; nothing is stored until you do, and what is stored is the address and this chat, nothing else. Send /stop and both are gone.
+You link an address on liquiditywise.com; nothing is stored until you do, and what is stored is the address and this chat, nothing else. Send /stop and both are deleted from the server at once, and from its encrypted backups within seven days.
 
 It reads public on-chain data and sends a message. It cannot sign or send a transaction. Information only — not financial advice.'
 
 DESC_TR='Bu bot bir Ethereum adresinin Uniswap pozisyonlarını izler ve içlerinden biri fiyat aralığından çıktığında ya da geri girdiğinde sana haber verir.
 
-Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, saklanan da adres ile bu sohbettir, başka bir şey değil. /stop yazarsan ikisi de silinir.
+Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, saklanan da adres ile bu sohbettir, başka bir şey değil. /stop yazarsan ikisi de sunucudan hemen, şifreli yedeklerden de yedi gün içinde silinir.
 
 Herkese açık zincir verisini okur ve mesaj gönderir. Hiçbir şey imzalayamaz, işlem gönderemez. Yalnızca bilgi — yatırım tavsiyesi değildir.'
 

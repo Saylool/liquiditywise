@@ -132,7 +132,7 @@ const en = {
       },
     ],
     footer:
-      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. A wallet can be connected, and all that is asked of it is its address. The one thing this application keeps is a Telegram link a reader makes themselves — an address beside a chat id, gone the moment they send the bot /stop — and nothing here can sign or send a transaction on your behalf.",
+      "None of the above exists yet. What does is everything higher up this page: a pool found by name, figures computed and cross-checked, and prose that is verified before it is shown. A wallet can be connected, and all that is asked of it is its address. The one thing this application keeps is a Telegram link a reader makes themselves — an address beside a chat id, deleted the moment they send the bot /stop and out of the encrypted backups within seven days — and nothing here can sign or send a transaction on your behalf.",
   },
 
   pool: {
@@ -733,7 +733,7 @@ const en = {
   telegram: {
     heading: "Alerts on Telegram",
     intro:
-      "Be told, on Telegram, when one of this address's positions leaves its range or comes back into it. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both go the moment you send the bot /stop or forget the link here. How often it is checked is up to the server this runs on.",
+      "Be told, on Telegram, when one of this address's positions leaves its range or comes back into it. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both are deleted from this server the moment you send the bot /stop or forget the link here, and drop out of its encrypted backups within seven days. How often it is checked is up to the server this runs on.",
     connect: "Connect Telegram",
     connected: (address: string) => `This browser is linked: ${address} is being watched.`,
     pending: "The link is waiting: open the bot's chat in Telegram and press Start.",
@@ -747,7 +747,7 @@ const en = {
       "That link is not known or has expired. Press “Connect Telegram” on the site again.",
     alreadyClaimed:
       "That link has already been used by another chat. Press “Connect Telegram” on the site again for a fresh one.",
-    stopped: "Stopped. This chat follows nothing now, and the record is gone.",
+    stopped: "Stopped. This chat follows nothing now. The record is deleted from the server, and within seven days from its encrypted backups too.",
     nothingToStop: "This chat was not following anything.",
     help:
       "This bot only follows the address you linked on the site, and only says when a position leaves or re-enters its range. Send /stop to end it.",
@@ -1293,7 +1293,7 @@ const tr: Dictionary = {
       },
     ],
     footer:
-      "Yukarıdakilerin hiçbiri henüz yok. Olan, bu sayfanın üst kısmındaki her şey: adıyla bulunan bir havuz, hesaplanıp çapraz kontrol edilen rakamlar ve gösterilmeden önce doğrulanan metin. Bir cüzdan bağlanabilir ve ondan istenen tek şey adresidir. Bu uygulamanın sakladığı tek şey, okuyucunun kendisinin kurduğu bir Telegram bağlantısıdır — bir sohbet kimliğinin yanında bir adres, bota /stop yazıldığı an silinir — ve buradaki hiçbir şey senin adına işlem imzalayamaz ya da gönderemez.",
+      "Yukarıdakilerin hiçbiri henüz yok. Olan, bu sayfanın üst kısmındaki her şey: adıyla bulunan bir havuz, hesaplanıp çapraz kontrol edilen rakamlar ve gösterilmeden önce doğrulanan metin. Bir cüzdan bağlanabilir ve ondan istenen tek şey adresidir. Bu uygulamanın sakladığı tek şey, okuyucunun kendisinin kurduğu bir Telegram bağlantısıdır — bir sohbet kimliğinin yanında bir adres, bota /stop yazıldığı an silinir ve yedi gün içinde şifreli yedeklerden de düşer — ve buradaki hiçbir şey senin adına işlem imzalayamaz ya da gönderemez.",
   },
 
   pool: {
@@ -1727,7 +1727,7 @@ const tr: Dictionary = {
   telegram: {
     heading: "Telegram'dan bildirim",
     intro:
-      "Bu adresteki bir pozisyon aralığından çıktığında ya da geri girdiğinde Telegram'dan haber al. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de silinir. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır.",
+      "Bu adresteki bir pozisyon aralığından çıktığında ya da geri girdiğinde Telegram'dan haber al. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de sunucudan silinir, yedi gün içinde de şifreli yedeklerden düşer. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır.",
     connect: "Telegram'a bağla",
     connected: (address: string) => `Bu tarayıcı bağlı: ${address} izleniyor.`,
     pending: "Bağlantı bekliyor: Telegram'da botun sohbetini aç ve Başlat'a bas.",
@@ -1741,7 +1741,7 @@ const tr: Dictionary = {
       "Bu bağlantı tanınmıyor ya da süresi dolmuş. Sitede “Telegram'a bağla” düğmesine yeniden bas.",
     alreadyClaimed:
       "Bu bağlantı başka bir sohbet tarafından zaten kullanılmış. Yenisi için sitede “Telegram'a bağla” düğmesine yeniden bas.",
-    stopped: "Durduruldu. Bu sohbet artık hiçbir şeyi izlemiyor ve kayıt silindi.",
+    stopped: "Durduruldu. Bu sohbet artık hiçbir şeyi izlemiyor. Kayıt sunucudan silindi; şifreli yedeklerden de yedi gün içinde düşecek.",
     nothingToStop: "Bu sohbet zaten hiçbir şeyi izlemiyordu.",
     help:
       "Bu bot yalnızca sitede bağladığın adresi izler ve yalnızca bir pozisyon aralığından çıkınca ya da geri girince konuşur. Bitirmek için /stop gönder.",
@@ -2214,7 +2214,7 @@ const de: Dictionary = {
       },
     ],
     footer:
-      "Nichts davon gibt es schon. Was es gibt, ist alles weiter oben auf dieser Seite: ein Pool, der beim Namen gefunden wird, Zahlen, die berechnet und gegengeprüft sind, und Text, der geprüft wird, bevor er gezeigt wird. Ein Wallet kann verbunden werden, und alles, was von ihm verlangt wird, ist seine Adresse. Das Einzige, was diese Anwendung aufbewahrt, ist eine Telegram-Verknüpfung, die ein Leser selbst anlegt — eine Adresse neben einer Chat-Kennung, gelöscht in dem Moment, in dem er dem Bot /stop schickt — und nichts hier kann eine Transaktion in deinem Namen signieren oder senden.",
+      "Nichts davon gibt es schon. Was es gibt, ist alles weiter oben auf dieser Seite: ein Pool, der beim Namen gefunden wird, Zahlen, die berechnet und gegengeprüft sind, und Text, der geprüft wird, bevor er gezeigt wird. Ein Wallet kann verbunden werden, und alles, was von ihm verlangt wird, ist seine Adresse. Das Einzige, was diese Anwendung aufbewahrt, ist eine Telegram-Verknüpfung, die ein Leser selbst anlegt — eine Adresse neben einer Chat-Kennung, gelöscht in dem Moment, in dem er dem Bot /stop schickt, und binnen sieben Tagen auch aus den verschlüsselten Sicherungen — und nichts hier kann eine Transaktion in deinem Namen signieren oder senden.",
   },
 
   pool: {
@@ -2651,7 +2651,7 @@ const de: Dictionary = {
   telegram: {
     heading: "Hinweise per Telegram",
     intro:
-      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse ihren Bereich verlässt oder wieder hineinkommt. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides verschwindet, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft.",
+      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse ihren Bereich verlässt oder wieder hineinkommt. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides wird vom Server gelöscht, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst, und verschwindet binnen sieben Tagen auch aus seinen verschlüsselten Sicherungen. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft.",
     connect: "Telegram verbinden",
     connected: (address: string) => `Dieser Browser ist verknüpft: ${address} wird beobachtet.`,
     pending: "Die Verknüpfung wartet: öffne den Chat mit dem Bot in Telegram und drücke auf Start.",
@@ -2665,7 +2665,7 @@ const de: Dictionary = {
       "Dieser Link ist unbekannt oder abgelaufen. Drück auf der Seite noch einmal auf „Telegram verbinden“.",
     alreadyClaimed:
       "Dieser Link wurde bereits von einem anderen Chat benutzt. Drück auf der Seite noch einmal auf „Telegram verbinden“ für einen neuen.",
-    stopped: "Beendet. Dieser Chat folgt nun nichts mehr, und der Eintrag ist gelöscht.",
+    stopped: "Beendet. Dieser Chat folgt nun nichts mehr. Der Eintrag ist vom Server gelöscht und verschwindet binnen sieben Tagen auch aus den verschlüsselten Sicherungen.",
     nothingToStop: "Dieser Chat ist nichts gefolgt.",
     help:
       "Dieser Bot folgt nur der Adresse, die du auf der Seite verknüpft hast, und meldet sich nur, wenn eine Position ihren Bereich verlässt oder wieder betritt. Schick /stop, um das zu beenden.",
@@ -3114,7 +3114,7 @@ const es: Dictionary = {
       },
     ],
     footer:
-      "Nada de lo anterior existe todavía. Lo que sí existe es todo lo que hay más arriba en esta página: un pool encontrado por su nombre, cifras calculadas y contrastadas, y texto verificado antes de mostrarse. Se puede conectar una cartera, y lo único que se le pide es su dirección. Lo único que guarda esta aplicación es un enlace de Telegram que el propio lector crea — una dirección junto a un identificador de chat, borrado en cuanto envía /stop al bot — y nada de esto puede firmar ni enviar una transacción en tu nombre.",
+      "Nada de lo anterior existe todavía. Lo que sí existe es todo lo que hay más arriba en esta página: un pool encontrado por su nombre, cifras calculadas y contrastadas, y texto verificado antes de mostrarse. Se puede conectar una cartera, y lo único que se le pide es su dirección. Lo único que guarda esta aplicación es un enlace de Telegram que el propio lector crea — una dirección junto a un identificador de chat, borrado en cuanto envía /stop al bot y fuera de las copias de seguridad cifradas en un plazo de siete días — y nada de esto puede firmar ni enviar una transacción en tu nombre.",
   },
 
   pool: {
@@ -3549,7 +3549,7 @@ const es: Dictionary = {
   telegram: {
     heading: "Avisos por Telegram",
     intro:
-      "Entérate por Telegram cuando una posición de esta dirección salga de su rango o vuelva a entrar. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos desaparecen en cuanto envías /stop al bot u olvidas el enlace aquí. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto.",
+      "Entérate por Telegram cuando una posición de esta dirección salga de su rango o vuelva a entrar. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos se borran del servidor en cuanto envías /stop al bot u olvidas el enlace aquí, y de sus copias de seguridad cifradas en un plazo de siete días. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto.",
     connect: "Conectar Telegram",
     connected: (address: string) => `Este navegador está enlazado: se vigila ${address}.`,
     pending: "El enlace está a la espera: abre el chat del bot en Telegram y pulsa Iniciar.",
@@ -3563,7 +3563,7 @@ const es: Dictionary = {
       "Ese enlace no se reconoce o ha caducado. Pulsa de nuevo «Conectar Telegram» en el sitio.",
     alreadyClaimed:
       "Ese enlace ya lo usó otro chat. Pulsa de nuevo «Conectar Telegram» en el sitio para obtener uno nuevo.",
-    stopped: "Detenido. Este chat ya no sigue nada, y el registro se ha borrado.",
+    stopped: "Detenido. Este chat ya no sigue nada. El registro se ha borrado del servidor y desaparecerá de las copias de seguridad cifradas en un plazo de siete días.",
     nothingToStop: "Este chat no seguía nada.",
     help:
       "Este bot solo sigue la dirección que enlazaste en el sitio, y solo habla cuando una posición sale de su rango o vuelve a entrar. Envía /stop para terminar.",
@@ -4012,7 +4012,7 @@ const ar: Dictionary = {
       },
     ],
     footer:
-      "لا شيء مما سبق موجود بعد. الموجود هو كل ما في أعلى هذه الصفحة: مجمّع يُعثر عليه باسمه، وأرقام تُحسب وتُراجَع، ونص يُتحقق منه قبل عرضه. يمكن ربط محفظة، وكل ما يُطلب منها هو عنوانها. الشيء الوحيد الذي يحتفظ به هذا التطبيق هو ربط تيليغرام ينشئه القارئ بنفسه — عنوان إلى جانب معرّف محادثة، يُمحى لحظة إرساله /stop إلى البوت — ولا شيء هنا يستطيع توقيع معاملة أو إرسالها نيابةً عنك.",
+      "لا شيء مما سبق موجود بعد. الموجود هو كل ما في أعلى هذه الصفحة: مجمّع يُعثر عليه باسمه، وأرقام تُحسب وتُراجَع، ونص يُتحقق منه قبل عرضه. يمكن ربط محفظة، وكل ما يُطلب منها هو عنوانها. الشيء الوحيد الذي يحتفظ به هذا التطبيق هو ربط تيليغرام ينشئه القارئ بنفسه — عنوان إلى جانب معرّف محادثة، يُمحى لحظة إرساله /stop إلى البوت ويخرج من النسخ الاحتياطية المشفّرة خلال سبعة أيام — ولا شيء هنا يستطيع توقيع معاملة أو إرسالها نيابةً عنك.",
   },
 
   pool: {
@@ -4443,7 +4443,7 @@ const ar: Dictionary = {
   telegram: {
     heading: "تنبيهات عبر تيليغرام",
     intro:
-      "اعرف عبر تيليغرام متى يخرج أحد مراكز هذا العنوان من نطاقه أو يعود إليه. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا.",
+      "اعرف عبر تيليغرام متى يخرج أحد مراكز هذا العنوان من نطاقه أو يعود إليه. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما من الخادم لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا، ومن نسخه الاحتياطية المشفّرة خلال سبعة أيام. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا.",
     connect: "ربط تيليغرام",
     connected: (address: string) => `هذا المتصفح مربوط: يُراقَب ${address}.`,
     pending: "الرابط بانتظارك: افتح محادثة البوت في تيليغرام واضغط «ابدأ».",
@@ -4457,7 +4457,7 @@ const ar: Dictionary = {
       "هذا الرابط غير معروف أو انتهت صلاحيته. اضغط «ربط تيليغرام» في الموقع مرة أخرى.",
     alreadyClaimed:
       "هذا الرابط استُخدم من محادثة أخرى. اضغط «ربط تيليغرام» في الموقع مرة أخرى للحصول على رابط جديد.",
-    stopped: "توقّف. هذه المحادثة لا تتابع شيئًا الآن، وقد مُحي السجل.",
+    stopped: "توقّف. هذه المحادثة لا تتابع شيئًا الآن. مُحي السجل من الخادم، وسيُمحى من النسخ الاحتياطية المشفّرة خلال سبعة أيام.",
     nothingToStop: "هذه المحادثة لم تكن تتابع شيئًا.",
     help:
       "هذا البوت يتابع فقط العنوان الذي ربطته في الموقع، ولا يتكلم إلا عندما يخرج مركز من نطاقه أو يعود إليه. أرسل /stop للإنهاء.",
@@ -4893,7 +4893,7 @@ const hi: Dictionary = {
       },
     ],
     footer:
-      "ऊपर लिखी कोई भी चीज़ अभी मौजूद नहीं है। जो मौजूद है, वह इस पृष्ठ के ऊपर का सब कुछ है: नाम से खोजा गया पूल, गणना करके और आपस में मिलाकर जाँचे गए आँकड़े, और दिखाने से पहले सत्यापित पाठ। एक वॉलेट जोड़ा जा सकता है, और उससे केवल उसका पता माँगा जाता है। यह ऐप जो एकमात्र चीज़ रखता है, वह पाठक का स्वयं बनाया हुआ Telegram लिंक है — एक चैट पहचान के साथ एक पता, जो बॉट को /stop भेजते ही मिट जाता है — और यहाँ कुछ भी आपकी ओर से लेन-देन पर हस्ताक्षर या उसे प्रेषित नहीं कर सकता।",
+      "ऊपर लिखी कोई भी चीज़ अभी मौजूद नहीं है। जो मौजूद है, वह इस पृष्ठ के ऊपर का सब कुछ है: नाम से खोजा गया पूल, गणना करके और आपस में मिलाकर जाँचे गए आँकड़े, और दिखाने से पहले सत्यापित पाठ। एक वॉलेट जोड़ा जा सकता है, और उससे केवल उसका पता माँगा जाता है। यह ऐप जो एकमात्र चीज़ रखता है, वह पाठक का स्वयं बनाया हुआ Telegram लिंक है — एक चैट पहचान के साथ एक पता, जो बॉट को /stop भेजते ही मिट जाता है और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी हट जाता है — और यहाँ कुछ भी आपकी ओर से लेन-देन पर हस्ताक्षर या उसे प्रेषित नहीं कर सकता।",
   },
 
   pool: {
@@ -5326,7 +5326,7 @@ const hi: Dictionary = {
   telegram: {
     heading: "Telegram पर सूचनाएँ",
     intro:
-      "जब इस पते की कोई पोज़िशन अपने दायरे से बाहर जाए या वापस आए, Telegram पर जानें। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों मिट जाते हैं। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है।",
+      "जब इस पते की कोई पोज़िशन अपने दायरे से बाहर जाए या वापस आए, Telegram पर जानें। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों सर्वर से मिट जाते हैं, और सात दिनों के भीतर उसके एन्क्रिप्टेड बैकअप से भी। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है।",
     connect: "Telegram जोड़ें",
     connected: (address: string) => `यह ब्राउज़र जुड़ा है: ${address} पर नज़र रखी जा रही है।`,
     pending: "लिंक प्रतीक्षा में है: Telegram में बॉट की चैट खोलें और Start दबाएँ।",
@@ -5340,7 +5340,7 @@ const hi: Dictionary = {
       "यह लिंक पहचाना नहीं गया या इसकी अवधि बीत चुकी है। साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
     alreadyClaimed:
       "यह लिंक किसी और चैट ने पहले ही इस्तेमाल कर लिया है। नए लिंक के लिए साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
-    stopped: "रोक दिया गया। यह चैट अब किसी पर नज़र नहीं रखती, और रिकॉर्ड मिटा दिया गया है।",
+    stopped: "रोक दिया गया। यह चैट अब किसी पर नज़र नहीं रखती। रिकॉर्ड सर्वर से मिटा दिया गया है, और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी मिट जाएगा।",
     nothingToStop: "यह चैट किसी पर नज़र नहीं रख रही थी।",
     help:
       "यह बॉट केवल उस पते पर नज़र रखता है जो आपने साइट पर जोड़ा है, और केवल तभी बोलता है जब कोई पोज़िशन अपने दायरे से बाहर जाए या वापस आए। समाप्त करने के लिए /stop भेजें।",
@@ -5792,7 +5792,7 @@ const zh: Dictionary = {
       },
     ],
     footer:
-      "以上这些都还不存在。存在的是这一页上面的全部内容：按名字找到的资金池、经过计算并交叉核对的数字，以及在展示之前已被核验的文字。钱包可以连接，而它被要求提供的只有地址。本应用保存的唯一东西，是读者自己建立的 Telegram 绑定——一个地址和一个对话 id，向机器人发送 /stop 的那一刻即被删除——这里也没有任何东西能代你签名或发送交易。",
+      "以上这些都还不存在。存在的是这一页上面的全部内容：按名字找到的资金池、经过计算并交叉核对的数字，以及在展示之前已被核验的文字。钱包可以连接，而它被要求提供的只有地址。本应用保存的唯一东西，是读者自己建立的 Telegram 绑定——一个地址和一个对话 id，向机器人发送 /stop 的那一刻即被删除，七天内也会从加密备份中消失——这里也没有任何东西能代你签名或发送交易。",
   },
 
   pool: {
@@ -6386,7 +6386,7 @@ const zh: Dictionary = {
   telegram: {
     heading: "Telegram 提醒",
     intro:
-      "当这个地址的某个仓位离开它的区间或重新回到区间内时，通过 Telegram 获知。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会被删除。检查的频率取决于运行它的服务器。",
+      "当这个地址的某个仓位离开它的区间或重新回到区间内时，通过 Telegram 获知。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会从服务器上删除，并在七天内从它的加密备份中消失。检查的频率取决于运行它的服务器。",
     connect: "连接 Telegram",
     connected: (address: string) => `这个浏览器已绑定：正在关注 ${address}。`,
     pending: "绑定等待中：在 Telegram 里打开机器人的对话并按下“开始”。",
@@ -6400,7 +6400,7 @@ const zh: Dictionary = {
       "这个链接无法识别或已过期。请在网站上再按一次“连接 Telegram”。",
     alreadyClaimed:
       "这个链接已被另一个对话使用。请在网站上再按一次“连接 Telegram”获取新的链接。",
-    stopped: "已停止。这个对话现在不再关注任何东西，记录已删除。",
+    stopped: "已停止。这个对话现在不再关注任何东西。记录已从服务器删除，七天内也会从加密备份中消失。",
     nothingToStop: "这个对话本来就没有关注任何东西。",
     help:
       "这个机器人只关注你在网站上绑定的地址，也只在某个仓位离开或重新进入它的区间时说话。发送 /stop 结束。",
@@ -6941,7 +6941,7 @@ const ru: Dictionary = {
       },
     ],
     footer:
-      "Ничего из перечисленного выше пока нет. Есть всё, что выше по этой странице: пул, найденный по имени, вычисленные и перепроверенные цифры и текст, проверенный до того, как его показали. Кошелёк можно подключить, и всё, о чём его просят, — это адрес. Единственное, что это приложение хранит, — связь с Telegram, которую читатель создаёт сам: адрес рядом с идентификатором чата, и оба исчезают, как только он отправит боту /stop. И ничто здесь не может подписать или отправить транзакцию от вашего имени.",
+      "Ничего из перечисленного выше пока нет. Есть всё, что выше по этой странице: пул, найденный по имени, вычисленные и перепроверенные цифры и текст, проверенный до того, как его показали. Кошелёк можно подключить, и всё, о чём его просят, — это адрес. Единственное, что это приложение хранит, — связь с Telegram, которую читатель создаёт сам: адрес рядом с идентификатором чата, и оба удаляются, как только он отправит боту /stop, а из зашифрованных резервных копий — в течение семи дней. И ничто здесь не может подписать или отправить транзакцию от вашего имени.",
   },
 
   pool: {
@@ -7542,7 +7542,7 @@ const ru: Dictionary = {
   telegram: {
     heading: "Уведомления в Telegram",
     intro:
-      "Узнавать в Telegram, когда одна из позиций этого адреса выходит за свой диапазон или возвращается в него. Кнопка ведёт к боту этого сайта; нажатие «Старт» там привязывает тот чат к этому адресу. Хранятся адрес и числовой идентификатор чата — и больше ничего, — и оба исчезают, как только вы отправите боту /stop или забудете связь здесь. Как часто идёт проверка, зависит от сервера, на котором всё это работает.",
+      "Узнавать в Telegram, когда одна из позиций этого адреса выходит за свой диапазон или возвращается в него. Кнопка ведёт к боту этого сайта; нажатие «Старт» там привязывает тот чат к этому адресу. Хранятся адрес и числовой идентификатор чата — и больше ничего, — и оба удаляются с сервера, как только вы отправите боту /stop или забудете связь здесь, а из его зашифрованных резервных копий — в течение семи дней. Как часто идёт проверка, зависит от сервера, на котором всё это работает.",
     connect: "Подключить Telegram",
     connected: (address: string) => `Этот браузер связан: за ${address} следим.`,
     pending: "Связь ждёт: откройте чат бота в Telegram и нажмите «Старт».",
@@ -7556,7 +7556,7 @@ const ru: Dictionary = {
       "Эта ссылка неизвестна или истекла. Нажмите «Подключить Telegram» на сайте ещё раз.",
     alreadyClaimed:
       "Эту ссылку уже использовал другой чат. Нажмите «Подключить Telegram» на сайте ещё раз, чтобы получить новую.",
-    stopped: "Остановлено. Этот чат больше ни за чем не следит, и запись удалена.",
+    stopped: "Остановлено. Этот чат больше ни за чем не следит. Запись удалена с сервера, а из зашифрованных резервных копий исчезнет в течение семи дней.",
     nothingToStop: "Этот чат ни за чем не следил.",
     help:
       "Этот бот следит только за адресом, который вы связали на сайте, и говорит только тогда, когда позиция выходит за свой диапазон или возвращается в него. Чтобы прекратить, отправьте /stop.",
@@ -8102,7 +8102,7 @@ const pt: Dictionary = {
       },
     ],
     footer:
-      "Nada do que está acima existe ainda. O que existe é tudo o que está mais acima nesta página: um pool encontrado pelo nome, números calculados e conferidos e um texto verificado antes de ser mostrado. Dá para conectar uma carteira, e tudo o que se pede a ela é o endereço. A única coisa que este aplicativo guarda é um vínculo com o Telegram que o próprio leitor cria — um endereço ao lado de um id de conversa, que some no instante em que ele manda /stop ao bot — e nada aqui consegue assinar nem enviar uma transação em seu nome.",
+      "Nada do que está acima existe ainda. O que existe é tudo o que está mais acima nesta página: um pool encontrado pelo nome, números calculados e conferidos e um texto verificado antes de ser mostrado. Dá para conectar uma carteira, e tudo o que se pede a ela é o endereço. A única coisa que este aplicativo guarda é um vínculo com o Telegram que o próprio leitor cria — um endereço ao lado de um id de conversa, que é apagado no instante em que ele manda /stop ao bot e sai dos backups criptografados em até sete dias — e nada aqui consegue assinar nem enviar uma transação em seu nome.",
   },
 
   pool: {
@@ -8704,7 +8704,7 @@ const pt: Dictionary = {
   telegram: {
     heading: "Avisos no Telegram",
     intro:
-      "Ser avisado, no Telegram, quando uma das posições deste endereço sair da faixa dela ou voltar para dentro. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois somem no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui. Com que frequência a conferência acontece depende do servidor em que isto roda.",
+      "Ser avisado, no Telegram, quando uma das posições deste endereço sair da faixa dela ou voltar para dentro. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois são apagados do servidor no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui, e dos backups criptografados dele em até sete dias. Com que frequência a conferência acontece depende do servidor em que isto roda.",
     connect: "Conectar o Telegram",
     connected: (address: string) => `Este navegador está vinculado: ${address} está sendo acompanhado.`,
     pending: "O vínculo está esperando: abra a conversa do bot no Telegram e aperte Iniciar.",
@@ -8718,7 +8718,7 @@ const pt: Dictionary = {
       "Esse vínculo não é conhecido ou expirou. Aperte “Conectar o Telegram” no site outra vez.",
     alreadyClaimed:
       "Esse vínculo já foi usado por outra conversa. Aperte “Conectar o Telegram” no site outra vez para receber um novo.",
-    stopped: "Encerrado. Esta conversa não acompanha mais nada, e o registro foi apagado.",
+    stopped: "Encerrado. Esta conversa não acompanha mais nada. O registro foi apagado do servidor e sai dos backups criptografados em até sete dias.",
     nothingToStop: "Esta conversa não estava acompanhando nada.",
     help:
       "Este bot só acompanha o endereço que você vinculou no site, e só fala quando uma posição sai da faixa dela ou volta para dentro. Mande /stop para encerrar.",
@@ -9260,7 +9260,7 @@ const zhHant: Dictionary = {
       },
     ],
     footer:
-      "以上這些都還不存在。存在的是這一頁上面的全部內容：按名字找到的資金池、經過計算並交叉核對的數字，以及在展示之前已被核驗的文字。錢包可以連接，而它被要求提供的只有地址。本應用儲存的唯一東西，是讀者自己建立的 Telegram 綁定——一個地址和一個對話 id，向機器人傳送 /stop 的那一刻即被刪除——這裡也沒有任何東西能代你簽名或傳送交易。",
+      "以上這些都還不存在。存在的是這一頁上面的全部內容：按名字找到的資金池、經過計算並交叉核對的數字，以及在展示之前已被核驗的文字。錢包可以連接，而它被要求提供的只有地址。本應用儲存的唯一東西，是讀者自己建立的 Telegram 綁定——一個地址和一個對話 id，向機器人傳送 /stop 的那一刻即被刪除，七天內也會從加密備份中消失——這裡也沒有任何東西能代你簽名或傳送交易。",
   },
 
   pool: {
@@ -9854,7 +9854,7 @@ const zhHant: Dictionary = {
   telegram: {
     heading: "Telegram 提醒",
     intro:
-      "當這個地址的某個倉位離開它的區間或重新回到區間內時，通過 Telegram 獲知。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會被刪除。檢查的頻率取決於執行它的伺服器。",
+      "當這個地址的某個倉位離開它的區間或重新回到區間內時，通過 Telegram 獲知。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會從伺服器上刪除，並在七天內從它的加密備份中消失。檢查的頻率取決於執行它的伺服器。",
     connect: "連接 Telegram",
     connected: (address: string) => `這個瀏覽器已綁定：正在關注 ${address}。`,
     pending: "綁定等待中：在 Telegram 裡開啟機器人的對話並按下「開始」。",
@@ -9868,7 +9868,7 @@ const zhHant: Dictionary = {
       "這個連結無法識別或已過期。請在網站上再按一次「連接 Telegram」。",
     alreadyClaimed:
       "這個連結已被另一個對話使用。請在網站上再按一次「連接 Telegram」獲取新的連結。",
-    stopped: "已停止。這個對話現在不再關注任何東西，記錄已刪除。",
+    stopped: "已停止。這個對話現在不再關注任何東西。記錄已從伺服器刪除，七天內也會從加密備份中消失。",
     nothingToStop: "這個對話本來就沒有關注任何東西。",
     help:
       "這個機器人只關注你在網站上綁定的地址，也只在某個倉位離開或重新進入它的區間時說話。傳送 /stop 結束。",
