@@ -1,0 +1,20 @@
+# Where the daily backups are kept. See worker.ts for what it accepts and why.
+
+name = "liquiditywise-backup"
+main = "worker.ts"
+compatibility_date = "2026-09-01"
+
+# On the site's own domain rather than a workers.dev address: the server
+# reaches it the way it reaches anything on liquiditywise.com, and nothing
+# else on the site answers under /__backup/.
+workers_dev = false
+routes = [{ pattern = "liquiditywise.com/__backup/*", zone_name = "liquiditywise.com" }]
+
+# The copies. The id is the namespace's own, filled in when it is created —
+# see deploy/README.md.
+[[kv_namespaces]]
+binding = "BACKUPS"
+id = "01ed9d67c9dd441ebb4477a0ae835ab1"
+
+# BACKUP_SECRET is not in this file. It is made on the server by
+# set-backup-secret.sh and piped to `wrangler secret put` without being shown.

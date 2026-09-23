@@ -249,26 +249,44 @@ losing the machine. `backup.sh`, installed as `liquiditywise-backup`, runs at
    it before anything is stored.
 2. It is gzipped and encrypted to `backup-recipient.pem`. The private key is
    not on the server: the server can write a backup and cannot read one.
-3. It goes into the `liquiditywise-backups` KV namespace as `backup/<day>`,
-   which Cloudflare deletes seven days later on its own, and is read back and
-   compared before the run counts as done.
+3. It is sent to the Worker in `backup-worker/`, on
+   `liquiditywise.com/__backup/`, which keeps it in KV as `backup/<day>` for
+   seven days and then lets KV delete it. It is read back and compared before
+   the run counts as done.
+
+The server holds no Cloudflare credential for this — only `BACKUP_SECRET`, a
+random value shared with that Worker and nothing else. The Worker accepts
+today's copy and no other day's, and has no delete, so a server someone else
+controlled could not reach back and spoil the days before. Without the secret
+every request gets the same 404 as an address that does not exist.
 
 Seven days is also what readers are told: a link is deleted from the server
-at once, and from the backups within seven days. A test holds the script's
+at once, and from the backups within seven days. A test holds the Worker's
 retention and that sentence together.
 
 A backup that stopped is reported by the health check through Server Watch
 once the last one is more than 26 hours old.
 
-To set it up, create a Cloudflare API token with **Account → Workers KV
-Storage → Edit** and nothing else, copy it, and:
+To set it up, from `deploy/backup-worker/`, logged in with
+`npx wrangler login`:
 
 ```bash
-pbpaste | ssh root@<server> "bash /opt/liquiditywise/deploy/set-backup-token.sh"
+npx wrangler kv namespace create BACKUPS
 ```
 
-It finds the account, makes the namespace, stores the three settings and
-takes the first backup on the spot.
+Put the id it prints into `wrangler.toml`, deploy, make the secret on the
+server, and hand it to the Worker without it ever being on screen:
+
+```bash
+npx wrangler deploy
+ssh root@<server> "bash /opt/liquiditywise/deploy/set-backup-secret.sh"
+ssh root@<server> "grep -E '^BACKUP_SECRET=' /opt/liquiditywise/.env.local | cut -d= -f2-" | npx wrangler secret put BACKUP_SECRET
+ssh root@<server> liquiditywise-backup
+```
+
+Until the secret is on both sides the Worker refuses the server's copies,
+which is also what a rotation (`set-backup-secret.sh --rotate`) looks like
+until the new one has been piped across.
 
 To restore, on the machine that holds the private key:
 
@@ -286,8 +304,8 @@ REDIS_URL=redis://127.0.0.1:6379/1 node /opt/liquiditywise/deploy/store-backup.m
 
 It refuses a store that already holds links unless given `--replace`, and
 restores each key with the expiry it had, not a fresh one. With no server to
-fetch from, download `backup/<day>` from the namespace in the Cloudflare
-dashboard. `snapshot.json` is every reader's address and chat id in plain
+fetch from, download `backup/<day>` from the Worker's KV namespace in the
+Cloudflare dashboard. `snapshot.json` is every reader's address and chat id in plain
 text: delete it once it is restored.
 
 ## When the machine itself is off
@@ -357,7 +375,8 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
   checking it is not the product bot's and that your chat can receive from it.
 - `backup.sh` — the daily encrypted backup of the Telegram links, described above.
 - `store-backup.mts` — copies the links out of Redis and back, under plain Node.
-- `set-backup-token.sh` — stores the Cloudflare token the backup writes with.
+- `set-backup-secret.sh` — makes the secret the backup is sent with.
+- `backup-worker/` — the Worker that keeps the backups, on Cloudflare.
 - `restore-backup.sh` — opens a backup, where the private key is.
 - `backup-recipient.pem` — the certificate backups are encrypted to. Public;
   its private key is kept off the server.

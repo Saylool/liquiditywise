@@ -109,11 +109,11 @@ if command -v redis-cli >/dev/null; then
 fi
 
 # How long ago a backup was last stored and read back. Only once backups are
-# set up — set-backup-token.sh takes the first one on the spot, so from then
-# on a missing stamp would already be a stale one, and before then there is
-# nothing to be late.
+# set up. Before the first one there is no stamp and nothing to be late; from
+# the first one on, a stamp that stops moving is what a stopped backup looks
+# like.
 BACKUP_STAMP="${BACKUP_STAMP:-/var/lib/liquiditywise/backup.last}"
-if [ -n "$(setting CLOUDFLARE_BACKUP_TOKEN)" ] && [ -r "$BACKUP_STAMP" ]; then
+if [ -n "$(setting BACKUP_SECRET)" ] && [ -r "$BACKUP_STAMP" ]; then
   stored="$(tr -dc '0-9' < "$BACKUP_STAMP")"
   [ -n "$stored" ] && query="${query:+$query&}backupHours=$(( ($(date +%s) - stored) / 3600 ))"
 fi
