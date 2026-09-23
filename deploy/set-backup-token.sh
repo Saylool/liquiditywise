@@ -32,7 +32,10 @@ printf '\n'
 token="$(printf '%s' "$token" | tr -d '[:space:]')"
 
 if ! printf '%s' "$token" | grep -qE '^[A-Za-z0-9_-]{30,200}$'; then
-  echo "That does not look like a Cloudflare API token. Nothing was changed."
+  # Its shape, never its content: enough to tell an empty clipboard from a
+  # token in a format this does not expect.
+  odd="$(printf '%s' "$token" | tr -d 'A-Za-z0-9_-' | fold -w1 | sort -u | tr -d '\n')"
+  echo "That does not look like a Cloudflare API token (${#token} characters${odd:+, including \"$odd\"}). Nothing was changed."
   exit 1
 fi
 
