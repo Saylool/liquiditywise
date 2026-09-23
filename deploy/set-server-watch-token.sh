@@ -47,7 +47,11 @@ if ! printf '%s' "$token" | grep -qE '^[0-9]{6,16}:[A-Za-z0-9_-]{30,}$'; then
   exit 1
 fi
 
-who="$(curl -s -m 15 "https://api.telegram.org/bot$token/getMe")"
+# Every call below hands curl the token on standard input (-K -), never as an
+# argument, where other accounts on this machine could read it.
+telegram() { printf 'url = "https://api.telegram.org/bot%s/%s"\n' "$token" "$1" | curl -s -m 15 -K - "${@:2}"; }
+
+who="$(telegram getMe)"
 if ! printf '%s' "$who" | grep -q '"ok":true'; then
   echo "Telegram did not accept that token. Nothing was changed."
   exit 1
@@ -65,7 +69,7 @@ echo "Telegram accepts it: @$username"
 # A bot cannot start a conversation: the person has to press Start first. So
 # a first message is sent now, and a refusal is caught here — rather than on
 # the night the server goes down and the warning has nowhere to go.
-sent="$(curl -s -m 15 -X POST "https://api.telegram.org/bot$token/sendMessage" \
+sent="$(telegram sendMessage -X POST \
   --data-urlencode "chat_id=$CHAT_ID" \
   --data-urlencode "text=Server Watch is connected. This is where you will hear when a site on the server stops answering, or the server itself does." )"
 if ! printf '%s' "$sent" | grep -q '"ok":true'; then
@@ -75,9 +79,9 @@ fi
 echo "A first message is on its way to your chat."
 
 # What the bot says about itself, before and after Start.
-curl -s -m 15 -o /dev/null -X POST "https://api.telegram.org/bot$token/setMyShortDescription" \
+telegram setMyShortDescription -o /dev/null -X POST \
   --data-urlencode "short_description=Tells you when a site on the server, or the server itself, stops answering."
-curl -s -m 15 -o /dev/null -X POST "https://api.telegram.org/bot$token/setMyDescription" \
+telegram setMyDescription -o /dev/null -X POST \
   --data-urlencode "description=Server Watch keeps an eye on the sites on this server — from the server itself, and from Cloudflare, where it still works when the machine is off. It only writes when something changes: when a site stops answering, and when it comes back. It does nothing else, and it has nothing to say to anyone but its operator."
 
 TOKEN="$token" python3 - "$ENV_FILE" <<'PY'

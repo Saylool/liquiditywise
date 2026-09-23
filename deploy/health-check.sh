@@ -49,6 +49,12 @@ if [ -z "$CHAT_ID" ] || [ -z "$BOT_TOKEN" ]; then
   exit 1
 fi
 
+# Secrets reach curl on its standard input as a config file (-K -), never as
+# an argument: this machine is shared and does not hide other users'
+# processes, so anything on a command line is readable by every account on it
+# for as long as the request takes. printf is a shell builtin and has no
+# process of its own.
+#
 # Telegram's own reply is discarded; a bot that cannot be reached is a fault
 # this script has no way to report and no business retrying.
 #
@@ -62,8 +68,9 @@ tell() {
     "✅ "*) text="✅ $PREFIX${1#✅ }" ;;
     *) text="$PREFIX$1" ;;
   esac
-  curl -sS -o /dev/null --max-time 20 \
-    -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+  printf 'url = "https://api.telegram.org/bot%s/sendMessage"\n' "$BOT_TOKEN" |
+  curl -sS -o /dev/null --max-time 20 -K - \
+    -X POST \
     --data-urlencode "chat_id=$CHAT_ID" \
     --data-urlencode "text=$text" \
     --data-urlencode "disable_web_page_preview=true" >/dev/null
@@ -120,8 +127,8 @@ fi
 
 # --- ask the application ------------------------------------------------
 
-body="$(curl -sS --max-time 30 -w '\n%{http_code}' \
-  -H "Authorization: Bearer $CRON_SECRET" \
+body="$(printf 'header = "Authorization: Bearer %s"\n' "$CRON_SECRET" |
+  curl -sS --max-time 30 -w '\n%{http_code}' -K - \
   "http://127.0.0.1:$APP_PORT/api/health${query:+?$query}" 2>/dev/null)"
 status="$(printf '%s' "$body" | tail -1)"
 json="$(printf '%s' "$body" | sed '$d')"

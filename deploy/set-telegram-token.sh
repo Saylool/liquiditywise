@@ -30,7 +30,9 @@ fi
 
 # Ask Telegram who it is before writing anything, so a mistyped token is
 # refused here rather than discovered by a reader whose alerts stopped.
-who="$(curl -s -m 15 "https://api.telegram.org/bot$token/getMe")"
+# The token and the secret go to curl on standard input (-K -), never as
+# arguments, where other accounts on this machine could read them.
+who="$(printf 'url = "https://api.telegram.org/bot%s/getMe"\n' "$token" | curl -s -m 15 -K -)"
 if ! printf '%s' "$who" | grep -q '"ok":true'; then
   echo "Telegram did not accept that token. Nothing was changed."
   exit 1
@@ -76,4 +78,4 @@ sudo -u "$APP_USER" -H node --env-file=.env.local scripts/setTelegramWebhook.mjs
 
 secret="$(grep -E '^CRON_SECRET=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
 port="$(grep -oE 'Environment=PORT=[0-9]+' /etc/systemd/system/liquiditywise.service | cut -d= -f3)"
-echo "check route: $(curl -s -H "Authorization: Bearer $secret" "http://127.0.0.1:$port/api/telegram/check")"
+echo "check route: $(printf 'header = "Authorization: Bearer %s"\n' "$secret" | curl -s -K - "http://127.0.0.1:$port/api/telegram/check")"

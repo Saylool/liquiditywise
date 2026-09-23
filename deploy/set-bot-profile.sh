@@ -20,7 +20,8 @@ api() {
   local method="$1"; shift
   # --data-urlencode keeps the text out of the URL and handles the newlines.
   local out
-  out="$(curl -sS -m 20 -X POST "https://api.telegram.org/bot$token/$method" "$@")"
+  # The token goes to curl on standard input, never on its command line.
+  out="$(printf 'url = "https://api.telegram.org/bot%s/%s"\n' "$token" "$method" | curl -sS -m 20 -K - -X POST "$@")"
   printf '%s %s\n' "$method" "$(printf '%s' "$out" | grep -oE '"ok":(true|false)')"
 }
 
