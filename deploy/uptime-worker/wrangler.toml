@@ -8,6 +8,11 @@ name = "liquiditywise-uptime"
 main = "worker.ts"
 compatibility_date = "2026-09-01"
 
+# No public address. The Worker has no fetch handler, so a workers.dev URL
+# would answer nothing useful — and an address that does nothing is still an
+# address to think about. Scheduled runs need none.
+workers_dev = false
+
 # Every five minutes, the same cadence as the server's own health check.
 [triggers]
 crons = ["*/5 * * * *"]
@@ -16,7 +21,7 @@ crons = ["*/5 * * * *"]
 # filled in when the namespace is created — see deploy/README.md.
 [[kv_namespaces]]
 binding = "UPTIME"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "253aab4cf704475581515aafd617fd45"
 
 # Every site this server hosts. Watching all of them is what lets a message
 # say "the server" when they all go down together, and "this one site" when
