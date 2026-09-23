@@ -18,8 +18,17 @@ crons = ["*/5 * * * *"]
 binding = "UPTIME"
 id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
+# Every site this server hosts. Watching all of them is what lets a message
+# say "the server" when they all go down together, and "this one site" when
+# the others still answer. liquiditywise is asked at its health route, which
+# a live app answers with 401 and which is never cached; the other two are
+# asked at their home pages, cache-busted.
 [vars]
-TARGET = "https://liquiditywise.com/api/health"
+SITES = """[
+  { "name": "liquiditywise.com", "url": "https://liquiditywise.com/api/health" },
+  { "name": "ensdesk.com", "url": "https://ensdesk.com/" },
+  { "name": "splitstable.com", "url": "https://splitstable.com/" }
+]"""
 
 # TELEGRAM_BOT_TOKEN and TELEGRAM_OPERATOR_CHAT_ID are secrets and are not in
 # this file. Set them with `wrangler secret put`, or in the dashboard.

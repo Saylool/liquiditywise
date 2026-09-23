@@ -204,16 +204,25 @@ that machine. That is what `uptime-worker/` is for — see below.
 
 ## When the machine itself is off
 
-`deploy/uptime-worker/` is a Cloudflare Worker that asks the site from
+`deploy/uptime-worker/` is a Cloudflare Worker that asks every site this
+server hosts — liquiditywise.com, ensdesk.com and splitstable.com — from
 Cloudflare's own machines every five minutes, and tells the same Telegram chat
-when it stops answering and when it comes back. It needs no new account: the
-site is already served through Cloudflare, and a scheduled Worker, its KV store
-and its cron trigger all fit in the free plan.
+when they stop answering and when they come back. It needs no new account: the
+sites are already served through Cloudflare, and a scheduled Worker, its KV
+store and its cron trigger all fit in the free plan.
 
-It asks `/api/health` without credentials, so a live app answers 401. It does
-not ask the home page, because Cloudflare's "Always Online" can serve a stored
-copy of a page while the origin is down — exactly the moment this must not be
-fooled. Two failed checks in a row count as down, about ten minutes: one would
+Watching all three is what lets it tell two outages apart. One site down while
+the others answer is that site's problem, and the message says the server is
+up. All three down together is the server, or its network, and the message
+says that instead — once, not three times.
+
+It asks liquiditywise at `/api/health` without credentials, so a live app
+answers 401, and the other two at their home pages. Every address is
+cache-busted with a query no cache has seen, because Cloudflare's "Always
+Online" can serve a stored copy of a page while the origin is down — exactly
+the moment this must not be fooled. The list is in `wrangler.toml`, and a test
+reads it the way the Worker does: a typo there would not fail a deploy, it
+would make every run throw, which is a monitor that never says anything. Two failed checks in a row count as down, about ten minutes: one would
 catch every deploy's few-second restart and send "down" then "recovered" for
 nothing. It writes to KV only when its verdict changes, so an ordinary day
 writes nothing against the free plan's thousand writes.
@@ -261,4 +270,4 @@ and hands those to `/api/health`, which holds the judgement in
 - `telegram-check.sh` — one pass of the alert check; the cron entry calls it.
 - `health-check.sh` — the five-minute health check described above.
 - `redis-durability.sh` — turns on the append-only log, if the Redis is ours.
-- `uptime-worker/` — the outside check, on Cloudflare, for when the machine is off.
+- `uptime-worker/` — the outside check, on Cloudflare, for all three sites and for when the machine is off.

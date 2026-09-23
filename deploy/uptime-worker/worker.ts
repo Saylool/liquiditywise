@@ -1,19 +1,20 @@
 /*
  * The check that still runs when the server does not.
  *
- * A Cloudflare Worker on a five-minute schedule. It asks the site's health
- * route from Cloudflare's own machines, remembers the answer in Workers KV,
- * and tells the operator through the same Telegram bot when the site stops
- * being reachable and when it comes back. Every judgement is in
- * `src/lib/health/uptime.ts`, where it is tested; this file only carries the
- * answer there and the verdict back.
+ * A Cloudflare Worker on a five-minute schedule. It asks every site the
+ * server hosts from Cloudflare's own machines, remembers the answers in
+ * Workers KV, and tells the operator through the same Telegram bot when they
+ * stop being reachable and when they come back — and whether it is one site
+ * or the whole server. Every judgement is in `src/lib/health/uptime.ts`,
+ * where it is tested; this file only carries the answers there and the
+ * verdict back.
  *
  * It has no fetch handler on purpose. A public URL that sends a Telegram
  * message is a URL anyone can make send one; a scheduled Worker has no URL,
  * and it is triggered for testing from the Cloudflare dashboard instead.
  */
 
-import { decideUptime, readUptimeMemory } from "../../src/lib/health/uptime";
+import { decideFleet, readFleetMemory, readSites } from "../../src/lib/health/uptime";
 
 /*
  * The small part of the Workers runtime this uses, declared here rather than
@@ -31,28 +32,34 @@ type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 export type Env = {
   readonly UPTIME: KvNamespace;
-  /** Where to ask. The health route, unauthenticated: a live app answers 401. */
-  readonly TARGET: string;
+  /**
+   * The sites to ask, as JSON: `[{ "name": "...", "url": "https://..." }]`.
+   * liquiditywise is asked at its health route, which a live app answers with
+   * 401 and which is never cached; the others at their home pages.
+   */
+  readonly SITES: string;
   /** Secrets, set in the dashboard or with `wrangler secret put`, never in this file. */
   readonly TELEGRAM_BOT_TOKEN: string;
   readonly TELEGRAM_OPERATOR_CHAT_ID: string;
 };
 
-const MEMORY_KEY = "memory";
+const MEMORY_KEY = "fleet";
 
 /** Ten seconds. A site that takes longer has answered the question. */
 const TIMEOUT_MS = 10_000;
 
 /**
- * The status the site answered with, or `null` for no answer at all.
+ * The status a site answered with, or `null` for no answer at all.
  *
- * Uncached and cache-busted both: Cloudflare can serve a stored copy of a page
- * while the origin is down, which is precisely the moment this must not be
- * fooled. The health route is never cached, and the query makes certain.
+ * Uncached and cache-busted both: Cloudflare's Always Online can serve a
+ * stored copy of a page while the origin is down, which is precisely the
+ * moment this must not be fooled — and a query no cache has seen has no
+ * stored copy to serve.
  */
-const ask = async (target: string, fetchImpl: Fetch): Promise<number | null> => {
+const ask = async (url: string, fetchImpl: Fetch): Promise<number | null> => {
+  const separator = url.includes("?") ? "&" : "?";
   try {
-    const response = await fetchImpl(`${target}?uptime=${Date.now()}`, {
+    const response = await fetchImpl(`${url}${separator}uptime=${Date.now()}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -82,9 +89,16 @@ const tell = async (env: Env, text: string, fetchImpl: Fetch): Promise<void> => 
 
 /** One run. Takes `fetch` so the order of what it does can be tested. */
 export const check = async (env: Env, fetchImpl: Fetch = fetch): Promise<void> => {
-  const status = await ask(env.TARGET, fetchImpl);
-  const previous = readUptimeMemory(await env.UPTIME.get(MEMORY_KEY));
-  const decision = decideUptime(previous, status);
+  const sites = readSites(env.SITES);
+
+  /*
+   * All at once, so a server that has gone down is seen going down by every
+   * site in the same run — which is what lets the verdict name the server
+   * rather than report three sites one after another.
+   */
+  const answers = await Promise.all(sites.map(async (site) => [site.name, await ask(site.url, fetchImpl)] as const));
+  const previous = readFleetMemory(await env.UPTIME.get(MEMORY_KEY));
+  const decision = decideFleet(sites, previous, Object.fromEntries(answers));
 
   /*
    * Sent first, written second — the same order as the server's own check,
