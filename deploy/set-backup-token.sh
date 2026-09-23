@@ -34,7 +34,7 @@ token="$(printf '%s' "$token" | tr -d '[:space:]')"
 # Opaque to this script, and Cloudflare has more than one format — some with
 # a dot in them. This only turns away an empty clipboard or a sentence; the
 # token is judged by Cloudflare itself below.
-if ! printf '%s' "$token" | grep -qE '^[A-Za-z0-9._-]{30,300}$'; then
+if ! printf '%s' "$token" | grep -qE '^[A-Za-z0-9._-]{30,255}$'; then
   # Its shape, never its content: enough to tell an empty clipboard from a
   # token in a format this does not expect.
   odd="$(printf '%s' "$token" | tr -d 'A-Za-z0-9._-' | fold -w1 | sort -u | tr -d '\n')"
