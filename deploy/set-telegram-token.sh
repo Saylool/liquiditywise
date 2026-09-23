@@ -74,6 +74,6 @@ sleep 3
 cd "$APP_DIR"
 sudo -u "$APP_USER" -H node --env-file=.env.local scripts/setTelegramWebhook.mjs "$ORIGIN"
 
-secret="$(grep -E '^CRON_SECRET=' "$ENV_FILE" | head -1 | cut -d= -f2-)"
+secret="$(grep -E '^CRON_SECRET=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
 port="$(grep -oE 'Environment=PORT=[0-9]+' /etc/systemd/system/liquiditywise.service | cut -d= -f3)"
 echo "check route: $(curl -s -H "Authorization: Bearer $secret" "http://127.0.0.1:$port/api/telegram/check")"

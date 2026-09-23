@@ -13,7 +13,7 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/liquiditywise}"
-token="$(grep -E '^TELEGRAM_BOT_TOKEN=' "$APP_DIR/.env.local" | head -1 | cut -d= -f2-)"
+token="$(grep -E '^TELEGRAM_BOT_TOKEN=' "$APP_DIR/.env.local" | head -1 | cut -d= -f2- || true)"
 [ -n "$token" ] || { echo "TELEGRAM_BOT_TOKEN is not set in $APP_DIR/.env.local"; exit 1; }
 
 api() {

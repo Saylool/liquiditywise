@@ -23,7 +23,9 @@ ENV_FILE="$APP_DIR/.env.local"
 [ -f "$ENV_FILE" ] || { echo "$ENV_FILE is not there."; exit 1; }
 
 setting() {
-  grep -E "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'"
+  # `|| true`: a setting that is not there is an empty answer, not a reason
+  # for set -e to end the script before it can say which one is missing.
+  grep -E "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true
 }
 
 CHAT_ID="$(setting TELEGRAM_OPERATOR_CHAT_ID)"
