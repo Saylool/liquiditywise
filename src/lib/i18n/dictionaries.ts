@@ -2894,9 +2894,9 @@ const de: Dictionary = {
       "pool-history-insufficient":
         "Dieser Pool hat noch nicht genug abgeschlossene tägliche Preishistorie, um analysiert zu werden.",
       "pool-history-never-traded":
-        "Diesen Pool gibt es, aber in ihm wurde nie gehandelt, also gibt es keine Tagespreise, aus denen sich eine Spanne messen ließe.",
+        "Diesen Pool gibt es, aber in ihm wurde nie gehandelt, also gibt es keine Tagespreise, aus denen sich ein Bereich messen ließe.",
       "pool-history-dormant":
-        "Dieser Pool hörte auf zu handeln, bevor der Zeitraum beginnt, aus dem diese Tagespreise gelesen werden, also gibt es keine jüngere Historie, aus der sich eine Spanne messen ließe. Warten ändert daran nichts — nur eine erneute Nutzung des Pools würde es.",
+        "Dieser Pool hörte auf zu handeln, bevor der Zeitraum beginnt, aus dem diese Tagespreise gelesen werden, also gibt es keine jüngere Historie, aus der sich ein Bereich messen ließe. Warten ändert daran nichts — nur eine erneute Nutzung des Pools würde es.",
       "volatility-invalid-input":
         "Die für diese Berechnung gelieferte Preishistorie ist keine gültige normalisierte Historie.",
       "volatility-insufficient-history":

@@ -92,19 +92,50 @@ const LANGUAGE_NAMES: Record<Locale, string> = {
 const TERMINOLOGY: Record<Locale, readonly string[]> = {
   en: [],
   /*
-   * Empty until measured. The Turkish list below exists because a deployment
-   * was read across four pools and found using two words for the same thing;
-   * writing a list for a language nobody has read the output of would be
-   * guessing at a problem instead of fixing an observed one.
+   * Read on 2026-09-23: three runs per language against one pool, with the
+   * parameters varied so each request missed the cache, and every word the
+   * model chose compared against the word this interface uses for the same
+   * thing. Four languages diverged and four did not — and the ones that did
+   * not are listed empty *because they were read*, which is a different state
+   * from the one this comment used to describe. Adding a term to those
+   * without reading the output again would be the guessing the Turkish list
+   * was written to avoid.
+   *
+   * `es`, `hi`, `pt` and `ru` came back using the interface's own words
+   * throughout. Two of my own first readings were wrong and are worth
+   * recording: the model appeared to write the bare English "swap" in Arabic
+   * and Russian, and it did not — every hit was the "swap" inside "Uniswap".
    */
-  de: [],
+  de: [
+    'swap: "Tausch", never "Swap"',
+    'a deposit: "Einlage", never "Einzahlung"',
+    'gas: "Gas", as its own word rather than inside a compound',
+    /*
+     * The two things this interface keeps apart and the model ran together,
+     * which is the same fault the Turkish list was first written for. The
+     * page's own heading reads "Vorgeschlagener Preisbereich"; the model
+     * wrote "Spanne" for it twenty-four times across three runs. "Spanne" is
+     * not wrong German and the interface does use it — for the distance from
+     * a day's low to its high, which is a different thing on the same page.
+     */
+    'the suggested range: "Bereich"',
+    "a single day's low-to-high distance: \"Spanne\"",
+  ],
   es: [],
-  ar: [],
+  ar: [
+    'swap: "تبادل"',
+  ],
   hi: [],
-  zh: [],
+  zh: [
+    'swap: "兑换"',
+    'gas: "gas", in Latin letters as the interface writes it',
+  ],
   ru: [],
   pt: [],
-  "zh-Hant": [],
+  "zh-Hant": [
+    'swap: "兌換"',
+    'volatility: "波動率"',
+  ],
   tr: [
     'the pool: "havuz"',
     'token, plural: "tokenlar"',

@@ -16,6 +16,8 @@ import {
 } from "../../advisor/poolRangeAnalysis";
 import { formatPrice } from "../../format/displayFormats";
 import { choosePriceQuote, quotedInterval } from "../../format/priceQuote";
+import { getDictionary } from "../../i18n/dictionaries";
+import { LOCALES, type Locale } from "../../i18n/locales";
 import { BASE_INSTRUCTION } from "./base";
 import { buildRangeInterpretationPrompt } from "./rangeInterpretation";
 
@@ -98,7 +100,8 @@ const analysis = ((): PoolRangeAnalysis => {
   return result.data;
 })();
 
-const build = (locale: "en" | "tr" = "en", warnings: readonly DataWarningNotice[] = []) =>
+/* Every published locale, since the terminology below is checked in all of them. */
+const build = (locale: Locale = "en", warnings: readonly DataWarningNotice[] = []) =>
   buildRangeInterpretationPrompt({ analysis, locale, warnings });
 
 /*
@@ -528,6 +531,92 @@ describe("terminology", () => {
 
   it("leaves English alone, where the interface already uses the model's words", () => {
     expect(build("en").user).not.toContain("WORDS TO USE");
+  });
+
+  it("carries what each language's reading found", () => {
+    expect(build("de").user).toContain('swap: "Tausch", never "Swap"');
+    expect(build("ar").user).toContain('swap: "تبادل"');
+    expect(build("zh").user).toContain('swap: "兑换"');
+    expect(build("zh-Hant").user).toContain('volatility: "波動率"');
+  });
+
+  /*
+   * The rule the whole list follows, made checkable.
+   *
+   * A term here exists to make the model write the word the page beside it
+   * writes, so a term naming a word this interface never uses would do the
+   * opposite of its job — and it would look exactly like a correct entry.
+   * That check was done by hand once, against every candidate, and it threw
+   * out more than it kept: the German "Spanne" looked like a divergence until
+   * the dictionary showed the interface using it too.
+   *
+   * Only the first quoted word is required to appear. A `never "Swap"` clause
+   * names the word to avoid, and that one must be absent — which is the same
+   * assertion read the other way.
+   */
+  /*
+   * Read back out of the built prompt rather than from the table, so this
+   * checks the lines the model is actually sent.
+   */
+  const termsFor = (locale: Locale): readonly string[] => {
+    const { user } = build(locale);
+    const section = user.split("WORDS TO USE")[1];
+    if (section === undefined) return [];
+
+    return section
+      .split("\n")
+      .slice(1)
+      .reduce<string[]>((terms, line) => (line.startsWith("- ") ? [...terms, line.slice(2)] : terms), []);
+  };
+
+  /*
+   * The sentences this interface shows, and only those. Keys are not words a
+   * reader ever sees, and including them made the first run of this test pass
+   * `never "Swap"` for German off the back of the key `hookAltersSwaps`.
+   */
+  const visibleWords = (locale: Locale): string => {
+    const found: string[] = [];
+    const walk = (value: unknown): void => {
+      if (typeof value === "string") found.push(value);
+      else if (typeof value === "function") found.push(String((value as (...args: unknown[]) => unknown)("1", "2", "3")));
+      else if (value && typeof value === "object") Object.values(value).forEach(walk);
+    };
+    walk(getDictionary(locale));
+
+    return found.join("\n").toLowerCase();
+  };
+
+  it.each(LOCALES)("names words the %s interface actually uses", (locale) => {
+    // Case-insensitive: "Yıllıklandırılmış volatilite" is a heading, and the
+    // prose below it is meant to say the same word in lower case.
+    const dictionary = visibleWords(locale);
+
+    for (const term of termsFor(locale)) {
+      const quoted = [...term.matchAll(/"([^"]+)"/g)].flatMap((match) => match[1] ?? []);
+      const [preferred, ...avoided] = quoted;
+      if (preferred === undefined) continue;
+
+      expect(dictionary, `${locale}: "${preferred}" is not a word this interface uses`).toContain(
+        preferred.toLowerCase(),
+      );
+      /*
+       * A word to avoid is the standalone word. Asked as a substring, German's
+       * `never "Swap"` matches the "swap" inside "Uniswap" — which caught me
+       * three times over while reading these languages, once in the prose and
+       * twice in a check written to police it. Latin script gets boundaries;
+       * Chinese has none and needs none.
+       */
+      for (const word of avoided) {
+        const lower = word.toLowerCase();
+        const standalone = /^[a-z]+$/.test(lower)
+          ? new RegExp(`(^|[^a-z])${lower}([^a-z]|$)`).test(dictionary)
+          : dictionary.includes(lower);
+
+        expect(standalone, `${locale}: "${word}" is marked to avoid but the interface uses it`).toBe(
+          false,
+        );
+      }
+    }
   });
 });
 
