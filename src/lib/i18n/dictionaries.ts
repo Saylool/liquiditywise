@@ -337,6 +337,8 @@ const en = {
       "That average is the geometric mean of the price now and the price the swap ends at — the same identity the one-sided positions above rest on, seen from the other side of the trade. A swap crossing a band pays it; a position sitting in that band receives it.",
     whyItDiffers:
       "The two directions are not the same size because the price sits somewhere inside its step rather than in the middle of it. What is worth comparing between pools is the size itself: it is what this market absorbs before it moves, and it is the reason anybody breaks a large order into small ones instead of sending it at once.",
+    hookMayAlter:
+      "This pool's hook is permitted to change what a swap costs — to rewrite the fee as each swap happens, to price the swap itself instead of the pool's curve, or to take a share of it afterwards; the hook section above says which. The figures here are what the pool's curve charges, and they hold only if the hook stays out of the way. Nothing read here can tell whether it does.",
     unavailable: "What a swap would cost cannot be worked out for this pool.",
   },
 
@@ -1448,6 +1450,8 @@ const tr: Dictionary = {
       "Bu ortalama, şimdiki fiyat ile takasın bittiği fiyatın geometrik ortalamasıdır — yukarıdaki tek taraflı pozisyonların dayandığı aynı kimlik, alışverişin öbür tarafından görülmüş hâli. Bir bandı geçen takas onu öder; o bantta duran pozisyon onu alır.",
     whyItDiffers:
       "İki yön aynı büyüklükte değil, çünkü fiyat adımının tam ortasında değil bir yerinde duruyor. Havuzlar arasında karşılaştırmaya değen şey büyüklüğün kendisi: bu piyasanın kıpırdamadan önce ne kadarını yuttuğu, ve büyük bir emri tek seferde göndermek yerine küçük parçalara bölmenin sebebi de bu.",
+    hookMayAlter:
+      "Bu havuzun hook'u bir takasın maliyetini değiştirmeye izinli — her takas olurken komisyonu yeniden yazmaya, takası havuzun eğrisi yerine kendisi fiyatlamaya ya da sonrasında ondan pay almaya; hangisi olduğunu yukarıdaki hook bölümü söylüyor. Buradaki rakamlar havuzun eğrisinin aldığı tutardır ve yalnızca hook araya girmezse geçerlidir. Burada okunan hiçbir şey, girip girmediğini söyleyemez.",
     unavailable: "Bir takasın maliyeti bu havuz için hesaplanamıyor.",
   },
 
@@ -2368,6 +2372,8 @@ const de: Dictionary = {
       "Dieser Durchschnitt ist das geometrische Mittel aus dem jetzigen Preis und dem Preis, bei dem der Tausch endet — dieselbe Identität, auf der die einseitigen Positionen oben beruhen, von der anderen Seite des Geschäfts gesehen. Ein Tausch, der ein Band durchquert, zahlt ihn; eine Position, die in diesem Band liegt, erhält ihn.",
     whyItDiffers:
       "Die beiden Richtungen sind nicht gleich groß, weil der Preis irgendwo innerhalb seines Schritts liegt und nicht in dessen Mitte. Was sich zwischen Pools zu vergleichen lohnt, ist die Größe selbst: sie ist das, was dieser Markt aufnimmt, bevor er sich bewegt, und der Grund, warum irgendjemand eine große Order in kleine zerlegt, statt sie auf einmal zu senden.",
+    hookMayAlter:
+      "Der Hook dieses Pools darf ändern, was ein Tausch kostet — die Gebühr bei jedem Tausch neu festlegen, den Tausch statt der Kurve des Pools selbst bepreisen oder sich danach einen Anteil daran nehmen; welches davon, steht oben im Hook-Abschnitt. Die Zahlen hier sind das, was die Kurve des Pools berechnet, und sie gelten nur, wenn der Hook nicht eingreift. Nichts, was hier gelesen wurde, kann sagen, ob er es tut.",
     unavailable: "Was ein Tausch kosten würde, lässt sich für diesen Pool nicht ermitteln.",
   },
 
@@ -3266,6 +3272,8 @@ const es: Dictionary = {
       "Esa media es la media geométrica del precio de ahora y del precio al que termina el intercambio — la misma identidad en la que se apoyan las posiciones de un solo lado de arriba, vista desde el otro lado de la operación. Un intercambio que cruza una banda la paga; una posición situada en esa banda la recibe.",
     whyItDiffers:
       "Las dos direcciones no son del mismo tamaño porque el precio está en algún punto dentro de su escalón y no en el medio. Lo que merece compararse entre pools es el tamaño en sí: es lo que este mercado absorbe antes de moverse, y es la razón por la que alguien parte una orden grande en otras pequeñas en vez de enviarla de golpe.",
+    hookMayAlter:
+      "El hook de este pool tiene permitido cambiar lo que cuesta un intercambio: reescribir la comisión en cada intercambio, fijar él mismo el precio del intercambio en lugar de la curva del pool, o quedarse con una parte después; el apartado del hook, más arriba, dice cuál. Las cifras de aquí son lo que cobra la curva del pool, y solo valen si el hook no interviene. Nada de lo leído aquí puede decir si lo hace.",
     unavailable: "Lo que costaría un intercambio no puede calcularse para este pool.",
   },
 
@@ -4165,6 +4173,8 @@ const ar: Dictionary = {
       "هذا المتوسط هو الوسط الهندسي لسعر الآن والسعر الذي ينتهي عنده التبادل — الهوية نفسها التي تقوم عليها المراكز الأحادية الجانب أعلاه، منظورًا إليها من الجهة الأخرى من الصفقة. فالتبادل العابر لحزمة يدفعه، والمركز القائم في تلك الحزمة يتلقّاه.",
     whyItDiffers:
       "الاتجاهان ليسا بالحجم نفسه لأن السعر يقع في موضع ما داخل خطوته لا في منتصفها. وما يستحق المقارنة بين التجمّعات هو الحجم نفسه: فهو ما يستوعبه هذا السوق قبل أن يتحرّك، وهو سبب تقسيم أي أحد أمرًا كبيرًا إلى أوامر صغيرة بدل إرساله دفعة واحدة.",
+    hookMayAlter:
+      "يُسمح للـ hook في هذا التجمّع بتغيير تكلفة التبادل: أن يعيد كتابة الرسوم مع كل تبادل، أو أن يسعّر التبادل بنفسه بدل منحنى التجمّع، أو أن يأخذ حصة منه بعد ذلك؛ وقسم الـ hook أعلاه يبيّن أيّها. الأرقام هنا هي ما يتقاضاه منحنى التجمّع، ولا تصحّ إلا إذا لم يتدخّل الـ hook. ولا شيء مما قُرئ هنا يستطيع أن يقول إن كان يتدخّل.",
     unavailable: "لا يمكن استخراج تكلفة التبادل لهذا التجمّع.",
   },
 
@@ -5039,6 +5049,8 @@ const hi: Dictionary = {
       "वह औसत अभी की कीमत और स्वैप जिस कीमत पर ख़त्म होता है, उन दोनों का गुणोत्तर माध्य है — वही पहचान जिस पर ऊपर की एकतरफ़ा पोज़िशनें टिकी हैं, सौदे की दूसरी ओर से देखी गई। बैंड पार करता स्वैप उसे चुकाता है; उसी बैंड में बैठी पोज़िशन उसे पाती है।",
     whyItDiffers:
       "दोनों दिशाएँ एक आकार की नहीं हैं क्योंकि कीमत अपने क़दम के भीतर कहीं बैठी है, उसके बीच में नहीं। पूलों के बीच तुलने लायक़ चीज़ यह आकार ही है: यही वह है जो यह बाज़ार हिलने से पहले सोख लेता है, और यही वजह है कि कोई बड़ा ऑर्डर एक साथ भेजने के बजाय छोटे-छोटे टुकड़ों में तोड़ता है।",
+    hookMayAlter:
+      "इस पूल के hook को यह बदलने की अनुमति है कि स्वैप की लागत क्या हो — हर स्वैप के समय शुल्क दोबारा लिखना, पूल के वक्र की जगह स्वैप की कीमत खुद तय करना, या बाद में उसमें से हिस्सा लेना; इनमें से कौन-सा, यह ऊपर hook वाला हिस्सा बताता है। यहाँ के आँकड़े वही हैं जो पूल का वक्र लेता है, और वे तभी सही हैं जब hook बीच में न आए। यहाँ पढ़ी गई कोई भी चीज़ यह नहीं बता सकती कि वह आता है या नहीं।",
     unavailable: "एक स्वैप की लागत इस पूल के लिए निकाली नहीं जा सकती।",
   },
 
@@ -5985,6 +5997,8 @@ const zh: Dictionary = {
       "那个平均值是当前价格与这笔兑换结束时价格的几何平均数——和上面那些单边仓位所依据的是同一个恒等式，只是从交易的另一侧看过去。穿过一条带子的兑换支付它；坐在那条带子里的仓位收取它。",
     whyItDiffers:
       "两个方向的规模不一样，是因为价格落在它那一格里的某个位置，而不是正中间。真正值得在不同池子之间比较的是这个规模本身：它是这个市场在价格移动之前能吸收的量，也正是为什么有人会把一笔大单拆成很多小单，而不是一次发出去。",
+    hookMayAlter:
+      "这个池子的 hook 被允许改变一笔兑换的成本——在每笔兑换发生时重写费率，由它自己而不是池子的曲线给这笔兑换定价，或者在事后从中抽取一份；具体是哪一种，上面的 hook 部分写着。这里的数字是池子的曲线所收取的，只有在 hook 不插手时才成立。这里读到的任何东西都无法说明它是否插手。",
     unavailable: "对这个池子，算不出一笔兑换要付出什么。",
   },
 
@@ -7132,6 +7146,8 @@ const ru: Dictionary = {
       "Это среднее — среднее геометрическое нынешней цены и цены, на которой своп закончится: то же тождество, на котором держатся односторонние позиции выше, только увиденное с другой стороны сделки. Своп, проходящий сквозь полосу, его платит; позиция, лежащая в этой полосе, его получает.",
     whyItDiffers:
       "Два направления не равны по размеру, потому что цена стоит где-то внутри своего шага, а не посередине. Сравнивать между пулами стоит сам этот размер: он и есть то, что рынок поглощает, прежде чем сдвинуться, и именно поэтому крупный ордер разбивают на мелкие вместо того, чтобы отправить разом.",
+    hookMayAlter:
+      "Hook’у этого пула разрешено менять то, сколько стоит своп: переписывать комиссию при каждом свопе, самому назначать цену свопа вместо кривой пула или забирать долю после; какое из этого — сказано выше, в разделе о hook’е. Цифры здесь — то, что берёт кривая пула, и они верны, только если hook не вмешивается. Ничто из прочитанного здесь не может сказать, вмешивается ли он.",
     unavailable: "Для этого пула нельзя вычислить, сколько стоил бы своп.",
   },
 
@@ -8292,6 +8308,8 @@ const pt: Dictionary = {
       "Essa média é a média geométrica do preço agora e do preço em que o swap termina — a mesma identidade em que se apoiam as posições de um lado só acima, vista do outro lado da negociação. Um swap que atravessa uma banda a paga; uma posição que está nessa banda a recebe.",
     whyItDiffers:
       "As duas direções não têm o mesmo tamanho porque o preço está em algum ponto dentro do passo dele e não no meio. O que vale comparar entre pools é o tamanho em si: é o que este mercado absorve antes de se mexer, e é a razão pela qual se quebra uma ordem grande em várias pequenas em vez de mandá-la de uma vez.",
+    hookMayAlter:
+      "O hook deste pool tem permissão para mudar quanto um swap custa — reescrever a taxa a cada swap, dar ele mesmo o preço do swap no lugar da curva do pool, ou ficar com uma parte depois; a seção do hook, acima, diz qual. Os números aqui são o que a curva do pool cobra, e só valem se o hook não interferir. Nada do que foi lido aqui consegue dizer se ele interfere.",
     unavailable: "Para este pool não dá para calcular quanto um swap custaria.",
   },
 
@@ -9447,6 +9465,8 @@ const zhHant: Dictionary = {
       "那個平均值是當前價格與這筆兌換結束時價格的幾何平均數——和上面那些單邊倉位所依據的是同一個恆等式，只是從交易的另一側看過去。穿過一條帶子的兌換支付它；坐在那條帶子裡的倉位收取它。",
     whyItDiffers:
       "兩個方向的規模不一樣，是因為價格落在它那一格裡的某個位置，而不是正中間。真正值得在不同池子之間比較的是這個規模本身：它是這個市場在價格移動之前能吸收的量，也正是為什麼有人會把一筆大單拆成很多小單，而不是一次發出去。",
+    hookMayAlter:
+      "這個池子的 hook 被允許改變一筆兌換的成本——在每筆兌換發生時重寫費率，由它自己而不是池子的曲線給這筆兌換定價，或者在事後從中抽取一份；具體是哪一種，上面的 hook 部分寫著。這裡的數字是池子的曲線所收取的，只有在 hook 不插手時才成立。這裡讀到的任何東西都無法說明它是否插手。",
     unavailable: "對這個池子，算不出一筆兌換要付出什麼。",
   },
 

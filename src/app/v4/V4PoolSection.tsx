@@ -91,10 +91,16 @@ async function V4RangeReport({
 
   return (
     <>
+      {/*
+       * The identity card above has already named this pool — only when the
+       * pool was read is this rendered at all, and that card always comes
+       * first — so the report does not name it a second time.
+       */}
       <PoolRangeReport
         result={result}
         poolId={poolId}
         controls={controls}
+        introducedAbove
         t={t}
         locale={locale}
       />

@@ -650,6 +650,72 @@ describe("what the pool actually charged", () => {
     expect(markup).toContain("from the liquidity providers");
   });
 
+  /*
+   * The panel that presents a swap's cost, and until this was written the one
+   * such panel that never heard the hook's warning. Its intro says a swap
+   * inside the step is priced "with nothing assumed" — true of the curve, and
+   * exactly what a hook permitted to rewrite the fee, price the swap itself or
+   * take a share afterwards makes false. Found by reading two live v4 pools
+   * whose fee figures were all, correctly, withheld while this one was not.
+   */
+  it("qualifies the swap cost when the hook may alter a swap", () => {
+    const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));
+
+    expect(markup).toContain("What a swap costs here");
+    expect(markup).toContain("they hold only if the hook stays out of the way");
+  });
+
+  /*
+   * Only where it is true. A hook that runs on deposits cannot touch a swap,
+   * and a pool with no hook prices every swap by its curve — neither is owed a
+   * caveat, and printing one would teach a reader to skip the ones that matter.
+   */
+  it("leaves the swap cost alone for a hook that never runs on a swap", () => {
+    const markup = render(analyse(v4Parts(LIQUIDITY_HOOK, 3000)));
+
+    expect(markup).toContain("What a swap costs here");
+    expect(markup).not.toContain("they hold only if the hook stays out of the way");
+  });
+
+  /*
+   * The v4 page puts the pool's identity card first — the pair, the id, and a
+   * hook-set fee explained properly — and this report's own header repeated
+   * all three under a second, identical heading. On that page it is omitted;
+   * everywhere else the header is the only place the pool is named, and stays.
+   */
+  describe("naming the pool once", () => {
+    const TITLE = '<h2 class="text-3xl font-semibold tracking-tight">';
+    const withIntro = (introducedAbove: boolean) =>
+      renderToStaticMarkup(
+        <PoolRangeReport
+          result={analyse(v4Parts(SWAP_HOOK, 600))}
+          poolId={V4_ID}
+          introducedAbove={introducedAbove}
+          t={getDictionary("en")}
+          locale="en"
+        />,
+      );
+
+    it("names the pool itself when nothing above has", () => {
+      expect(withIntro(false)).toContain(TITLE);
+    });
+
+    it("does not name it again under a card that already has", () => {
+      const markup = withIntro(true);
+
+      expect(markup).not.toContain(TITLE);
+      // Only the header goes: the analysis beneath it is untouched.
+      expect(markup).toContain("Suggested price range");
+      expect(markup).toContain("What a swap costs here");
+    });
+  });
+
+  it("leaves the swap cost alone for a v4 pool with no hook", () => {
+    const markup = render(analyse(v4Parts(null, 3000)));
+
+    expect(markup).not.toContain("they hold only if the hook stays out of the way");
+  });
+
   /* The fees the pool charged are a fact, and they stay. Only attribution goes. */
   it("still shows the fees the pool charged over the month", () => {
     const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));

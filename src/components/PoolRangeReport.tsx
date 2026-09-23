@@ -325,6 +325,7 @@ export function PoolRangeReport({
   result,
   poolId,
   controls,
+  introducedAbove = false,
   t,
   locale,
 }: {
@@ -338,6 +339,16 @@ export function PoolRangeReport({
    * submits and this does not.
    */
   controls?: React.ReactNode;
+  /**
+   * Whether the page has already named this pool directly above the report.
+   *
+   * The v4 page puts a card first that is the pool's identity in full — the
+   * pair, the id, and the fee read from the key, with far more said about a
+   * hook-set fee than a one-line summary can. This report's own header would
+   * then repeat all three, under a second heading identical to the first,
+   * which a screen reader announces twice and a reader scrolls past twice.
+   */
+  introducedAbove?: boolean;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -459,25 +470,27 @@ export function PoolRangeReport({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h2 className="text-3xl font-semibold tracking-tight">
-          {pool.token0.symbol} / {pool.token1.symbol}
-        </h2>
-        <p className="text-sm leading-relaxed text-muted">
-          {t.report.poolSummary(
-            pool.protocolVersion,
-            disclosure.lpFeePpm === null
-              ? t.report.noDeclaredFee
-              : takesProtocolFee(disclosure.protocolFee)
-                ? t.report.feePlusProtocol(
-                    formatFeePpm(disclosure.lpFeePpm, locale),
-                    formatProtocolFee(disclosure.protocolFee, locale),
-                  )
-                : t.report.feePerSwap(formatFeePpm(disclosure.lpFeePpm, locale)),
-          )}
-        </p>
-        <p className="break-all font-mono text-xs text-muted">{pool.id}</p>
-      </header>
+      {introducedAbove ? null : (
+        <header className="flex flex-col gap-2">
+          <h2 className="text-3xl font-semibold tracking-tight">
+            {pool.token0.symbol} / {pool.token1.symbol}
+          </h2>
+          <p className="text-sm leading-relaxed text-muted">
+            {t.report.poolSummary(
+              pool.protocolVersion,
+              disclosure.lpFeePpm === null
+                ? t.report.noDeclaredFee
+                : takesProtocolFee(disclosure.protocolFee)
+                  ? t.report.feePlusProtocol(
+                      formatFeePpm(disclosure.lpFeePpm, locale),
+                      formatProtocolFee(disclosure.protocolFee, locale),
+                    )
+                  : t.report.feePerSwap(formatFeePpm(disclosure.lpFeePpm, locale)),
+            )}
+          </p>
+          <p className="break-all font-mono text-xs text-muted">{pool.id}</p>
+        </header>
+      )}
 
       {warnings.length === 0 ? null : (
         <aside
@@ -987,6 +1000,22 @@ export function PoolRangeReport({
         ) : (
           <>
             <p className="text-sm leading-relaxed">{t.swapDepth.intro}</p>
+
+            {/*
+             * Directly under the sentence it qualifies. The intro says a swap
+             * inside the step is priced "with nothing assumed", which is true of
+             * the curve and is exactly what a swap-altering hook makes false: it
+             * can rewrite the fee, price the swap itself, or take a share after.
+             *
+             * Through the same flag every fee figure on this page already obeys.
+             * The hook's own section says outright that figures drawn from the
+             * curve are not safe here, and this was the one panel presenting a
+             * swap's cost that never heard it — the most direct of them all,
+             * since it is literally what a swap costs.
+             */}
+            {disclosure.hookMayAlterSwaps ? (
+              <p className="text-sm leading-relaxed">{t.swapDepth.hookMayAlter}</p>
+            ) : null}
 
             <dl className={FIGURE_GRID}>
               {[swapDepth.data.sellingToken0, swapDepth.data.sellingToken1].map((entry) =>
