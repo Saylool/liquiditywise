@@ -31,6 +31,9 @@ RECIPIENT="${RECIPIENT:-$APP_DIR/deploy/backup-recipient.pem}"
 STAMP_FILE="${STAMP_FILE:-/var/lib/liquiditywise/backup.last}"
 API="${CLOUDFLARE_API:-https://api.cloudflare.com/client/v4}"
 KEEP_SECONDS=$(( 7 * 24 * 60 * 60 ))
+# What the copies are called. Only ever changed to prove a restore on made-up
+# links without writing over a real day's backup.
+NAME="${BACKUP_NAME_PREFIX:-backup}"
 
 setting() {
   # `|| true`: a setting that is not there is an empty answer, not a reason
@@ -60,7 +63,7 @@ values="$API/accounts/$ACCOUNT/storage/kv/namespaces/$NAMESPACE/values"
 
 if [ "${1:-}" = "--list" ]; then
   curl -sS --fail -m 30 -H @"$work/auth" \
-    "$API/accounts/$ACCOUNT/storage/kv/namespaces/$NAMESPACE/keys?prefix=backup/" |
+    "$API/accounts/$ACCOUNT/storage/kv/namespaces/$NAMESPACE/keys?prefix=$NAME/" |
     python3 -c 'import json, sys
 for key in json.load(sys.stdin)["result"]:
     print(key["name"])'
@@ -70,7 +73,7 @@ fi
 if [ "${1:-}" = "--fetch" ]; then
   day="${2:?which day: YYYY-MM-DD}"
   printf '%s' "$day" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || { echo "A day is YYYY-MM-DD." >&2; exit 1; }
-  curl -sS --fail -m 60 -H @"$work/auth" "$values/backup%2F$day"
+  curl -sS --fail -m 60 -H @"$work/auth" "$values/$NAME%2F$day"
   exit 0
 fi
 
@@ -92,10 +95,10 @@ gzip -9 -n < "$work/snapshot.json" |
 # adding to what is kept.
 day="$(date -u +%Y-%m-%d)"
 curl -sS --fail -m 60 -X PUT -H @"$work/auth" -H "Content-Type: application/octet-stream" \
-  --data-binary @"$work/backup" "$values/backup%2F$day?expiration_ttl=$KEEP_SECONDS" > /dev/null
+  --data-binary @"$work/backup" "$values/$NAME%2F$day?expiration_ttl=$KEEP_SECONDS" > /dev/null
 
 # Read back and compared, so the stamp below means "stored", not "sent".
-curl -sS --fail -m 60 -H @"$work/auth" "$values/backup%2F$day" > "$work/stored"
+curl -sS --fail -m 60 -H @"$work/auth" "$values/$NAME%2F$day" > "$work/stored"
 if ! cmp -s "$work/backup" "$work/stored"; then
   echo "What Cloudflare holds for $day is not what was sent." >&2
   exit 1
@@ -103,4 +106,4 @@ fi
 
 mkdir -p "$(dirname "$STAMP_FILE")"
 date +%s > "$STAMP_FILE"
-echo "Stored backup/$day, $summary, $(( $(wc -c < "$work/backup") )) bytes encrypted."
+echo "Stored $NAME/$day, $summary, $(( $(wc -c < "$work/backup") )) bytes encrypted."
