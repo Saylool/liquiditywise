@@ -299,7 +299,7 @@ describe("restoreStore", () => {
     const redis = populated();
 
     const early = await exportStore(redis.command, NOW);
-    const late = await exportStore(redis.command, NOW + 5_000);
+    const late = await exportStore(redis.command, NOW + 5_137);
 
     expect(late.entries).toEqual(early.entries);
   });
