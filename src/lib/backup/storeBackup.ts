@@ -93,10 +93,15 @@ export const exportStore = async (command: Command, nowMs: number): Promise<Snap
     if (type !== "string" && type !== "set") throw new Error(`${key} is a ${type}, which this application never writes`);
 
     const read = await command(type === "string" ? ["GET", key] : ["SMEMBERS", key]);
-    const ttl = expectInteger(await command(["PTTL", key]), `PTTL ${key}`);
+    /*
+     * The moment it expires, as Redis holds it (7.0 and later). Not the time
+     * left added to a clock read earlier: that is off by however long the
+     * reads in between took, so two copies of the same store would disagree.
+     */
+    const expiresAt = expectInteger(await command(["PEXPIRETIME", key]), `PEXPIRETIME ${key}`);
     // -2: gone since it was listed, which is also the only way a read comes back empty. -1: no expiry.
-    if (ttl === -2) continue;
-    const expiresAtMs = ttl === -1 ? null : nowMs + ttl;
+    if (expiresAt === -2) continue;
+    const expiresAtMs = expiresAt === -1 ? null : expiresAt;
 
     if (type === "string") {
       entries.push({ key, type, value: expectString(read, `GET ${key}`), expiresAtMs });

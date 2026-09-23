@@ -65,10 +65,9 @@ const fakeRedis = (clock = { now: NOW }) => {
         return alive(key) && strings.has(key) ? text(strings.get(key) as string) : { kind: "null" };
       case "SMEMBERS":
         return list(alive(key) ? [...(sets.get(key) ?? [])] : []);
-      case "PTTL": {
+      case "PEXPIRETIME": {
         if (!alive(key)) return int(-2);
-        const at = expiry.get(key);
-        return int(at === undefined ? -1 : at - clock.now);
+        return int(expiry.get(key) ?? -1);
       }
       case "SET":
         strings.set(key, rest[0] as string);
@@ -164,7 +163,7 @@ describe("exportStore", () => {
   it("leaves out a key removed between its read and its expiry check", async () => {
     const redis = populated();
     const racing: Command = async (args) => {
-      if (args[0] === "PTTL" && args[1] === LINK) redis.strings.delete(LINK);
+      if (args[0] === "PEXPIRETIME" && args[1] === LINK) redis.strings.delete(LINK);
       return redis.command(args);
     };
 
@@ -200,9 +199,9 @@ describe("exportStore", () => {
   it("stops on a reply it did not expect", async () => {
     const redis = populated();
     const broken: Command = async (args) =>
-      args[0] === "PTTL" ? { kind: "error", message: "ERR busy" } : redis.command(args);
+      args[0] === "PEXPIRETIME" ? { kind: "error", message: "ERR busy" } : redis.command(args);
 
-    await expect(exportStore(broken, NOW)).rejects.toThrow("PTTL");
+    await expect(exportStore(broken, NOW)).rejects.toThrow("PEXPIRETIME");
   });
 
   it("stops when SCAN does not answer with a cursor and a batch", async () => {
@@ -290,6 +289,21 @@ describe("restoreCommands", () => {
 });
 
 describe("restoreStore", () => {
+  /*
+   * The property the first live proof failed on: an expiry read as time left
+   * and added to a clock taken earlier drifts by however long the reads took,
+   * so the copy and the original disagreed by milliseconds. Read as the
+   * moment itself, two exports taken at different times agree exactly.
+   */
+  it("gives the same expiry moments however long after the clock was read", async () => {
+    const redis = populated();
+
+    const early = await exportStore(redis.command, NOW);
+    const late = await exportStore(redis.command, NOW + 5_000);
+
+    expect(late.entries).toEqual(early.entries);
+  });
+
   it("round-trips: what is exported is what comes back", async () => {
     const snapshot = await exportStore(populated().command, NOW);
     const target = fakeRedis();
