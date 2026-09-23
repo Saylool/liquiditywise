@@ -29,27 +29,49 @@ setting() {
 }
 
 CRON_SECRET="$(setting CRON_SECRET)"
-BOT_TOKEN="$(setting TELEGRAM_BOT_TOKEN)"
 CHAT_ID="$(setting TELEGRAM_OPERATOR_CHAT_ID)"
 
+# Server Watch, the operator's own bot — not @LiquidityWiseBot, which talks to
+# readers. See deploy/set-server-watch-token.sh for why they are kept apart.
+BOT_TOKEN="$(setting SERVER_WATCH_BOT_TOKEN)"
+PREFIX="LiquidityWise · "
+
+# Without it, fall back to the product bot rather than go quiet — and say so
+# in every message. A monitor that falls silent over a missing variable is
+# worse than one that speaks through the wrong bot and admits it.
+if [ -z "$BOT_TOKEN" ]; then
+  BOT_TOKEN="$(setting TELEGRAM_BOT_TOKEN)"
+  PREFIX="LiquidityWise (through the product bot: SERVER_WATCH_BOT_TOKEN is not set) · "
+fi
+
 if [ -z "$CHAT_ID" ] || [ -z "$BOT_TOKEN" ]; then
-  echo "health check: TELEGRAM_OPERATOR_CHAT_ID or TELEGRAM_BOT_TOKEN missing from $APP_DIR/.env.local"
+  echo "health check: TELEGRAM_OPERATOR_CHAT_ID, or any bot token, missing from $APP_DIR/.env.local"
   exit 1
 fi
 
 # Telegram's own reply is discarded; a bot that cannot be reached is a fault
 # this script has no way to report and no business retrying.
+#
+# Every line is prefixed with the site it is about, because Server Watch
+# speaks for every site on the server, and "Redis is not answering" alone does
+# not say whose Redis.
 tell() {
+  # The warning or all-clear mark stays first, where the eye lands.
+  case "$1" in
+    "⚠️ "*) text="⚠️ $PREFIX${1#⚠️ }" ;;
+    "✅ "*) text="✅ $PREFIX${1#✅ }" ;;
+    *) text="$PREFIX$1" ;;
+  esac
   curl -sS -o /dev/null --max-time 20 \
     -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
     --data-urlencode "chat_id=$CHAT_ID" \
-    --data-urlencode "text=$1" \
+    --data-urlencode "text=$text" \
     --data-urlencode "disable_web_page_preview=true" >/dev/null
 }
 
 # One message, to prove the operator chat is reachable before anything breaks.
 if [ "${1:-}" = "--hello" ]; then
-  tell "LiquidityWise health check installed on $(hostname). This is where outages will arrive."
+  tell "the health check on $(hostname) reports here. This is where its outages will arrive."
   echo "sent"
   exit 0
 fi

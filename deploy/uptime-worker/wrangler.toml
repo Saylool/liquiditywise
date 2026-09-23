@@ -35,5 +35,7 @@ SITES = """[
   { "name": "splitstable.com", "url": "https://splitstable.com/" }
 ]"""
 
-# TELEGRAM_BOT_TOKEN and TELEGRAM_OPERATOR_CHAT_ID are secrets and are not in
-# this file. Set them with `wrangler secret put`, or in the dashboard.
+# SERVER_WATCH_BOT_TOKEN and TELEGRAM_OPERATOR_CHAT_ID are secrets and are not
+# in this file. Set them with `wrangler secret put`, or in the dashboard. The
+# token is Server Watch's, never the product bot's: a copy kept on Cloudflare
+# should be one that can do nothing but report.

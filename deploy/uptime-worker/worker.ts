@@ -3,9 +3,10 @@
  *
  * A Cloudflare Worker on a five-minute schedule. It asks every site the
  * server hosts from Cloudflare's own machines, remembers the answers in
- * Workers KV, and tells the operator through the same Telegram bot when they
- * stop being reachable and when they come back — and whether it is one site
- * or the whole server. Every judgement is in `src/lib/health/uptime.ts`,
+ * Workers KV, and tells the operator when they stop being reachable and when
+ * they come back, and whether it is one site or the whole server. It writes
+ * through Server Watch, the bot the server's own check uses, never the
+ * product bot: the token kept here can do nothing but report. Every judgement is in `src/lib/health/uptime.ts`,
  * where it is tested; this file only carries the answers there and the
  * verdict back.
  *
@@ -39,7 +40,7 @@ export type Env = {
    */
   readonly SITES: string;
   /** Secrets, set in the dashboard or with `wrangler secret put`, never in this file. */
-  readonly TELEGRAM_BOT_TOKEN: string;
+  readonly SERVER_WATCH_BOT_TOKEN: string;
   readonly TELEGRAM_OPERATOR_CHAT_ID: string;
 };
 
@@ -75,7 +76,7 @@ const ask = async (url: string, fetchImpl: Fetch): Promise<number | null> => {
  * knows was lost.
  */
 const tell = async (env: Env, text: string, fetchImpl: Fetch): Promise<void> => {
-  const response = await fetchImpl(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  const response = await fetchImpl(`https://api.telegram.org/bot${env.SERVER_WATCH_BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

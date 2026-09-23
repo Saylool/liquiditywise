@@ -32,9 +32,11 @@ const SITES = [
  */
 const network = (sites: Record<string, number | "down">, telegramStatus = 200) => {
   const sent: string[] = [];
+  const bots: string[] = [];
   const asked: { url: string; init: RequestInit | undefined }[] = [];
   const fetchImpl = async (input: string, init?: RequestInit): Promise<Response> => {
     if (input.startsWith("https://api.telegram.org/")) {
+      bots.push(input.split("/")[3] ?? "");
       sent.push(JSON.parse(String(init?.body)).text as string);
       return new Response("{}", { status: telegramStatus });
     }
@@ -44,7 +46,7 @@ const network = (sites: Record<string, number | "down">, telegramStatus = 200) =
     if (status === undefined || status === "down") throw new TypeError("fetch failed");
     return new Response("", { status });
   };
-  return { fetchImpl, sent, asked };
+  return { fetchImpl, sent, bots, asked };
 };
 
 const allAt = (status: number | "down") =>
@@ -53,7 +55,7 @@ const allAt = (status: number | "down") =>
 const envWith = (kv: ReturnType<typeof memoryKv>): Env => ({
   UPTIME: kv,
   SITES: JSON.stringify(SITES),
-  TELEGRAM_BOT_TOKEN: "test-token",
+  SERVER_WATCH_BOT_TOKEN: "watch-token",
   TELEGRAM_OPERATOR_CHAT_ID: "1",
 });
 
@@ -77,6 +79,21 @@ describe("one run of the Worker", () => {
 
     expect(sent).toHaveLength(1);
     expect(sent[0]).toContain("the server itself");
+  });
+
+  /*
+   * Server Watch, never the product bot. The product bot's token can message
+   * every reader who linked a chat, and the copy of the token kept on
+   * Cloudflare should be one that can do nothing but report.
+   */
+  it("writes as Server Watch", async () => {
+    const kv = memoryKv();
+    const { fetchImpl, bots } = network(allAt("down"));
+
+    await check(envWith(kv), fetchImpl);
+    await check(envWith(kv), fetchImpl);
+
+    expect(bots).toEqual(["botwatch-token"]);
   });
 
   it("names the one site that went down, and not the server", async () => {

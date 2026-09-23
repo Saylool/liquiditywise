@@ -183,8 +183,27 @@ broken and is going to stay broken:
 - the TLS certificate has under ten days left and certbot has not renewed it;
 - the disk is over 90% full — this machine serves other sites too.
 
+These go to **Server Watch**, a Telegram bot of its own, and not to the
+product bot. The product bot can message every reader who linked a chat; a
+monitor has no business holding that, and the outside check below keeps a
+copy of whichever token it is given on Cloudflare. Separate, the copy it keeps
+can do nothing but report — and the product bot's chat stays the readers'.
+
+Create the bot with @BotFather (`/newbot`, named Server Watch), open it and
+press Start — a bot cannot write to anyone who has not — then store its token:
+
+```bash
+bash /opt/liquiditywise/deploy/set-server-watch-token.sh
+```
+
+It prompts without echoing, refuses the product bot's token, and sends a first
+message before it stores anything, so a chat that cannot receive is found now
+rather than on the night it matters. Messages start with `LiquidityWise ·` so
+they read apart from the other sites'. Without the token the check falls back
+to the product bot and says so in every message it sends.
+
 Set `TELEGRAM_OPERATOR_CHAT_ID` in `.env.local` to the numeric id of your
-chat with the bot, then prove it arrives:
+chat — the same id for every bot — then prove it arrives:
 
 ```bash
 liquiditywise-health --hello
@@ -198,53 +217,6 @@ What it deliberately does not do is guess. While the site is down its other
 readings cannot be taken, so they are carried forward rather than declared
 recovered — you will not be told the disk is fine by a check that could not
 look at it.
-
-The one thing it cannot cover is the machine being off, because it runs on
-that machine. That is what `uptime-worker/` is for — see below.
-
-## When the machine itself is off
-
-`deploy/uptime-worker/` is a Cloudflare Worker that asks every site this
-server hosts — liquiditywise.com, ensdesk.com and splitstable.com — from
-Cloudflare's own machines every five minutes, and tells the same Telegram chat
-when they stop answering and when they come back. It needs no new account: the
-sites are already served through Cloudflare, and a scheduled Worker, its KV
-store and its cron trigger all fit in the free plan.
-
-Watching all three is what lets it tell two outages apart. One site down while
-the others answer is that site's problem, and the message says the server is
-up. All three down together is the server, or its network, and the message
-says that instead — once, not three times.
-
-It asks liquiditywise at `/api/health` without credentials, so a live app
-answers 401, and the other two at their home pages. Every address is
-cache-busted with a query no cache has seen, because Cloudflare's "Always
-Online" can serve a stored copy of a page while the origin is down — exactly
-the moment this must not be fooled. The list is in `wrangler.toml`, and a test
-reads it the way the Worker does: a typo there would not fail a deploy, it
-would make every run throw, which is a monitor that never says anything. Two failed checks in a row count as down, about ten minutes: one would
-catch every deploy's few-second restart and send "down" then "recovered" for
-nothing. It writes to KV only when its verdict changes, so an ordinary day
-writes nothing against the free plan's thousand writes.
-
-It has no URL on purpose — a public URL that sends a Telegram message is one
-anyone can make send one. Trigger it for testing from the dashboard.
-
-To deploy it, from `deploy/uptime-worker/`:
-
-```bash
-npx wrangler kv namespace create UPTIME
-```
-
-Put the id it prints into `wrangler.toml` in place of
-`REPLACE_WITH_KV_NAMESPACE_ID`, then set the two secrets — each prompts, and
-neither value is written anywhere in this repository:
-
-```bash
-npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put TELEGRAM_OPERATOR_CHAT_ID
-npx wrangler deploy
-```
 
 The two paid credentials are asked about rather than waited for, at most
 once an hour, with the answer kept in Redis in between. The questions are the
@@ -260,6 +232,63 @@ it can see — the certificate, the disk, whether the site answers at all —
 and hands those to `/api/health`, which holds the judgement in
 `src/lib/health/problems.ts` where it is covered by tests.
 
+The one thing it cannot cover is the machine being off, because it runs on
+that machine. That is what `uptime-worker/` is for — see below.
+
+## When the machine itself is off
+
+`deploy/uptime-worker/` is a Cloudflare Worker that asks every site this
+server hosts — liquiditywise.com, ensdesk.com and splitstable.com — from
+Cloudflare's own machines every five minutes, and tells Server Watch's chat
+when they stop answering and when they come back. It needs no new account: the
+sites are already served through Cloudflare, and a scheduled Worker, its KV
+store and its cron trigger all fit in the free plan.
+
+Watching all three is what lets it tell two outages apart. One site down while
+the others answer is that site's problem, and the message says the server is
+up. All three down together is the server, or its network, and the message
+says that instead — once, not three times.
+
+It asks liquiditywise at `/api/health` without credentials, so a live app
+answers 401, and the other two at their home pages. Every address is
+cache-busted with a query no cache has seen, because Cloudflare's "Always
+Online" can serve a stored copy of a page while the origin is down — exactly
+the moment this must not be fooled. The list is in `wrangler.toml`, and a test
+reads it the way the Worker does: a typo there would not fail a deploy, it
+would make every run throw, which is a monitor that never says anything.
+
+Two failed checks in a row count as down, about ten minutes: one would
+catch every deploy's few-second restart and send "down" then "recovered" for
+nothing. It writes to KV only when its verdict changes, so an ordinary day
+writes nothing against the free plan's thousand writes.
+
+It has no URL on purpose — a public URL that sends a Telegram message is one
+anyone can make send one. Trigger it for testing from the dashboard.
+
+To deploy it, from `deploy/uptime-worker/`:
+
+```bash
+npx wrangler kv namespace create UPTIME
+```
+
+Put the id it prints into `wrangler.toml` as the `UPTIME` namespace's `id`,
+then set the two secrets — each prompts, and neither value is written anywhere
+in this repository. The token is Server Watch's, the one
+`set-server-watch-token.sh` stored:
+
+```bash
+npx wrangler secret put SERVER_WATCH_BOT_TOKEN
+npx wrangler secret put TELEGRAM_OPERATOR_CHAT_ID
+npx wrangler deploy
+```
+
+Rather than pasting it, it can be piped from the server without ever being on
+screen:
+
+```bash
+ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.local | cut -d= -f2-" | npx wrangler secret put SERVER_WATCH_BOT_TOKEN
+```
+
 ## Files
 
 - `inspect.sh` — read-only survey of the machine.
@@ -269,5 +298,7 @@ and hands those to `/api/health`, which holds the judgement in
   server the machine already runs.
 - `telegram-check.sh` — one pass of the alert check; the cron entry calls it.
 - `health-check.sh` — the five-minute health check described above.
+- `set-server-watch-token.sh` — stores Server Watch's token, as root, after
+  checking it is not the product bot's and that your chat can receive from it.
 - `redis-durability.sh` — turns on the append-only log, if the Redis is ours.
 - `uptime-worker/` — the outside check, on Cloudflare, for all three sites and for when the machine is off.
