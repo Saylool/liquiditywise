@@ -32,8 +32,13 @@ PRODUCT_BOT="$(setting TELEGRAM_BOT_USERNAME | sed 's/^@//')"
 
 printf 'Paste the token @BotFather gave you for Server Watch, then press Enter.\n'
 printf 'It will not appear on screen: '
-read -rs token
+# A token piped in from the clipboard has no newline after it, and `read` then
+# reports failure even though it read the token — which `set -e` would turn
+# into a silent exit. Whatever arrived is checked below either way.
+token=""
+IFS= read -rs token || true
 printf '\n'
+token="$(printf '%s' "$token" | tr -d '[:space:]')"
 
 if ! printf '%s' "$token" | grep -qE '^[0-9]{6,16}:[A-Za-z0-9_-]{30,}$'; then
   echo "That does not look like a bot token. Nothing was changed."
