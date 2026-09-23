@@ -200,8 +200,42 @@ recovered — you will not be told the disk is fine by a check that could not
 look at it.
 
 The one thing it cannot cover is the machine being off, because it runs on
-that machine. If that matters, point an outside uptime service at the site
-as well; everything short of it is here.
+that machine. That is what `uptime-worker/` is for — see below.
+
+## When the machine itself is off
+
+`deploy/uptime-worker/` is a Cloudflare Worker that asks the site from
+Cloudflare's own machines every five minutes, and tells the same Telegram chat
+when it stops answering and when it comes back. It needs no new account: the
+site is already served through Cloudflare, and a scheduled Worker, its KV store
+and its cron trigger all fit in the free plan.
+
+It asks `/api/health` without credentials, so a live app answers 401. It does
+not ask the home page, because Cloudflare's "Always Online" can serve a stored
+copy of a page while the origin is down — exactly the moment this must not be
+fooled. Two failed checks in a row count as down, about ten minutes: one would
+catch every deploy's few-second restart and send "down" then "recovered" for
+nothing. It writes to KV only when its verdict changes, so an ordinary day
+writes nothing against the free plan's thousand writes.
+
+It has no URL on purpose — a public URL that sends a Telegram message is one
+anyone can make send one. Trigger it for testing from the dashboard.
+
+To deploy it, from `deploy/uptime-worker/`:
+
+```bash
+npx wrangler kv namespace create UPTIME
+```
+
+Put the id it prints into `wrangler.toml` in place of
+`REPLACE_WITH_KV_NAMESPACE_ID`, then set the two secrets — each prompts, and
+neither value is written anywhere in this repository:
+
+```bash
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put TELEGRAM_OPERATOR_CHAT_ID
+npx wrangler deploy
+```
 
 The two paid credentials are asked about rather than waited for, at most
 once an hour, with the answer kept in Redis in between. The questions are the
@@ -227,3 +261,4 @@ and hands those to `/api/health`, which holds the judgement in
 - `telegram-check.sh` — one pass of the alert check; the cron entry calls it.
 - `health-check.sh` — the five-minute health check described above.
 - `redis-durability.sh` — turns on the append-only log, if the Redis is ours.
+- `uptime-worker/` — the outside check, on Cloudflare, for when the machine is off.

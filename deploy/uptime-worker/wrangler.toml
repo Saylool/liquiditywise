@@ -1,0 +1,25 @@
+# The outside check. See worker.ts for what it does and why it has no URL.
+#
+# Deployed separately from the site, onto Cloudflare's own machines, which is
+# the entire point: the server cannot report that it is off, and this does
+# not run on the server.
+
+name = "liquiditywise-uptime"
+main = "worker.ts"
+compatibility_date = "2026-09-01"
+
+# Every five minutes, the same cadence as the server's own health check.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Where the last verdict is kept between runs. The id is the namespace's own,
+# filled in when the namespace is created — see deploy/README.md.
+[[kv_namespaces]]
+binding = "UPTIME"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+TARGET = "https://liquiditywise.com/api/health"
+
+# TELEGRAM_BOT_TOKEN and TELEGRAM_OPERATOR_CHAT_ID are secrets and are not in
+# this file. Set them with `wrangler secret put`, or in the dashboard.
