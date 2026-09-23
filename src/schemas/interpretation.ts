@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { containsNumberWord } from "./numberWords";
 
 /*
  * What the model is allowed to hand back.
@@ -117,6 +118,17 @@ const ProseSchema = z
   .refine((prose) => !containsFigure(prose), {
     error:
       "The explanation must not state figures. Refer to the values shown alongside it instead.",
+  })
+  /*
+   * The same rule, for the form the one above cannot see. A number spelled
+   * out is still a number the reader can set against the one beside it, and
+   * it was seen in real output before this was written — "em oitenta e cinco
+   * dos noventa dias", in Portuguese. See `numberWords.ts` for why zero to ten
+   * is left alone.
+   */
+  .refine((prose) => !containsNumberWord(prose), {
+    error:
+      "The explanation must not state figures in words either. Refer to the values shown alongside it instead.",
   });
 
 /**

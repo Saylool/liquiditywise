@@ -85,14 +85,30 @@ describe("RangeInterpretationSchema", () => {
    * backstop can recognise, and pretending otherwise would be worse than
    * saying so.
    */
-  it("does not pretend to catch a number spelled out as a word", () => {
+  /*
+   * It used to pass, and a test said so out loud — that was the honest limit
+   * of a digit rule. A spelled-out figure was then seen in real output, in
+   * Portuguese, and the limit was closed for every number from eleven up.
+   */
+  it("rejects a figure spelled out as a word", () => {
     const spelled = {
       ...valid,
       whatThisRangeMeans:
         "The band was scaled over thirty days, which is the window this analysis uses when it works out how far the price has tended to travel before it settles again.",
     };
 
-    expect(RangeInterpretationSchema.safeParse(spelled).success).toBe(true);
+    expect(RangeInterpretationSchema.safeParse(spelled).success).toBe(false);
+  });
+
+  /* The boundary, still stated on purpose: zero to ten is grammar, not a figure. */
+  it("still lets one and two be words", () => {
+    const small = {
+      ...valid,
+      whatThisRangeMeans:
+        "One of the two tokens is what a position holds once the price leaves the range on either side, and which one depends on the edge it crossed on the way out.",
+    };
+
+    expect(RangeInterpretationSchema.safeParse(small).success).toBe(true);
   });
 
   /*

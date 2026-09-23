@@ -515,6 +515,17 @@ describe("directional facts the model is not asked to derive", () => {
  * kayıp" and "impermanent loss", and wrote "yıllıklaştırılmış" in a paragraph
  * sitting directly under a label reading "Yıllıklandırılmış".
  */
+/*
+ * The instruction used to end on "the only digits permitted are v3 and v4",
+ * which anchors a model on digits. A Portuguese answer then wrote "oitenta e
+ * cinco dos noventa dias" — complying, as it read the rule. The rule now says
+ * in so many words that a spelled-out number is a number too.
+ */
+it("tells the model a number in words is still a number", () => {
+  expect(BASE_INSTRUCTION).toContain("spelled out in words");
+  expect(BASE_INSTRUCTION).toContain("in every language");
+});
+
 describe("terminology", () => {
   it("pins the words Turkish prose should use", () => {
     const { user } = build("tr");
