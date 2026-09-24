@@ -75,6 +75,16 @@ describe("which pages a search engine may read", () => {
     });
   });
 
+  /*
+   * A robots rule is a prefix: "Disallow: /pool" closes "/pools" too, which is
+   * why the most-traded page is not called that.
+   */
+  it("closes no open page by a closed page's prefix", () => {
+    for (const open of INDEXED_PAGES) {
+      for (const closed of CLOSED_PATHS) expect(open.startsWith(closed), `${open} under ${closed}`).toBe(false);
+    }
+  });
+
   it("keeps the routes that are not pages closed too", () => {
     expect(CLOSED_PATHS).toContain("/api/");
     expect(CLOSED_PATHS).toContain("/__backup/");

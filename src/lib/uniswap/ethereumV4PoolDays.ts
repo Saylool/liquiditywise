@@ -35,6 +35,9 @@ import {
  *
  * `poolManagers` is asked for so a lookup knows whose logs and storage to read
  * for the pools it shows.
+ *
+ * Each day's own volume and fees ride along for the most-traded page, which
+ * adds them up per pool; the lists that only need the pools ignore them.
  */
 export const V4_POOL_DAYS_QUERY = `query V4PoolDays($from: Int!, $limit: Int!) {
   poolDayDatas(
@@ -43,6 +46,9 @@ export const V4_POOL_DAYS_QUERY = `query V4PoolDays($from: Int!, $limit: Int!) {
     orderDirection: desc
     first: $limit
   ) {
+    date
+    volumeUSD
+    feesUSD
     pool {
       ...V4PoolCard
     }

@@ -9,6 +9,7 @@ import { WalletConnect } from "@/components/WalletConnect";
 import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { localePath } from "@/lib/i18n/localePath";
 import { getLearnCopy } from "@/lib/learn/briefs";
+import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
 import type { Metadata } from "next";
 
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -59,6 +60,10 @@ export default async function Home() {
               </Link>
             ))}
           </div>
+          <Link href={localePath(locale, "/most-traded")} prefetch={false} className="text-link mt-8">
+            {getMostTradedCopy(locale).link}
+            <ArrowIcon />
+          </Link>
         </div>
       </section>
       <section className="landing-section range-section" data-reveal>

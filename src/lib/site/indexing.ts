@@ -13,7 +13,7 @@
 
 export const SITE_URL = "https://liquiditywise.com";
 
-export const INDEXED_PAGES = ["/", "/hooks", "/learn"] as const;
+export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded"] as const;
 
 /** Pages that read live data per request, plus the routes that are not pages at all. */
 export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/holdings", "/api/", "/__backup/"] as const;

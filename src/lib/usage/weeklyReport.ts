@@ -31,6 +31,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/holdings": "holdings",
   "/hooks": "hooks",
   "/learn": "quick guide",
+  "/most-traded": "most traded",
 };
 
 const number = (value: number): string => value.toLocaleString("en-US");

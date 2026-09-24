@@ -63,9 +63,11 @@ export const config = {
     "/holdings",
     "/hooks",
     "/learn",
+    "/most-traded",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn",
+    "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/most-traded",
   ],
 };
 

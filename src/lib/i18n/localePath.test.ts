@@ -51,11 +51,9 @@ describe("each open page's address in each language", () => {
     const rewrites = await nextConfig.rewrites!();
     const beforeFiles = Array.isArray(rewrites) ? [] : (rewrites.beforeFiles ?? []);
 
-    expect(beforeFiles).toEqual([
-      { source: `/:locale(${LOCALES.join("|")})`, destination: "/" },
-      { source: `/:locale(${LOCALES.join("|")})/hooks`, destination: "/hooks" },
-      { source: `/:locale(${LOCALES.join("|")})/learn`, destination: "/learn" },
-    ]);
+    expect(beforeFiles).toContainEqual({ source: `/:locale(${LOCALES.join("|")})`, destination: "/" });
+    expect(beforeFiles).toContainEqual({ source: `/:locale(${LOCALES.join("|")})/hooks`, destination: "/hooks" });
+    expect(beforeFiles.map(({ destination }) => destination)).toEqual([...INDEXED_PAGES]);
     expect(beforeFiles.every(({ destination }) => destination.startsWith("/"))).toBe(true);
   });
 });
