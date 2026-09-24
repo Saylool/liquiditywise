@@ -11,7 +11,7 @@ import type {
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
 import { logDetail, logUnavailable, logUsage } from "../observability/serverDiagnostics";
-import { spendLine } from "../usage/usageLines";
+import { cappedLine, spendLine } from "../usage/usageLines";
 import {
   createInterpretationCache,
   interpretationCacheKey,
@@ -32,6 +32,7 @@ import {
   settledSectionGates,
 } from "./sectionGates";
 import type { InterpretationOutcome } from "./rangeInterpretationAdapter";
+import { createExplanationBudget } from "./explanationBudget";
 import { observeUsage, usageOf, type TokenUsage } from "./usageObserver";
 
 /*
@@ -98,18 +99,30 @@ export type RangeInterpretationRequest = {
  * configuration change takes effect without a restart and no stale credential
  * is held in a closure.
  */
+/** The server's hourly ceiling on new explanations; see explanationBudget.ts. */
+const budget = createExplanationBudget();
+
+/** What a reader is shown in the explanation's place once the ceiling is reached. */
+const CAPPED: InterpretationOutcome<WrittenInterpretation> = {
+  status: "unavailable",
+  reason: "rate-limited",
+  notice: "explanation-hourly-cap",
+};
+
+const poolOf = (analysis: PoolRangeAnalysis): string =>
+  `${analysis.history.pool.protocolVersion}:${analysis.history.pool.id.toLowerCase()}`;
+
 /**
  * Records what one explanation cost, for the weekly report. Written whether
  * or not the answer then passed its checks: the tokens were spent either way.
  */
 const recordSpend = (analysis: PoolRangeAnalysis, model: string, usage: TokenUsage): void => {
-  const pool = analysis.history.pool;
   logUsage(
     spendLine({
       model,
       inputTokens: usage.inputTokens,
       outputTokens: usage.outputTokens,
-      pool: `${pool.protocolVersion}:${pool.id.toLowerCase()}`,
+      pool: poolOf(analysis),
       pair: `${analysis.pool.token0.symbol}/${analysis.pool.token1.symbol}`,
     }),
   );
@@ -131,6 +144,12 @@ export const getRangeInterpretation = async (
 
   const cached = cache.get(key);
   if (cached !== undefined) return { status: "success", data: cached };
+
+  // Past the ceiling nothing is asked of the model; a cached answer above was still free.
+  if (!budget.take()) {
+    logUsage(cappedLine(poolOf(request.analysis)));
+    return CAPPED;
+  }
 
   const outcome = await interpretRange({
     analysis: request.analysis,
@@ -227,6 +246,13 @@ export const streamRangeInterpretation = (
       sections: settledSectionGates(cached.interpretation),
       whole: Promise.resolve({ status: "success", data: cached }),
     };
+  }
+
+  if (!budget.take()) {
+    logUsage(cappedLine(poolOf(request.analysis)));
+    const closed = createSectionGates();
+    closed.closeRemaining();
+    return { sections: closed.sections, whole: Promise.resolve(CAPPED) };
   }
 
   const gates = createSectionGates();

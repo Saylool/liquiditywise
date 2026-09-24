@@ -121,3 +121,15 @@ describe("the prices the report multiplies", () => {
     expect(priceOf("gpt-5.6")).toBeNull();
   });
 });
+
+describe("the ceiling on explanations, in the report", () => {
+  it("counts the explanations it held back", () => {
+    const text = report([at("2026-09-18", "[interpretation] capped pool=v3:0xabc"), at("2026-09-18", "[interpretation] capped pool=v3:0xdef")]);
+
+    expect(text).toContain("Explanations held back by the hourly ceiling: 2");
+  });
+
+  it("says nothing about it in a week it never happened", () => {
+    expect(report([])).not.toContain("hourly ceiling");
+  });
+});

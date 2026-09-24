@@ -1153,6 +1153,8 @@ const en = {
         "The selected model is not available to the configured key, so no explanation is shown.",
       "explanation-rate-limited":
         "The explanation service is rate limited right now, so no explanation is shown.",
+      "explanation-hourly-cap":
+        "This site writes a limited number of explanations each hour, and that many have been written. The figures above are complete; the explanation can be written again within the hour.",
       "explanation-unreachable":
         "The explanation service could not be reached, so no explanation is shown.",
       "explanation-request-refused":
@@ -2099,6 +2101,8 @@ const tr: Dictionary = {
         "Seçilen model bu anahtara açık değil, bu yüzden açıklama gösterilmiyor.",
       "explanation-rate-limited":
         "Açıklama servisi şu anda istek sınırında, bu yüzden açıklama gösterilmiyor.",
+      "explanation-hourly-cap":
+        "Bu site her saat sınırlı sayıda açıklama yazıyor ve o sayıya ulaşıldı. Yukarıdaki rakamlar eksiksiz; açıklama bir saat içinde yeniden yazılabilecek.",
       "explanation-unreachable":
         "Açıklama servisine ulaşılamadı, bu yüzden açıklama gösterilmiyor.",
       "explanation-request-refused":
@@ -3035,6 +3039,8 @@ const de: Dictionary = {
         "Das gewählte Modell steht dem eingerichteten Schlüssel nicht zur Verfügung, es wird daher keine Erklärung gezeigt.",
       "explanation-rate-limited":
         "Der Erklärungsdienst ist derzeit im Anfragelimit, es wird daher keine Erklärung gezeigt.",
+      "explanation-hourly-cap":
+        "Diese Seite schreibt pro Stunde nur eine begrenzte Zahl von Erklärungen, und so viele sind geschrieben. Die Zahlen oben sind vollständig; innerhalb der Stunde kann die Erklärung wieder geschrieben werden.",
       "explanation-unreachable":
         "Der Erklärungsdienst war nicht erreichbar, es wird daher keine Erklärung gezeigt.",
       "explanation-request-refused":
@@ -3955,6 +3961,8 @@ const es: Dictionary = {
         "El modelo seleccionado no está disponible para la clave configurada, así que no se muestra ninguna explicación.",
       "explanation-rate-limited":
         "El servicio de explicaciones está limitado por peticiones ahora mismo, así que no se muestra ninguna explicación.",
+      "explanation-hourly-cap":
+        "Este sitio escribe un número limitado de explicaciones cada hora, y ya se han escrito todas. Las cifras de arriba están completas; dentro de la hora se podrá volver a escribir la explicación.",
       "explanation-unreachable":
         "No se pudo alcanzar el servicio de explicaciones, así que no se muestra ninguna explicación.",
       "explanation-request-refused":
@@ -4861,6 +4869,8 @@ const ar: Dictionary = {
         "النموذج المختار غير متاح للمفتاح المهيّأ، فلا يُعرض أي شرح.",
       "explanation-rate-limited":
         "خدمة الشرح مقيّدة بحدّ الطلبات في هذه اللحظة، فلا يُعرض أي شرح.",
+      "explanation-hourly-cap":
+        "يكتب هذا الموقع عددًا محدودًا من الشروح كل ساعة، وقد كُتب هذا العدد. الأرقام أعلاه كاملة؛ ويمكن أن يُكتب الشرح من جديد خلال الساعة.",
       "explanation-unreachable": "تعذّر الوصول إلى خدمة الشرح، فلا يُعرض أي شرح.",
       "explanation-request-refused": "رفضت خدمة الشرح هذا الطلب، فلا يُعرض أي شرح.",
       "explanation-declined":
@@ -5773,6 +5783,8 @@ const hi: Dictionary = {
         "चुना गया मॉडल विन्यस्त कुंजी के लिए उपलब्ध नहीं है, इसलिए कोई स्पष्टीकरण नहीं दिखाया जाता।",
       "explanation-rate-limited":
         "स्पष्टीकरण सेवा इस समय अनुरोध सीमा में है, इसलिए कोई स्पष्टीकरण नहीं दिखाया जाता।",
+      "explanation-hourly-cap":
+        "यह साइट हर घंटे सीमित संख्या में स्पष्टीकरण लिखती है, और उतने लिखे जा चुके हैं। ऊपर के आँकड़े पूरे हैं; घंटे के भीतर स्पष्टीकरण फिर लिखा जा सकेगा।",
       "explanation-unreachable":
         "स्पष्टीकरण सेवा तक नहीं पहुँचा जा सका, इसलिए कोई स्पष्टीकरण नहीं दिखाया जाता।",
       "explanation-request-refused":
@@ -6933,6 +6945,8 @@ const zh: Dictionary = {
         "所选的模型对所配置的密钥不可用，所以不显示任何说明。",
       "explanation-rate-limited":
         "说明服务此刻处于速率限制中，所以不显示任何说明。",
+      "explanation-hourly-cap":
+        "本站每小时只写有限数量的说明，这个数量已经用完。上面的数字是完整的；一小时内可以再次写说明。",
       "explanation-unreachable":
         "无法连接到说明服务，所以不显示任何说明。",
       "explanation-request-refused":
@@ -8116,6 +8130,8 @@ const ru: Dictionary = {
         "Выбранная модель недоступна настроенному ключу, поэтому объяснение не показано.",
       "explanation-rate-limited":
         "Служба объяснений сейчас ограничивает частоту запросов, поэтому объяснение не показано.",
+      "explanation-hourly-cap":
+        "Этот сайт пишет ограниченное число объяснений в час, и столько уже написано. Цифры выше полные; в течение часа объяснение снова можно будет написать.",
       "explanation-unreachable":
         "До службы объяснений не удалось достучаться, поэтому объяснение не показано.",
       "explanation-request-refused":
@@ -9300,6 +9316,8 @@ const pt: Dictionary = {
         "O modelo escolhido não está disponível para a chave configurada, então nenhuma explicação é mostrada.",
       "explanation-rate-limited":
         "O serviço de explicações está limitando requisições agora, então nenhuma explicação é mostrada.",
+      "explanation-hourly-cap":
+        "Este site escreve um número limitado de explicações por hora, e esse número já foi atingido. Os números acima estão completos; dentro de uma hora a explicação poderá ser escrita de novo.",
       "explanation-unreachable":
         "Não foi possível alcançar o serviço de explicações, então nenhuma explicação é mostrada.",
       "explanation-request-refused":
@@ -10467,6 +10485,8 @@ const zhHant: Dictionary = {
         "所選的模型對所配置的金鑰不可用，所以不顯示任何說明。",
       "explanation-rate-limited":
         "說明服務此刻處於速率限制中，所以不顯示任何說明。",
+      "explanation-hourly-cap":
+        "本站每小時只寫有限數量的說明，這個數量已經用完。上面的數字是完整的；一小時內可以再次寫說明。",
       "explanation-unreachable":
         "無法連接到說明服務，所以不顯示任何說明。",
       "explanation-request-refused":

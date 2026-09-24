@@ -146,6 +146,8 @@ export const weeklyReport = (input: WeekInput): string => {
     );
   }
   if (rejected > 0) out.push(`Answers the checks turned down: ${number(rejected)}`);
+  const capped = input.lines.filter((line) => line.kind === "capped").length;
+  if (capped > 0) out.push(`Explanations held back by the hourly ceiling: ${number(capped)}`);
 
   out.push(`Telegram: ${input.telegramLinks === null ? "the store could not be asked" : `${number(input.telegramLinks)} chats following an address`}`);
 

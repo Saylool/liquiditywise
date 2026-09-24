@@ -109,10 +109,14 @@ export const spendLine = (spend: Spend): string =>
     .map(symbol)
     .join("/")}`;
 
+/** An explanation that was not written because the hourly ceiling had been reached. */
+export const cappedLine = (pool: string): string => `[interpretation] capped pool=${pool}`;
+
 export type UsageLine =
   | { readonly kind: "visit"; readonly at: string | null; readonly visit: Visit }
   | { readonly kind: "spend"; readonly at: string | null; readonly spend: Spend }
-  | { readonly kind: "rejected"; readonly at: string | null };
+  | { readonly kind: "rejected"; readonly at: string | null }
+  | { readonly kind: "capped"; readonly at: string | null };
 
 const fields = (text: string): Record<string, string> =>
   Object.fromEntries(
@@ -157,5 +161,6 @@ export const parseUsageLine = (line: string): UsageLine | null => {
   }
 
   if (line.includes("[interpretation] answer rejected")) return { kind: "rejected", at };
+  if (line.includes("[interpretation] capped")) return { kind: "capped", at };
   return null;
 };

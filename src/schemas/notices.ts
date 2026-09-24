@@ -113,6 +113,7 @@ export const DataFailureNoticeSchema = z.enum([
   "explanation-model-not-permitted",
   "explanation-model-unknown",
   "explanation-rate-limited",
+  "explanation-hourly-cap",
   "explanation-unreachable",
   "explanation-request-refused",
   "explanation-declined",
