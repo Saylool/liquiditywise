@@ -49,7 +49,7 @@ import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
  * renders, however it was reached. Held to usageLines.ts's list by a test.
  */
 export const config = {
-  matcher: ["/", "/pool", "/v4", "/holdings", "/hooks"],
+  matcher: ["/", "/pool", "/v4", "/compare", "/holdings", "/hooks"],
 };
 
 /**

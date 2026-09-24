@@ -216,6 +216,23 @@ export const poolAnalysisHref = (
 };
 
 /**
+ * Every v3 fee tier of a pool's pair, read side by side under the band and
+ * deposit the reader is already looking at — a comparison under two different
+ * settings would look like one and not be.
+ */
+export const poolComparisonHref = (
+  poolAddress: string,
+  parameters: PriceBandParameters,
+  depositUsd: number,
+): string =>
+  `/compare?${new URLSearchParams({
+    address: poolAddress,
+    [HORIZON_PARAMETER]: String(parameters.horizonDays),
+    [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
+    [DEPOSIT_PARAMETER]: String(depositUsd),
+  }).toString()}`;
+
+/**
  * The same link for a v4 pool, which has its own page and is named by a
  * 32-byte id under a different parameter. The band travels with it for the
  * same reason as above: two pools compared under two different bands look

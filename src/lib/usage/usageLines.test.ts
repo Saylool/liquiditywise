@@ -100,3 +100,9 @@ describe("reading the journal back", () => {
     expect(parseUsageLine(line)).toBeNull();
   });
 });
+
+describe("the comparison page", () => {
+  it("is counted, with the pool it was opened from", () => {
+    expect(visit(`/compare?address=${ADDRESS}`)?.pool).toBe(`v3:${ADDRESS.toLowerCase()}`);
+  });
+});

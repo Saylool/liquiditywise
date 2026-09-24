@@ -214,3 +214,31 @@ describe("PoolFeeTiers with the v4 list beneath", () => {
     expect(markup).toContain("the same two contracts");
   });
 });
+
+describe("PoolFeeTiers, and the way to the comparison", () => {
+  const panel = (analysedPoolId: string | null) =>
+    renderToStaticMarkup(
+      <PoolFeeTiers
+        result={v3Tiers(analysedPoolId)}
+        v4Result={found([], null)}
+        pair="USDC / WETH"
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        depositUsd={2_500}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+  it("links from a pool's own page to every tier side by side, carrying the band and the deposit", () => {
+    const markup = panel(`0x${"5".repeat(40)}`);
+
+    expect(markup).toContain(
+      `href="/compare?address=0x${"5".repeat(40)}&amp;days=${DEFAULT_PRICE_BAND_PARAMETERS.horizonDays}&amp;sigma=${DEFAULT_PRICE_BAND_PARAMETERS.standardDeviationMultiplier}&amp;usd=2500"`,
+    );
+    expect(markup).toContain(getDictionary("en").compare.link);
+  });
+
+  it("offers no comparison where there is no pool of its own to compare from", () => {
+    expect(panel(null)).not.toContain("/compare?");
+  });
+});

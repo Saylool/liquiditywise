@@ -14,7 +14,7 @@
  * No runtime imports: deploy/usage-report.mts runs this under plain Node.
  */
 
-export const PAGES = ["/", "/pool", "/v4", "/holdings", "/hooks"] as const;
+export const PAGES = ["/", "/pool", "/v4", "/compare", "/holdings", "/hooks"] as const;
 export type Page = (typeof PAGES)[number];
 
 export type Outcome = "served" | "refused";
@@ -56,7 +56,7 @@ const isPage = (path: string): path is Page => (PAGES as readonly string[]).incl
  * whatever its query says.
  */
 const poolOf = (page: Page, parameters: URLSearchParams): string | null => {
-  if (page === "/pool") {
+  if (page === "/pool" || page === "/compare") {
     const address = parameters.get("address")?.trim().toLowerCase() ?? "";
     if (ADDRESS.test(address)) return `v3:${address}`;
   }

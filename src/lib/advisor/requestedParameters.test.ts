@@ -263,3 +263,13 @@ describe("v4PoolAnalysisHref", () => {
     );
   });
 });
+
+describe("poolComparisonHref", () => {
+  it("carries the band and the deposit, always, so every tier is read on the reader's footing", async () => {
+    const { poolComparisonHref } = await import("./requestedParameters");
+
+    expect(poolComparisonHref("0xabc", { horizonDays: 90, standardDeviationMultiplier: 2 }, 250)).toBe(
+      "/compare?address=0xabc&days=90&sigma=2&usd=250",
+    );
+  });
+});

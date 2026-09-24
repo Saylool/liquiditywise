@@ -34,6 +34,8 @@ const en = {
     holdingsTitle: "What an address holds · LiquidityWise",
     holdingsDescription:
       "The tokens found at one Ethereum address, and the Uniswap v3 pools they can go into.",
+    compareTitle: "Fee tiers side by side · LiquidityWise",
+    compareDescription: "Every Uniswap v3 fee tier of one pair, read with the same horizon, width and deposit.",
     poolTitle: "Pool range analysis · LiquidityWise",
     poolDescription:
       "A price range for one Ethereum mainnet Uniswap v3 pool, drawn from how far its price has actually moved.",
@@ -340,6 +342,24 @@ const en = {
     hookMayAlter:
       "This pool's hook is permitted to change what a swap costs — to rewrite the fee as each swap happens, to price the swap itself instead of the pool's curve, or to take a share of it afterwards; the hook section above says which. The figures here are what the pool's curve charges, and they hold only if the hook stays out of the way. Nothing read here can tell whether it does.",
     unavailable: "What a swap would cost cannot be worked out for this pool.",
+  },
+
+  compare: {
+    heading: "Every fee tier of this pair, side by side",
+    intro: (pair: string) =>
+      `Each ${pair} pool below was read with the same horizon, the same width and the same deposit, so their figures stand on one footing. They describe days that have already happened, not the days to come, and the pools are in order of fee — not ranked by any figure.`,
+    depositFeesNote: (days: string) => `Over the ${days} days the price stayed inside the range.`,
+    daysInside: "Days fully inside the range",
+    daysInsideValue: (inside: string, measured: string) => `${inside} of ${measured}`,
+    unavailable: "This tier could not be read just now.",
+    open: "Open the full analysis",
+    link: "Set the tiers side by side",
+    onlyOne: (pair: string) =>
+      `${pair} trades in one v3 pool only, so there is nothing to set beside it.`,
+    notV4:
+      "The pair's v4 pools are not set beside these. A v4 hook may change what a swap costs, which would put their figures on a different footing.",
+    readTogether:
+      "Fees are half of it. What a range gives up against simply holding the two tokens is on each pool's own page, and the two have to be read together.",
   },
 
   feeTiers: {
@@ -1206,6 +1226,8 @@ const tr: Dictionary = {
     holdingsTitle: "Bir adres ne tutuyor · LiquidityWise",
     holdingsDescription:
       "Bir Ethereum adresinde bulunan tokenlar ve girebilecekleri Uniswap v3 havuzları.",
+    compareTitle: "Komisyon kademeleri yan yana · LiquidityWise",
+    compareDescription: "Bir çiftin bütün Uniswap v3 komisyon kademeleri, aynı ufuk, genişlik ve yatırım tutarıyla okunmuş halde.",
     poolTitle: "Havuz aralığı analizi · LiquidityWise",
     poolDescription:
       "Bir Ethereum mainnet Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
@@ -1455,6 +1477,24 @@ const tr: Dictionary = {
     hookMayAlter:
       "Bu havuzun hook'u bir takasın maliyetini değiştirmeye izinli — her takas olurken komisyonu yeniden yazmaya, takası havuzun eğrisi yerine kendisi fiyatlamaya ya da sonrasında ondan pay almaya; hangisi olduğunu yukarıdaki hook bölümü söylüyor. Buradaki rakamlar havuzun eğrisinin aldığı tutardır ve yalnızca hook araya girmezse geçerlidir. Burada okunan hiçbir şey, girip girmediğini söyleyemez.",
     unavailable: "Bir takasın maliyeti bu havuz için hesaplanamıyor.",
+  },
+
+  compare: {
+    heading: "Bu çiftin bütün komisyon kademeleri, yan yana",
+    intro: (pair: string) =>
+      `Aşağıdaki her ${pair} havuzu aynı ufuk, aynı genişlik ve aynı yatırım tutarıyla okundu; rakamları aynı zeminde duruyor. Yaşanmış günleri anlatıyorlar, gelecek günleri değil; havuzlar da hiçbir rakama göre sıralanmadı, komisyon sırasıyla dizildi.`,
+    depositFeesNote: (days: string) => `Fiyatın aralık içinde kaldığı ${days} gün boyunca.`,
+    daysInside: "Tamamen aralık içinde geçen günler",
+    daysInsideValue: (inside: string, measured: string) => `${inside} / ${measured}`,
+    unavailable: "Bu kademe şu anda okunamadı.",
+    open: "Tam analizi aç",
+    link: "Kademeleri yan yana koy",
+    onlyOne: (pair: string) =>
+      `${pair} yalnızca tek bir v3 havuzunda işlem görüyor; yanına konacak başka bir havuz yok.`,
+    notV4:
+      "Çiftin v4 havuzları bunların yanına konmadı. Bir v4 hook'u takasın maliyetini değiştirebilir, bu da rakamlarını başka bir zemine taşır.",
+    readTogether:
+      "Komisyon işin yarısı. Bir aralığın, iki jetonu öylece tutmaya göre neyi kaybettirdiği her havuzun kendi sayfasında; ikisi birlikte okunmalı.",
   },
 
   feeTiers: {
@@ -2129,6 +2169,8 @@ const de: Dictionary = {
     holdingsTitle: "Was eine Adresse hält · LiquidityWise",
     holdingsDescription:
       "Die an einer Ethereum-Adresse gefundenen Token und die Uniswap-v3-Pools, in die sie fließen können.",
+    compareTitle: "Gebührenstufen nebeneinander · LiquidityWise",
+    compareDescription: "Alle Uniswap-v3-Gebührenstufen eines Paars, mit demselben Horizont, derselben Breite und derselben Einlage gelesen.",
     poolTitle: "Bereichsanalyse eines Pools · LiquidityWise",
     poolDescription:
       "Ein Preisbereich für einen Uniswap-v3-Pool im Ethereum-Mainnet, hergeleitet daraus, wie weit sich sein Preis tatsächlich bewegt hat.",
@@ -2379,6 +2421,24 @@ const de: Dictionary = {
     hookMayAlter:
       "Der Hook dieses Pools darf ändern, was ein Tausch kostet — die Gebühr bei jedem Tausch neu festlegen, den Tausch statt der Kurve des Pools selbst bepreisen oder sich danach einen Anteil daran nehmen; welches davon, steht oben im Hook-Abschnitt. Die Zahlen hier sind das, was die Kurve des Pools berechnet, und sie gelten nur, wenn der Hook nicht eingreift. Nichts, was hier gelesen wurde, kann sagen, ob er es tut.",
     unavailable: "Was ein Tausch kosten würde, lässt sich für diesen Pool nicht ermitteln.",
+  },
+
+  compare: {
+    heading: "Alle Gebührenstufen dieses Paars, nebeneinander",
+    intro: (pair: string) =>
+      `Jeder ${pair}-Pool unten wurde mit demselben Horizont, derselben Breite und derselben Einlage gelesen, sodass seine Zahlen auf derselben Grundlage stehen wie die der anderen. Sie beschreiben Tage, die schon vergangen sind, nicht die kommenden, und die Pools stehen in der Reihenfolge ihrer Gebühr — nach keiner Zahl sortiert.`,
+    depositFeesNote: (days: string) => `An den ${days} Tagen, an denen der Preis im Bereich blieb.`,
+    daysInside: "Tage ganz im Bereich",
+    daysInsideValue: (inside: string, measured: string) => `${inside} von ${measured}`,
+    unavailable: "Diese Stufe konnte gerade nicht gelesen werden.",
+    open: "Die ganze Analyse öffnen",
+    link: "Die Stufen nebeneinanderstellen",
+    onlyOne: (pair: string) =>
+      `${pair} wird nur in einem v3-Pool gehandelt; es gibt nichts, was man danebenstellen könnte.`,
+    notV4:
+      "Die v4-Pools des Paars stehen hier nicht daneben. Ein v4-Hook kann ändern, was ein Tausch kostet, und damit ihre Zahlen auf eine andere Grundlage stellen.",
+    readTogether:
+      "Gebühren sind die Hälfte. Was ein Bereich gegenüber dem bloßen Halten der beiden Token aufgibt, steht auf der Seite jedes Pools, und beides muss zusammen gelesen werden.",
   },
 
   feeTiers: {
@@ -3031,6 +3091,8 @@ const es: Dictionary = {
     holdingsTitle: "Lo que tiene una dirección · LiquidityWise",
     holdingsDescription:
       "Los tokens encontrados en una dirección de Ethereum y los pools de Uniswap v3 a los que pueden ir.",
+    compareTitle: "Niveles de comisión lado a lado · LiquidityWise",
+    compareDescription: "Todos los niveles de comisión de Uniswap v3 de un par, leídos con el mismo horizonte, amplitud y depósito.",
     poolTitle: "Análisis de rango de un pool · LiquidityWise",
     poolDescription:
       "Un rango de precios para un pool de Uniswap v3 en la red principal de Ethereum, trazado a partir de cuánto se ha movido realmente su precio.",
@@ -3281,6 +3343,24 @@ const es: Dictionary = {
     hookMayAlter:
       "El hook de este pool tiene permitido cambiar lo que cuesta un intercambio: reescribir la comisión en cada intercambio, fijar él mismo el precio del intercambio en lugar de la curva del pool, o quedarse con una parte después; el apartado del hook, más arriba, dice cuál. Las cifras de aquí son lo que cobra la curva del pool, y solo valen si el hook no interviene. Nada de lo leído aquí puede decir si lo hace.",
     unavailable: "Lo que costaría un intercambio no puede calcularse para este pool.",
+  },
+
+  compare: {
+    heading: "Todos los niveles de comisión de este par, uno al lado del otro",
+    intro: (pair: string) =>
+      `Cada pool ${pair} de abajo se leyó con el mismo horizonte, la misma amplitud y el mismo depósito, así que sus cifras están sobre la misma base. Describen días que ya pasaron, no los que vienen, y los pools van en orden de comisión, no clasificados por ninguna cifra.`,
+    depositFeesNote: (days: string) => `En los ${days} días en que el precio se quedó dentro del rango.`,
+    daysInside: "Días enteros dentro del rango",
+    daysInsideValue: (inside: string, measured: string) => `${inside} de ${measured}`,
+    unavailable: "Este nivel no se pudo leer ahora mismo.",
+    open: "Abrir el análisis completo",
+    link: "Poner los niveles uno al lado del otro",
+    onlyOne: (pair: string) =>
+      `${pair} solo cotiza en un pool de v3, así que no hay nada que poner a su lado.`,
+    notV4:
+      "Los pools v4 del par no se ponen al lado de estos. Un hook de v4 puede cambiar lo que cuesta un intercambio, y eso pondría sus cifras sobre otra base.",
+    readTogether:
+      "Las comisiones son la mitad. Lo que un rango cede frente a simplemente mantener los dos tokens está en la página de cada pool, y las dos cosas hay que leerlas juntas.",
   },
 
   feeTiers: {
@@ -3931,6 +4011,8 @@ const ar: Dictionary = {
     holdingsTitle: "ما الذي يملكه عنوان ما · LiquidityWise",
     holdingsDescription:
       "الرموز الموجودة في عنوان إيثيريوم واحد، وتجمّعات Uniswap v3 التي يمكن أن تذهب إليها.",
+    compareTitle: "مستويات الرسوم جنبًا إلى جنب · LiquidityWise",
+    compareDescription: "كل مستويات رسوم Uniswap v3 لزوج واحد، مقروءة بالأفق والاتساع والإيداع نفسه.",
     poolTitle: "تحليل نطاق تجمّع · LiquidityWise",
     poolDescription:
       "نطاق سعري لتجمّع Uniswap v3 على شبكة إيثيريوم الرئيسية، مرسوم من مدى تحرّك سعره فعلًا.",
@@ -4184,6 +4266,24 @@ const ar: Dictionary = {
     hookMayAlter:
       "يُسمح للـ hook في هذا التجمّع بتغيير تكلفة التبادل: أن يعيد كتابة الرسوم مع كل تبادل، أو أن يسعّر التبادل بنفسه بدل منحنى التجمّع، أو أن يأخذ حصة منه بعد ذلك؛ وقسم الـ hook أعلاه يبيّن أيّها. الأرقام هنا هي ما يتقاضاه منحنى التجمّع، ولا تصحّ إلا إذا لم يتدخّل الـ hook. ولا شيء مما قُرئ هنا يستطيع أن يقول إن كان يتدخّل.",
     unavailable: "لا يمكن استخراج تكلفة التبادل لهذا التجمّع.",
+  },
+
+  compare: {
+    heading: "كل مستويات الرسوم لهذا الزوج، جنبًا إلى جنب",
+    intro: (pair: string) =>
+      `قُرئ كل تجمّع ${pair} أدناه بالأفق نفسه والاتساع نفسه والإيداع نفسه، فتقف أرقامه على الأساس نفسه. إنها تصف أيامًا مضت، لا الأيام المقبلة، والتجمّعات مرتبة حسب الرسوم، لا حسب أي رقم.`,
+    depositFeesNote: (days: string) => `خلال ${days} يومًا بقي فيها السعر داخل النطاق.`,
+    daysInside: "أيام كاملة داخل النطاق",
+    daysInsideValue: (inside: string, measured: string) => `${inside} من ${measured}`,
+    unavailable: "تعذّرت قراءة هذا المستوى الآن.",
+    open: "افتح التحليل الكامل",
+    link: "ضع المستويات جنبًا إلى جنب",
+    onlyOne: (pair: string) =>
+      `يُتداول ${pair} في تجمّع v3 واحد فقط، فلا شيء يوضع بجانبه.`,
+    notV4:
+      "لم توضع تجمّعات v4 لهذا الزوج بجانب هذه. قد يغيّر hook في v4 تكلفة التبادل، وهذا يضع أرقامها على أساس مختلف.",
+    readTogether:
+      "الرسوم نصف الصورة. ما يتخلّى عنه النطاق مقارنةً بمجرد الاحتفاظ بالرمزين موجود في صفحة كل تجمّع، ويجب قراءة الأمرين معًا.",
   },
 
   feeTiers: {
@@ -4814,6 +4914,8 @@ const hi: Dictionary = {
     holdingsTitle: "एक पते के पास क्या है · LiquidityWise",
     holdingsDescription:
       "एक Ethereum पते पर मिले टोकन, और वे Uniswap v3 पूल जिनमें वे जा सकते हैं।",
+    compareTitle: "शुल्क स्तर साथ-साथ · LiquidityWise",
+    compareDescription: "एक जोड़ी के सभी Uniswap v3 शुल्क स्तर, एक ही अवधि, चौड़ाई और जमा के साथ पढ़े गए।",
     poolTitle: "पूल के दायरे का विश्लेषण · LiquidityWise",
     poolDescription:
       "Ethereum मेननेट के एक Uniswap v3 पूल के लिए कीमत का दायरा, इस आधार पर खींचा गया कि उसकी कीमत वास्तव में कितनी हिली है।",
@@ -5062,6 +5164,24 @@ const hi: Dictionary = {
     hookMayAlter:
       "इस पूल के hook को यह बदलने की अनुमति है कि स्वैप की लागत क्या हो — हर स्वैप के समय शुल्क दोबारा लिखना, पूल के वक्र की जगह स्वैप की कीमत खुद तय करना, या बाद में उसमें से हिस्सा लेना; इनमें से कौन-सा, यह ऊपर hook वाला हिस्सा बताता है। यहाँ के आँकड़े वही हैं जो पूल का वक्र लेता है, और वे तभी सही हैं जब hook बीच में न आए। यहाँ पढ़ी गई कोई भी चीज़ यह नहीं बता सकती कि वह आता है या नहीं।",
     unavailable: "एक स्वैप की लागत इस पूल के लिए निकाली नहीं जा सकती।",
+  },
+
+  compare: {
+    heading: "इस जोड़ी के सभी शुल्क स्तर, साथ-साथ",
+    intro: (pair: string) =>
+      `नीचे का हर ${pair} पूल एक ही अवधि, एक ही चौड़ाई और एक ही जमा के साथ पढ़ा गया, इसलिए उनके आँकड़े एक ही आधार पर खड़े हैं। ये बीत चुके दिनों का वर्णन करते हैं, आने वाले दिनों का नहीं, और पूल शुल्क के क्रम में हैं — किसी आँकड़े के हिसाब से क्रमबद्ध नहीं।`,
+    depositFeesNote: (days: string) => `उन ${days} दिनों में जब कीमत दायरे के भीतर रही।`,
+    daysInside: "पूरी तरह दायरे के भीतर बीते दिन",
+    daysInsideValue: (inside: string, measured: string) => `${measured} में से ${inside}`,
+    unavailable: "यह स्तर अभी पढ़ा नहीं जा सका।",
+    open: "पूरा विश्लेषण खोलें",
+    link: "स्तरों को साथ-साथ रखें",
+    onlyOne: (pair: string) =>
+      `${pair} केवल एक v3 पूल में कारोबार करती है, इसलिए उसके साथ रखने को कुछ नहीं है।`,
+    notV4:
+      "इस जोड़ी के v4 पूल इनके साथ नहीं रखे गए। v4 का hook स्वैप की लागत बदल सकता है, जिससे उनके आँकड़े दूसरे आधार पर चले जाते हैं।",
+    readTogether:
+      "शुल्क आधी बात है। दोनों टोकन बस रखे रहने की तुलना में कोई दायरा क्या छोड़ देता है, वह हर पूल के अपने पृष्ठ पर है, और दोनों को साथ पढ़ना चाहिए।",
   },
 
   feeTiers: {
@@ -5710,6 +5830,8 @@ const zh: Dictionary = {
     holdingsTitle: "一个地址持有什么 · LiquidityWise",
     holdingsDescription:
       "在某个以太坊地址上找到的代币，以及这些代币可以进入的 Uniswap v3 资金池。",
+    compareTitle: "费率档并排 · LiquidityWise",
+    compareDescription: "一个交易对的所有 Uniswap v3 费率档，用同样的时长、宽度和资金读取。",
     poolTitle: "资金池区间分析 · LiquidityWise",
     poolDescription:
       "为某个以太坊主网 Uniswap v3 资金池给出的价格区间，由它的价格实际走了多远推算而来。",
@@ -6012,6 +6134,24 @@ const zh: Dictionary = {
     hookMayAlter:
       "这个池子的 hook 被允许改变一笔兑换的成本——在每笔兑换发生时重写费率，由它自己而不是池子的曲线给这笔兑换定价，或者在事后从中抽取一份；具体是哪一种，上面的 hook 部分写着。这里的数字是池子的曲线所收取的，只有在 hook 不插手时才成立。这里读到的任何东西都无法说明它是否插手。",
     unavailable: "对这个池子，算不出一笔兑换要付出什么。",
+  },
+
+  compare: {
+    heading: "这个交易对的所有费率档，并排放在一起",
+    intro: (pair: string) =>
+      `下面每个 ${pair} 池子都用同样的时长、同样的宽度和同样的资金来读取，所以它们的数字站在同一个基础上。它们描述的是已经过去的日子，而不是将来的日子；池子按费率排列，而不是按任何数字排名。`,
+    depositFeesNote: (days: string) => `在价格停留在区间内的 ${days} 天里。`,
+    daysInside: "完全在区间内的天数",
+    daysInsideValue: (inside: string, measured: string) => `${measured} 天中的 ${inside} 天`,
+    unavailable: "这个费率档现在读取不到。",
+    open: "打开完整分析",
+    link: "把费率档并排放在一起",
+    onlyOne: (pair: string) =>
+      `${pair} 只在一个 v3 池子里交易，没有别的可以放在旁边。`,
+    notV4:
+      "这个交易对的 v4 池子没有放在这里。v4 的 hook 可能改变一笔兑换的成本，这会让它们的数字站在不同的基础上。",
+    readTogether:
+      "手续费只是一半。一个区间相比单纯持有两种代币所放弃的东西，写在每个池子自己的页面上，两者必须一起读。",
   },
 
   feeTiers: {
@@ -6857,6 +6997,8 @@ const ru: Dictionary = {
     holdingsTitle: "Что держит адрес · LiquidityWise",
     holdingsDescription:
       "Токены, найденные на одном адресе Ethereum, и пулы Uniswap v3, в которые они могут войти.",
+    compareTitle: "Уровни комиссии рядом · LiquidityWise",
+    compareDescription: "Все уровни комиссии Uniswap v3 одной пары, прочитанные с тем же горизонтом, шириной и вкладом.",
     poolTitle: "Анализ диапазона пула · LiquidityWise",
     poolDescription:
       "Ценовой диапазон для одного пула Uniswap v3 в основной сети Ethereum, выведенный из того, насколько его цена действительно двигалась.",
@@ -7163,6 +7305,24 @@ const ru: Dictionary = {
     hookMayAlter:
       "Hook’у этого пула разрешено менять то, сколько стоит своп: переписывать комиссию при каждом свопе, самому назначать цену свопа вместо кривой пула или забирать долю после; какое из этого — сказано выше, в разделе о hook’е. Цифры здесь — то, что берёт кривая пула, и они верны, только если hook не вмешивается. Ничто из прочитанного здесь не может сказать, вмешивается ли он.",
     unavailable: "Для этого пула нельзя вычислить, сколько стоил бы своп.",
+  },
+
+  compare: {
+    heading: "Все уровни комиссии этой пары рядом",
+    intro: (pair: string) =>
+      `Каждый пул ${pair} ниже прочитан с тем же горизонтом, той же шириной и тем же вкладом, так что их цифры стоят на одной основе. Они описывают уже прошедшие дни, а не будущие, и пулы идут в порядке комиссии — не ранжированы ни по одной цифре.`,
+    depositFeesNote: (days: string) => `За ${days} дн., когда цена оставалась внутри диапазона.`,
+    daysInside: "Дни целиком внутри диапазона",
+    daysInsideValue: (inside: string, measured: string) => `${inside} из ${measured}`,
+    unavailable: "Этот уровень сейчас не удалось прочитать.",
+    open: "Открыть полный разбор",
+    link: "Поставить уровни рядом",
+    onlyOne: (pair: string) =>
+      `${pair} торгуется только в одном пуле v3, так что рядом поставить нечего.`,
+    notV4:
+      "Пулы v4 этой пары здесь рядом не стоят. Hook в v4 может менять стоимость свопа, и это ставит их цифры на другую основу.",
+    readTogether:
+      "Комиссии — это половина. Что диапазон теряет по сравнению с простым хранением двух токенов, есть на странице каждого пула, и читать это нужно вместе.",
   },
 
   feeTiers: {
@@ -8020,6 +8180,8 @@ const pt: Dictionary = {
     holdingsTitle: "O que um endereço tem · LiquidityWise",
     holdingsDescription:
       "Os tokens encontrados em um endereço Ethereum e os pools do Uniswap v3 em que eles podem entrar.",
+    compareTitle: "Níveis de taxa lado a lado · LiquidityWise",
+    compareDescription: "Todos os níveis de taxa do Uniswap v3 de um par, lidos com o mesmo horizonte, largura e depósito.",
     poolTitle: "Análise da faixa de um pool · LiquidityWise",
     poolDescription:
       "Uma faixa de preço para um pool do Uniswap v3 na rede principal do Ethereum, tirada de quanto o preço dele realmente andou.",
@@ -8327,6 +8489,24 @@ const pt: Dictionary = {
     hookMayAlter:
       "O hook deste pool tem permissão para mudar quanto um swap custa — reescrever a taxa a cada swap, dar ele mesmo o preço do swap no lugar da curva do pool, ou ficar com uma parte depois; a seção do hook, acima, diz qual. Os números aqui são o que a curva do pool cobra, e só valem se o hook não interferir. Nada do que foi lido aqui consegue dizer se ele interfere.",
     unavailable: "Para este pool não dá para calcular quanto um swap custaria.",
+  },
+
+  compare: {
+    heading: "Todos os níveis de taxa deste par, lado a lado",
+    intro: (pair: string) =>
+      `Cada pool ${pair} abaixo foi lido com o mesmo horizonte, a mesma largura e o mesmo depósito, então os números deles ficam na mesma base. Eles descrevem dias que já passaram, não os que vêm, e os pools estão na ordem da taxa — não classificados por número nenhum.`,
+    depositFeesNote: (days: string) => `Nos ${days} dias em que o preço ficou dentro da faixa.`,
+    daysInside: "Dias inteiros dentro da faixa",
+    daysInsideValue: (inside: string, measured: string) => `${inside} de ${measured}`,
+    unavailable: "Não deu para ler este nível agora.",
+    open: "Abrir a análise completa",
+    link: "Colocar os níveis lado a lado",
+    onlyOne: (pair: string) =>
+      `${pair} só é negociado em um pool v3, então não há nada para colocar ao lado.`,
+    notV4:
+      "Os pools v4 do par não estão lado a lado com estes. Um hook do v4 pode mudar quanto um swap custa, e isso colocaria os números deles em outra base.",
+    readTogether:
+      "As taxas são metade da história. O que uma faixa abre mão em relação a simplesmente segurar os dois tokens está na página de cada pool, e as duas coisas precisam ser lidas juntas.",
   },
 
   feeTiers: {
@@ -9184,6 +9364,8 @@ const zhHant: Dictionary = {
     holdingsTitle: "一個地址持有什麼 · LiquidityWise",
     holdingsDescription:
       "在某個以太坊地址上找到的代幣，以及這些代幣可以進入的 Uniswap v3 資金池。",
+    compareTitle: "費率檔並排 · LiquidityWise",
+    compareDescription: "一個交易對的所有 Uniswap v3 費率檔，用同樣的時長、寬度和資金讀取。",
     poolTitle: "資金池區間分析 · LiquidityWise",
     poolDescription:
       "為某個以太坊主網 Uniswap v3 資金池給出的價格區間，由它的價格實際走了多遠推算而來。",
@@ -9486,6 +9668,24 @@ const zhHant: Dictionary = {
     hookMayAlter:
       "這個池子的 hook 被允許改變一筆兌換的成本——在每筆兌換發生時重寫費率，由它自己而不是池子的曲線給這筆兌換定價，或者在事後從中抽取一份；具體是哪一種，上面的 hook 部分寫著。這裡的數字是池子的曲線所收取的，只有在 hook 不插手時才成立。這裡讀到的任何東西都無法說明它是否插手。",
     unavailable: "對這個池子，算不出一筆兌換要付出什麼。",
+  },
+
+  compare: {
+    heading: "這個交易對的所有費率檔，並排放在一起",
+    intro: (pair: string) =>
+      `下面每個 ${pair} 池子都用同樣的時長、同樣的寬度和同樣的資金來讀取，所以它們的數字站在同一個基礎上。它們描述的是已經過去的日子，而不是將來的日子；池子按費率排列，而不是按任何數字排名。`,
+    depositFeesNote: (days: string) => `在價格停留在區間內的 ${days} 天裡。`,
+    daysInside: "完全在區間內的天數",
+    daysInsideValue: (inside: string, measured: string) => `${measured} 天中的 ${inside} 天`,
+    unavailable: "這個費率檔現在讀取不到。",
+    open: "打開完整分析",
+    link: "把費率檔並排放在一起",
+    onlyOne: (pair: string) =>
+      `${pair} 只在一個 v3 池子裡交易，沒有別的可以放在旁邊。`,
+    notV4:
+      "這個交易對的 v4 池子沒有放在這裡。v4 的 hook 可能改變一筆兌換的成本，這會讓它們的數字站在不同的基礎上。",
+    readTogether:
+      "手續費只是一半。一個區間相比單純持有兩種代幣所放棄的東西，寫在每個池子自己的頁面上，兩者必須一起讀。",
   },
 
   feeTiers: {

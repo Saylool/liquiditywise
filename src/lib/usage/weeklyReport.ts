@@ -27,6 +27,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/": "home",
   "/pool": "v3 pool",
   "/v4": "v4 pool",
+  "/compare": "tiers side by side",
   "/holdings": "holdings",
   "/hooks": "hooks",
 };

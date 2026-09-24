@@ -1,6 +1,6 @@
 
 import { GuardedLink } from "./GuardedLink";
-import { poolAnalysisHref } from "../lib/advisor/requestedParameters";
+import { poolAnalysisHref, poolComparisonHref } from "../lib/advisor/requestedParameters";
 import { formatFeePpm, formatTokenAmount } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -173,6 +173,17 @@ export function V3PairPoolList({
           />
         ))}
       </ul>
+
+      {/*
+       * Only from a pool's own page, where there is a pool to compare from and
+       * a band and deposit to carry: the comparison reads every tier under
+       * the settings the reader is already looking at.
+       */}
+      {analysedPoolId === null ? null : (
+        <GuardedLink className="text-link text-sm" href={poolComparisonHref(analysedPoolId, parameters, depositUsd)}>
+          {t.compare.link}
+        </GuardedLink>
+      )}
 
       <div className="flex flex-col gap-3 text-xs leading-relaxed text-muted">
         <p>{t.feeTiers.biggerIsNotBetter}</p>
