@@ -7,6 +7,7 @@ import { ErrorCopyProvider } from "@/components/ErrorCopyProvider";
 import { SiteHeader, SiteFooter } from "@/components/SiteChrome";
 import { directionOf } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { SITE_URL } from "@/lib/site/indexing";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme/theme";
 
 /*
@@ -85,7 +86,24 @@ const displayFont = localFont({
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getRequestDictionary();
 
-  return { title: t.metadata.title, description: t.metadata.description };
+  return {
+    title: t.metadata.title,
+    description: t.metadata.description,
+    /*
+     * Where relative URLs in the metadata below — and the card image the
+     * opengraph-image file makes — are resolved against. Without it a shared
+     * link's card points at localhost.
+     */
+    metadataBase: new URL(SITE_URL),
+    openGraph: {
+      type: "website",
+      siteName: "LiquidityWise",
+      title: t.metadata.title,
+      description: t.metadata.description,
+      url: "/",
+    },
+    twitter: { card: "summary_large_image", title: t.metadata.title, description: t.metadata.description },
+  };
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
