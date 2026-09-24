@@ -1,6 +1,6 @@
 import type { Position } from "../../schemas";
 import { formatPrice } from "../format/displayFormats";
-import { choosePriceQuote, quotedInterval } from "../format/priceQuote";
+import { choosePriceQuote, quotedInterval, quotedPrice } from "../format/priceQuote";
 import type { Dictionary } from "../i18n/dictionaries";
 import type { Locale } from "../i18n/locales";
 import type { PositionChange } from "./positionChanges";
@@ -26,12 +26,34 @@ const describe = (position: Position, locale: Locale): { pair: string; protocol:
   };
 };
 
+/**
+ * Where the price is now, and the edge it is close to, both as the page quotes
+ * them. The current price follows from the ticks: each is a factor of 1.0001,
+ * counted from the lower edge whose price is already known.
+ */
+const nearingPrices = (position: Position, edge: "lower" | "upper", locale: Locale): { price: string; edge: string } => {
+  const { pool } = position;
+  const quote = choosePriceQuote(pool, Math.sqrt(position.lowerPrice) * Math.sqrt(position.upperPrice));
+  const current = position.lowerPrice * 1.0001 ** ((position.currentTick ?? position.tickLower) - position.tickLower);
+  const edgePrice = edge === "lower" ? position.lowerPrice : position.upperPrice;
+
+  return {
+    price: formatPrice(quotedPrice(quote, current), locale),
+    edge: formatPrice(quotedPrice(quote, edgePrice), locale),
+  };
+};
+
 export const alertText = (change: PositionChange, t: Dictionary, locale: Locale): string => {
   const body = (() => {
     switch (change.kind) {
       case "left": {
         const { pair, protocol, range } = describe(change.position, locale);
         return t.telegram.left(pair, protocol, range);
+      }
+      case "nearing": {
+        const { pair, protocol, range } = describe(change.position, locale);
+        const { price, edge } = nearingPrices(change.position, change.edge, locale);
+        return t.telegram.nearing(pair, protocol, range, price, edge);
       }
       case "entered": {
         const { pair, protocol, range } = describe(change.position, locale);

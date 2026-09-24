@@ -71,7 +71,7 @@ export const checkWatches = async ({
       if (await bot.sendMessage(link.chatId, alertText(change, t, link.locale))) sent += 1;
     }
 
-    await recordSnapshot(store, token, link, snapshotOf(result.data.positions));
+    await recordSnapshot(store, token, link, snapshotOf(result.data.positions, link.snapshot));
   }
 
   return { watches: watches.length, checked, unreadable, alerts, sent, storeUnavailable: false };

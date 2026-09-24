@@ -25,17 +25,17 @@ api() {
   printf '%s %s\n' "$method" "$(printf '%s' "$out" | grep -oE '"ok":(true|false)')"
 }
 
-DESC_EN='This bot follows the Uniswap positions of one Ethereum address and tells you when one of them leaves its price range or comes back into it.
+DESC_EN='This bot follows the Uniswap positions of one Ethereum address and tells you when one of them nears the edge of its price range, leaves it, or comes back.
 
 You link an address on liquiditywise.com; nothing is stored until you do, and what is stored is the address and this chat, nothing else. Send /stop and both are deleted at once, and from the encrypted backups within seven days.
 
-It reads public on-chain data and sends a message. It cannot sign or send a transaction. Information only — not financial advice.'
+It reads public on-chain data and cannot sign or send a transaction. Information only — not financial advice.'
 
-DESC_TR='Bu bot bir Ethereum adresinin Uniswap pozisyonlarını izler ve içlerinden biri fiyat aralığından çıktığında ya da geri girdiğinde sana haber verir.
+DESC_TR='Bu bot bir Ethereum adresinin Uniswap pozisyonlarını izler ve içlerinden biri fiyat aralığının sınırına yaklaştığında, çıktığında ya da geri girdiğinde sana haber verir.
 
-Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, saklanan da adres ile bu sohbettir, başka bir şey değil. /stop yazarsan ikisi de hemen, şifreli yedeklerden de yedi günde silinir.
+Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, saklanan yalnızca adres ile bu sohbettir. /stop yazarsan ikisi de hemen, şifreli yedeklerden de yedi günde silinir.
 
-Herkese açık zincir verisini okur ve mesaj gönderir. Hiçbir şey imzalayamaz, işlem gönderemez. Yalnızca bilgi — yatırım tavsiyesi değildir.'
+Herkese açık zincir verisini okur; hiçbir şey imzalayamaz, işlem gönderemez. Yalnızca bilgi — yatırım tavsiyesi değildir.'
 
 SHORT_EN='Tells you when a Uniswap position leaves its range. liquiditywise.com'
 SHORT_TR='Uniswap pozisyonun aralıktan çıkınca haber verir. liquiditywise.com'

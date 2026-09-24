@@ -142,3 +142,38 @@ describe("checkWatches", () => {
     expect(summary.storeUnavailable).toBe(true);
   });
 });
+
+describe("checkWatches, near an edge", () => {
+  const at = (tick: number): Position =>
+    ({
+      tokenId: "7",
+      pool: {
+        protocolVersion: "v3",
+        id: ADDRESS,
+        token0: { symbol: "USDC", decimals: 6 },
+        token1: { symbol: "WETH", decimals: 18 },
+      },
+      tickLower: 0,
+      tickUpper: 5108,
+      lowerPrice: 0.0003,
+      upperPrice: 0.0005,
+      currentTick: tick,
+      inRange: tick >= 0 && tick < 5108,
+    }) as unknown as Position;
+
+  it("warns once when a position comes close, keeps that it did, and stays quiet the next pass", async () => {
+    const store = await linked();
+    const { client, sent } = bot();
+    const pass = (tick: number) =>
+      checkWatches({ store, bot: client, readPositions: async () => answer([at(tick)]), dictionary: getDictionary });
+
+    await pass(2500);
+    await pass(5000);
+    // Back a little, still within a fifth of the width of the edge, then close again: one warning, not two.
+    await pass(4200);
+    await pass(5000);
+
+    expect(sent.map(({ text }) => [...text][0])).toEqual(["⏳"]);
+    expect((await readLink(store, TOKEN))?.snapshot).toEqual({ "v3:7": "near" });
+  });
+});

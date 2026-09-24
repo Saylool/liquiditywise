@@ -42,7 +42,7 @@ const LinkSchema = z.object({
   locale: z.string().refine(isLocale),
   chatId: z.number().int().nullable(),
   createdAt: IsoTimestampSchema,
-  snapshot: z.record(z.string(), z.boolean().nullable()).nullable(),
+  snapshot: z.record(z.string(), z.union([z.boolean(), z.literal("near")]).nullable()).nullable(),
 });
 
 export type TelegramLink = {
