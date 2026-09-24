@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { GuardedLink } from "@/components/GuardedLink";
-import { PoolComparison, type ComparedTier } from "@/components/PoolComparison";
+import { PoolComparison, type ComparedTier, type ComparedV4 } from "@/components/PoolComparison";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
@@ -14,6 +14,8 @@ import {
 } from "@/lib/advisor/requestedParameters";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { getEthereumV3PairFeeTiers } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
+import { getEthereumV4PairPools } from "@/lib/uniswap/getEthereumV4PairPools";
+import { alterSwapEconomics } from "@/schemas";
 import { EvmAddressSchema } from "@/schemas/primitives";
 
 /*
@@ -22,13 +24,20 @@ import { EvmAddressSchema } from "@/schemas/primitives";
  * page, which carries the reader's settings with it.
  *
  * The pool named in the URL is analysed first, because the pair comes from a
- * pool this application verified; the other tiers are read from that pair and
- * analysed together. No explanation is written here: a model paragraph per
+ * pool this application verified; the other v3 tiers, and the deepest v4 pools
+ * of the same two contracts, are read from that pair and analysed together. No explanation is written here: a model paragraph per
  * tier would be four for one question, and each pool's page has its own.
  *
  * Counted by the proxy like the pool page, since it reads the same sources —
- * four times over.
+ * up to eight times over.
  */
+
+/**
+ * How many v4 pools are read beside the v3 tiers: the deepest four. A v4 pair
+ * can be dozens of pools, most of them opened and left, and each read here is
+ * a full analysis.
+ */
+const V4_COMPARED = 4;
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getRequestDictionary();
@@ -97,7 +106,14 @@ export default async function ComparePage({
   const pool = first.data.pool;
   const pair = `${pool.token0.symbol} / ${pool.token1.symbol}`;
   const current = address.data.toLowerCase();
-  const listed = await getEthereumV3PairFeeTiers(pool);
+  const [listed, v4Listed] = await Promise.all([
+    getEthereumV3PairFeeTiers(pool),
+    getEthereumV4PairPools({
+      analysedPoolId: null,
+      token0Address: pool.token0.address,
+      token1Address: pool.token1.address,
+    }),
+  ]);
 
   if (listed.status === "unavailable") {
     return page(
@@ -110,19 +126,46 @@ export default async function ComparePage({
   }
 
   // In the order the panel lists them — by fee — and the pool already read is not read twice.
-  const tiers: ComparedTier[] = await Promise.all(
-    listed.data.tiers.map(async (tier) => {
-      const id = tier.pool.id.toLowerCase();
-      return {
-        address: id,
-        feePpm: tier.pool.feePpm,
-        current: id === current,
-        result: id === current ? first : await getPoolRangeAnalysis("v3", id, parameters, depositUsd),
-      };
-    }),
-  );
+  const v4Pools = v4Listed.status === "unavailable" ? [] : v4Listed.data.pools.slice(0, V4_COMPARED);
+  const [v3, v4Tiers] = await Promise.all([
+    Promise.all(
+      listed.data.tiers.map(async (tier): Promise<ComparedTier> => {
+        const id = tier.pool.id.toLowerCase();
+        return {
+          protocol: "v3",
+          id,
+          fee: { kind: "static", feePpm: tier.pool.feePpm },
+          tickSpacing: null,
+          hookAltersSwaps: false,
+          current: id === current,
+          result: id === current ? first : await getPoolRangeAnalysis("v3", id, parameters, depositUsd),
+        };
+      }),
+    ),
+    // Deepest first, as the source orders them.
+    Promise.all(
+      v4Pools.map(
+        async ({ pool: entry }): Promise<ComparedTier> => ({
+          protocol: "v4",
+          id: entry.id,
+          fee: entry.fee,
+          tickSpacing: entry.tickSpacing,
+          hookAltersSwaps: alterSwapEconomics(entry.hookAddress),
+          current: false,
+          result: await getPoolRangeAnalysis("v4", entry.id, parameters, depositUsd),
+        }),
+      ),
+    ),
+  ]);
+
+  const v4: ComparedV4 =
+    v4Listed.status === "unavailable"
+      ? { status: "unavailable", notice: v4Listed.notice }
+      : v4Tiers.length === 0
+        ? { status: "none" }
+        : { status: "listed", tiers: v4Tiers, notShown: Math.max(0, v4Listed.data.pools.length - V4_COMPARED) };
 
   return page(
-    <PoolComparison pair={pair} tiers={tiers} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />,
+    <PoolComparison pair={pair} v3={v3} v4={v4} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />,
   );
 }

@@ -347,7 +347,7 @@ const en = {
   compare: {
     heading: "Every fee tier of this pair, side by side",
     intro: (pair: string) =>
-      `Each ${pair} pool below was read with the same horizon, the same width and the same deposit, so their figures stand on one footing. They describe days that have already happened, not the days to come, and the pools are in order of fee — not ranked by any figure.`,
+      `Each ${pair} pool below was read with the same horizon, the same width and the same deposit, so their figures stand on one footing. They describe days that have already happened, not the days to come. The v3 pools stand in order of fee and the v4 pools deepest first, as the note under them explains — none is ranked by what it would have earned.`,
     depositFeesNote: (days: string) => `Over the ${days} days the price stayed inside the range.`,
     daysInside: "Days fully inside the range",
     daysInsideValue: (inside: string, measured: string) => `${inside} of ${measured}`,
@@ -356,8 +356,6 @@ const en = {
     link: "Set the tiers side by side",
     onlyOne: (pair: string) =>
       `${pair} trades in one v3 pool only, so there is nothing to set beside it.`,
-    notV4:
-      "The pair's v4 pools are not set beside these. A v4 hook may change what a swap costs, which would put their figures on a different footing.",
     readTogether:
       "Fees are half of it. What a range gives up against simply holding the two tokens is on each pool's own page, and the two have to be read together.",
   },
@@ -1484,7 +1482,7 @@ const tr: Dictionary = {
   compare: {
     heading: "Bu çiftin bütün komisyon kademeleri, yan yana",
     intro: (pair: string) =>
-      `Aşağıdaki her ${pair} havuzu aynı ufuk, aynı genişlik ve aynı yatırım tutarıyla okundu; rakamları aynı zeminde duruyor. Yaşanmış günleri anlatıyorlar, gelecek günleri değil; havuzlar da hiçbir rakama göre sıralanmadı, komisyon sırasıyla dizildi.`,
+      `Aşağıdaki her ${pair} havuzu aynı ufuk, aynı genişlik ve aynı yatırım tutarıyla okundu; rakamları aynı zeminde duruyor. Yaşanmış günleri anlatıyorlar, gelecek günleri değil. v3 havuzları komisyon sırasıyla, v4 havuzları altlarındaki notun anlattığı gibi en derinden başlayarak dizildi — hiçbiri kazandıracağı paraya göre sıralanmadı.`,
     depositFeesNote: (days: string) => `Fiyatın aralık içinde kaldığı ${days} gün boyunca.`,
     daysInside: "Tamamen aralık içinde geçen günler",
     daysInsideValue: (inside: string, measured: string) => `${inside} / ${measured}`,
@@ -1493,8 +1491,6 @@ const tr: Dictionary = {
     link: "Kademeleri yan yana koy",
     onlyOne: (pair: string) =>
       `${pair} yalnızca tek bir v3 havuzunda işlem görüyor; yanına konacak başka bir havuz yok.`,
-    notV4:
-      "Çiftin v4 havuzları bunların yanına konmadı. Bir v4 hook'u takasın maliyetini değiştirebilir, bu da rakamlarını başka bir zemine taşır.",
     readTogether:
       "Komisyon işin yarısı. Bir aralığın, iki jetonu öylece tutmaya göre neyi kaybettirdiği her havuzun kendi sayfasında; ikisi birlikte okunmalı.",
   },
@@ -2430,7 +2426,7 @@ const de: Dictionary = {
   compare: {
     heading: "Alle Gebührenstufen dieses Paars, nebeneinander",
     intro: (pair: string) =>
-      `Jeder ${pair}-Pool unten wurde mit demselben Horizont, derselben Breite und derselben Einlage gelesen, sodass seine Zahlen auf derselben Grundlage stehen wie die der anderen. Sie beschreiben Tage, die schon vergangen sind, nicht die kommenden, und die Pools stehen in der Reihenfolge ihrer Gebühr — nach keiner Zahl sortiert.`,
+      `Jeder ${pair}-Pool unten wurde mit demselben Horizont, derselben Breite und derselben Einlage gelesen, sodass seine Zahlen auf derselben Grundlage stehen wie die der anderen. Sie beschreiben Tage, die schon vergangen sind, nicht die kommenden. Die v3-Pools stehen in der Reihenfolge ihrer Gebühr, die v4-Pools nach Tiefe, wie die Notiz darunter erklärt — keiner ist danach sortiert, was er eingenommen hätte.`,
     depositFeesNote: (days: string) => `An den ${days} Tagen, an denen der Preis im Bereich blieb.`,
     daysInside: "Tage ganz im Bereich",
     daysInsideValue: (inside: string, measured: string) => `${inside} von ${measured}`,
@@ -2439,8 +2435,6 @@ const de: Dictionary = {
     link: "Die Stufen nebeneinanderstellen",
     onlyOne: (pair: string) =>
       `${pair} wird nur in einem v3-Pool gehandelt; es gibt nichts, was man danebenstellen könnte.`,
-    notV4:
-      "Die v4-Pools des Paars stehen hier nicht daneben. Ein v4-Hook kann ändern, was ein Tausch kostet, und damit ihre Zahlen auf eine andere Grundlage stellen.",
     readTogether:
       "Gebühren sind die Hälfte. Was ein Bereich gegenüber dem bloßen Halten der beiden Token aufgibt, steht auf der Seite jedes Pools, und beides muss zusammen gelesen werden.",
   },
@@ -3354,7 +3348,7 @@ const es: Dictionary = {
   compare: {
     heading: "Todos los niveles de comisión de este par, uno al lado del otro",
     intro: (pair: string) =>
-      `Cada pool ${pair} de abajo se leyó con el mismo horizonte, la misma amplitud y el mismo depósito, así que sus cifras están sobre la misma base. Describen días que ya pasaron, no los que vienen, y los pools van en orden de comisión, no clasificados por ninguna cifra.`,
+      `Cada pool ${pair} de abajo se leyó con el mismo horizonte, la misma amplitud y el mismo depósito, así que sus cifras están sobre la misma base. Describen días que ya pasaron, no los que vienen. Los pools v3 van en orden de comisión y los v4 del más profundo al menos, como explica la nota de debajo; ninguno está clasificado por lo que habría ganado.`,
     depositFeesNote: (days: string) => `En los ${days} días en que el precio se quedó dentro del rango.`,
     daysInside: "Días enteros dentro del rango",
     daysInsideValue: (inside: string, measured: string) => `${inside} de ${measured}`,
@@ -3363,8 +3357,6 @@ const es: Dictionary = {
     link: "Poner los niveles uno al lado del otro",
     onlyOne: (pair: string) =>
       `${pair} solo cotiza en un pool de v3, así que no hay nada que poner a su lado.`,
-    notV4:
-      "Los pools v4 del par no se ponen al lado de estos. Un hook de v4 puede cambiar lo que cuesta un intercambio, y eso pondría sus cifras sobre otra base.",
     readTogether:
       "Las comisiones son la mitad. Lo que un rango cede frente a simplemente mantener los dos tokens está en la página de cada pool, y las dos cosas hay que leerlas juntas.",
   },
@@ -4279,7 +4271,7 @@ const ar: Dictionary = {
   compare: {
     heading: "كل مستويات الرسوم لهذا الزوج، جنبًا إلى جنب",
     intro: (pair: string) =>
-      `قُرئ كل تجمّع ${pair} أدناه بالأفق نفسه والاتساع نفسه والإيداع نفسه، فتقف أرقامه على الأساس نفسه. إنها تصف أيامًا مضت، لا الأيام المقبلة، والتجمّعات مرتبة حسب الرسوم، لا حسب أي رقم.`,
+      `قُرئ كل تجمّع ${pair} أدناه بالأفق نفسه والاتساع نفسه والإيداع نفسه، فتقف أرقامه على الأساس نفسه. إنها تصف أيامًا مضت، لا الأيام المقبلة. تجمّعات v3 مرتبة حسب الرسوم، وتجمّعات v4 من الأعمق إلى الأقل كما توضح الملاحظة تحتها؛ ولا يُرتَّب أيّ منها حسب ما كان سيكسبه.`,
     depositFeesNote: (days: string) => `خلال ${days} يومًا بقي فيها السعر داخل النطاق.`,
     daysInside: "أيام كاملة داخل النطاق",
     daysInsideValue: (inside: string, measured: string) => `${inside} من ${measured}`,
@@ -4288,8 +4280,6 @@ const ar: Dictionary = {
     link: "ضع المستويات جنبًا إلى جنب",
     onlyOne: (pair: string) =>
       `يُتداول ${pair} في تجمّع v3 واحد فقط، فلا شيء يوضع بجانبه.`,
-    notV4:
-      "لم توضع تجمّعات v4 لهذا الزوج بجانب هذه. قد يغيّر hook في v4 تكلفة التبادل، وهذا يضع أرقامها على أساس مختلف.",
     readTogether:
       "الرسوم نصف الصورة. ما يتخلّى عنه النطاق مقارنةً بمجرد الاحتفاظ بالرمزين موجود في صفحة كل تجمّع، ويجب قراءة الأمرين معًا.",
   },
@@ -5179,7 +5169,7 @@ const hi: Dictionary = {
   compare: {
     heading: "इस जोड़ी के सभी शुल्क स्तर, साथ-साथ",
     intro: (pair: string) =>
-      `नीचे का हर ${pair} पूल एक ही अवधि, एक ही चौड़ाई और एक ही जमा के साथ पढ़ा गया, इसलिए उनके आँकड़े एक ही आधार पर खड़े हैं। ये बीत चुके दिनों का वर्णन करते हैं, आने वाले दिनों का नहीं, और पूल शुल्क के क्रम में हैं — किसी आँकड़े के हिसाब से क्रमबद्ध नहीं।`,
+      `नीचे का हर ${pair} पूल एक ही अवधि, एक ही चौड़ाई और एक ही जमा के साथ पढ़ा गया, इसलिए उनके आँकड़े एक ही आधार पर खड़े हैं। ये बीत चुके दिनों का वर्णन करते हैं, आने वाले दिनों का नहीं। v3 पूल शुल्क के क्रम में हैं और v4 पूल सबसे गहरे से शुरू, जैसा नीचे की टिप्पणी बताती है — किसी को भी इस हिसाब से क्रमबद्ध नहीं किया गया कि वह कितना कमाता।`,
     depositFeesNote: (days: string) => `उन ${days} दिनों में जब कीमत दायरे के भीतर रही।`,
     daysInside: "पूरी तरह दायरे के भीतर बीते दिन",
     daysInsideValue: (inside: string, measured: string) => `${measured} में से ${inside}`,
@@ -5188,8 +5178,6 @@ const hi: Dictionary = {
     link: "स्तरों को साथ-साथ रखें",
     onlyOne: (pair: string) =>
       `${pair} केवल एक v3 पूल में कारोबार करती है, इसलिए उसके साथ रखने को कुछ नहीं है।`,
-    notV4:
-      "इस जोड़ी के v4 पूल इनके साथ नहीं रखे गए। v4 का hook स्वैप की लागत बदल सकता है, जिससे उनके आँकड़े दूसरे आधार पर चले जाते हैं।",
     readTogether:
       "शुल्क आधी बात है। दोनों टोकन बस रखे रहने की तुलना में कोई दायरा क्या छोड़ देता है, वह हर पूल के अपने पृष्ठ पर है, और दोनों को साथ पढ़ना चाहिए।",
   },
@@ -6151,7 +6139,7 @@ const zh: Dictionary = {
   compare: {
     heading: "这个交易对的所有费率档，并排放在一起",
     intro: (pair: string) =>
-      `下面每个 ${pair} 池子都用同样的时长、同样的宽度和同样的资金来读取，所以它们的数字站在同一个基础上。它们描述的是已经过去的日子，而不是将来的日子；池子按费率排列，而不是按任何数字排名。`,
+      `下面每个 ${pair} 池子都用同样的时长、同样的宽度和同样的资金来读取，所以它们的数字站在同一个基础上。它们描述的是已经过去的日子，而不是将来的日子。v3 池子按费率排列，v4 池子按深度从深到浅排列，下方的说明解释了原因；没有一个是按它本可以赚多少来排名的。`,
     depositFeesNote: (days: string) => `在价格停留在区间内的 ${days} 天里。`,
     daysInside: "完全在区间内的天数",
     daysInsideValue: (inside: string, measured: string) => `${measured} 天中的 ${inside} 天`,
@@ -6160,8 +6148,6 @@ const zh: Dictionary = {
     link: "把费率档并排放在一起",
     onlyOne: (pair: string) =>
       `${pair} 只在一个 v3 池子里交易，没有别的可以放在旁边。`,
-    notV4:
-      "这个交易对的 v4 池子没有放在这里。v4 的 hook 可能改变一笔兑换的成本，这会让它们的数字站在不同的基础上。",
     readTogether:
       "手续费只是一半。一个区间相比单纯持有两种代币所放弃的东西，写在每个池子自己的页面上，两者必须一起读。",
   },
@@ -7324,7 +7310,7 @@ const ru: Dictionary = {
   compare: {
     heading: "Все уровни комиссии этой пары рядом",
     intro: (pair: string) =>
-      `Каждый пул ${pair} ниже прочитан с тем же горизонтом, той же шириной и тем же вкладом, так что их цифры стоят на одной основе. Они описывают уже прошедшие дни, а не будущие, и пулы идут в порядке комиссии — не ранжированы ни по одной цифре.`,
+      `Каждый пул ${pair} ниже прочитан с тем же горизонтом, той же шириной и тем же вкладом, так что их цифры стоят на одной основе. Они описывают уже прошедшие дни, а не будущие. Пулы v3 идут в порядке комиссии, а пулы v4 — от самого глубокого, как объясняет примечание под ними; ни один не ранжирован по тому, сколько он принёс бы.`,
     depositFeesNote: (days: string) => `За ${days} дн., когда цена оставалась внутри диапазона.`,
     daysInside: "Дни целиком внутри диапазона",
     daysInsideValue: (inside: string, measured: string) => `${inside} из ${measured}`,
@@ -7333,8 +7319,6 @@ const ru: Dictionary = {
     link: "Поставить уровни рядом",
     onlyOne: (pair: string) =>
       `${pair} торгуется только в одном пуле v3, так что рядом поставить нечего.`,
-    notV4:
-      "Пулы v4 этой пары здесь рядом не стоят. Hook в v4 может менять стоимость свопа, и это ставит их цифры на другую основу.",
     readTogether:
       "Комиссии — это половина. Что диапазон теряет по сравнению с простым хранением двух токенов, есть на странице каждого пула, и читать это нужно вместе.",
   },
@@ -8510,7 +8494,7 @@ const pt: Dictionary = {
   compare: {
     heading: "Todos os níveis de taxa deste par, lado a lado",
     intro: (pair: string) =>
-      `Cada pool ${pair} abaixo foi lido com o mesmo horizonte, a mesma largura e o mesmo depósito, então os números deles ficam na mesma base. Eles descrevem dias que já passaram, não os que vêm, e os pools estão na ordem da taxa — não classificados por número nenhum.`,
+      `Cada pool ${pair} abaixo foi lido com o mesmo horizonte, a mesma largura e o mesmo depósito, então os números deles ficam na mesma base. Eles descrevem dias que já passaram, não os que vêm. Os pools v3 estão na ordem da taxa e os v4 do mais profundo para o menos, como explica a nota abaixo deles — nenhum está classificado pelo que teria rendido.`,
     depositFeesNote: (days: string) => `Nos ${days} dias em que o preço ficou dentro da faixa.`,
     daysInside: "Dias inteiros dentro da faixa",
     daysInsideValue: (inside: string, measured: string) => `${inside} de ${measured}`,
@@ -8519,8 +8503,6 @@ const pt: Dictionary = {
     link: "Colocar os níveis lado a lado",
     onlyOne: (pair: string) =>
       `${pair} só é negociado em um pool v3, então não há nada para colocar ao lado.`,
-    notV4:
-      "Os pools v4 do par não estão lado a lado com estes. Um hook do v4 pode mudar quanto um swap custa, e isso colocaria os números deles em outra base.",
     readTogether:
       "As taxas são metade da história. O que uma faixa abre mão em relação a simplesmente segurar os dois tokens está na página de cada pool, e as duas coisas precisam ser lidas juntas.",
   },
@@ -9691,7 +9673,7 @@ const zhHant: Dictionary = {
   compare: {
     heading: "這個交易對的所有費率檔，並排放在一起",
     intro: (pair: string) =>
-      `下面每個 ${pair} 池子都用同樣的時長、同樣的寬度和同樣的資金來讀取，所以它們的數字站在同一個基礎上。它們描述的是已經過去的日子，而不是將來的日子；池子按費率排列，而不是按任何數字排名。`,
+      `下面每個 ${pair} 池子都用同樣的時長、同樣的寬度和同樣的資金來讀取，所以它們的數字站在同一個基礎上。它們描述的是已經過去的日子，而不是將來的日子。v3 池子按費率排列，v4 池子按深度從深到淺排列，下方的說明解釋了原因；沒有一個是按它本可以賺多少來排名的。`,
     depositFeesNote: (days: string) => `在價格停留在區間內的 ${days} 天裡。`,
     daysInside: "完全在區間內的天數",
     daysInsideValue: (inside: string, measured: string) => `${measured} 天中的 ${inside} 天`,
@@ -9700,8 +9682,6 @@ const zhHant: Dictionary = {
     link: "把費率檔並排放在一起",
     onlyOne: (pair: string) =>
       `${pair} 只在一個 v3 池子裡交易，沒有別的可以放在旁邊。`,
-    notV4:
-      "這個交易對的 v4 池子沒有放在這裡。v4 的 hook 可能改變一筆兌換的成本，這會讓它們的數字站在不同的基礎上。",
     readTogether:
       "手續費只是一半。一個區間相比單純持有兩種代幣所放棄的東西，寫在每個池子自己的頁面上，兩者必須一起讀。",
   },

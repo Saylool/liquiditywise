@@ -5,7 +5,7 @@ import type { PoolRangeAnalysisResult } from "../lib/advisor/poolRangeAnalysis";
 import { HOOK_PERMISSION_FLAGS } from "../schemas";
 import { formatUsd } from "../lib/format/displayFormats";
 import { getDictionary } from "../lib/i18n/dictionaries";
-import { PoolComparison, type ComparedTier } from "./PoolComparison";
+import { PoolComparison, type ComparedTier, type ComparedV4 } from "./PoolComparison";
 
 const t = getDictionary("en");
 const PARAMETERS = { horizonDays: 30, standardDeviationMultiplier: 1.5 };
@@ -22,19 +22,27 @@ const analysed = (depositFeesUsd: number, fullyInside = 20): PoolRangeAnalysisRe
   }) as unknown as PoolRangeAnalysisResult;
 
 const tier = (address: string, feePpm: number, result: PoolRangeAnalysisResult, current = false): ComparedTier => ({
-  address,
-  feePpm,
+  protocol: "v3",
+  id: address,
+  fee: { kind: "static", feePpm },
+  tickSpacing: null,
+  hookAltersSwaps: false,
   current,
   result,
 });
+
+const NO_V4: ComparedV4 = { status: "none" };
 
 const A = `0x${"1".repeat(40)}`;
 const B = `0x${"2".repeat(40)}`;
 const C = `0x${"3".repeat(40)}`;
 
-const render = (tiers: readonly ComparedTier[]) =>
+/** How react-dom writes an apostrophe. */
+const escaped = (value: string) => value.replace(/'/g, "&#x27;");
+
+const render = (v3: readonly ComparedTier[], v4: ComparedV4 = NO_V4) =>
   renderToStaticMarkup(
-    <PoolComparison pair="USDC / WETH" tiers={tiers} parameters={PARAMETERS} depositUsd={5_000} t={t} locale="en" />,
+    <PoolComparison pair="USDC / WETH" v3={v3} v4={v4} parameters={PARAMETERS} depositUsd={5_000} t={t} locale="en" />,
   );
 
 describe("the comparison page", () => {
@@ -101,17 +109,93 @@ describe("the comparison page", () => {
 
     expect(html).not.toContain("<h1");
     expect(html.match(/<h2/g)).toHaveLength(1);
-    expect(html.match(/<h3/g)).toHaveLength(2);
+    // Two section headings, v3 and v4, and one per tier.
+    expect(html.match(/<h3/g)).toHaveLength(4);
   });
 
   it("says there is nothing to set beside a pair with one pool", () => {
     expect(render([tier(A, 500, analysed(1), true)])).toContain(t.compare.onlyOne("USDC / WETH"));
   });
 
-  it("says fees are half of it, and why v4 is not here", () => {
+  it("says nothing is beside a lone v3 pool only when v4 has nothing either", () => {
+    const lone = [tier(A, 500, analysed(1), true)];
+    const withV4 = render(lone, { status: "listed", tiers: [v4Tier(POOL_ID(3), { kind: "static", feePpm: 500 }, false)], notShown: 0 });
+
+    expect(render(lone)).toContain(t.compare.onlyOne("USDC / WETH"));
+    expect(withV4).not.toContain(t.compare.onlyOne("USDC / WETH"));
+  });
+
+  it("says fees are half of it", () => {
     const html = render([tier(A, 100, analysed(1)), tier(B, 500, analysed(2))]);
 
     expect(html).toContain(t.compare.readTogether.replace(/'/g, "&#x27;"));
-    expect(html).toContain(t.compare.notV4.replace(/'/g, "&#x27;"));
+  });
+});
+
+/** A v4 pool as the comparison reads it: its fee, its own price step, and whether its hook may reprice a swap. */
+const v4Tier = (id: string, fee: ComparedTier["fee"], hookAltersSwaps: boolean, result = analysed(3)): ComparedTier => ({
+  protocol: "v4",
+  id,
+  fee,
+  tickSpacing: 60,
+  hookAltersSwaps,
+  current: false,
+  result,
+});
+
+const POOL_ID = (n: number) => `0x${String(n).repeat(64)}`;
+
+describe("the v4 pools beside the tiers", () => {
+  it("sets them under their own heading, links each to the v4 page under the same settings, and explains their order", () => {
+    const html = render([tier(A, 500, analysed(1), true)], {
+      status: "listed",
+      tiers: [v4Tier(POOL_ID(7), { kind: "static", feePpm: 500 }, false)],
+      notShown: 0,
+    });
+
+    expect(html).toContain(t.feeTiers.onV3);
+    expect(html).toContain(t.feeTiers.onV4);
+    expect(html).toContain(`/v4?id=${POOL_ID(7)}&amp;days=30&amp;sigma=1.5&amp;usd=5000`);
+    expect(html).toContain(escaped(t.feeTiers.v4Ordering));
+  });
+
+  it("names a v4 pool by its fee and its own price step, and a dynamic fee as dynamic", () => {
+    const html = render([tier(A, 500, analysed(1))], {
+      status: "listed",
+      tiers: [v4Tier(POOL_ID(1), { kind: "static", feePpm: 500 }, false), v4Tier(POOL_ID(2), { kind: "dynamic", currentFeePpm: null }, false)],
+      notShown: 0,
+    });
+
+    expect(html).toContain(`0.05% · ${t.feeTiers.priceStep("0.60%")}`);
+    expect(html).toContain(t.v4.dynamicFee);
+  });
+
+  it("says a pool's hook may change what a swap costs, on that pool's card only", () => {
+    const note = `${t.feeTiers.hook}: ${t.feeTiers.hookAltersSwaps}`;
+    const html = render([tier(A, 500, analysed(1))], {
+      status: "listed",
+      tiers: [v4Tier(POOL_ID(1), { kind: "static", feePpm: 500 }, true), v4Tier(POOL_ID(2), { kind: "static", feePpm: 3000 }, false)],
+      notShown: 0,
+    });
+
+    expect(html.split(note)).toHaveLength(2);
+  });
+
+  it("counts the pools it left out, and says so", () => {
+    const html = render([tier(A, 500, analysed(1))], {
+      status: "listed",
+      tiers: [v4Tier(POOL_ID(1), { kind: "static", feePpm: 500 }, false)],
+      notShown: 9,
+    });
+
+    expect(html).toContain(t.feeTiers.moreNotShown("9"));
+  });
+
+  it("says there are none, or that they could not be read, rather than leaving the section empty", () => {
+    expect(render([tier(A, 500, analysed(1))], { status: "none" })).toContain(t.feeTiers.v4None("USDC / WETH"));
+
+    const unread = render([tier(A, 500, analysed(1))], { status: "unavailable", notice: "market-data-timed-out" });
+    expect(unread).toContain(escaped(t.feeTiers.v4Unavailable));
+    expect(unread).toContain(t.notices.failure["market-data-timed-out"]);
   });
 });
