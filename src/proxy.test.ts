@@ -226,28 +226,37 @@ describe("a page reached by its language's own address", () => {
     });
   const handedOn = (response: Response, name: string) => response.headers.get(`x-middleware-request-${name}`);
 
-  it("is served as the page itself, with the language handed to it", async () => {
+  it("goes on with the language and the page handed to it", async () => {
     const response = await proxy(arriving("/de/hooks?x=1"));
 
-    expect(new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname).toBe("/hooks");
-    expect(new URL(response.headers.get("x-middleware-rewrite") ?? "").search).toBe("?x=1");
     expect(handedOn(response, "x-lw-locale")).toBe("de");
     expect(handedOn(response, "x-lw-path")).toBe("/hooks");
   });
 
-  it("serves the front page from the language alone", async () => {
+  it("hands the front page its language from the language alone", async () => {
     const response = await proxy(arriving("/zh-Hant"));
 
-    expect(new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname).toBe("/");
     expect(handedOn(response, "x-lw-locale")).toBe("zh-Hant");
     expect(handedOn(response, "x-lw-path")).toBe("/");
+  });
+
+  /*
+   * A rewrite here is an absolute URL on the host the request arrived at, and
+   * behind nginx that is not the host the server knows itself by: Next took
+   * it for another site and every language address was a 500 in production.
+   * next.config's rewrites serve these instead.
+   */
+  it("never rewrites, leaving that to next.config", async () => {
+    for (const path of ["/de", "/de/hooks", "/hooks", "/"]) {
+      const response = await proxy(arriving(path));
+      expect(response.headers.get("x-middleware-rewrite"), path).toBeNull();
+    }
   });
 
   it("lets no one outside choose the language by sending the header themselves", async () => {
     const response = await proxy(arriving("/hooks", { "x-lw-locale": "de", "x-lw-path": "/" }));
     const handed = (response.headers.get("x-middleware-override-headers") ?? "").split(",");
 
-    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
     expect(handed).not.toContain("x-lw-locale");
     expect(handed).not.toContain("x-lw-path");
     expect(handed).toContain("accept-language");

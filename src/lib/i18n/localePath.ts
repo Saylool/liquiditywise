@@ -16,8 +16,18 @@ import { isLocale, LOCALES, type Locale } from "./locales";
  * the language the way they always have — which the cookie below keeps in step
  * with whatever language the reader arrived in.
  *
- * The proxy turns /tr/hooks into /hooks with the language riding along in a
- * request header; the page never learns it was reached any other way.
+ * The proxy hands the language on in a request header, and next.config's
+ * rewrites then serve /tr/hooks as /hooks; the page never learns it was
+ * reached any other way.
+ *
+ * Not a rewrite in the proxy itself, which is what this first was. That takes
+ * an absolute URL, built from the address the request arrived at — here
+ * localhost:3200, from nginx — while the server knows itself as 127.0.0.1:3200.
+ * Next compares the two origins, finds them different, and forwards the
+ * request as if to another site, over https, to a port that speaks http: a
+ * 500 on every language address in production and none on a laptop, where the
+ * two names agree. A rewrite in the config is a path, and has no origin to get
+ * wrong.
  */
 
 /** Set by the proxy on a request that came in with a language in its address. */
@@ -59,3 +69,7 @@ export const languageAlternates = (path: OpenPage): Record<string, string> => ({
 /** Every language address the proxy answers, in the form its matcher takes. */
 export const localeMatchers = (): string[] =>
   INDEXED_PAGES.map((path) => `/:locale(${LOCALES.join("|")})${path === "/" ? "" : path}`);
+
+/** The same addresses, each served as its page: the rewrites next.config hands to Next. */
+export const localeRewrites = (): { source: string; destination: string }[] =>
+  INDEXED_PAGES.map((path, index) => ({ source: localeMatchers()[index]!, destination: path }));

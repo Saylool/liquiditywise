@@ -129,8 +129,9 @@ const refuse = (retryAfterSeconds: number, locale: Locale): NextResponse => {
  * The page a request is for, the language to render it in, and how to hand it
  * on.
  *
- * An address with a language in it is rewritten to the page without one, and
- * the language travels in a request header the page reads. The headers are
+ * An address with a language in it goes on with the language in a request
+ * header the page reads; next.config's rewrites then serve it as the page
+ * without one (see localePath.ts for why not a rewrite here). The headers are
  * cleared first on every request, so a header sent from outside cannot choose
  * a language or pose as a language address.
  *
@@ -162,7 +163,7 @@ const route = (request: NextRequest) => {
     page,
     locale: addressed.locale,
     pass: () => {
-      const response = NextResponse.rewrite(page, { request: { headers } });
+      const response = NextResponse.next({ request: { headers } });
       if (askedFor(request) !== addressed.locale) {
         response.cookies.set(localeCookie(addressed.locale, process.env.NODE_ENV === "production"));
       }

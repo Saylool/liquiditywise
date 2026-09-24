@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import nextConfig from "../../../next.config";
 import { config } from "../../proxy";
 import { INDEXED_PAGES } from "../site/indexing";
 import { languageAlternates, localeMatchers, localePath, splitLocalePath } from "./localePath";
@@ -44,5 +45,16 @@ describe("each open page's address in each language", () => {
 
   it("has the proxy answer every one of them, however the matcher had to be written", () => {
     for (const matcher of localeMatchers()) expect(config.matcher).toContain(matcher);
+  });
+
+  it("has Next serve every one of them as its page, by path and before the file system", async () => {
+    const rewrites = await nextConfig.rewrites!();
+    const beforeFiles = Array.isArray(rewrites) ? [] : (rewrites.beforeFiles ?? []);
+
+    expect(beforeFiles).toEqual([
+      { source: `/:locale(${LOCALES.join("|")})`, destination: "/" },
+      { source: `/:locale(${LOCALES.join("|")})/hooks`, destination: "/hooks" },
+    ]);
+    expect(beforeFiles.every(({ destination }) => destination.startsWith("/"))).toBe(true);
   });
 });
