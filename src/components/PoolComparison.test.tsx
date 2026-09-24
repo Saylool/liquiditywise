@@ -96,6 +96,14 @@ describe("the comparison page", () => {
     expect(html).not.toContain(formatUsd(40, "en"));
   });
 
+  it("leaves the page's one h1 to the workspace, and heads each tier below its own heading", () => {
+    const html = render([tier(A, 100, analysed(1)), tier(B, 500, analysed(2))]);
+
+    expect(html).not.toContain("<h1");
+    expect(html.match(/<h2/g)).toHaveLength(1);
+    expect(html.match(/<h3/g)).toHaveLength(2);
+  });
+
   it("says there is nothing to set beside a pair with one pool", () => {
     expect(render([tier(A, 500, analysed(1), true)])).toContain(t.compare.onlyOne("USDC / WETH"));
   });

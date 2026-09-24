@@ -82,7 +82,7 @@ export default async function ComparePage({
   if (first.status === "unavailable" || first.data.pool.protocolVersion !== "v3") {
     return page(
       <>
-        <h1 className="text-2xl font-semibold">{t.compare.heading}</h1>
+        <h2 className="text-2xl font-semibold">{t.compare.heading}</h2>
         <p className="text-sm leading-relaxed">{t.compare.unavailable}</p>
         {first.status === "unavailable" ? (
           <p className="text-sm leading-relaxed text-muted">{t.notices.failure[first.notice]}</p>
@@ -102,7 +102,7 @@ export default async function ComparePage({
   if (listed.status === "unavailable") {
     return page(
       <>
-        <h1 className="text-2xl font-semibold">{t.compare.heading}</h1>
+        <h2 className="text-2xl font-semibold">{t.compare.heading}</h2>
         <p className="text-sm leading-relaxed">{t.feeTiers.unavailableHeading}</p>
         <p className="text-sm leading-relaxed text-muted">{t.notices.failure[listed.notice]}</p>
       </>,

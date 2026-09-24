@@ -62,7 +62,7 @@ const TierCard = ({
   return (
     <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
       <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="font-mono text-base font-medium">{formatFeePpm(tier.feePpm, locale)}</h2>
+        <h3 className="font-mono text-base font-medium">{formatFeePpm(tier.feePpm, locale)}</h3>
         {tier.current ? (
           <span className="text-xs uppercase tracking-widest text-muted">{t.feeTiers.thisOne}</span>
         ) : null}
@@ -128,7 +128,8 @@ export function PoolComparison({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold">{t.compare.heading}</h1>
+        {/* The page's one h1 is the workspace's own heading, above this. */}
+        <h2 className="text-2xl font-semibold">{t.compare.heading}</h2>
         <p className="text-sm leading-relaxed">{t.compare.intro(pair)}</p>
         {/* The one footing every card stands on, printed once rather than on each. */}
         <p className="font-mono text-xs text-muted">
