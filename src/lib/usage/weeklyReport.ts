@@ -59,10 +59,12 @@ const tally = (keys: readonly string[]): Map<string, number> => {
   return counts;
 };
 
-const shortPool = (pool: string): string => {
-  const [protocol, id = ""] = pool.split(":");
-  return `${id.slice(0, 6)}…${id.slice(-4)} (${protocol})`;
+const shortId = (pool: string): string => {
+  const id = pool.split(":")[1] ?? "";
+  return `${id.slice(0, 6)}…${id.slice(-4)}`;
 };
+
+const protocolOf = (pool: string): string => pool.split(":")[0] ?? "";
 
 export const weeklyReport = (input: WeekInput): string => {
   const visits = input.lines.flatMap((line) => (line.kind === "visit" ? [{ ...line.visit, at: line.at }] : []));
@@ -91,11 +93,26 @@ export const weeklyReport = (input: WeekInput): string => {
     tally(served.flatMap((visit) => (visit.pool !== null && visit.pool !== "search" ? [visit.pool] : []))),
   );
   if (pools.length > 0) {
-    const named = pools
-      .slice(0, 5)
+    const shown = pools.slice(0, 5);
+    /*
+     * One pair is often several pools — a fee tier each, and v3 beside v4 —
+     * and two lines both reading "USDC/WETH (v3)" would say nothing. Where a
+     * name repeats, the pool's own address tells them apart.
+     */
+    const repeated = tally(shown.flatMap(([pool]) => {
+      const pair = pairs.get(pool);
+      return pair === undefined ? [] : [`${pair}|${protocolOf(pool)}`];
+    }));
+    const named = shown
       .map(([pool, n]) => {
         const pair = pairs.get(pool);
-        return `${pair === undefined ? shortPool(pool) : `${pair} (${pool.split(":")[0]})`} ${number(n)}`;
+        const label =
+          pair === undefined
+            ? `${shortId(pool)} (${protocolOf(pool)})`
+            : (repeated.get(`${pair}|${protocolOf(pool)}`) ?? 0) > 1
+              ? `${pair} (${protocolOf(pool)}, ${shortId(pool)})`
+              : `${pair} (${protocolOf(pool)})`;
+        return `${label} ${number(n)}`;
       })
       .join(", ");
     out.push(`Pools opened: ${number(pools.length)} different. Most: ${named}`);

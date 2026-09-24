@@ -52,6 +52,18 @@ describe("the weekly report", () => {
     expect(text).toContain("Pools opened: 2 different. Most: USDC/WETH (v3) 2, 0xcbcd…62ed (v3) 1");
   });
 
+  it("tells apart two pools of one pair by their address, and only then", () => {
+    const tier = "v3:0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8";
+    const text = report([
+      opened("2026-09-18"),
+      opened("2026-09-18", { pool: tier }),
+      spent("2026-09-18"),
+      at("2026-09-18", spendLine({ model: "gpt-5.6-luna", inputTokens: 1, outputTokens: 1, pool: tier, pair: "USDC/WETH" })),
+    ]);
+
+    expect(text).toContain("Most: USDC/WETH (v3, 0x88e6…5640) 1, USDC/WETH (v3, 0x8ad5…e6d8) 1");
+  });
+
   it("counts searches without saying what was searched, and not as a pool", () => {
     const text = report([opened("2026-09-18", { pool: "search" })]);
 
