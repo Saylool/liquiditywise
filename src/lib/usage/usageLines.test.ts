@@ -49,8 +49,7 @@ describe("what a visit line records", () => {
     expect(visit(`/v4?id=${ADDRESS}`)?.pool).toBeNull();
   });
 
-  it("does not count a page fetched ahead of a click", () => {
-    expect(visit("/pool", { "user-agent": BROWSER, "next-router-prefetch": "1" })).toBeNull();
+  it("does not count a page the browser loaded ahead of a click", () => {
     expect(visit("/pool", { "user-agent": BROWSER, purpose: "prefetch" })).toBeNull();
     expect(visit("/pool", { "user-agent": BROWSER, "sec-purpose": "prefetch;prerender" })).toBeNull();
   });

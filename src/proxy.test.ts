@@ -197,10 +197,10 @@ describe("counting visits for the weekly report", () => {
     ]);
   });
 
-  it("does not count a page fetched ahead of a click", async () => {
+  it("does not count a page the browser loaded ahead of a click", async () => {
     const lines = visits();
 
-    await proxy(browsing("/", "198.51.100.204", { "next-router-prefetch": "1" }));
+    await proxy(browsing("/", "198.51.100.204", { "sec-purpose": "prefetch" }));
 
     expect(lines()).toEqual([]);
   });

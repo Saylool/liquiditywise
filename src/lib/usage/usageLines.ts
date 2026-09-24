@@ -69,8 +69,14 @@ const poolOf = (page: Page, parameters: URLSearchParams): string | null => {
 };
 
 /**
- * A visit, or `null` for a request that is not one: another path, or the
- * framework fetching a page ahead of a click that may never come.
+ * A visit, or `null` for a request that is not one: another path, or a browser
+ * loading a page speculatively ahead of a click that may never come.
+ *
+ * The router's own prefetches cannot be told apart here — the framework strips
+ * `next-router-prefetch` before the proxy sees a request — so none are made:
+ * no link in the application prefetches, and linksNeverPrefetch.test.ts keeps
+ * it that way. What does reach the proxy is the browser's own speculation,
+ * which says so in `Purpose` or `Sec-Purpose`.
  */
 export const visitFrom = (
   url: URL,
@@ -80,7 +86,7 @@ export const visitFrom = (
 ): Visit | null => {
   if (!isPage(url.pathname)) return null;
   const purpose = `${headers.get("purpose") ?? ""} ${headers.get("sec-purpose") ?? ""}`.toLowerCase();
-  if (headers.has("next-router-prefetch") || purpose.includes("prefetch")) return null;
+  if (purpose.includes("prefetch")) return null;
 
   return {
     page: url.pathname,

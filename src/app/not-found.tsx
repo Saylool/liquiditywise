@@ -24,6 +24,7 @@ export default async function NotFound() {
         <p className="max-w-2xl text-sm leading-relaxed text-muted">{t.notFound.body}</p>
         <Link
           href="/pool"
+          prefetch={false}
           className="w-fit rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium"
         >
           {t.notFound.search}

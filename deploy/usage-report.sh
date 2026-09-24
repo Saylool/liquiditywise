@@ -2,8 +2,9 @@
 # The week's use of the site, sent through Server Watch. Installed by setup.sh
 # as /usr/local/bin/liquiditywise-usage and run by cron on Monday mornings.
 #
-#   liquiditywise-usage            the last seven full days, to Telegram
-#   liquiditywise-usage --print    the same, printed here instead
+#   liquiditywise-usage                    the last seven full days, to Telegram
+#   liquiditywise-usage --print            the same, printed here instead
+#   liquiditywise-usage --so-far [--print] the seven days up to this moment
 #
 # Counted from the application's own journal: the visit lines the proxy writes
 # and the spend lines the explanation writes (src/lib/usage/usageLines.ts says
@@ -18,10 +19,23 @@ setting() {
   grep -E "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true
 }
 
-# Seven whole days, UTC, ending with yesterday.
+print=0; so_far=0
+for flag in "$@"; do
+  case "$flag" in
+    --print) print=1 ;;
+    --so-far) so_far=1 ;;
+    *) echo "unknown option $flag" >&2; exit 1 ;;
+  esac
+done
+
+# Seven whole days, UTC, ending with yesterday — or, asked mid-week, the seven
+# days ending now.
 today="$(date -u +%F)"
-from="$(date -u -d '7 days ago' +%F)"
-to="$(date -u -d 'yesterday' +%F)"
+if [ "$so_far" = 1 ]; then
+  from="$(date -u -d '6 days ago' +%F)"; to="$today"; until="now"
+else
+  from="$(date -u -d '7 days ago' +%F)"; to="$(date -u -d 'yesterday' +%F)"; until="$today 00:00:00 UTC"
+fi
 
 # Chats following an address now. The password, if any, goes to redis-cli in
 # its environment, never as an argument.
@@ -31,7 +45,7 @@ case "$redis_url" in redis://:*@*) redis_password="${redis_url#redis://:}"; redi
 database="${redis_url##*/}"; case "$database" in ''|*[!0-9]*) database=0 ;; esac
 links="$(REDISCLI_AUTH="$redis_password" redis-cli -n "$database" SCARD liquiditywise:telegram:watches 2>/dev/null | tr -dc '0-9')"
 
-message="$(journalctl -u liquiditywise --since "$from 00:00:00 UTC" --until "$today 00:00:00 UTC" \
+message="$(journalctl -u liquiditywise --since "$from 00:00:00 UTC" --until "$until" \
     --no-pager -o short-iso --utc 2>/dev/null |
   TELEGRAM_LINKS="$links" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
     "$APP_DIR/deploy/usage-report.mts" --from "$from" --to "$to")" || {
@@ -39,7 +53,7 @@ message="$(journalctl -u liquiditywise --since "$from 00:00:00 UTC" --until "$to
   exit 1
 }
 
-if [ "${1:-}" = "--print" ]; then
+if [ "$print" = 1 ]; then
   printf '%s\n' "$message"
   exit 0
 fi

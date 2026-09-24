@@ -22,7 +22,7 @@ export function SiteHeader({ locale, t }: { locale: Locale; t: Dictionary }) {
             * "Uniswap Advisor" — invisible on screen, and the first thing a
             * screen reader announced on every page.
             */}
-          <Link href="/" className="brand" aria-label="LiquidityWise">
+          <Link href="/" prefetch={false} className="brand" aria-label="LiquidityWise">
             <BrandMark />
             <span>
               liquidity<span className="brand-subtitle">wise</span>
@@ -48,7 +48,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   return (
     <footer className="site-footer">
       <div className="footer-top">
-        <Link href="/" className="brand">
+        <Link href="/" prefetch={false} className="brand">
           <BrandMark />
           <span>
             liquidity<span className="brand-subtitle">wise</span>

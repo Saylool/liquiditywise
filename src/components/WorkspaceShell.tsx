@@ -20,7 +20,7 @@ export function WorkspaceShell({
     <main id="main" tabIndex={-1} className="workspace-main">
       <div className="workspace-heading">
         <div>
-          <Link href="/" className="eyebrow workspace-back">
+          <Link href="/" prefetch={false} className="eyebrow workspace-back">
             {t.pool.back}
           </Link>
           <h1>{copy[section]}</h1>
