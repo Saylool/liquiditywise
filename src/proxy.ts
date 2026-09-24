@@ -4,11 +4,13 @@ import { getDictionary } from "./lib/i18n/dictionaries";
 import { LOCALE_COOKIE, type Locale, resolveLocale } from "./lib/i18n/locales";
 import { spendsUpstreamQuota } from "./lib/ratelimit/chargeableRequest";
 import { clientKeyFromHeaders } from "./lib/ratelimit/clientKey";
+import { logUsage } from "./lib/observability/serverDiagnostics";
 import { checkSharedPoolAnalysisLimit } from "./lib/ratelimit/poolAnalysisSharedLimiter";
 import {
   POOL_ANALYSIS_REQUEST_LIMIT,
   poolAnalysisRateLimiter,
 } from "./lib/ratelimit/poolAnalysisRateLimiter";
+import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
 
 /*
  * Rate limits the one route that spends third-party API quota.
@@ -41,8 +43,13 @@ import {
  * seven batches of contract calls — so leaving it outside this would have made
  * the cheaper page the guarded one.
  */
+/*
+ * Every page, not only the two that spend quota: this is also where a visit is
+ * counted for the weekly report, and a page is counted here once, before it
+ * renders, however it was reached. Held to usageLines.ts's list by a test.
+ */
 export const config = {
-  matcher: ["/pool", "/holdings", "/v4"],
+  matcher: ["/", "/pool", "/v4", "/holdings", "/hooks"],
 };
 
 /**
@@ -101,8 +108,21 @@ const refuse = (request: NextRequest, retryAfterSeconds: number): NextResponse =
   });
 };
 
+/** One line for the weekly report: which page, which pool, which language — never who. */
+const recordVisit = (request: NextRequest, outcome: Outcome): void => {
+  const locale = resolveLocale({
+    cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
+    acceptLanguage: request.headers.get("accept-language"),
+  });
+  const visit = visitFrom(new URL(request.url), request.headers, locale, outcome);
+  if (visit !== null) logUsage(visitLine(visit));
+};
+
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  if (!spendsUpstreamQuota(request.nextUrl.searchParams)) return NextResponse.next();
+  if (!spendsUpstreamQuota(request.nextUrl.searchParams)) {
+    recordVisit(request, "served");
+    return NextResponse.next();
+  }
 
   const clientKey = clientKeyFromHeaders(request.headers);
 
@@ -116,7 +136,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
    * page render.
    */
   const local = poolAnalysisRateLimiter.check(clientKey);
-  if (!local.allowed) return refuse(request, local.retryAfterSeconds);
+  if (!local.allowed) {
+    recordVisit(request, "refused");
+    return refuse(request, local.retryAfterSeconds);
+  }
 
   /*
    * `null` from the shared counter means either that there is none or that the
@@ -125,7 +148,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
    * store was possible — a degradation, not an opening.
    */
   const shared = await checkSharedPoolAnalysisLimit({ clientKey });
-  if (shared !== null && !shared.allowed) return refuse(request, shared.retryAfterSeconds);
+  if (shared !== null && !shared.allowed) {
+    recordVisit(request, "refused");
+    return refuse(request, shared.retryAfterSeconds);
+  }
 
+  recordVisit(request, "served");
   return NextResponse.next();
 }

@@ -133,3 +133,75 @@ describe("proxy", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+describe("counting visits for the weekly report", () => {
+  const BROWSER = "Mozilla/5.0 (Macintosh) Safari/605.1.15";
+  const visits = () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    return () => log.mock.calls.map(([line]) => String(line)).filter((line) => line.startsWith("[visit]"));
+  };
+  const browsing = (path: string, client: string, extra: Record<string, string> = {}) =>
+    new NextRequest(`http://localhost${path}`, {
+      headers: { "x-forwarded-for": client, "user-agent": BROWSER, "accept-language": "tr-TR,tr;q=0.9", ...extra },
+    });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("watches every page the report names", async () => {
+    const { PAGES } = await import("./lib/usage/usageLines");
+    const { config } = await import("./proxy");
+
+    expect([...config.matcher].sort()).toEqual([...PAGES].sort());
+  });
+
+  it("counts a page once, with its pool and the reader's language", async () => {
+    const lines = visits();
+
+    await proxy(browsing(`/pool?address=${POOL}`, "198.51.100.201"));
+
+    expect(lines()).toEqual([`[visit] page=/pool pool=v3:${POOL} locale=tr bot=0 outcome=served`]);
+  });
+
+  it("counts a request the limit turned away as turned away", async () => {
+    const client = "198.51.100.202";
+    for (let index = 0; index < POOL_ANALYSIS_REQUEST_LIMIT; index += 1) {
+      await proxy(browsing(`/pool?address=${POOL}`, client));
+    }
+    const lines = visits();
+
+    const response = await proxy(browsing(`/pool?address=${POOL}`, client));
+
+    expect(response.status).toBe(429);
+    expect(lines()).toEqual([`[visit] page=/pool pool=v3:${POOL} locale=tr bot=0 outcome=refused`]);
+  });
+
+  it("never writes down the wallet a holdings page was opened for", async () => {
+    const lines = visits();
+
+    await proxy(browsing(`/holdings?address=${POOL}`, "198.51.100.203"));
+
+    expect(lines()).toEqual(["[visit] page=/holdings pool=- locale=tr bot=0 outcome=served"]);
+  });
+
+  it("counts a page that spends nothing upstream, too", async () => {
+    const lines = visits();
+
+    await proxy(browsing("/", "198.51.100.205"));
+    await proxy(browsing("/hooks", "198.51.100.205", { "user-agent": "Googlebot/2.1" }));
+
+    expect(lines()).toEqual([
+      "[visit] page=/ pool=- locale=tr bot=0 outcome=served",
+      "[visit] page=/hooks pool=- locale=tr bot=1 outcome=served",
+    ]);
+  });
+
+  it("does not count a page fetched ahead of a click", async () => {
+    const lines = visits();
+
+    await proxy(browsing("/", "198.51.100.204", { "next-router-prefetch": "1" }));
+
+    expect(lines()).toEqual([]);
+  });
+});

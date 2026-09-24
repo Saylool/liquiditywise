@@ -35,14 +35,25 @@ import type { FetchLike } from "../uniswap/v3SubgraphTransport";
  * makes the channel worth reading: a log where an ordinary mistyped address looks
  * the same as an expired API key teaches its reader to skip it.
  */
-export type DiagnosticLevel = "warn" | "error";
+export type DiagnosticLevel = "info" | "warn" | "error";
 
 /** Where a diagnostic goes. Injected so tests observe it instead of printing. */
 export type DiagnosticLog = (level: DiagnosticLevel, message: string) => void;
 
 const consoleLog: DiagnosticLog = (level, message) => {
-  if (level === "warn") console.warn(message);
+  if (level === "info") console.log(message);
+  else if (level === "warn") console.warn(message);
   else console.error(message);
+};
+
+/**
+ * A line about what the site did rather than what went wrong — a page opened,
+ * an explanation paid for — for the weekly report to count. Written whole by
+ * `src/lib/usage/usageLines.ts`, which is also what reads it back, and holding
+ * nothing about who.
+ */
+export const logUsage = (line: string, log: DiagnosticLog = consoleLog): void => {
+  log("info", line);
 };
 
 /**

@@ -10,7 +10,8 @@ import type {
 
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
-import { logDetail, logUnavailable } from "../observability/serverDiagnostics";
+import { logDetail, logUnavailable, logUsage } from "../observability/serverDiagnostics";
+import { spendLine } from "../usage/usageLines";
 import {
   createInterpretationCache,
   interpretationCacheKey,
@@ -31,6 +32,7 @@ import {
   settledSectionGates,
 } from "./sectionGates";
 import type { InterpretationOutcome } from "./rangeInterpretationAdapter";
+import { observeUsage, usageOf, type TokenUsage } from "./usageObserver";
 
 /*
  * The server-only boundary for the explanation.
@@ -96,6 +98,23 @@ export type RangeInterpretationRequest = {
  * configuration change takes effect without a restart and no stale credential
  * is held in a closure.
  */
+/**
+ * Records what one explanation cost, for the weekly report. Written whether
+ * or not the answer then passed its checks: the tokens were spent either way.
+ */
+const recordSpend = (analysis: PoolRangeAnalysis, model: string, usage: TokenUsage): void => {
+  const pool = analysis.history.pool;
+  logUsage(
+    spendLine({
+      model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      pool: `${pool.protocolVersion}:${pool.id.toLowerCase()}`,
+      pair: `${analysis.pool.token0.symbol}/${analysis.pool.token1.symbol}`,
+    }),
+  );
+};
+
 export const getRangeInterpretation = async (
   request: RangeInterpretationRequest,
 ): Promise<InterpretationOutcome<WrittenInterpretation>> => {
@@ -138,7 +157,13 @@ export const getRangeInterpretation = async (
         apiKey,
         timeout: INTERPRETATION_TIMEOUT_MS,
         maxRetries: INTERPRETATION_MAX_RETRIES,
-      }).responses.create(params as unknown as ResponseCreateParamsNonStreaming),
+      })
+        .responses.create(params as unknown as ResponseCreateParamsNonStreaming)
+        .then((response) => {
+          const usage = usageOf({ response });
+          if (usage !== null) recordSpend(request.analysis, model, usage);
+          return response;
+        }),
   });
 
   /*
@@ -221,13 +246,16 @@ export const streamRangeInterpretation = (
      * parameter type, once, where it can be read.
      */
     createStream: async (params) =>
-      (await new OpenAI({
-        apiKey,
-        timeout: INTERPRETATION_TIMEOUT_MS,
-        maxRetries: INTERPRETATION_MAX_RETRIES,
-      }).responses.create(
-        params as unknown as ResponseCreateParamsStreaming,
-      )) as unknown as AsyncIterable<InterpretationStreamEvent>,
+      observeUsage(
+        (await new OpenAI({
+          apiKey,
+          timeout: INTERPRETATION_TIMEOUT_MS,
+          maxRetries: INTERPRETATION_MAX_RETRIES,
+        }).responses.create(
+          params as unknown as ResponseCreateParamsStreaming,
+        )) as unknown as AsyncIterable<InterpretationStreamEvent>,
+        (usage) => recordSpend(request.analysis, model, usage),
+      ),
   })
     .then((outcome) => {
       if (outcome.status === "success") cache.set(key, outcome.data);

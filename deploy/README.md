@@ -376,6 +376,10 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
 - `cloudflare-only.sh`, `cloudflare_only.py` — let only Cloudflare's ranges reach the
   HTTPS block, so CF-Connecting-IP (what the rate limit counts) cannot be forged
   by connecting to the machine directly. Weekly from cron.
+- `usage-report.sh`, `usage-report.mts` — the Monday report of the week's use,
+  through Server Watch: pages, pools, languages, explanations and what they cost.
+  Counted from the journal lines in `src/lib/usage/usageLines.ts`, which record
+  no IP address, browser, search text or holdings address.
 - `backup.sh` — the daily encrypted backup of the Telegram links, described above.
 - `store-backup.mts` — copies the links out of Redis and back, under plain Node.
 - `set-backup-secret.sh` — makes the secret the backup is sent with.

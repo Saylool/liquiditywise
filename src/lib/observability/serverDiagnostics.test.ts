@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DataResult } from "../../schemas";
-import { loggingFetch, logUnavailable } from "./serverDiagnostics";
+import { loggingFetch, logUnavailable, logUsage } from "./serverDiagnostics";
 
 /*
  * The secrets these tests hunt for. Both are shaped like the real thing: the RPC
@@ -22,7 +22,7 @@ const capture = () => {
   return {
     entries,
     lines,
-    log: (level: "warn" | "error", message: string) => {
+    log: (level: "info" | "warn" | "error", message: string) => {
       entries.push({ level, message });
       lines.push(message);
     },
@@ -215,5 +215,15 @@ describe("logUnavailable", () => {
     }, log);
 
     expect(lines).toEqual([]);
+  });
+});
+
+describe("logUsage", () => {
+  it("writes the line whole, as a note rather than a fault", () => {
+    const { entries, log } = capture();
+
+    logUsage("[visit] page=/ pool=- locale=en bot=0 outcome=served", log);
+
+    expect(entries).toEqual([{ level: "info", message: "[visit] page=/ pool=- locale=en bot=0 outcome=served" }]);
   });
 });

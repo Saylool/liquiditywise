@@ -93,10 +93,13 @@ systemctl restart liquiditywise
 install -m 755 "$APP_DIR/deploy/telegram-check.sh" /usr/local/bin/liquiditywise-telegram-check
 install -m 755 "$APP_DIR/deploy/health-check.sh" /usr/local/bin/liquiditywise-health
 install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/liquiditywise-backup
+install -m 755 "$APP_DIR/deploy/usage-report.sh" /usr/local/bin/liquiditywise-usage
 install -d -m 755 /var/lib/liquiditywise
 {
   echo "*/5 * * * * root APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check"
   echo "*/5 * * * * root APP_PORT=$APP_PORT DOMAIN=$DOMAIN /usr/local/bin/liquiditywise-health"
+  # The week's use of the site, through Server Watch: Monday 06:00 UTC, 09:00 in Turkey.
+  echo "0 6 * * 1 root PATH=$(dirname "$(command -v node)"):/usr/bin:/bin /usr/local/bin/liquiditywise-usage > /dev/null"
   # Cloudflare's address list, weekly: the site answers nothing else.
   echo "23 4 * * 1 root /bin/bash $APP_DIR/deploy/cloudflare-only.sh > /dev/null"
   # Off the five-minute marks, and quiet until set-backup-secret.sh has run.
