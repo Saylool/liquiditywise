@@ -54,6 +54,7 @@ describe("each open page's address in each language", () => {
     expect(beforeFiles).toEqual([
       { source: `/:locale(${LOCALES.join("|")})`, destination: "/" },
       { source: `/:locale(${LOCALES.join("|")})/hooks`, destination: "/hooks" },
+      { source: `/:locale(${LOCALES.join("|")})/learn`, destination: "/learn" },
     ]);
     expect(beforeFiles.every(({ destination }) => destination.startsWith("/"))).toBe(true);
   });

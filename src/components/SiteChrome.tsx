@@ -3,6 +3,7 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
 import { getInterfaceCopy } from "../lib/i18n/interface";
+import { getLearnCopy } from "../lib/learn/briefs";
 import { BrandMark, ArrowIcon } from "./BrandMark";
 import { PreferenceBar } from "./PreferenceBar";
 import { SiteNavigation } from "./SiteNavigation";
@@ -57,10 +58,15 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </span>
         </Link>
         <p>{copy.closingTitle}</p>
-        <Link href="/pool" prefetch={false} className="text-link">
-          {copy.pools}
-          <ArrowIcon />
-        </Link>
+        <div className="footer-links">
+          <Link href={localePath(locale, "/learn")} prefetch={false} className="text-link">
+            {getLearnCopy(locale).link}
+          </Link>
+          <Link href="/pool" prefetch={false} className="text-link">
+            {copy.pools}
+            <ArrowIcon />
+          </Link>
+        </div>
       </div>
       <div className="footer-bottom">
         <p>{copy.independence}</p>

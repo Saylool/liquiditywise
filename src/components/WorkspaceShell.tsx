@@ -5,17 +5,25 @@ import type { Locale } from "../lib/i18n/locales";
 import { getInterfaceCopy } from "../lib/i18n/interface";
 import { EducationalDisclaimer } from "./EducationalDisclaimer";
 
+/**
+ * A page's heading is its navigation item's name, or — for a page the
+ * navigation does not list — a heading of its own.
+ */
+type Heading =
+  | { readonly section: "pools" | "positions" | "hooks"; readonly heading?: never }
+  | { readonly section?: never; readonly heading: string };
+
 export function WorkspaceShell({
   locale,
   t,
   section,
+  heading,
   children,
 }: {
   locale: Locale;
   t: Dictionary;
-  section: "pools" | "positions" | "hooks";
   children: React.ReactNode;
-}) {
+} & Heading) {
   const copy = getInterfaceCopy(locale);
   return (
     <main id="main" tabIndex={-1} className="workspace-main">
@@ -24,7 +32,7 @@ export function WorkspaceShell({
           <Link href={localePath(locale, "/")} prefetch={false} className="eyebrow workspace-back">
             {t.pool.back}
           </Link>
-          <h1>{copy[section]}</h1>
+          <h1>{section === undefined ? heading : copy[section]}</h1>
         </div>
         <span className="network-chip">
           <i className="status-dot" />

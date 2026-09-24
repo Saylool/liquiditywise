@@ -919,8 +919,11 @@ main:focus {
   font-size: 27px;
   color: var(--muted);
 }
-.footer-top > .text-link {
+.footer-links {
   margin-inline-start: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
 }
 .footer-bottom {
   display: flex;
@@ -1391,7 +1394,7 @@ main:focus {
     width: 100%;
     font-size: 29px;
   }
-  .footer-top > .text-link {
+  .footer-links > .text-link {
     font-size: 12px;
   }
   .footer-bottom {

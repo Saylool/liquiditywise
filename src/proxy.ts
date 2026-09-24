@@ -62,8 +62,10 @@ export const config = {
     "/compare",
     "/holdings",
     "/hooks",
+    "/learn",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
+    "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn",
   ],
 };
 

@@ -8,6 +8,7 @@ import { RangeExplorer } from "@/components/RangeExplorer";
 import { WalletConnect } from "@/components/WalletConnect";
 import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { localePath } from "@/lib/i18n/localePath";
+import { getLearnCopy } from "@/lib/learn/briefs";
 import type { Metadata } from "next";
 
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -20,6 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   const { locale, t } = await getRequestDictionary();
   const copy = getInterfaceCopy(locale);
+  const learn = getLearnCopy(locale);
   return (
     <main id="main" tabIndex={-1} className="landing">
       <PageMotion />
@@ -67,6 +69,9 @@ export default async function Home() {
           <Link href="/pool" prefetch={false} className="text-link">
             {copy.pools}
             <ArrowIcon />
+          </Link>
+          <Link href={localePath(locale, "/learn")} prefetch={false} className="text-link ms-8">
+            {learn.link}
           </Link>
         </div>
         <RangeExplorer

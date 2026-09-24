@@ -30,6 +30,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/compare": "tiers side by side",
   "/holdings": "holdings",
   "/hooks": "hooks",
+  "/learn": "quick guide",
 };
 
 const number = (value: number): string => value.toLocaleString("en-US");

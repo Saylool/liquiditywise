@@ -41,6 +41,12 @@ describe("which pages a search engine may read", () => {
     }
   });
 
+  it("has every open page name its own address in every language", () => {
+    for (const { route, source } of pages.filter(({ source }) => !closedToCrawlers(source))) {
+      expect(source, route).toContain(`getOpenPageAlternates("${route}")`);
+    }
+  });
+
   it("tells crawlers the same thing in robots.txt, and points at the sitemap", () => {
     const rules = robots().rules as { disallow: string[] };
 

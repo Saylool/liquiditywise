@@ -14,7 +14,7 @@
  * No runtime imports: deploy/usage-report.mts runs this under plain Node.
  */
 
-export const PAGES = ["/", "/pool", "/v4", "/compare", "/holdings", "/hooks"] as const;
+export const PAGES = ["/", "/pool", "/v4", "/compare", "/holdings", "/hooks", "/learn"] as const;
 export type Page = (typeof PAGES)[number];
 
 export type Outcome = "served" | "refused";
