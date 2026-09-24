@@ -1,0 +1,60 @@
+# Every check a change has to pass before it is deployed, run on every push
+# and pull request — so a skipped step on somebody's machine is caught here
+# rather than on the server.
+#
+# No secrets: nothing here reaches The Graph, an RPC endpoint, OpenAI or
+# Telegram. The tests fake every one of them, and the build reads its
+# settings at run time, not at build time.
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The server's version, so a check that passes here passes there.
+          node-version: 26
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Tests
+        run: npx vitest run
+
+      # The one test that opens a real socket, which the development sandbox
+      # cannot; a CI runner can.
+      - name: Redis round trip over a real socket
+        run: npx vitest run --config vitest.integration.mts
+
+      - name: Deploy scripts parse
+        run: for script in deploy/*.sh; do bash -n "$script" || exit 1; done
+
+      - name: Known vulnerabilities in what ships
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build
+        run: npm run build
