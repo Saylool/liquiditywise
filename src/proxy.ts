@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getDictionary } from "./lib/i18n/dictionaries";
-import { LOCALE_COOKIE, type Locale, resolveLocale } from "./lib/i18n/locales";
+import { LOCALE_HEADER, PATH_HEADER, splitLocalePath } from "./lib/i18n/localePath";
+import { LOCALE_COOKIE, localeCookie, type Locale, resolveLocale } from "./lib/i18n/locales";
 import { spendsUpstreamQuota } from "./lib/ratelimit/chargeableRequest";
 import { clientKeyFromHeaders } from "./lib/ratelimit/clientKey";
 import { logUsage } from "./lib/observability/serverDiagnostics";
@@ -47,9 +48,23 @@ import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
  * Every page, not only the two that spend quota: this is also where a visit is
  * counted for the weekly report, and a page is counted here once, before it
  * renders, however it was reached. Held to usageLines.ts's list by a test.
+ *
+ * And every open page's language addresses, which exist only because this
+ * turns them into the page itself (see localePath.ts). Written out rather than
+ * built from LOCALES because Next reads this object without running the file;
+ * a test holds the two to each other.
  */
 export const config = {
-  matcher: ["/", "/pool", "/v4", "/compare", "/holdings", "/hooks"],
+  matcher: [
+    "/",
+    "/pool",
+    "/v4",
+    "/compare",
+    "/holdings",
+    "/hooks",
+    "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
+    "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
+  ],
 };
 
 /**
@@ -91,12 +106,14 @@ const tooManyRequestsPage = (retryAfterSeconds: number, locale: Locale): string 
 </html>
 `;
 
-const refuse = (request: NextRequest, retryAfterSeconds: number): NextResponse => {
-  const locale = resolveLocale({
+/** What the reader's cookie and browser ask for, ignoring any language in the address. */
+const askedFor = (request: NextRequest): Locale =>
+  resolveLocale({
     cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
     acceptLanguage: request.headers.get("accept-language"),
   });
 
+const refuse = (retryAfterSeconds: number, locale: Locale): NextResponse => {
   return new NextResponse(tooManyRequestsPage(retryAfterSeconds, locale), {
     status: 429,
     headers: {
@@ -108,20 +125,68 @@ const refuse = (request: NextRequest, retryAfterSeconds: number): NextResponse =
   });
 };
 
+/**
+ * The page a request is for, the language to render it in, and how to hand it
+ * on.
+ *
+ * An address with a language in it is rewritten to the page without one, and
+ * the language travels in a request header the page reads. The headers are
+ * cleared first on every request, so a header sent from outside cannot choose
+ * a language or pose as a language address.
+ *
+ * Arriving by a language address also writes that language into the cookie
+ * when it differs from what the reader would otherwise get: someone who found
+ * the Turkish page from a search and then looks up a pool should get the pool
+ * in Turkish, and the pool pages only have the cookie to go on.
+ */
+const route = (request: NextRequest) => {
+  const addressed = splitLocalePath(request.nextUrl.pathname);
+  const headers = new Headers(request.headers);
+  headers.delete(LOCALE_HEADER);
+  headers.delete(PATH_HEADER);
+
+  if (addressed === null) {
+    return {
+      page: request.nextUrl,
+      locale: askedFor(request),
+      pass: () => NextResponse.next({ request: { headers } }),
+    };
+  }
+
+  headers.set(LOCALE_HEADER, addressed.locale);
+  headers.set(PATH_HEADER, addressed.path);
+  const page = request.nextUrl.clone();
+  page.pathname = addressed.path;
+
+  return {
+    page,
+    locale: addressed.locale,
+    pass: () => {
+      const response = NextResponse.rewrite(page, { request: { headers } });
+      if (askedFor(request) !== addressed.locale) {
+        response.cookies.set(localeCookie(addressed.locale, process.env.NODE_ENV === "production"));
+      }
+      return response;
+    },
+  };
+};
+
 /** One line for the weekly report: which page, which pool, which language — never who. */
-const recordVisit = (request: NextRequest, outcome: Outcome): void => {
-  const locale = resolveLocale({
-    cookieValue: request.cookies.get(LOCALE_COOKIE)?.value,
-    acceptLanguage: request.headers.get("accept-language"),
-  });
-  const visit = visitFrom(new URL(request.url), request.headers, locale, outcome);
+const recordVisit = (
+  request: NextRequest,
+  routed: { readonly page: URL; readonly locale: Locale },
+  outcome: Outcome,
+): void => {
+  const visit = visitFrom(routed.page, request.headers, routed.locale, outcome);
   if (visit !== null) logUsage(visitLine(visit));
 };
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  if (!spendsUpstreamQuota(request.nextUrl.searchParams)) {
-    recordVisit(request, "served");
-    return NextResponse.next();
+  const routed = route(request);
+
+  if (!spendsUpstreamQuota(routed.page.searchParams)) {
+    recordVisit(request, routed, "served");
+    return routed.pass();
   }
 
   const clientKey = clientKeyFromHeaders(request.headers);
@@ -137,8 +202,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
    */
   const local = poolAnalysisRateLimiter.check(clientKey);
   if (!local.allowed) {
-    recordVisit(request, "refused");
-    return refuse(request, local.retryAfterSeconds);
+    recordVisit(request, routed, "refused");
+    return refuse(local.retryAfterSeconds, routed.locale);
   }
 
   /*
@@ -149,10 +214,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
    */
   const shared = await checkSharedPoolAnalysisLimit({ clientKey });
   if (shared !== null && !shared.allowed) {
-    recordVisit(request, "refused");
-    return refuse(request, shared.retryAfterSeconds);
+    recordVisit(request, routed, "refused");
+    return refuse(shared.retryAfterSeconds, routed.locale);
   }
 
-  recordVisit(request, "served");
-  return NextResponse.next();
+  recordVisit(request, routed, "served");
+  return routed.pass();
 }

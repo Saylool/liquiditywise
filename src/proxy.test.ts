@@ -152,8 +152,9 @@ describe("counting visits for the weekly report", () => {
   it("watches every page the report names", async () => {
     const { PAGES } = await import("./lib/usage/usageLines");
     const { config } = await import("./proxy");
+    const { localeMatchers } = await import("./lib/i18n/localePath");
 
-    expect([...config.matcher].sort()).toEqual([...PAGES].sort());
+    expect([...config.matcher].sort()).toEqual([...PAGES, ...localeMatchers()].sort());
   });
 
   it("counts a page once, with its pool and the reader's language", async () => {
@@ -197,11 +198,96 @@ describe("counting visits for the weekly report", () => {
     ]);
   });
 
+  it("counts a page reached by its language's address as that page, in that language", async () => {
+    const lines = visits();
+
+    await proxy(browsing("/de/hooks", "198.51.100.206"));
+    await proxy(browsing("/zh-Hant", "198.51.100.206"));
+
+    expect(lines()).toEqual([
+      "[visit] page=/hooks pool=- locale=de bot=0 outcome=served",
+      "[visit] page=/ pool=- locale=zh-Hant bot=0 outcome=served",
+    ]);
+  });
+
   it("does not count a page the browser loaded ahead of a click", async () => {
     const lines = visits();
 
     await proxy(browsing("/", "198.51.100.204", { "sec-purpose": "prefetch" }));
 
     expect(lines()).toEqual([]);
+  });
+});
+
+describe("a page reached by its language's own address", () => {
+  const arriving = (path: string, extra: Record<string, string> = {}) =>
+    new NextRequest(`http://localhost${path}`, {
+      headers: { "x-forwarded-for": "198.51.100.230", "accept-language": "tr-TR,tr;q=0.9", ...extra },
+    });
+  const handedOn = (response: Response, name: string) => response.headers.get(`x-middleware-request-${name}`);
+
+  it("is served as the page itself, with the language handed to it", async () => {
+    const response = await proxy(arriving("/de/hooks?x=1"));
+
+    expect(new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname).toBe("/hooks");
+    expect(new URL(response.headers.get("x-middleware-rewrite") ?? "").search).toBe("?x=1");
+    expect(handedOn(response, "x-lw-locale")).toBe("de");
+    expect(handedOn(response, "x-lw-path")).toBe("/hooks");
+  });
+
+  it("serves the front page from the language alone", async () => {
+    const response = await proxy(arriving("/zh-Hant"));
+
+    expect(new URL(response.headers.get("x-middleware-rewrite") ?? "").pathname).toBe("/");
+    expect(handedOn(response, "x-lw-locale")).toBe("zh-Hant");
+    expect(handedOn(response, "x-lw-path")).toBe("/");
+  });
+
+  it("lets no one outside choose the language by sending the header themselves", async () => {
+    const response = await proxy(arriving("/hooks", { "x-lw-locale": "de", "x-lw-path": "/" }));
+    const handed = (response.headers.get("x-middleware-override-headers") ?? "").split(",");
+
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(handed).not.toContain("x-lw-locale");
+    expect(handed).not.toContain("x-lw-path");
+    expect(handed).toContain("accept-language");
+  });
+
+  it("replaces a header sent from outside with the address's own language", async () => {
+    const response = await proxy(arriving("/es", { "x-lw-locale": "ru" }));
+
+    expect(handedOn(response, "x-lw-locale")).toBe("es");
+  });
+
+  it("remembers the language for the pool pages when it is not what the reader would get anyway", async () => {
+    const german = await proxy(arriving("/de"));
+    const turkish = await proxy(arriving("/tr"));
+    const chosen = await proxy(arriving("/en", { cookie: "locale=en" }));
+
+    expect(german.cookies.get("locale")?.value).toBe("de");
+    expect(german.cookies.get("locale")?.httpOnly).toBe(true);
+    expect(german.cookies.get("locale")?.path).toBe("/");
+    expect(turkish.cookies.get("locale")).toBeUndefined();
+    expect(chosen.cookies.get("locale")).toBeUndefined();
+  });
+
+  it("writes no language cookie for an address without a language", async () => {
+    const response = await proxy(arriving("/hooks", { cookie: "locale=de" }));
+
+    expect(response.cookies.get("locale")).toBeUndefined();
+  });
+
+  it("turns a refused visitor away in the address's language", async () => {
+    const client = "198.51.100.231";
+    const asking = () =>
+      new NextRequest(`http://localhost/de?address=${POOL}`, {
+        headers: { "x-forwarded-for": client, "accept-language": "tr-TR" },
+      });
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) await proxy(asking());
+
+    const refused = await proxy(asking());
+
+    expect(refused.status).toBe(429);
+    expect(await refused.text()).toContain('lang="de"');
   });
 });

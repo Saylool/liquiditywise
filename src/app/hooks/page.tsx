@@ -4,7 +4,7 @@ import { HookDirectory } from "@/components/HookDirectory";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getHookDirectory } from "@/lib/advisor/getHookDirectory";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
-import { getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
 
 /*
  * Every hook the v4 net saw this week, in one place.
@@ -22,7 +22,11 @@ import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getRequestDictionary();
 
-  return { title: t.metadata.hooksTitle, description: t.metadata.hooksDescription };
+  return {
+    title: t.metadata.hooksTitle,
+    description: t.metadata.hooksDescription,
+    alternates: await getOpenPageAlternates("/hooks"),
+  };
 }
 
 export default async function HooksPage() {

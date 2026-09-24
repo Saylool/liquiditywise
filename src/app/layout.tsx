@@ -100,7 +100,6 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "LiquidityWise",
       title: t.metadata.title,
       description: t.metadata.description,
-      url: "/",
     },
     twitter: { card: "summary_large_image", title: t.metadata.title, description: t.metadata.description },
   };

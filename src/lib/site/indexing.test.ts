@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import robots from "../../app/robots";
 import sitemap from "../../app/sitemap";
+import { LOCALES } from "../i18n/locales";
 import { PAGES } from "../usage/usageLines";
 import { CLOSED_PATHS, INDEXED_PAGES, SITE_URL } from "./indexing";
 
@@ -47,8 +48,25 @@ describe("which pages a search engine may read", () => {
     expect(robots().sitemap).toBe(`${SITE_URL}/sitemap.xml`);
   });
 
-  it("lists only the open pages in the sitemap, on the real host", () => {
-    expect(sitemap().map(({ url }) => url)).toEqual(["https://liquiditywise.com", "https://liquiditywise.com/hooks"]);
+  it("lists only the open pages in the sitemap, on the real host, at every address each has", () => {
+    const urls = sitemap().map(({ url }) => url);
+
+    expect(urls).toHaveLength(INDEXED_PAGES.length * (LOCALES.length + 1));
+    expect(urls).toContain("https://liquiditywise.com");
+    expect(urls).toContain("https://liquiditywise.com/hooks");
+    expect(urls).toContain("https://liquiditywise.com/tr");
+    expect(urls).toContain("https://liquiditywise.com/zh-Hant/hooks");
+    expect(urls.every((url) => url.startsWith(SITE_URL))).toBe(true);
+    expect(urls.some((url) => /\/(pool|v4|compare|holdings)/.test(url))).toBe(false);
+  });
+
+  it("tells a crawler, beside each address, where the page is in every other language", () => {
+    const turkishHooks = sitemap().find(({ url }) => url === "https://liquiditywise.com/tr/hooks");
+
+    expect(turkishHooks?.alternates?.languages).toMatchObject({
+      de: "https://liquiditywise.com/de/hooks",
+      "x-default": "https://liquiditywise.com/hooks",
+    });
   });
 
   it("keeps the routes that are not pages closed too", () => {

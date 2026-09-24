@@ -7,7 +7,15 @@ import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { RangeExplorer } from "@/components/RangeExplorer";
 import { WalletConnect } from "@/components/WalletConnect";
 import { getInterfaceCopy } from "@/lib/i18n/interface";
-import { getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { localePath } from "@/lib/i18n/localePath";
+import type { Metadata } from "next";
+
+import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
+
+/** Title and description come from the layout; this page adds where each language of it lives. */
+export async function generateMetadata(): Promise<Metadata> {
+  return { alternates: await getOpenPageAlternates("/") };
+}
 
 export default async function Home() {
   const { locale, t } = await getRequestDictionary();
@@ -123,7 +131,7 @@ export default async function Home() {
             <span className="eyebrow">UNISWAP v4</span>
             <h3>{copy.hooks}</h3>
             <p>{copy.hookIntro}</p>
-            <Link href="/hooks" prefetch={false} className="text-link">
+            <Link href={localePath(locale, "/hooks")} prefetch={false} className="text-link">
               {t.hooks.fromHome}
               <ArrowIcon diagonal />
             </Link>

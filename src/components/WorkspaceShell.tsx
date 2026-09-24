@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Dictionary } from "../lib/i18n/dictionaries";
+import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
 import { getInterfaceCopy } from "../lib/i18n/interface";
 import { EducationalDisclaimer } from "./EducationalDisclaimer";
@@ -20,7 +21,7 @@ export function WorkspaceShell({
     <main id="main" tabIndex={-1} className="workspace-main">
       <div className="workspace-heading">
         <div>
-          <Link href="/" prefetch={false} className="eyebrow workspace-back">
+          <Link href={localePath(locale, "/")} prefetch={false} className="eyebrow workspace-back">
             {t.pool.back}
           </Link>
           <h1>{copy[section]}</h1>

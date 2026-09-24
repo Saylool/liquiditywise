@@ -1,8 +1,10 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE_SECONDS } from "./locales";
+import { isOpenPage, localePath, PATH_HEADER } from "./localePath";
+import { isLocale, localeCookie } from "./locales";
 
 /**
  * Remembers an explicit language choice.
@@ -19,21 +21,20 @@ import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE_SECONDS } from "./locale
  * reading the pool again. That is inherent to rendering language on the server,
  * and the alternative — correcting the language after hydration — shows the
  * wrong one first.
+ *
+ * On a page reached by a language's own address (/tr/hooks) the address, not
+ * the cookie, decides the language, so re-rendering would show the old one.
+ * There the switch is a move to the new language's address instead. The page
+ * comes from the header the proxy set, and is checked again here: it names
+ * where the reader is sent.
  */
 export const setLocale = async (formData: FormData): Promise<void> => {
   const requested = formData.get("locale");
   if (!isLocale(requested)) return;
 
   const store = await cookies();
+  store.set(localeCookie(requested, process.env.NODE_ENV === "production"));
 
-  store.set({
-    name: LOCALE_COOKIE,
-    value: requested,
-    maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
-    path: "/",
-    // Nothing in the browser reads this, so keep it out of reach of scripts.
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
+  const page = (await headers()).get(PATH_HEADER);
+  if (page !== null && isOpenPage(page)) redirect(localePath(requested, page));
 };

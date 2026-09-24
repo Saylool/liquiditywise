@@ -191,3 +191,19 @@ export const resolveLocale = (input: {
 
   return negotiateLocale(input.acceptLanguage) ?? DEFAULT_LOCALE;
 };
+
+/**
+ * The cookie that remembers a language, as both writers set it: the switcher,
+ * when a reader chooses, and the proxy, when a reader arrives by a language's
+ * own address.
+ */
+export const localeCookie = (value: Locale, production: boolean) => ({
+  name: LOCALE_COOKIE,
+  value,
+  maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
+  path: "/",
+  // Nothing in the browser reads this, so keep it out of reach of scripts.
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: production,
+});
