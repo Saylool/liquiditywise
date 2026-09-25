@@ -4,6 +4,8 @@ import { formatFeePpm, formatTokenAmount } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { DataResult, PoolSearchMatch, PoolSearchResults as SearchResults } from "../schemas";
+import { chainLabel } from "../lib/chains/chainLabel";
+import { chainOf, ETHEREUM } from "../lib/chains/chains";
 
 /**
  * The pools one search matched.
@@ -29,7 +31,11 @@ const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; 
   return (
     <li>
       <GuardedLink
-        href={`/pool?address=${pool.id}`}
+        href={
+          pool.chainId === ETHEREUM.id
+            ? `/pool?address=${pool.id}`
+            : `/pool?chain=${chainOf(pool.chainId).slug}&address=${pool.id}`
+        }
         className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -80,12 +86,15 @@ const PairRow = ({ match, t, locale }: { match: PoolSearchMatch; t: Dictionary; 
 export function PoolSearchResults({
   result,
   terms,
+  chainId = ETHEREUM.id,
   t,
   locale,
 }: {
   result: DataResult<SearchResults>;
   /** What was searched for, as the reader typed it, already validated. */
   terms: readonly string[];
+  /** The chain the search ran on, for the sentence that says nothing matched there. */
+  chainId?: number;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -111,7 +120,7 @@ export function PoolSearchResults({
         </>
       ) : result.data.matches.length === 0 ? (
         <>
-          <p className="text-sm leading-relaxed">{t.search.empty(searched)}</p>
+          <p className="text-sm leading-relaxed">{t.search.empty(searched, chainLabel(chainId, locale))}</p>
           <p className="text-sm leading-relaxed text-muted">{t.search.emptyHint}</p>
         </>
       ) : (

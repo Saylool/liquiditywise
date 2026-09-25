@@ -228,8 +228,10 @@ export const poolComparisonHref = (
   poolAddress: string,
   parameters: PriceBandParameters,
   depositUsd: number,
+  chain: Chain = ETHEREUM,
 ): string =>
   `/compare?${new URLSearchParams({
+    ...(chain.id === ETHEREUM.id ? {} : { [CHAIN_PARAMETER]: chain.slug }),
     address: poolAddress,
     [HORIZON_PARAMETER]: String(parameters.horizonDays),
     [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),

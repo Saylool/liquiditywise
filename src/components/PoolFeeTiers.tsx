@@ -180,9 +180,11 @@ export function V3PairPoolList({
        * a band and deposit to carry: the comparison reads every tier under
        * the settings the reader is already looking at.
        */}
-      {/* Mainnet only for now: the comparison reads v3 and v4 on mainnet. */}
-      {analysedPoolId === null || tiers.some(({ pool }) => pool.chainId !== ETHEREUM.id) ? null : (
-        <GuardedLink className="text-link text-sm" href={poolComparisonHref(analysedPoolId, parameters, depositUsd)}>
+      {analysedPoolId === null ? null : (
+        <GuardedLink
+          className="text-link text-sm"
+          href={poolComparisonHref(analysedPoolId, parameters, depositUsd, chainOf(tiers[0]?.pool.chainId ?? ETHEREUM.id))}
+        >
           {t.compare.link}
         </GuardedLink>
       )}

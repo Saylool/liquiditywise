@@ -9,9 +9,14 @@ import {
   DEPOSIT_PARAMETER,
   HORIZON_PARAMETER,
   MULTIPLIER_PARAMETER,
+  CHAIN_PARAMETER,
   poolAnalysisHref,
+  readRequestedChain,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
+import { chainLabel } from "@/lib/chains/chainLabel";
+import { ETHEREUM } from "@/lib/chains/chains";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { getEthereumV3PairFeeTiers } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
 import { getEthereumV4PairPools } from "@/lib/uniswap/getEthereumV4PairPools";
@@ -60,12 +65,18 @@ export default async function ComparePage({
   const { locale, t } = await getRequestDictionary();
   const params = await searchParams;
   const address = EvmAddressSchema.safeParse(single(params.address));
+  const chain = readRequestedChain(params[CHAIN_PARAMETER]);
 
   const page = (children: React.ReactNode) => (
-    <WorkspaceShell locale={locale} t={t} section="pools">
+    <WorkspaceShell locale={locale} t={t} section="pools" network={chainLabel((chain ?? ETHEREUM).id, locale)}>
       {children}
     </WorkspaceShell>
   );
+
+  /* A chain nobody reads is refused, never read as mainnet: the same address there is another pool. */
+  if (chain === null) {
+    return page(<p className="text-sm leading-relaxed text-muted">{getChainCopy(locale).unknown}</p>);
+  }
 
   if (!address.success) {
     return page(
@@ -85,7 +96,7 @@ export default async function ComparePage({
     await getRangePreferences(),
   );
   const { parameters, depositUsd } = requested;
-  const first = await getPoolRangeAnalysis("v3", address.data, parameters, depositUsd);
+  const first = await getPoolRangeAnalysis("v3", address.data, parameters, depositUsd, undefined, chain.id);
 
   // Without the pool itself there is no pair to find the other tiers of.
   if (first.status === "unavailable" || first.data.pool.protocolVersion !== "v3") {
@@ -96,7 +107,7 @@ export default async function ComparePage({
         {first.status === "unavailable" ? (
           <p className="text-sm leading-relaxed text-muted">{t.notices.failure[first.notice]}</p>
         ) : null}
-        <GuardedLink className="text-link text-sm" href={poolAnalysisHref(address.data, parameters, depositUsd)}>
+        <GuardedLink className="text-link text-sm" href={poolAnalysisHref(address.data, parameters, depositUsd, chain)}>
           {t.compare.open}
         </GuardedLink>
       </>,
@@ -106,13 +117,16 @@ export default async function ComparePage({
   const pool = first.data.pool;
   const pair = `${pool.token0.symbol} / ${pool.token1.symbol}`;
   const current = address.data.toLowerCase();
+  /* v4 is read on mainnet alone; off it the same token addresses would name other tokens there. */
   const [listed, v4Listed] = await Promise.all([
     getEthereumV3PairFeeTiers(pool),
-    getEthereumV4PairPools({
-      analysedPoolId: null,
-      token0Address: pool.token0.address,
-      token1Address: pool.token1.address,
-    }),
+    chain.id !== ETHEREUM.id
+      ? null
+      : getEthereumV4PairPools({
+          analysedPoolId: null,
+          token0Address: pool.token0.address,
+          token1Address: pool.token1.address,
+        }),
   ]);
 
   if (listed.status === "unavailable") {
@@ -126,7 +140,7 @@ export default async function ComparePage({
   }
 
   // In the order the panel lists them — by fee — and the pool already read is not read twice.
-  const v4Pools = v4Listed.status === "unavailable" ? [] : v4Listed.data.pools.slice(0, V4_COMPARED);
+  const v4Pools = v4Listed === null || v4Listed.status === "unavailable" ? [] : v4Listed.data.pools.slice(0, V4_COMPARED);
   const [v3, v4Tiers] = await Promise.all([
     Promise.all(
       listed.data.tiers.map(async (tier): Promise<ComparedTier> => {
@@ -138,7 +152,8 @@ export default async function ComparePage({
           tickSpacing: null,
           hookAltersSwaps: false,
           current: id === current,
-          result: id === current ? first : await getPoolRangeAnalysis("v3", id, parameters, depositUsd),
+          result:
+            id === current ? first : await getPoolRangeAnalysis("v3", id, parameters, depositUsd, undefined, chain.id),
         };
       }),
     ),
@@ -159,13 +174,24 @@ export default async function ComparePage({
   ]);
 
   const v4: ComparedV4 =
-    v4Listed.status === "unavailable"
+    v4Listed === null
+      ? { status: "not-read" }
+      : v4Listed.status === "unavailable"
       ? { status: "unavailable", notice: v4Listed.notice }
       : v4Tiers.length === 0
         ? { status: "none" }
         : { status: "listed", tiers: v4Tiers, notShown: Math.max(0, v4Listed.data.pools.length - V4_COMPARED) };
 
   return page(
-    <PoolComparison pair={pair} v3={v3} v4={v4} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />,
+    <PoolComparison
+      pair={pair}
+      v3={v3}
+      v4={v4}
+      parameters={parameters}
+      depositUsd={depositUsd}
+      chain={chain}
+      t={t}
+      locale={locale}
+    />,
   );
 }

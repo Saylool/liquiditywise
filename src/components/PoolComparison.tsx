@@ -7,6 +7,7 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { DataFailureNotice, PriceBandParameters, V4FeeConfiguration } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
+import { type Chain, ETHEREUM } from "../lib/chains/chains";
 
 /**
  * Every v3 fee tier of one pair, each read in full under one band and one
@@ -48,7 +49,9 @@ export type ComparedTier = {
 export type ComparedV4 =
   | { readonly status: "listed"; readonly tiers: readonly ComparedTier[]; readonly notShown: number }
   | { readonly status: "none" }
-  | { readonly status: "unavailable"; readonly notice: DataFailureNotice };
+  | { readonly status: "unavailable"; readonly notice: DataFailureNotice }
+  /** Off mainnet, where no v4 is read: the section is left out rather than said to be empty. */
+  | { readonly status: "not-read" };
 
 const Figure = ({ label, value, note }: { label: string; value: string; note?: string | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -62,10 +65,12 @@ const TierCard = ({
   tier,
   parameters,
   depositUsd,
+  chain,
   t,
   locale,
 }: {
   tier: ComparedTier;
+  chain: Chain;
   parameters: PriceBandParameters;
   depositUsd: number;
   t: Dictionary;
@@ -85,7 +90,7 @@ const TierCard = ({
       : `${fee} · ${t.feeTiers.priceStep(formatPercent(priceStepRatio(tier.tickSpacing), locale))}`;
   const href =
     tier.protocol === "v3"
-      ? poolAnalysisHref(tier.id, parameters, depositUsd)
+      ? poolAnalysisHref(tier.id, parameters, depositUsd, chain)
       : v4PoolAnalysisHref(tier.id, parameters, depositUsd);
 
   return (
@@ -146,10 +151,12 @@ const Cards = ({
   tiers,
   parameters,
   depositUsd,
+  chain,
   t,
   locale,
 }: {
   tiers: readonly ComparedTier[];
+  chain: Chain;
   parameters: PriceBandParameters;
   depositUsd: number;
   t: Dictionary;
@@ -157,7 +164,7 @@ const Cards = ({
 }) => (
   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
     {tiers.map((tier) => (
-      <TierCard key={tier.id} tier={tier} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
+      <TierCard key={tier.id} tier={tier} parameters={parameters} depositUsd={depositUsd} chain={chain} t={t} locale={locale} />
     ))}
   </div>
 );
@@ -168,10 +175,13 @@ export function PoolComparison({
   v4,
   parameters,
   depositUsd,
+  chain = ETHEREUM,
   t,
   locale,
 }: {
   pair: string;
+  /** The chain every tier is on; v4 is read on mainnet alone. */
+  chain?: Chain;
   /** Every v3 tier of the pair, in fee order. */
   v3: readonly ComparedTier[];
   v4: ComparedV4;
@@ -180,7 +190,7 @@ export function PoolComparison({
   t: Dictionary;
   locale: Locale;
 }) {
-  const cards = { parameters, depositUsd, t, locale };
+  const cards = { parameters, depositUsd, chain, t, locale };
   // "Nothing to set beside it" is only true when v4 has nothing either.
   const alone = v3.length < 2 && (v4.status !== "listed" || v4.tiers.length === 0);
 
@@ -202,6 +212,7 @@ export function PoolComparison({
         <Cards tiers={v3} {...cards} />
       </section>
 
+      {v4.status === "not-read" ? null : (
       <section className="flex flex-col gap-4" aria-label={t.feeTiers.onV4}>
         <h3 className="text-xs uppercase tracking-widest text-muted">{t.feeTiers.onV4}</h3>
         {v4.status === "unavailable" ? (
@@ -221,6 +232,7 @@ export function PoolComparison({
           </>
         )}
       </section>
+      )}
 
       <p className="text-sm leading-relaxed">{t.compare.readTogether}</p>
     </div>

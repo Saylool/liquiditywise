@@ -16,6 +16,7 @@ import {
   type FetchLike,
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
+import type { ChainId } from "../chains/chains";
 
 /**
  * A pool stores its pair in address order, which has nothing to do with the
@@ -101,6 +102,8 @@ const NOT_CONFIGURED = "market-data-not-configured";
 export type EthereumV3PoolSearchRequest = {
   /** What to search for. Validated here; the caller's parse is not trusted. */
   readonly terms: readonly string[];
+  /** The chain the subgraph and the endpoint serve; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
@@ -168,13 +171,14 @@ export const fetchEthereumV3PoolSearch = async (
    * contracts held nine thousand, above pools that genuinely held more.
    */
   const reserves = await fetchEthereumV3PoolReserves({
-    pools: readSearchPoolsForReserves(transport.payload, request.now()),
+    pools: readSearchPoolsForReserves(transport.payload, request.now(), request.chainId ?? 1),
     rpcUrl: request.rpcUrl,
     fetchImpl: request.fetchImpl,
   });
 
   return normalizeV3PoolSearch({
     payload: transport.payload,
+    chainId: request.chainId ?? 1,
     reserves,
     terms: terms.data,
     fetchedAt: request.now().toISOString(),

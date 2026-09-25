@@ -55,8 +55,8 @@ describe("the pair's other tiers, off mainnet", () => {
     expect(render(1)).toContain("On Uniswap v4");
   });
 
-  it("offers the side-by-side comparison on mainnet only", () => {
-    expect(render(1)).toContain("/compare?");
-    expect(render(42161)).not.toContain("/compare?");
+  it("offers the side-by-side comparison on the pool's own chain", () => {
+    expect(render(1)).toContain(`/compare?address=${ANALYSED}`);
+    expect(render(42161)).toContain(`/compare?chain=arbitrum&amp;address=${ANALYSED}`);
   });
 });

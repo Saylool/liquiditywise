@@ -133,8 +133,23 @@ describe("PoolSearchResults", () => {
   it("says plainly when a search matched nothing", () => {
     const markup = render(found([]), "en", ["zzzz"]);
 
-    expect(markup).toContain("No Ethereum mainnet Uniswap v3 pool has a token matching zzzz.");
+    expect(markup).toContain("No Uniswap v3 pool on Ethereum mainnet has a token matching zzzz.");
     expect(markup).toContain("Check the spelling");
+  });
+
+  it("names the chain it searched when nothing matched there", () => {
+    const markup = renderToStaticMarkup(
+      <PoolSearchResults result={found([])} terms={["zzzz"]} chainId={8453} t={getDictionary("tr")} locale="tr" />,
+    );
+
+    expect(markup).toContain("zzzz ile eşleşen tokenı olan bir Uniswap v3 havuzu bulunamadı (Base).");
+  });
+
+  it("links a pool found off mainnet on its own chain", () => {
+    const onBase = found([{ ...match(REAL_POOL, REAL_USDC, 1), pool: { ...match(REAL_POOL, REAL_USDC, 1).pool, chainId: 8453 } }]);
+
+    expect(render(onBase)).toContain(`/pool?chain=base&amp;address=${REAL_POOL}`);
+    expect(render(found([match(REAL_POOL, REAL_USDC, 1)]))).toContain(`href="/pool?address=${REAL_POOL}"`);
   });
 
   it("names both terms in the sentence about what was searched", () => {

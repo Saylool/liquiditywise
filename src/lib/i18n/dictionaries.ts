@@ -790,8 +790,8 @@ const en = {
 
     heading: "Matching Uniswap v3 pools",
     resultsFor: (terms: string) => `Pools whose tokens match ${terms}.`,
-    empty: (terms: string) =>
-      `No Ethereum mainnet Uniswap v3 pool has a token matching ${terms}.`,
+    empty: (terms: string, chain: string) =>
+      `No Uniswap v3 pool on ${chain} has a token matching ${terms}.`,
     emptyHint: "Check the spelling, or paste the pool's address if you have it.",
 
     /*
@@ -1806,8 +1806,8 @@ const tr: Dictionary = {
 
     heading: "Eşleşen Uniswap v3 havuzları",
     resultsFor: (terms: string) => `Tokenları ${terms} ile eşleşen havuzlar.`,
-    empty: (terms: string) =>
-      `Ethereum mainnet üzerinde ${terms} ile eşleşen tokenı olan bir Uniswap v3 havuzu bulunamadı.`,
+    empty: (terms: string, chain: string) =>
+      `${terms} ile eşleşen tokenı olan bir Uniswap v3 havuzu bulunamadı (${chain}).`,
     emptyHint: "Yazımı kontrol et, ya da havuzun adresi elindeyse onu yapıştır.",
 
     v4Heading: "Eşleşen Uniswap v4 havuzları",
@@ -2752,8 +2752,8 @@ const de: Dictionary = {
 
     heading: "Passende Uniswap-v3-Pools",
     resultsFor: (terms: string) => `Pools, deren Token zu ${terms} passen.`,
-    empty: (terms: string) =>
-      `Kein Uniswap-v3-Pool im Ethereum-Mainnet hat einen Token, der zu ${terms} passt.`,
+    empty: (terms: string, chain: string) =>
+      `Kein Uniswap-v3-Pool (${chain}) hat einen Token, der zu ${terms} passt.`,
     emptyHint: "Prüfen Sie die Schreibweise, oder fügen Sie die Adresse des Pools ein, falls Sie sie haben.",
 
     v4Heading: "Passende Uniswap-v4-Pools",
@@ -3672,8 +3672,8 @@ const es: Dictionary = {
 
     heading: "Pools de Uniswap v3 coincidentes",
     resultsFor: (terms: string) => `Pools cuyos tokens coinciden con ${terms}.`,
-    empty: (terms: string) =>
-      `Ningún pool de Uniswap v3 en la red principal de Ethereum tiene un token que coincida con ${terms}.`,
+    empty: (terms: string, chain: string) =>
+      `Ningún pool de Uniswap v3 (${chain}) tiene un token que coincida con ${terms}.`,
     emptyHint: "Revise la ortografía, o pegue la dirección del pool si la tiene.",
 
     v4Heading: "Pools de Uniswap v4 coincidentes",
@@ -4588,8 +4588,8 @@ const ar: Dictionary = {
 
     heading: "تجمّعات Uniswap v3 المطابقة",
     resultsFor: (terms: string) => `تجمّعات تطابق رموزها ${terms}.`,
-    empty: (terms: string) =>
-      `لا يوجد تجمّع Uniswap v3 على شبكة إيثيريوم الرئيسية فيه رمز يطابق ${terms}.`,
+    empty: (terms: string, chain: string) =>
+      `لا يوجد تجمّع Uniswap v3 (${chain}) فيه رمز يطابق ${terms}.`,
     emptyHint: "راجع الإملاء، أو ألصق عنوان التجمّع إن كان لديك.",
 
     v4Heading: "تجمّعات Uniswap v4 المطابقة",
@@ -5493,8 +5493,8 @@ const hi: Dictionary = {
 
     heading: "मेल खाते Uniswap v3 पूल",
     resultsFor: (terms: string) => `वे पूल जिनके टोकन ${terms} से मेल खाते हैं।`,
-    empty: (terms: string) =>
-      `Ethereum मेननेट के किसी Uniswap v3 पूल में ${terms} से मेल खाता कोई टोकन नहीं है।`,
+    empty: (terms: string, chain: string) =>
+      `किसी Uniswap v3 पूल (${chain}) में ${terms} से मेल खाता कोई टोकन नहीं है।`,
     emptyHint: "वर्तनी जाँचें, या पूल का पता आपके पास हो तो वही चिपकाएँ।",
 
     v4Heading: "मेल खाते Uniswap v4 पूल",
@@ -6575,8 +6575,8 @@ const zh: Dictionary = {
 
     heading: "匹配的 Uniswap v3 资金池",
     resultsFor: (terms: string) => `代币与 ${terms} 匹配的资金池。`,
-    empty: (terms: string) =>
-      `以太坊主网上没有任何 Uniswap v3 资金池的代币与 ${terms} 匹配。`,
+    empty: (terms: string, chain: string) =>
+      `${chain}上没有任何 Uniswap v3 资金池的代币与 ${terms} 匹配。`,
     emptyHint: "请检查拼写，或者直接粘贴该池的地址。",
 
     /*
@@ -7753,8 +7753,8 @@ const ru: Dictionary = {
 
     heading: "Подходящие пулы Uniswap v3",
     resultsFor: (terms: string) => `Пулы, токены которых совпадают с ${terms}.`,
-    empty: (terms: string) =>
-      `Ни у одного пула Uniswap v3 в основной сети Ethereum нет токена, совпадающего с ${terms}.`,
+    empty: (terms: string, chain: string) =>
+      `Ни у одного пула Uniswap v3 (${chain}) нет токена, совпадающего с ${terms}.`,
     emptyHint: "Проверьте написание или вставьте адрес пула, если он у вас есть.",
 
     /*
@@ -8937,8 +8937,8 @@ const pt: Dictionary = {
 
     heading: "Pools do Uniswap v3 correspondentes",
     resultsFor: (terms: string) => `Pools cujos tokens correspondem a ${terms}.`,
-    empty: (terms: string) =>
-      `Nenhum pool do Uniswap v3 na rede principal do Ethereum tem um token correspondente a ${terms}.`,
+    empty: (terms: string, chain: string) =>
+      `Nenhum pool do Uniswap v3 (${chain}) tem um token correspondente a ${terms}.`,
     emptyHint: "Confira a grafia, ou cole o endereço do pool se você o tiver.",
 
     /*
@@ -10109,8 +10109,8 @@ const zhHant: Dictionary = {
 
     heading: "匹配的 Uniswap v3 資金池",
     resultsFor: (terms: string) => `代幣與 ${terms} 匹配的資金池。`,
-    empty: (terms: string) =>
-      `以太坊主網上沒有任何 Uniswap v3 資金池的代幣與 ${terms} 匹配。`,
+    empty: (terms: string, chain: string) =>
+      `${chain}上沒有任何 Uniswap v3 資金池的代幣與 ${terms} 匹配。`,
     emptyHint: "請檢查拼寫，或者直接貼上該池的地址。",
 
     /*

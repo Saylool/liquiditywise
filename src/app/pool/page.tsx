@@ -259,15 +259,6 @@ export default async function PoolRangePage({
     );
   }
 
-  /* A name search reads mainnet's subgraphs; off mainnet only an address reaches a pool, for now. */
-  if (chain.id !== ETHEREUM.id) {
-    return (
-      <Shell locale={locale} t={t} chain={chain}>
-        <PoolLookupForm t={t} value={input.terms.join(" ")} network={network} />
-        <p className="text-sm leading-relaxed text-muted">{chainCopy.searchMainnetOnly(chain.name)}</p>
-      </Shell>
-    );
-  }
 
   return (
     <Shell locale={locale} t={t}>
@@ -279,7 +270,7 @@ export default async function PoolRangePage({
        * box the reader just typed into should come back immediately either way.
        */}
       <Suspense fallback={<PoolSearchPending t={t} />}>
-        <PoolSearchSection terms={input.terms} locale={locale} t={t} />
+        <PoolSearchSection terms={input.terms} chainId={chain.id} locale={locale} t={t} />
       </Suspense>
       {/*
        * The same terms against the v4 subgraph, in a boundary of its own. Two
@@ -287,9 +278,12 @@ export default async function PoolRangePage({
        * what a pool holds, and what its active liquidity is worth — and a single
        * order over both would be comparing them.
        */}
-      <Suspense fallback={<V4PoolSearchPending t={t} />}>
-        <V4PoolSearchSection terms={input.terms} locale={locale} t={t} />
-      </Suspense>
+      {/* v4 is read on mainnet alone. */}
+      {chain.id !== ETHEREUM.id ? null : (
+        <Suspense fallback={<V4PoolSearchPending t={t} />}>
+          <V4PoolSearchSection terms={input.terms} locale={locale} t={t} />
+        </Suspense>
+      )}
     </Shell>
   );
 }

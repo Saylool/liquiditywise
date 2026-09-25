@@ -283,3 +283,14 @@ describe("fetchEthereumV3PoolSearch and its budget", () => {
     }
   });
 });
+
+describe("a search on another chain", () => {
+  it("publishes the pools it found as that chain's", async () => {
+    const result = await run({ chainId: 42161 });
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.matches.length).toBeGreaterThan(0);
+    expect(result.data.matches.every(({ pool }) => pool.chainId === 42161)).toBe(true);
+  });
+});

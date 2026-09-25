@@ -5,6 +5,7 @@ import type { PoolRangeAnalysisResult } from "../lib/advisor/poolRangeAnalysis";
 import { HOOK_PERMISSION_FLAGS } from "../schemas";
 import { formatUsd } from "../lib/format/displayFormats";
 import { getDictionary } from "../lib/i18n/dictionaries";
+import { chainOf } from "../lib/chains/chains";
 import { PoolComparison, type ComparedTier, type ComparedV4 } from "./PoolComparison";
 
 const t = getDictionary("en");
@@ -197,5 +198,32 @@ describe("the v4 pools beside the tiers", () => {
     const unread = render([tier(A, 500, analysed(1))], { status: "unavailable", notice: "market-data-timed-out" });
     expect(unread).toContain(escaped(t.feeTiers.v4Unavailable));
     expect(unread).toContain(t.notices.failure["market-data-timed-out"]);
+  });
+});
+
+describe("tiers on another chain", () => {
+  const onArbitrum = () =>
+    renderToStaticMarkup(
+      <PoolComparison
+        pair="USDC / WETH"
+        v3={[tier(A, 500, analysed(1), true), tier(B, 3_000, analysed(2))]}
+        v4={{ status: "not-read" }}
+        parameters={PARAMETERS}
+        depositUsd={1_000}
+        chain={chainOf(42161)}
+        t={t}
+        locale="en"
+      />,
+    );
+
+  it("links each tier's analysis on that chain", () => {
+    expect(onArbitrum()).toContain(`/pool?chain=arbitrum&amp;address=${B}`);
+  });
+
+  it("leaves v4 out altogether rather than saying the pair has none", () => {
+    const html = onArbitrum();
+
+    expect(html).not.toContain(t.feeTiers.onV4);
+    expect(html).not.toContain(t.feeTiers.v4None("USDC / WETH"));
   });
 });

@@ -14,6 +14,7 @@ import type { PoolReserves } from "./ethereumV3PoolReserves";
 import { isDormant, normalizePoolCard } from "./v3PoolCardAdapter";
 import type { RawPoolCard } from "./v3PoolCardRawResponse";
 import { V3PoolSearchResponseSchema } from "./v3PoolSearchRawResponse";
+import type { ChainId } from "../chains/chains";
 
 const MALFORMED = "market-data-malformed";
 const INDEXING_ERRORS = "market-data-indexing-errors";
@@ -44,8 +45,9 @@ const normalizeMatch = (
   terms: PoolSearchTerms,
   reserves: ReadonlyMap<string, PoolReserves>,
   now: Date,
+  chainId: ChainId,
 ): PoolSearchMatch | "dormant" | null => {
-  const card = normalizePoolCard(raw);
+  const card = normalizePoolCard(raw, chainId);
   if (card === null) return null;
   /*
    * Listed pools are links to an analysis, and a pool the analysis would
@@ -71,13 +73,17 @@ const normalizeMatch = (
  * The same card normaliser runs here and again below, so a pool the reserves
  * were read for is exactly a pool that can appear in the results.
  */
-export const readSearchPoolsForReserves = (payload: unknown, now: Date): readonly V3PoolMetadata[] => {
+export const readSearchPoolsForReserves = (
+  payload: unknown,
+  now: Date,
+  chainId: ChainId = 1,
+): readonly V3PoolMetadata[] => {
   const parsed = V3PoolSearchResponseSchema.safeParse(payload);
   if (!parsed.success || parsed.data.data == null) return [];
 
   const pools = new Map<string, V3PoolMetadata>();
   for (const raw of [...parsed.data.data.forward, ...parsed.data.data.reverse]) {
-    const card = normalizePoolCard(raw);
+    const card = normalizePoolCard(raw, chainId);
     /* No reserves are read for a pool that will not be listed. */
     if (card !== null && !isDormant(card, now)) pools.set(card.pool.id, card.pool);
   }
@@ -120,6 +126,8 @@ const byRelevanceThenHoldings = (left: PoolSearchMatch, right: PoolSearchMatch):
 export type NormalizeV3PoolSearchInput = {
   /** The decoded JSON body, still untrusted. */
   readonly payload: unknown;
+  /** The chain the answering subgraph indexes; mainnet when not said. */
+  readonly chainId?: ChainId;
   /**
    * What each pool actually holds, read from the chain, keyed by pool address.
    *
@@ -149,6 +157,7 @@ export type NormalizeV3PoolSearchInput = {
  */
 export const normalizeV3PoolSearch = ({
   payload,
+  chainId = 1,
   reserves,
   terms,
   fetchedAt,
@@ -171,7 +180,7 @@ export const normalizeV3PoolSearch = ({
   let dormant = 0;
 
   for (const raw of [...data.forward, ...data.reverse]) {
-    const match = normalizeMatch(raw, terms, reserves, now);
+    const match = normalizeMatch(raw, terms, reserves, now, chainId);
     if (match === null) {
       dropped += 1;
       continue;

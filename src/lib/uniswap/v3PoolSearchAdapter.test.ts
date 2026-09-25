@@ -340,3 +340,16 @@ describe("dormant pools", () => {
     expect(pools.map((pool) => pool.id)).toEqual([address("b")]);
   });
 });
+
+describe("the chain a search ran on", () => {
+  it("is the chain of every pool found, and of every pool asked about for reserves", () => {
+    const body = payload([rawPool({ id: "a", symbols: ["USDC", "WETH"], tvl: "1000" })]);
+    const results = succeeded(
+      normalizeV3PoolSearch({ payload: body, chainId: 8453, reserves: new Map(), terms: ["usdc", "weth"], fetchedAt: FETCHED_AT }),
+    );
+
+    expect(results.matches.map(({ pool }) => pool.chainId)).toEqual([8453]);
+    expect(readSearchPoolsForReserves(body, new Date(FETCHED_AT), 42161).map(({ chainId }) => chainId)).toEqual([42161]);
+    expect(readSearchPoolsForReserves(body, new Date(FETCHED_AT)).map(({ chainId }) => chainId)).toEqual([1]);
+  });
+});
