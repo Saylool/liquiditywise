@@ -9,6 +9,7 @@ import {
 import { V3PoolMetadataResponseSchema } from "./v3PoolMetadataRawResponse";
 import { convertSafeInteger } from "./v3SubgraphRawResponse";
 import { normalizeV3Token } from "./v3TokenAdapter";
+import type { ChainId } from "../chains/chains";
 
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
@@ -27,6 +28,8 @@ export type NormalizeV3PoolMetadataInput = {
   readonly payload: unknown;
   /** The caller's pool address, already validated and lower-cased. */
   readonly poolAddress: EvmAddress;
+  /** The chain the subgraph that answered indexes. Mainnet when not said. */
+  readonly chainId?: ChainId;
 };
 
 /**
@@ -45,6 +48,7 @@ export type NormalizeV3PoolMetadataInput = {
 export const normalizeV3PoolMetadata = ({
   payload,
   poolAddress,
+  chainId = ETHEREUM_MAINNET_CHAIN_ID,
 }: NormalizeV3PoolMetadataInput): DataResult<V3PoolMetadata> => {
   const parsed = V3PoolMetadataResponseSchema.safeParse(payload);
   if (!parsed.success) return unavailable("invalid-response", MALFORMED);
@@ -70,13 +74,13 @@ export const normalizeV3PoolMetadata = ({
   const feePpm = convertSafeInteger(data.pool.feeTier);
   if (!feePpm.ok) return unavailable("invalid-response", MALFORMED);
 
-  const token0 = normalizeV3Token(data.pool.token0, ETHEREUM_MAINNET_CHAIN_ID);
-  const token1 = normalizeV3Token(data.pool.token1, ETHEREUM_MAINNET_CHAIN_ID);
+  const token0 = normalizeV3Token(data.pool.token0, chainId);
+  const token1 = normalizeV3Token(data.pool.token1, chainId);
   if (token0 === null || token1 === null) return unavailable("invalid-response", MALFORMED);
 
   const candidate = {
     protocolVersion: "v3",
-    chainId: ETHEREUM_MAINNET_CHAIN_ID,
+    chainId,
     id: poolAddress,
     token0,
     token1,

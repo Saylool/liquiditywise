@@ -10,6 +10,7 @@ import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { localePath } from "@/lib/i18n/localePath";
 import { getLearnCopy } from "@/lib/learn/briefs";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Metadata } from "next";
 
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -37,7 +38,7 @@ export default async function Home() {
           <h2 className="section-heading">{copy.searchTitle}</h2>
         </div>
         <div>
-          <PoolLookupForm t={t} />
+          <PoolLookupForm t={t} network={{ label: getChainCopy(locale).network, current: "ethereum" }} />
           <div className="pair-shortcuts">
             <span>{copy.examples}</span>
             {[

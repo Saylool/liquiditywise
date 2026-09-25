@@ -423,3 +423,15 @@ describe("normalizePoolSnapshot for a v4 pool", () => {
     expect(result.status).toBe("success");
   });
 });
+
+describe("the chain a snapshot names", () => {
+  it("is the chain the pool was asked about on", () => {
+    const result = normalizePoolSnapshot({
+      payload: payload(),
+      identity: v3PoolIdentity(POOL_ADDRESS, 8453)!,
+      fetchedAt: FETCHED_AT,
+    });
+
+    expect(result.status !== "unavailable" && result.data.pool.chainId).toBe(8453);
+  });
+});

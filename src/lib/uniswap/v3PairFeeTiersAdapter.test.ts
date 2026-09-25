@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { normalizeV3PairFeeTiers } from "./v3PairFeeTiersAdapter";
+import { normalizeV3PairFeeTiers, readPoolsForReserves } from "./v3PairFeeTiersAdapter";
 
 const FETCHED_AT = "2026-09-15T08:21:00.000Z";
 
@@ -249,5 +249,22 @@ describe("normalizeV3PairFeeTiers for a pair named from elsewhere", () => {
     );
 
     expect(result.status === "success" && result.data.tiers.map((tier) => tier.pool.feePpm)).toEqual([500, 3000]);
+  });
+});
+
+describe("the chain a pair's tiers are on", () => {
+  it("is the chain the answering subgraph indexes, on every tier and on the pools asked for reserves", () => {
+    const body = payload([rawPool({ id: POOL_500, feeTier: "500" })]);
+    const result = normalizeV3PairFeeTiers({
+      payload: body,
+      chainId: 8453,
+      reserves: new Map(),
+      analysedPoolId: POOL_500,
+      fetchedAt: FETCHED_AT,
+    });
+
+    expect(succeeded(result).tiers.map(({ pool }) => pool.chainId)).toEqual([8453]);
+    expect(readPoolsForReserves(body, 42161).map(({ chainId }) => chainId)).toEqual([42161]);
+    expect(readPoolsForReserves(body).map(({ chainId }) => chainId)).toEqual([1]);
   });
 });

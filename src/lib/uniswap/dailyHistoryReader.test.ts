@@ -34,6 +34,25 @@ const scripted = (...answers: DataResult<PoolDailyPriceHistory>[]) => {
 };
 
 describe("keeping a history for the rest of the day", () => {
+  /*
+   * Arbitrum's v3 factory has mainnet's address and init code, so the same
+   * pair at the same fee is the same pool address on both chains.
+   */
+  it("keeps the same address on two chains apart, and asks each chain about its own", async () => {
+    const chains: number[] = [];
+    const fetchHistory: HistoryFetch = async (_protocol, _pool, _timeout, chainId) => {
+      chains.push(chainId);
+      return ok();
+    };
+    const { read } = createDailyHistoryReader(fetchHistory, () => NOON);
+
+    await read("v3", POOL);
+    await read("v3", POOL, 42161);
+    await read("v3", POOL, 42161);
+
+    expect(chains).toEqual([1, 42161]);
+  });
+
   it("asks once for the same pool on the same day, whatever the window the reader chose", async () => {
     const { fetchHistory, timeouts } = scripted(ok());
     const { read } = createDailyHistoryReader(fetchHistory, () => NOON);

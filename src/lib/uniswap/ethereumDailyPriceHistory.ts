@@ -5,6 +5,7 @@ import {
 } from "./v3DailyHistoryWindow";
 import { normalizeDailyPriceHistory } from "./dailyPriceHistoryAdapter";
 import { poolIdentityFor } from "./subgraphPoolIdentity";
+import type { ChainId } from "../chains/chains";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
@@ -83,6 +84,8 @@ const NOT_CONFIGURED = "market-data-not-configured";
 export type EthereumDailyPriceHistoryRequest = {
   /** Which protocol's subgraph is being read, and therefore how `poolId` is spelled. */
   readonly protocolVersion: ProtocolVersion;
+  /** The chain the subgraph indexes; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** A v3 pool address or a v4 PoolId, validated here against its protocol. */
   readonly poolId: string;
   /** Raw environment values; validated here so the wrapper stays free of logic. */
@@ -110,7 +113,7 @@ export type EthereumDailyPriceHistoryRequest = {
 export const fetchEthereumDailyPriceHistory = async (
   request: EthereumDailyPriceHistoryRequest,
 ): Promise<DataResult<PoolDailyPriceHistory>> => {
-  const identity = poolIdentityFor(request.protocolVersion, request.poolId);
+  const identity = poolIdentityFor(request.protocolVersion, request.poolId, request.chainId ?? 1);
   if (identity === null) {
     return { status: "unavailable", reason: "invalid-input", notice: INVALID_POOL_ID };
   }

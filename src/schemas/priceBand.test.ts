@@ -228,7 +228,8 @@ describe("VolatilityPriceBandSchema", () => {
     });
 
     it.each([
-      ["another chain", { pool: { protocolVersion: "v3", chainId: 8453, id: `0x${"d".repeat(40)}` } }],
+      ["a chain this application does not read", { pool: { protocolVersion: "v3", chainId: 10, id: `0x${"d".repeat(40)}` } }],
+      ["v4 off mainnet", { pool: { protocolVersion: "v4", chainId: 8453, id: `0x${"d".repeat(64)}` } }],
       ["the opposite price direction", { priceDirection: "token1PriceInToken0" }],
       ["a different method label", { method: "garch-volatility-band" }],
       ["a 252-day basis", { annualizationDays: 252 }],

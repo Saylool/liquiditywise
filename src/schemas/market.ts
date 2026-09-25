@@ -7,6 +7,7 @@ import {
   SubgraphSourceSchema,
 } from "./dataSource";
 import {
+  isReadableChain,
   IsoTimestampSchema,
   PositivePriceSchema,
   TokenAmountSchema,
@@ -255,8 +256,6 @@ export const VOLATILITY_WINDOW_DAYS = 31;
  */
 export const DAILY_PRICE_HISTORY_MAX_POINTS = VOLATILITY_WINDOW_DAYS + 90;
 
-/** Ethereum mainnet; this history is not modelled for other chains yet. */
-const HISTORY_CHAIN_ID = 1;
 
 const asInstant = (timestamp: string): number => Date.parse(timestamp);
 
@@ -338,7 +337,7 @@ export const PoolDailyPriceHistorySchema = z
   })
   .refine(
     (history) =>
-      history.pool.chainId === HISTORY_CHAIN_ID &&
+      isReadableChain(history.pool.chainId, history.pool.protocolVersion) &&
       history.source === SUBGRAPH_SOURCE_BY_PROTOCOL[history.pool.protocolVersion],
     {
       /*

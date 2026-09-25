@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { DataFailureNotice, DataWarningNotice } from "./notices";
 
-import { IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
+import { isReadableChain, IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
 import { SUBGRAPH_SOURCE_BY_PROTOCOL, SubgraphSourceSchema } from "./dataSource";
 import { PoolReferenceSchema } from "./uniswap";
 
@@ -236,14 +236,14 @@ export const HistoricalVolatilitySchema = z
   })
   .refine(
     (analytics) =>
-      analytics.pool.chainId === 1 &&
+      isReadableChain(analytics.pool.chainId, analytics.pool.protocolVersion) &&
       analytics.source === SUBGRAPH_SOURCE_BY_PROTOCOL[analytics.pool.protocolVersion],
     {
       // `source` says which subgraph these figures came from, so a pool reference
       // belonging to the other protocol means the provenance was assembled from
       // mismatched inputs rather than copied from one history.
       error:
-        "An analytic must name the subgraph that can describe its pool, on Ethereum mainnet.",
+        "An analytic must name the subgraph that can describe its pool, on a chain this application reads.",
       path: ["pool"],
     },
   )

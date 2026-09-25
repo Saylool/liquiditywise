@@ -207,3 +207,29 @@ describe("the deposit", () => {
     expect(render(undefined, { locale: "tr" })).toContain("Ne kadar para");
   });
 });
+
+describe("the chain a pool is on", () => {
+  const withChain = (chain: "ethereum" | "base" | undefined) =>
+    renderToStaticMarkup(
+      <BandParametersForm
+        action="/pool"
+        poolParameter="address"
+        poolId={POOL}
+        chain={chain}
+        parameters={{ horizonDays: 30, standardDeviationMultiplier: 1 }}
+        depositUsd={1_000}
+        fellBack={false}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+  it("travels hidden beside the pool off mainnet, so a changed band stays on that chain", () => {
+    expect(withChain("base")).toContain('<input type="hidden" name="chain" value="base"/>');
+  });
+
+  it("goes unsaid on mainnet", () => {
+    expect(withChain("ethereum")).not.toContain('name="chain"');
+    expect(withChain(undefined)).not.toContain('name="chain"');
+  });
+});

@@ -2,6 +2,7 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { PoolSearchRejection } from "../lib/search/poolSearchInput";
 import { MAX_SEARCH_TERM_LENGTH, MIN_SEARCH_TERM_LENGTH } from "../schemas";
 import { ArrowIcon } from "./BrandMark";
+import { CHAINS, type ChainSlug } from "../lib/chains/chains";
 
 /**
  * The one box: a pair to search for, or a pool's own id to go straight to.
@@ -35,8 +36,15 @@ export function PoolLookupForm({
   t,
   value,
   rejection,
+  network,
 }: {
   t: Dictionary;
+  /**
+   * Which chain the box reads on, as a plain select riding in the same GET
+   * form — so a pasted Base address goes to Base. Absent, the box reads
+   * mainnet, as it always has.
+   */
+  network?: { readonly label: string; readonly current: ChainSlug } | undefined;
   /**
    * What to put back in the box. Only ever a value that has already passed
    * validation — what a visitor typed is never echoed as they typed it.
@@ -78,6 +86,18 @@ export function PoolLookupForm({
         </button>
       </div>
       <p id="lookup-help" className="lookup-help">{t.search.help}</p>
+      {network === undefined ? null : (
+        <p className="lookup-network">
+          <label htmlFor="chain">{network.label}</label>
+          <select id="chain" name="chain" defaultValue={network.current}>
+            {CHAINS.map(({ slug, name }) => (
+              <option key={slug} value={slug}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </p>
+      )}
       {rejection === undefined ? null : (
         <p id="lookup-error" role="alert" className="lookup-error">{rejectionMessage(rejection, t)}</p>
       )}

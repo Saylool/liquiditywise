@@ -233,7 +233,7 @@ export const normalizeDailyPriceHistory = ({
   const candidate = {
     pool: {
       protocolVersion: identity.protocolVersion,
-      chainId: ETHEREUM_MAINNET_CHAIN_ID,
+      chainId: identity.chainId,
       id: identity.id,
     },
     fetchedAt,

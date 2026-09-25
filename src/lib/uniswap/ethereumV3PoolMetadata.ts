@@ -1,5 +1,6 @@
 import { type DataResult, nonZeroEvmAddress, type V3PoolMetadata } from "../../schemas";
 import { normalizeV3PoolMetadata } from "./v3PoolMetadataAdapter";
+import type { ChainId } from "../chains/chains";
 import {
   DEFAULT_SUBGRAPH_TIMEOUT_MS,
   type FetchLike,
@@ -46,6 +47,8 @@ const PoolAddressSchema = nonZeroEvmAddress(INVALID_ADDRESS);
 
 export type EthereumV3PoolMetadataRequest = {
   readonly poolAddress: string;
+  /** The chain the subgraph indexes; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
@@ -95,5 +98,9 @@ export const fetchEthereumV3PoolMetadata = async (
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };
   }
 
-  return normalizeV3PoolMetadata({ payload: transport.payload, poolAddress: address.data });
+  return normalizeV3PoolMetadata({
+    payload: transport.payload,
+    poolAddress: address.data,
+    chainId: request.chainId ?? 1,
+  });
 };

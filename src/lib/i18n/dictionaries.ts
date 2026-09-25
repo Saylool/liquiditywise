@@ -877,8 +877,8 @@ const en = {
     },
     noRangeHeading: "No range for this pool",
     stoppedWhile: (step: string) => `This stopped while ${step}.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · Ethereum mainnet · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `${fee} fee on every swap`,
     /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
     feePlusProtocol: (fee: string, protocol: string) =>
@@ -1867,8 +1867,8 @@ const tr: Dictionary = {
     },
     noRangeHeading: "Bu havuz için aralık yok",
     stoppedWhile: (step: string) => `İşlem ${step} durdu.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · Ethereum mainnet · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `her takasta ${fee} komisyon`,
     feePlusProtocol: (fee: string, protocol: string) =>
       `her takasta ${fee} komisyon, artı protokole ${protocol}`,
@@ -2813,8 +2813,8 @@ const de: Dictionary = {
     },
     noRangeHeading: "Kein Bereich für diesen Pool",
     stoppedWhile: (step: string) => `Dies brach ${step} ab.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · Ethereum-Mainnet · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `${fee} Gebühr bei jedem Tausch`,
     feePlusProtocol: (fee: string, protocol: string) =>
       `${fee} Gebühr bei jedem Tausch, dazu ${protocol} an das Protokoll`,
@@ -3733,8 +3733,8 @@ const es: Dictionary = {
     },
     noRangeHeading: "No hay rango para este pool",
     stoppedWhile: (step: string) => `Esto se detuvo ${step}.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · red principal de Ethereum · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `${fee} de comisión en cada intercambio`,
     feePlusProtocol: (fee: string, protocol: string) =>
       `${fee} de comisión en cada intercambio, más ${protocol} para el protocolo`,
@@ -4648,8 +4648,8 @@ const ar: Dictionary = {
     },
     noRangeHeading: "لا نطاق لهذا التجمّع",
     stoppedWhile: (step: string) => `توقّف هذا ${step}.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · شبكة إيثيريوم الرئيسية · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `رسم ${fee} على كل تبادل`,
     feePlusProtocol: (fee: string, protocol: string) =>
       `رسم ${fee} على كل تبادل، إضافةً إلى ${protocol} للبروتوكول`,
@@ -5553,8 +5553,8 @@ const hi: Dictionary = {
     },
     noRangeHeading: "इस पूल के लिए कोई दायरा नहीं",
     stoppedWhile: (step: string) => `यह ${step} रुक गया।`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · Ethereum मेननेट · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `हर स्वैप पर ${fee} शुल्क`,
     feePlusProtocol: (fee: string, protocol: string) =>
       `हर स्वैप पर ${fee} शुल्क, साथ में प्रोटोकॉल को ${protocol}`,
@@ -6657,8 +6657,8 @@ const zh: Dictionary = {
     },
     noRangeHeading: "这个池子没有区间",
     stoppedWhile: (step: string) => `这件事在${step}时停了下来。`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · 以太坊主网 · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `每笔兑换收取 ${fee} 手续费`,
     /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
     feePlusProtocol: (fee: string, protocol: string) =>
@@ -7840,8 +7840,8 @@ const ru: Dictionary = {
     },
     noRangeHeading: "Для этого пула диапазона нет",
     stoppedWhile: (step: string) => `Всё остановилось на этапе ${step}.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · основная сеть Ethereum · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `комиссия ${fee} на каждом свопе`,
     /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
     feePlusProtocol: (fee: string, protocol: string) =>
@@ -9024,8 +9024,8 @@ const pt: Dictionary = {
     },
     noRangeHeading: "Sem faixa para este pool",
     stoppedWhile: (step: string) => `Isto parou enquanto ${step}.`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · rede principal do Ethereum · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `taxa de ${fee} em cada swap`,
     /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
     feePlusProtocol: (fee: string, protocol: string) =>
@@ -10191,8 +10191,8 @@ const zhHant: Dictionary = {
     },
     noRangeHeading: "這個池子沒有區間",
     stoppedWhile: (step: string) => `這件事在${step}時停了下來。`,
-    poolSummary: (protocol: string, fee: string) =>
-      `Uniswap ${protocol} · 以太坊主網 · ${fee}`,
+    poolSummary: (protocol: string, fee: string, chain: string) =>
+      `Uniswap ${protocol} · ${chain} · ${fee}`,
     feePerSwap: (fee: string) => `每筆兌換收取 ${fee} 手續費`,
     /** A v4 pool whose protocol takes a cut on top of the pool's own fee. */
     feePlusProtocol: (fee: string, protocol: string) =>

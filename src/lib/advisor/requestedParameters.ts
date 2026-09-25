@@ -4,6 +4,7 @@ import {
   PriceBandParametersSchema,
 } from "../../schemas";
 import { DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
+import { type Chain, chainBySlug, ETHEREUM } from "../chains/chains";
 
 /*
  * The band parameters a visitor asked for, read from the query string.
@@ -196,8 +197,11 @@ export const poolAnalysisHref = (
   poolAddress: string,
   parameters: PriceBandParameters,
   depositUsd?: number,
+  chain: Chain = ETHEREUM,
 ): string => {
   const query = new URLSearchParams({
+    /* Mainnet goes unsaid, so every link published before other chains still reads the same. */
+    ...(chain.id === ETHEREUM.id ? {} : { [CHAIN_PARAMETER]: chain.slug }),
     address: poolAddress,
     [HORIZON_PARAMETER]: String(parameters.horizonDays),
     [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
@@ -251,4 +255,19 @@ export const v4PoolAnalysisHref = (
   if (depositUsd !== undefined) query.set(DEPOSIT_PARAMETER, String(depositUsd));
 
   return `/v4?${query.toString()}`;
+};
+
+/** The query parameter a pool's chain travels under: `/pool?chain=base&address=…`. */
+export const CHAIN_PARAMETER = "chain";
+
+/**
+ * The chain a request names: mainnet when it names none, the chain for a slug
+ * this application reads, and `null` for anything else — an unknown or
+ * repeated chain is refused, never read as mainnet, because the same address
+ * on the wrong chain is a different pool or none.
+ */
+export const readRequestedChain = (raw: string | readonly string[] | undefined): Chain | null => {
+  if (raw === undefined) return ETHEREUM;
+  if (typeof raw !== "string") return null;
+  return chainBySlug(raw);
 };

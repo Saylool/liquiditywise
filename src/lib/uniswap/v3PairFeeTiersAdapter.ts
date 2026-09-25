@@ -9,6 +9,7 @@ import {
 import { V3PoolListResponseSchema } from "./v3PoolListRawResponse";
 import type { PoolReserves } from "./ethereumV3PoolReserves";
 import { normalizePoolCard } from "./v3PoolCardAdapter";
+import type { ChainId } from "../chains/chains";
 
 const MALFORMED = "market-data-malformed";
 const INDEXING_ERRORS = "market-data-indexing-errors";
@@ -34,13 +35,13 @@ const byFee = (left: PairFeeTier, right: PairFeeTier): number =>
  * exactly a pool that can appear in the answer. Anything it refuses is skipped
  * in both places.
  */
-export const readPoolsForReserves = (payload: unknown): readonly V3PoolMetadata[] => {
+export const readPoolsForReserves = (payload: unknown, chainId: ChainId = 1): readonly V3PoolMetadata[] => {
   const parsed = V3PoolListResponseSchema.safeParse(payload);
   if (!parsed.success || parsed.data.data == null) return [];
 
   const pools: V3PoolMetadata[] = [];
   for (const raw of parsed.data.data.pools) {
-    const card = normalizePoolCard(raw);
+    const card = normalizePoolCard(raw, chainId);
     if (card !== null) pools.push(card.pool);
   }
 
@@ -50,6 +51,8 @@ export const readPoolsForReserves = (payload: unknown): readonly V3PoolMetadata[
 export type NormalizeV3PairFeeTiersInput = {
   /** The decoded JSON body, still untrusted. */
   readonly payload: unknown;
+  /** The chain the subgraph that answered indexes; mainnet when not said. */
+  readonly chainId?: ChainId;
   /**
    * What each pool actually holds, read from the chain, keyed by pool address.
    *
@@ -81,6 +84,7 @@ export type NormalizeV3PairFeeTiersInput = {
  */
 export const normalizeV3PairFeeTiers = ({
   payload,
+  chainId = 1,
   reserves,
   analysedPoolId,
   fetchedAt,
@@ -101,7 +105,7 @@ export const normalizeV3PairFeeTiers = ({
   let dropped = 0;
 
   for (const raw of data.pools) {
-    const card = normalizePoolCard(raw);
+    const card = normalizePoolCard(raw, chainId);
     if (card === null) {
       dropped += 1;
       continue;

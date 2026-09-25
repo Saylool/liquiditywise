@@ -3,7 +3,8 @@ import "server-only";
 import type { DataResult, PoolMarketSnapshot, ProtocolVersion } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumPoolMarketSnapshot } from "./ethereumPoolMarketSnapshot";
-import { ethereumSubgraphId } from "./ethereumSubgraphs";
+import { subgraphIdFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
 
 /*
  * The server-only boundary.
@@ -35,6 +36,7 @@ import { ethereumSubgraphId } from "./ethereumSubgraphs";
 export const getEthereumPoolMarketSnapshot = async (
   protocolVersion: ProtocolVersion,
   poolId: string,
+  chainId: ChainId = 1,
 ): Promise<DataResult<PoolMarketSnapshot>> => {
   const label = `${protocolVersion}-snapshot`;
 
@@ -43,8 +45,9 @@ export const getEthereumPoolMarketSnapshot = async (
     await fetchEthereumPoolMarketSnapshot({
       protocolVersion,
       poolId,
+      chainId,
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: ethereumSubgraphId(protocolVersion),
+      subgraphId: subgraphIdFor(protocolVersion, chainId),
       fetchImpl: loggingFetch(label),
       now: () => new Date(),
     }),

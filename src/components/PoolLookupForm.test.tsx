@@ -90,3 +90,21 @@ describe("PoolLookupForm", () => {
     expect(markup).not.toContain("Find pools");
   });
 });
+
+describe("choosing the network", () => {
+  it("offers every chain read, with the current one chosen, inside the same form", () => {
+    const markup = renderToStaticMarkup(
+      <PoolLookupForm t={getDictionary("tr")} network={{ label: "Ağ", current: "base" }} />,
+    );
+
+    expect(markup).toContain('<select id="chain" name="chain">');
+    expect(markup).toContain('<option value="ethereum">Ethereum</option>');
+    expect(markup).toContain('<option value="base" selected="">Base</option>');
+    expect(markup).toContain('<option value="arbitrum">Arbitrum One</option>');
+    expect(markup.indexOf('name="chain"')).toBeLessThan(markup.indexOf("</form>"));
+  });
+
+  it("is not offered where the box has not been told the chain", () => {
+    expect(render()).not.toContain('name="chain"');
+  });
+});

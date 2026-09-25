@@ -3,6 +3,8 @@ import "server-only";
 import type { DataResult, PairFeeTiers, V3PoolMetadata } from "../../schemas";
 import { logDetail, loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV3PairFeeTiers } from "./ethereumV3PairFeeTiers";
+import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
+import { type ChainId, isSupportedChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v3-pair-fee-tiers";
@@ -37,6 +39,7 @@ export const getEthereumV3PairFeeTiers = async (
     analysedPoolId: pool.id,
     token0Address: pool.token0.address,
     token1Address: pool.token1.address,
+    chainId: isSupportedChainId(pool.chainId) ? pool.chainId : 1,
   });
 
 /**
@@ -48,16 +51,19 @@ export const getEthereumV3PoolsOfPair = async (pair: {
   readonly analysedPoolId: string | null;
   readonly token0Address: string;
   readonly token1Address: string;
+  /** The chain to look on; mainnet when not said, as from a v4 page. */
+  readonly chainId?: ChainId;
 }): Promise<DataResult<PairFeeTiers>> =>
   logUnavailable(
     LABEL,
     await fetchEthereumV3PairFeeTiers({
       poolAddress: pair.analysedPoolId,
+      chainId: pair.chainId ?? 1,
       token0Address: pair.token0Address,
       token1Address: pair.token1Address,
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
-      rpcUrl: process.env.ETHEREUM_RPC_URL,
+      subgraphId: v3SubgraphIdFor(pair.chainId ?? 1),
+      rpcUrl: rpcUrlFor(pair.chainId ?? 1),
       fetchImpl: loggingFetch(LABEL),
       now: () => new Date(),
       onDiagnostic: (detail) => {

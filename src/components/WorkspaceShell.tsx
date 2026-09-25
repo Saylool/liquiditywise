@@ -19,10 +19,13 @@ export function WorkspaceShell({
   section,
   heading,
   children,
+  network,
 }: {
   locale: Locale;
   t: Dictionary;
   children: React.ReactNode;
+  /** The network the page reads, for the chip beside the heading; mainnet when not said. */
+  network?: string | undefined;
 } & Heading) {
   const copy = getInterfaceCopy(locale);
   return (
@@ -36,7 +39,7 @@ export function WorkspaceShell({
         </div>
         <span className="network-chip">
           <i className="status-dot" />
-          {copy.chain}
+          {network ?? copy.chain}
         </span>
       </div>
       <div className="workspace-content">{children}</div>

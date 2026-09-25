@@ -38,6 +38,7 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { StatedSwapFee, V4ProtocolFee } from "../schemas";
 import { PriceHistoryChart } from "./PriceHistoryChart";
+import { chainLabel } from "../lib/chains/chainLabel";
 
 /**
  * Renders one pool's range analysis, for someone who has never heard of a tick.
@@ -486,6 +487,7 @@ export function PoolRangeReport({
                       formatProtocolFee(disclosure.protocolFee, locale),
                     )
                   : t.report.feePerSwap(formatFeePpm(disclosure.lpFeePpm, locale)),
+              chainLabel(pool.chainId, locale),
             )}
           </p>
           <p className="break-all font-mono text-xs text-muted">{pool.id}</p>

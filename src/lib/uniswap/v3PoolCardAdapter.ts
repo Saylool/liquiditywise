@@ -2,6 +2,7 @@ import { type V3PoolMetadata, V3PoolMetadataSchema, VOLATILITY_WINDOW_DAYS } fro
 import type { RawPoolCard } from "./v3PoolCardRawResponse";
 import { convertNonNegativeDecimal, convertSafeInteger } from "./v3SubgraphRawResponse";
 import { normalizeV3Token } from "./v3TokenAdapter";
+import type { ChainId } from "../chains/chains";
 
 /** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
 export const ETHEREUM_MAINNET_CHAIN_ID = 1;
@@ -66,7 +67,7 @@ export const isDormant = (card: PoolCard, now: Date): boolean => {
  * bad entry does not have to sink the answer — everywhere else the visitor asked
  * about one pool and the only honest replies were that pool or nothing.
  */
-export const normalizePoolCard = (raw: RawPoolCard): PoolCard | null => {
+export const normalizePoolCard = (raw: RawPoolCard, chainId: ChainId = ETHEREUM_MAINNET_CHAIN_ID): PoolCard | null => {
   const feePpm = convertSafeInteger(raw.feeTier);
   if (!feePpm.ok) return null;
 
@@ -77,13 +78,13 @@ export const normalizePoolCard = (raw: RawPoolCard): PoolCard | null => {
   const tvlUsd = convertNonNegativeDecimal(raw.totalValueLockedUSD, { allowZero: true });
   if (!tvlUsd.ok) return null;
 
-  const token0 = normalizeV3Token(raw.token0, ETHEREUM_MAINNET_CHAIN_ID);
-  const token1 = normalizeV3Token(raw.token1, ETHEREUM_MAINNET_CHAIN_ID);
+  const token0 = normalizeV3Token(raw.token0, chainId);
+  const token1 = normalizeV3Token(raw.token1, chainId);
   if (token0 === null || token1 === null) return null;
 
   const pool = V3PoolMetadataSchema.safeParse({
     protocolVersion: "v3",
-    chainId: ETHEREUM_MAINNET_CHAIN_ID,
+    chainId,
     id: raw.id,
     token0,
     token1,

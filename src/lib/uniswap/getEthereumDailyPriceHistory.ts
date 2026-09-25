@@ -4,7 +4,8 @@ import type { DataResult, PoolDailyPriceHistory, ProtocolVersion } from "../../s
 import { logDetail, loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { createDailyHistoryReader } from "./dailyHistoryReader";
 import { fetchEthereumDailyPriceHistory } from "./ethereumDailyPriceHistory";
-import { ethereumSubgraphId } from "./ethereumSubgraphs";
+import { subgraphIdFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
 
 /*
  * The server-only boundary for daily price history.
@@ -37,14 +38,15 @@ const labelOf = (protocolVersion: ProtocolVersion): string => `${protocolVersion
  * which was true of nothing except the timeout.
  */
 const reader = createDailyHistoryReader(
-  async (protocolVersion, poolId, timeoutMs) =>
+  async (protocolVersion, poolId, timeoutMs, chainId) =>
     logUnavailable(
       labelOf(protocolVersion),
       await fetchEthereumDailyPriceHistory({
         protocolVersion,
         poolId,
+        chainId,
         apiKey: process.env.THE_GRAPH_API_KEY,
-        subgraphId: ethereumSubgraphId(protocolVersion),
+        subgraphId: subgraphIdFor(protocolVersion, chainId),
         fetchImpl: loggingFetch(labelOf(protocolVersion)),
         timeoutMs,
         now: () => new Date(),
@@ -65,4 +67,5 @@ const reader = createDailyHistoryReader(
 export const getEthereumDailyPriceHistory = (
   protocolVersion: ProtocolVersion,
   poolId: string,
-): Promise<DataResult<PoolDailyPriceHistory>> => reader.read(protocolVersion, poolId);
+  chainId: ChainId = 1,
+): Promise<DataResult<PoolDailyPriceHistory>> => reader.read(protocolVersion, poolId, chainId);

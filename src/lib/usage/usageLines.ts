@@ -1,3 +1,5 @@
+import { chainBySlug, chainOf } from "../chains/chains";
+
 /*
  * The two lines this application writes about its own use, and the reader of
  * them — kept in one file so the format cannot drift between the side that
@@ -55,10 +57,20 @@ const isPage = (path: string): path is Page => (PAGES as readonly string[]).incl
  * The pool a page was opened for, when it names one. `/holdings` never does,
  * whatever its query says.
  */
+/**
+ * How a pool is named in the journal: `v3:0x…` on mainnet, as every line
+ * written before other chains was, and `v3@base:0x…` elsewhere — the same
+ * address is a different pool on another chain, and the report must not add
+ * the two together.
+ */
+export const poolName = (protocol: "v3" | "v4", id: string, chainId: number = 1): string =>
+  chainId === 1 ? `${protocol}:${id}` : `${protocol}@${chainOf(chainId).slug}:${id}`;
+
 const poolOf = (page: Page, parameters: URLSearchParams): string | null => {
   if (page === "/pool" || page === "/compare") {
     const address = parameters.get("address")?.trim().toLowerCase() ?? "";
-    if (ADDRESS.test(address)) return `v3:${address}`;
+    const chain = chainBySlug(parameters.get("chain") ?? "ethereum");
+    if (ADDRESS.test(address) && chain !== null) return poolName("v3", address, chain.id);
   }
   if (page === "/v4") {
     const id = parameters.get("id")?.trim().toLowerCase() ?? "";

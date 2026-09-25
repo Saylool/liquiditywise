@@ -38,13 +38,19 @@ export async function PoolFeeTiersSection({
    * — wrapped ether stays wrapped ether — and no entry there is the pool being
    * read, which the `null` says.
    */
+  /*
+   * v4 is read on mainnet alone. Off it, the same two token addresses would be
+   * looked up among mainnet's v4 pools, where they name other tokens or none.
+   */
   const [result, v4Result] = await Promise.all([
     getEthereumV3PairFeeTiers(pool),
-    getEthereumV4PairPools({
-      analysedPoolId: null,
-      token0Address: pool.token0.address,
-      token1Address: pool.token1.address,
-    }),
+    pool.chainId !== 1
+      ? null
+      : getEthereumV4PairPools({
+          analysedPoolId: null,
+          token0Address: pool.token0.address,
+          token1Address: pool.token1.address,
+        }),
   ]);
 
   return (

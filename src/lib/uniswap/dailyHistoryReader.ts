@@ -23,10 +23,13 @@ import type { DataResult, PoolDailyPriceHistory, ProtocolVersion } from "../../s
  * be a test.
  */
 
+import type { ChainId } from "../chains/chains";
+
 export type HistoryFetch = (
   protocolVersion: ProtocolVersion,
   poolId: string,
   timeoutMs: number,
+  chainId: ChainId,
 ) => Promise<DataResult<PoolDailyPriceHistory>>;
 
 /** The first ask: long enough for a cold gateway on a bad day. */
@@ -62,15 +65,25 @@ export const createDailyHistoryReader = (
   const kept = new Map<string, DataResult<PoolDailyPriceHistory>>();
   const asking = new Map<string, Promise<DataResult<PoolDailyPriceHistory>>>();
 
-  const ask = async (protocolVersion: ProtocolVersion, poolId: string) => {
-    const first = await fetchHistory(protocolVersion, poolId, FIRST_TIMEOUT_MS);
+  const ask = async (protocolVersion: ProtocolVersion, poolId: string, chainId: ChainId) => {
+    const first = await fetchHistory(protocolVersion, poolId, FIRST_TIMEOUT_MS, chainId);
     if (first.status !== "unavailable" || first.reason !== "timeout") return first;
     onRetry(protocolVersion);
-    return fetchHistory(protocolVersion, poolId, RETRY_TIMEOUT_MS);
+    return fetchHistory(protocolVersion, poolId, RETRY_TIMEOUT_MS, chainId);
   };
 
-  const read = (protocolVersion: ProtocolVersion, poolId: string): Promise<DataResult<PoolDailyPriceHistory>> => {
-    const key = `${utcDay(now())}|${protocolVersion}|${poolId.toLowerCase()}`;
+  const read = (
+    protocolVersion: ProtocolVersion,
+    poolId: string,
+    chainId: ChainId = 1,
+  ): Promise<DataResult<PoolDailyPriceHistory>> => {
+    /*
+     * The chain is part of the pool's name. Arbitrum's v3 factory has
+     * mainnet's address and init code, so a pool of the same two token
+     * addresses at the same fee is the same address on both — and without the
+     * chain here one would be served the other's week.
+     */
+    const key = `${utcDay(now())}|${chainId}|${protocolVersion}|${poolId.toLowerCase()}`;
 
     const hit = kept.get(key);
     if (hit !== undefined) return Promise.resolve(hit);
@@ -79,7 +92,7 @@ export const createDailyHistoryReader = (
     const pending = asking.get(key);
     if (pending !== undefined) return pending;
 
-    const started = ask(protocolVersion, poolId)
+    const started = ask(protocolVersion, poolId, chainId)
       .then((result) => {
         if (result.status === "success" && complete(result.data)) {
           // A new day's first entry clears the old day's: none of them can be asked for again.

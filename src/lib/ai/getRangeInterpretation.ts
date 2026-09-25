@@ -34,6 +34,7 @@ import {
 import type { InterpretationOutcome } from "./rangeInterpretationAdapter";
 import { createExplanationBudget } from "./explanationBudget";
 import { observeUsage, usageOf, type TokenUsage } from "./usageObserver";
+import { poolName } from "../usage/usageLines";
 
 /*
  * The server-only boundary for the explanation.
@@ -110,7 +111,7 @@ const CAPPED: InterpretationOutcome<WrittenInterpretation> = {
 };
 
 const poolOf = (analysis: PoolRangeAnalysis): string =>
-  `${analysis.history.pool.protocolVersion}:${analysis.history.pool.id.toLowerCase()}`;
+  poolName(analysis.history.pool.protocolVersion, analysis.history.pool.id.toLowerCase(), analysis.history.pool.chainId);
 
 /**
  * Records what one explanation cost, for the weekly report. Written whether

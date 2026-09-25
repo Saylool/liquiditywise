@@ -16,8 +16,13 @@ import {
   HORIZON_PARAMETER,
   MULTIPLIER_PARAMETER,
   DEPOSIT_PARAMETER,
+  CHAIN_PARAMETER,
+  readRequestedChain,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
+import { chainLabel } from "@/lib/chains/chainLabel";
+import { type Chain, ETHEREUM } from "@/lib/chains/chains";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -67,14 +72,16 @@ export async function generateMetadata(): Promise<Metadata> {
 function Shell({
   locale,
   t,
+  chain = ETHEREUM,
   children,
 }: {
   locale: Locale;
   t: Dictionary;
+  chain?: Chain;
   children: React.ReactNode;
 }) {
   return (
-    <WorkspaceShell locale={locale} t={t} section="pools">
+    <WorkspaceShell locale={locale} t={t} section="pools" network={chainLabel(chain.id, locale)}>
       {children}
     </WorkspaceShell>
   );
@@ -91,6 +98,23 @@ export default async function PoolRangePage({
 }) {
   const { locale, t } = await getRequestDictionary();
   const params = await searchParams;
+  const chainCopy = getChainCopy(locale);
+
+  /*
+   * The chain first: the same address on the wrong chain is a different pool
+   * or none, so a chain this application does not read is refused outright
+   * rather than read as mainnet.
+   */
+  const chain = readRequestedChain(params[CHAIN_PARAMETER]);
+  if (chain === null) {
+    return (
+      <Shell locale={locale} t={t}>
+        <PoolLookupForm t={t} network={{ label: chainCopy.network, current: ETHEREUM.slug }} />
+        <p className="text-sm leading-relaxed text-muted">{chainCopy.unknown}</p>
+      </Shell>
+    );
+  }
+  const network = { label: chainCopy.network, current: chain.slug };
 
   const requestedAddress = params.address;
   const address = EvmAddressSchema.safeParse(single(requestedAddress));
@@ -113,11 +137,13 @@ export default async function PoolRangePage({
       address.data,
       requested.parameters,
       requested.depositUsd,
+      undefined,
+      chain.id,
     );
 
     return (
-      <Shell locale={locale} t={t}>
-        <PoolLookupForm t={t} value={address.data} />
+      <Shell locale={locale} t={t} chain={chain}>
+        <PoolLookupForm t={t} value={address.data} network={network} />
         <PoolRangeReport
           result={result}
           poolId={address.data}
@@ -133,6 +159,7 @@ export default async function PoolRangePage({
               action="/pool"
               poolParameter="address"
               poolId={address.data}
+              chain={chain.slug}
               parameters={requested.parameters}
               depositUsd={requested.depositUsd}
               fellBack={requested.fellBack}
@@ -188,9 +215,9 @@ export default async function PoolRangePage({
 
   if (requestedAddress !== undefined) {
     return (
-      <Shell locale={locale} t={t}>
+      <Shell locale={locale} t={t} chain={chain}>
         {/* Deliberately does not echo what was typed: it is unvalidated input. */}
-        <PoolLookupForm t={t} />
+        <PoolLookupForm t={t} network={network} />
         <p className="text-sm leading-relaxed text-muted">{t.pool.invalidAddress}</p>
       </Shell>
     );
@@ -199,8 +226,8 @@ export default async function PoolRangePage({
   const query = single(params.q);
   if (query === undefined) {
     return (
-      <Shell locale={locale} t={t}>
-        <PoolLookupForm t={t} />
+      <Shell locale={locale} t={t} chain={chain}>
+        <PoolLookupForm t={t} network={network} />
       </Shell>
     );
   }
@@ -214,14 +241,30 @@ export default async function PoolRangePage({
    *
    * Safe to interpolate: the value passed a strict hex pattern to become one.
    */
-  if (input.kind === "address") redirect(`/pool?address=${input.address}`);
+  if (input.kind === "address") {
+    redirect(
+      chain.id === ETHEREUM.id
+        ? `/pool?address=${input.address}`
+        : `/pool?${CHAIN_PARAMETER}=${chain.slug}&address=${input.address}`,
+    );
+  }
   /* Likewise a v4 id, which has its own page. Same pattern guard, same reason. */
   if (input.kind === "v4-pool-id") redirect(`/v4?id=${input.poolId}`);
 
   if (input.kind === "unusable") {
     return (
-      <Shell locale={locale} t={t}>
-        <PoolLookupForm t={t} rejection={input.reason} />
+      <Shell locale={locale} t={t} chain={chain}>
+        <PoolLookupForm t={t} rejection={input.reason} network={network} />
+      </Shell>
+    );
+  }
+
+  /* A name search reads mainnet's subgraphs; off mainnet only an address reaches a pool, for now. */
+  if (chain.id !== ETHEREUM.id) {
+    return (
+      <Shell locale={locale} t={t} chain={chain}>
+        <PoolLookupForm t={t} value={input.terms.join(" ")} network={network} />
+        <p className="text-sm leading-relaxed text-muted">{chainCopy.searchMainnetOnly(chain.name)}</p>
       </Shell>
     );
   }
@@ -229,7 +272,7 @@ export default async function PoolRangePage({
   return (
     <Shell locale={locale} t={t}>
       {/* The validated terms, not the raw string — which may have held a third. */}
-      <PoolLookupForm t={t} value={input.terms.join(" ")} />
+      <PoolLookupForm t={t} value={input.terms.join(" ")} network={network} />
       {/*
        * Streamed, because a search now asks the chain what each candidate holds
        * — the figure the order rests on — and that is several batched calls. The

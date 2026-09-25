@@ -5,6 +5,7 @@ import {
   nonZeroEvmAddress,
   type ProtocolVersion,
 } from "../../schemas";
+import type { ChainId } from "../chains/chains";
 
 /*
  * What a subgraph adapter needs to know about *which* pool it is reading, and
@@ -27,6 +28,8 @@ const V3PoolAddressSchema = nonZeroEvmAddress("invalid-pool-address");
 
 export type SubgraphPoolIdentity = {
   readonly protocolVersion: ProtocolVersion;
+  /** The chain the pool is on, stamped onto every result the read produces. */
+  readonly chainId: ChainId;
   /** Which subgraph the figures came from, stamped onto every result. */
   readonly source: DataSource;
   /** The validated, canonical id this read asked about. */
@@ -49,12 +52,13 @@ export type SubgraphPoolIdentity = {
  * configuration" order the readers already follow: a malformed address is
  * answered before any credential is even looked at.
  */
-export const v3PoolIdentity = (poolAddress: string): SubgraphPoolIdentity | null => {
+export const v3PoolIdentity = (poolAddress: string, chainId: ChainId = 1): SubgraphPoolIdentity | null => {
   const address = V3PoolAddressSchema.safeParse(poolAddress);
   if (!address.success) return null;
 
   return {
     protocolVersion: "v3",
+    chainId,
     source: "uniswap-v3-subgraph",
     id: address.data,
     matches: (echoed) => {
@@ -79,6 +83,8 @@ export const v4PoolIdentity = (poolId: string): SubgraphPoolIdentity | null => {
 
   return {
     protocolVersion: "v4",
+    /* Mainnet only: no v4 subgraph is configured for any other chain. */
+    chainId: 1,
     source: "uniswap-v4-subgraph",
     id: id.data,
     matches: (echoed) => {
@@ -95,13 +101,16 @@ export const v4PoolIdentity = (poolId: string): SubgraphPoolIdentity | null => {
  * `satisfies Record<ProtocolVersion, …>` is what makes adding a protocol a
  * compile error here rather than a reader that silently falls through to `v3`.
  */
-const IDENTITY_BY_PROTOCOL = {
-  v3: v3PoolIdentity,
-  v4: v4PoolIdentity,
-} as const satisfies Record<ProtocolVersion, (id: string) => SubgraphPoolIdentity | null>;
-
-/** Validates a caller-supplied pool id the way its protocol spells one. */
+/**
+ * Validates a caller-supplied pool id the way its protocol spells one, on the
+ * chain it was asked about. A v4 pool on another chain is refused rather than
+ * looked up on mainnet, where the same id would name a different pool or none.
+ */
 export const poolIdentityFor = (
   protocolVersion: ProtocolVersion,
   poolId: string,
-): SubgraphPoolIdentity | null => IDENTITY_BY_PROTOCOL[protocolVersion](poolId);
+  chainId: ChainId = 1,
+): SubgraphPoolIdentity | null => {
+  if (protocolVersion === "v3") return v3PoolIdentity(poolId, chainId);
+  return chainId === 1 ? v4PoolIdentity(poolId) : null;
+};

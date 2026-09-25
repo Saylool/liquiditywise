@@ -12,6 +12,7 @@ import type {
   V4PairPools,
 } from "../schemas";
 import { V4PairPoolList } from "./V4PairPoolList";
+import { chainOf, ETHEREUM } from "../lib/chains/chains";
 
 /**
  * Where else this pair trades.
@@ -99,7 +100,7 @@ const TierRow = ({
         </div>
       ) : (
         <GuardedLink
-          href={poolAnalysisHref(tier.pool.id, parameters, depositUsd)}
+          href={poolAnalysisHref(tier.pool.id, parameters, depositUsd, chainOf(tier.pool.chainId))}
           className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
         >
           {body}
@@ -179,7 +180,8 @@ export function V3PairPoolList({
        * a band and deposit to carry: the comparison reads every tier under
        * the settings the reader is already looking at.
        */}
-      {analysedPoolId === null ? null : (
+      {/* Mainnet only for now: the comparison reads v3 and v4 on mainnet. */}
+      {analysedPoolId === null || tiers.some(({ pool }) => pool.chainId !== ETHEREUM.id) ? null : (
         <GuardedLink className="text-link text-sm" href={poolComparisonHref(analysedPoolId, parameters, depositUsd)}>
           {t.compare.link}
         </GuardedLink>
@@ -203,8 +205,8 @@ export function PoolFeeTiers({
   locale,
 }: {
   result: DataResult<PairFeeTiers>;
-  /** The same two token contracts on v4, read beside the tiers. */
-  v4Result: DataResult<V4PairPools>;
+  /** The same two token contracts on v4, read beside the tiers — or `null` off mainnet, where no v4 is read. */
+  v4Result: DataResult<V4PairPools> | null;
   /** The pair as the report above names it, so the two agree. */
   pair: string;
   /** The band in effect, carried into every link out of here. */
@@ -226,10 +228,14 @@ export function PoolFeeTiers({
        * The other protocol, beneath. The same two contracts, which is stated
        * on the list itself: to a pool, ether and wrapped ether are two tokens.
        */}
-      <h3 className="border-t border-border pt-4 text-xs uppercase tracking-widest text-muted">
-        {t.feeTiers.onV4}
-      </h3>
-      <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
+      {v4Result === null ? null : (
+        <>
+          <h3 className="border-t border-border pt-4 text-xs uppercase tracking-widest text-muted">
+            {t.feeTiers.onV4}
+          </h3>
+          <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
+        </>
+      )}
     </section>
   );
 }

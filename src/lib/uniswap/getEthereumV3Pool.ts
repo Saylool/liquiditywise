@@ -3,6 +3,8 @@ import "server-only";
 import type { DataResult, V3Pool } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV3Pool } from "./ethereumV3Pool";
+import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v3-pool";
@@ -22,14 +24,15 @@ const LABEL = "v3-pool";
  *
  * Environment variables are read per call rather than captured at module load.
  */
-export const getEthereumV3Pool = async (poolAddress: string): Promise<DataResult<V3Pool>> =>
+export const getEthereumV3Pool = async (poolAddress: string, chainId: ChainId = 1): Promise<DataResult<V3Pool>> =>
   logUnavailable(
     LABEL,
     await fetchEthereumV3Pool({
       poolAddress,
+      chainId,
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
-      rpcUrl: process.env.ETHEREUM_RPC_URL,
+      subgraphId: v3SubgraphIdFor(chainId),
+      rpcUrl: rpcUrlFor(chainId),
       fetchImpl: loggingFetch(LABEL),
     }),
   );

@@ -335,7 +335,7 @@ describe("invalid input", () => {
 
   it.each([
     ["a v4 pool", { pool: { protocolVersion: "v4", chainId: 1, id: `0x${"c".repeat(64)}` } }],
-    ["another chain", { pool: { protocolVersion: "v3", chainId: 8453, id: `0x${"d".repeat(40)}` } }],
+    ["a chain this application does not read", { pool: { protocolVersion: "v3", chainId: 10, id: `0x${"d".repeat(40)}` } }],
     ["a non-midnight rangeStart", { rangeStart: "2026-07-20T00:00:00.001Z" }],
     ["an hourly interval", { interval: "1h" }],
     ["the opposite price direction", { priceDirection: "token1PriceInToken0" }],

@@ -17,6 +17,7 @@ import {
   DEFAULT_PRICE_BAND_PARAMETERS,
   type PoolRangeAnalysisResult,
 } from "./poolRangeAnalysis";
+import type { ChainId } from "../chains/chains";
 
 /*
  * The server-only boundary for the whole advisor pipeline.
@@ -43,14 +44,16 @@ import {
  */
 const POOL_READERS = {
   v3: getEthereumV3Pool,
-  v4: getEthereumV4Pool,
+  /* Mainnet only, as every v4 read is; a v4 pool on another chain never gets this far. */
+  v4: (poolId: string) => getEthereumV4Pool(poolId),
 } as const satisfies Record<
   ProtocolVersion,
-  (id: string) => Promise<DataResult<V3Pool> | DataResult<V4Pool>>
+  (id: string, chainId: ChainId) => Promise<DataResult<V3Pool> | DataResult<V4Pool>>
 >;
 
 /**
- * Reads one Ethereum mainnet Uniswap pool and works it through to a tick range.
+ * Reads one Uniswap pool — on mainnet unless `chainId` says otherwise — and
+ * works it through to a tick range.
  *
  * The three reads run concurrently because none depends on another's result, so
  * the page waits for the slowest rather than the sum. Each returns its own
@@ -73,14 +76,13 @@ export const getPoolRangeAnalysis = async (
   poolId: string,
   parameters: PriceBandParameters = DEFAULT_PRICE_BAND_PARAMETERS,
   depositUsd: number = DEFAULT_DEPOSIT_USD,
-  poolRead: Promise<DataResult<V3Pool> | DataResult<V4Pool>> = POOL_READERS[protocolVersion](
-    poolId,
-  ),
+  poolRead?: Promise<DataResult<V3Pool> | DataResult<V4Pool>>,
+  chainId: ChainId = 1,
 ): Promise<PoolRangeAnalysisResult> => {
   const [pool, snapshot, history] = await Promise.all([
-    poolRead,
-    getEthereumPoolMarketSnapshot(protocolVersion, poolId),
-    getEthereumDailyPriceHistory(protocolVersion, poolId),
+    poolRead ?? POOL_READERS[protocolVersion](poolId, chainId),
+    getEthereumPoolMarketSnapshot(protocolVersion, poolId, chainId),
+    getEthereumDailyPriceHistory(protocolVersion, poolId, chainId),
   ]);
 
   return analysePoolRange({ pool, snapshot, history, parameters, depositUsd });

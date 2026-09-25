@@ -695,3 +695,16 @@ describe("normalizeDailyPriceHistory for a v4 pool", () => {
     ).toBe("unavailable");
   });
 });
+
+describe("the chain a history names", () => {
+  it("is the chain the pool was asked about on", () => {
+    const result = normalizeDailyPriceHistory({
+      payload: payload(),
+      identity: v3PoolIdentity(POOL_ADDRESS, 42161)!,
+      fetchedAt: FETCHED_AT,
+      window: WINDOW,
+    });
+
+    expect(result.status !== "unavailable" && result.data.pool.chainId).toBe(42161);
+  });
+});

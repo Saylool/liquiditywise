@@ -2,6 +2,7 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { PriceBandParameters } from "../schemas";
 import { BandChoices } from "./BandChoices";
+import type { ChainSlug } from "../lib/chains/chains";
 
 /**
  * The knobs behind the price band, and the size the fees are shared out for.
@@ -25,6 +26,7 @@ export function BandParametersForm({
   action,
   poolParameter,
   poolId,
+  chain,
   parameters,
   depositUsd,
   fellBack,
@@ -42,6 +44,8 @@ export function BandParametersForm({
   action: string;
   poolParameter: string;
   poolId: string;
+  /** The pool's chain, which travels hidden beside it; unsaid for mainnet. */
+  chain?: ChainSlug | undefined;
   parameters: PriceBandParameters;
   /**
    * The deposit the fee share is worked out for.
@@ -68,6 +72,7 @@ export function BandParametersForm({
 
       {/* The pool is not being changed here, so it travels hidden. */}
       <input type="hidden" name={poolParameter} value={poolId} />
+      {chain === undefined || chain === "ethereum" ? null : <input type="hidden" name="chain" value={chain} />}
 
       <div className="flex flex-wrap items-end gap-4">
         <BandChoices parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />

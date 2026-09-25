@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { ANALYTICS_CONSISTENCY_TOLERANCE, ANNUALIZATION_DAYS } from "./analytics";
-import { IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
+import { isReadableChain, IsoTimestampSchema, UnsignedIntegerStringSchema } from "./primitives";
 import { PoolReferenceSchema } from "./uniswap";
 
 /*
@@ -129,8 +129,8 @@ export const VolatilityPriceBandSchema = z
    * they came from, and each refuses a pool from the other protocol. Repeating
    * the claim here without the evidence would be a rule that looks like a check.
    */
-  .refine((band) => band.pool.chainId === 1, {
-    error: "A price band can only describe an Ethereum mainnet pool.",
+  .refine((band) => isReadableChain(band.pool.chainId, band.pool.protocolVersion), {
+    error: "A price band can only describe a pool on a chain this application reads.",
     path: ["pool"],
   })
   .refine(

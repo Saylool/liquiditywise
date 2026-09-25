@@ -16,6 +16,7 @@ import {
   type FetchLike,
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
+import type { ChainId } from "../chains/chains";
 
 /**
  * Every pool of one token pair.
@@ -63,6 +64,8 @@ export type EthereumV3PairFeeTiersRequest = {
    * or `null` when the pair comes from a v4 pool's page, and none of these is.
    */
   readonly poolAddress: string | null;
+  /** The chain the subgraph and the endpoint serve; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** The pair, in the pool's own address order. */
   readonly token0Address: string;
   readonly token1Address: string;
@@ -132,7 +135,7 @@ export const fetchEthereumV3PairFeeTiers = async (
    * between 1.3 and 13 times the balances the token contracts report. The two
    * reads are sequential because the second needs the first's pool addresses.
    */
-  const pools = readPoolsForReserves(transport.payload);
+  const pools = readPoolsForReserves(transport.payload, request.chainId ?? 1);
   const reserves = await fetchEthereumV3PoolReserves({
     pools,
     rpcUrl: request.rpcUrl,
@@ -142,6 +145,7 @@ export const fetchEthereumV3PairFeeTiers = async (
 
   return normalizeV3PairFeeTiers({
     payload: transport.payload,
+    chainId: request.chainId ?? 1,
     reserves,
     analysedPoolId: poolAddress.data,
     fetchedAt: request.now().toISOString(),

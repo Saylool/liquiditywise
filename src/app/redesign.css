@@ -522,6 +522,21 @@ main:focus {
   color: var(--muted);
   line-height: 1.8;
 }
+.lookup-network {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.lookup-network select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+  padding: 4px 8px;
+  font-size: 12px;
+}
 .lookup-error {
   font-size: 12px;
   color: var(--warning-foreground);

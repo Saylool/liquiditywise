@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gives the application an RPC endpoint on Base and on Arbitrum, made from the
-# Ethereum one it already has. Run as root:
+# Ethereum one it already has, and the Uniswap v3 subgraph of each. Run as root:
 #
 #   bash /opt/liquiditywise/deploy/set-chain-rpcs.sh
 #
@@ -59,7 +59,23 @@ set_one() {
   fi
 }
 
+# The Uniswap v3 subgraph of each chain. Public ids, not credentials — the
+# ones .env.example gives and says how they were chosen — written only where
+# the file has none, so an id set by hand is kept.
+set_public() {
+  local name="$1" value="$2"
+  if grep -qE "^$name=." "$ENV_FILE"; then
+    echo "$name: already set."
+  else
+    sed -i "/^$name=\$/d" "$ENV_FILE"
+    printf '%s=%s\n' "$name" "$value" >>"$ENV_FILE"
+    echo "$name: written."
+  fi
+}
+
 status=0
 set_one BASE_RPC_URL base-mainnet 0x2105 || status=1
 set_one ARBITRUM_RPC_URL arb-mainnet 0xa4b1 || status=1
+set_public UNISWAP_V3_BASE_SUBGRAPH_ID 43Hwfi3dJSoGpyas9VwNoDAv55yjgGrPpNSmbQZArzMG
+set_public UNISWAP_V3_ARBITRUM_SUBGRAPH_ID FbCGRftH4a3yZugY7TnbYgPJVEv2LvMT6oF1fxPe9aJM
 exit "$status"

@@ -2,11 +2,14 @@ import { type DataResult, type V3Pool, V3PoolSchema } from "../../schemas";
 import { fetchEthereumV3PoolMetadata } from "./ethereumV3PoolMetadata";
 import { fetchEthereumV3TickSpacing } from "./ethereumV3TickSpacing";
 import type { FetchLike } from "./v3SubgraphTransport";
+import type { ChainId } from "../chains/chains";
 
 const INCONSISTENT = "pool-configuration-inconsistent";
 
 export type EthereumV3PoolRequest = {
   readonly poolAddress: string;
+  /** The chain the subgraph and the endpoint below serve; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** The Graph credentials, for token ordering, decimals and the fee tier. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
@@ -39,6 +42,7 @@ export const fetchEthereumV3Pool = async (
   const [metadata, tickSpacing] = await Promise.all([
     fetchEthereumV3PoolMetadata({
       poolAddress: request.poolAddress,
+      chainId: request.chainId ?? 1,
       apiKey: request.apiKey,
       subgraphId: request.subgraphId,
       fetchImpl: request.fetchImpl,

@@ -31,6 +31,22 @@ const payload = (pool: unknown = rawPool(), meta: unknown = { hasIndexingErrors:
 const normalize = (body: unknown) =>
   normalizeV3PoolMetadata({ payload: body, poolAddress: POOL_ADDRESS });
 
+describe("the chain a pool is on", () => {
+  it("is the chain the answering subgraph indexes, on the pool and on both tokens", () => {
+    const result = normalizeV3PoolMetadata({ payload: payload(), poolAddress: POOL_ADDRESS, chainId: 8453 });
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect([result.data.chainId, result.data.token0.chainId, result.data.token1.chainId]).toEqual([8453, 8453, 8453]);
+  });
+
+  it("is mainnet when nothing says otherwise", () => {
+    const result = normalize(payload());
+
+    expect(result.status === "success" && result.data.chainId).toBe(1);
+  });
+});
+
 describe("a well-formed pool", () => {
   it("produces the exact expected metadata", () => {
     const result = normalize(payload());
