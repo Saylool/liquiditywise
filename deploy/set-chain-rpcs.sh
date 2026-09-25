@@ -30,9 +30,13 @@ case "$ethereum" in
 esac
 
 # The chain id a working endpoint answers with: what proves it is the right network.
+# The URL goes to curl as a config line on standard input, not as an argument:
+# arguments are in the process list, which every account on this shared
+# machine can read, and the URL carries the key.
 chain_id() {
-  curl -s -m 10 -H 'content-type: application/json' \
-    --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' "$1" |
+  printf 'url = "%s"\n' "$1" |
+    curl -s -m 10 -K - -H 'content-type: application/json' \
+      --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' |
     sed -n 's/.*"result":"\(0x[0-9a-fA-F]*\)".*/\1/p'
 }
 
