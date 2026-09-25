@@ -38,6 +38,15 @@ describe("reading a pair's tiers", () => {
       chainId: 42161,
       subgraphId: "arbitrum-v3",
       rpcUrl: "https://arbitrum.example",
+      timeoutMs: 20_000,
     });
+  });
+
+  it("gives mainnet the default budget, and every other chain the longer one its subgraph needs", async () => {
+    const { getEthereumV3PairFeeTiers } = await import("./getEthereumV3PairFeeTiers");
+
+    await getEthereumV3PairFeeTiers(pool(1));
+
+    expect(asked.requests[0]?.timeoutMs).toBeUndefined();
   });
 });
