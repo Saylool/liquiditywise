@@ -33,13 +33,33 @@ const endpoint = (answer: (slot: string, to: string) => bigint | null, code = MU
     }),
   );
 
+/*
+ * Which field of which of pools 0–99 each slot is. A slot is a keccak hash, and
+ * working the hundred pools' slots out again for every question made the
+ * fifty-pool test hash ten thousand times — seconds on a loaded machine, and a
+ * timeout rather than an answer. So the table is built once, on the first
+ * question any test asks, and every manager below reads it.
+ */
+let fieldsBySlot: Map<string, number> | undefined;
+const fieldAt = (slot: string): number | undefined => {
+  if (fieldsBySlot === undefined) {
+    fieldsBySlot = new Map();
+    for (let index = 0; index < 100; index += 1) {
+      for (const offset of [SLOT0_OFFSET, LIQUIDITY_OFFSET]) {
+        const at = poolStateSlot(poolId(index), offset);
+        if (at !== null) fieldsBySlot.set(at, offset);
+      }
+    }
+  }
+  return fieldsBySlot.get(slot);
+};
+
 /** A manager holding every requested pool at one liquidity and one price. */
 const holding = (liquidity: bigint, sqrtPrice = SQRT_PRICE) =>
   endpoint((slot) => {
-    for (let index = 0; index < 100; index += 1) {
-      if (slot === poolStateSlot(poolId(index), SLOT0_OFFSET)) return packedSlot0(sqrtPrice);
-      if (slot === poolStateSlot(poolId(index), LIQUIDITY_OFFSET)) return liquidity;
-    }
+    const field = fieldAt(slot);
+    if (field === SLOT0_OFFSET) return packedSlot0(sqrtPrice);
+    if (field === LIQUIDITY_OFFSET) return liquidity;
     return 0n;
   });
 
@@ -189,14 +209,11 @@ describe("fetchEthereumV4PoolStates", () => {
  * pool, the same word the state read unpacks, through the same aggregate.
  */
 describe("fetchEthereumV4PoolFees", () => {
-  const charging = endpoint((slot) => {
-    for (let index = 0; index < 100; index += 1) {
-      if (slot === poolStateSlot(poolId(index), SLOT0_OFFSET)) {
-        return packedSlot0(SQRT_PRICE, { lpFee: 500n, protocolFee: 125n | (125n << 12n) });
-      }
-    }
-    return 0n;
-  });
+  const charging = endpoint((slot) =>
+    fieldAt(slot) === SLOT0_OFFSET
+      ? packedSlot0(SQRT_PRICE, { lpFee: 500n, protocolFee: 125n | (125n << 12n) })
+      : 0n,
+  );
 
   const runFees = (overrides: Partial<Parameters<typeof fetchEthereumV4PoolFees>[0]> = {}) =>
     fetchEthereumV4PoolFees({
