@@ -6,6 +6,7 @@ import { DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis"
 import type { MostTraded } from "../lib/advisor/readMostTraded";
 import { getDictionary } from "../lib/i18n/dictionaries";
 import { getMostTradedCopy } from "../lib/i18n/mostTradedCopy";
+import { chainOf } from "../lib/chains/chains";
 import { MostTradedPools } from "./MostTradedPools";
 
 const token = (symbol: string, address: string) => ({ chainId: 1, symbol, decimals: 18, address });
@@ -49,6 +50,8 @@ const render = (data: MostTraded, locale: "en" | "tr" = "en") =>
   renderToStaticMarkup(
     <MostTradedPools
       data={data}
+      pageHref={`/${locale}/most-traded`}
+      networkLabel="Network"
       copy={getMostTradedCopy(locale)}
       parameters={DEFAULT_PRICE_BAND_PARAMETERS}
       t={getDictionary(locale)}
@@ -122,5 +125,36 @@ describe("the most-traded page", () => {
     expect(render({ v3: { status: "listed", pools: [], fetchedAt: "x" }, v4: both.v4 })).toContain(
       "No pool traded in this window.",
     );
+  });
+});
+
+describe("the most-traded page on another chain", () => {
+  const onBase = () =>
+    renderToStaticMarkup(
+      <MostTradedPools
+        data={{ v3: { status: "listed", pools: [{ ...v3, pool: { ...v3.pool, chainId: 8453 } }], fetchedAt: "x" }, v4: null }}
+        chain={chainOf(8453)}
+        pageHref="/tr/most-traded"
+        networkLabel="Ağ"
+        copy={getMostTradedCopy("tr")}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        t={getDictionary("tr")}
+        locale="tr"
+      />,
+    );
+
+  it("offers a tab for every chain, marking the one shown, at the language's own address", () => {
+    const html = onBase();
+
+    expect(html).toContain('href="/tr/most-traded"');
+    expect(html).toContain('href="/tr/most-traded?chain=base" aria-current="page"');
+    expect(html).toContain('href="/tr/most-traded?chain=arbitrum"');
+  });
+
+  it("links each pool on its chain and leaves v4 out", () => {
+    const html = onBase();
+
+    expect(html).toContain(`/pool?chain=base&amp;address=${V3_ID}`);
+    expect(html).not.toContain("Uniswap v4");
   });
 });

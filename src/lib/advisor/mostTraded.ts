@@ -8,13 +8,15 @@ import {
   type V4Pool,
 } from "../../schemas";
 import { normalizePoolCard } from "../uniswap/v3PoolCardAdapter";
-import { RawPoolCardSchema, type RawPoolCard } from "../uniswap/v3PoolCardRawResponse";
+import type { RawPoolCard } from "../uniswap/v3PoolCardRawResponse";
+import { V3PoolDaysResponseSchema } from "../uniswap/v3PoolDaysRawResponse";
 import { convertNonNegativeDecimal } from "../uniswap/v3SubgraphRawResponse";
 import { normalizeV4PoolCard } from "../uniswap/v4PoolCardAdapter";
 import { RawV4PoolCardSchema, type RawV4PoolCard } from "../uniswap/v4PoolCardRawResponse";
 import { chainReadingFor, type V4PoolChainFees } from "../uniswap/v4PoolChainReading";
 import type { V4PoolKey } from "../uniswap/v4PoolKey";
 import { readPoolManager } from "../uniswap/v4PoolSearchAdapter";
+import type { ChainId } from "../chains/chains";
 
 /*
  * The pools that traded most this week, with what they traded and charged.
@@ -60,15 +62,7 @@ const INDEXING_ERRORS: MostTradedList = { status: "unavailable", notice: "market
 const DayFigures = { date: z.number(), volumeUSD: z.string(), feesUSD: z.string() };
 const RawMetaSchema = z.object({ hasIndexingErrors: z.boolean() });
 
-export const V3WeekResponseSchema = z.object({
-  data: z
-    .object({
-      poolDayDatas: z.array(z.object({ ...DayFigures, pool: RawPoolCardSchema })),
-      _meta: RawMetaSchema.nullable(),
-    })
-    .nullish(),
-  errors: z.array(z.unknown()).nullish(),
-});
+export const V3WeekResponseSchema = V3PoolDaysResponseSchema;
 
 export const V4WeekResponseSchema = z.object({
   data: z
@@ -144,9 +138,12 @@ const listed = (pools: readonly MostTradedPool[], fetchedAt: string): MostTraded
 export const composeMostTradedV3 = ({
   payload,
   fetchedAt,
+  chainId = 1,
 }: {
   readonly payload: unknown;
   readonly fetchedAt: string;
+  /** The chain the day table was read on; mainnet when not said. */
+  readonly chainId?: ChainId;
 }): MostTradedList => {
   const parsed = V3WeekResponseSchema.safeParse(payload);
   if (!parsed.success) return MALFORMED;
@@ -157,7 +154,7 @@ export const composeMostTradedV3 = ({
   const pools: MostTradedPool[] = [];
   for (const week of foldWeek<RawPoolCard>(data.poolDayDatas)) {
     if (pools.length === MOST_TRADED_SHOWN) break;
-    const card = normalizePoolCard(week.card);
+    const card = normalizePoolCard(week.card, chainId);
     if (card === null) continue;
     pools.push(entry(card.pool, week));
   }

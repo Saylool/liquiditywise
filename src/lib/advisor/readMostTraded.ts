@@ -5,6 +5,7 @@ import { fetchEthereumV4PoolStates } from "../uniswap/ethereumV4PoolState";
 import type { FetchLike } from "../uniswap/v3SubgraphTransport";
 import { hookedRefs, poolRefs } from "../uniswap/v4PoolSearchAdapter";
 import { composeMostTradedV3, composeMostTradedV4, type MostTradedList, v4WeekCandidates } from "./mostTraded";
+import type { ChainId } from "../chains/chains";
 
 /*
  * The most-traded page's reads, with every source handed in: the two day
@@ -15,26 +16,33 @@ import { composeMostTradedV3, composeMostTradedV4, type MostTradedList, v4WeekCa
  * costs the v4 half its fees, which then read as unread, and never the list.
  */
 
-export type MostTraded = { readonly v3: MostTradedList; readonly v4: MostTradedList };
+/** `v4` is `null` off mainnet, the only chain a v4 subgraph is read on. */
+export type MostTraded = { readonly v3: MostTradedList; readonly v4: MostTradedList | null };
 
 export type ReadDays = () => Promise<DataResult<V4PoolDays>>;
 
 export type ReadMostTradedRequest = {
   readonly readV3Days: ReadDays;
-  readonly readV4Days: ReadDays;
+  /** `null` off mainnet: no v4 is read there. */
+  readonly readV4Days: ReadDays | null;
+  /** The chain the v3 day table is on; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** Raw environment value; without it the v4 fees are unread. */
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
 };
 
-const readV3 = async (readDays: ReadDays): Promise<MostTradedList> => {
+const readV3 = async (readDays: ReadDays, chainId: ChainId): Promise<MostTradedList> => {
   const days = await readDays();
   if (days.status === "unavailable") return { status: "unavailable", notice: days.notice };
 
-  return composeMostTradedV3(days.data);
+  return composeMostTradedV3({ ...days.data, chainId });
 };
 
-const readV4 = async ({ readV4Days, rpcUrl, fetchImpl }: ReadMostTradedRequest): Promise<MostTradedList> => {
+const readV4 = async (
+  readV4Days: ReadDays,
+  { rpcUrl, fetchImpl }: ReadMostTradedRequest,
+): Promise<MostTradedList> => {
   const days = await readV4Days();
   if (days.status === "unavailable") return { status: "unavailable", notice: days.notice };
 
@@ -57,7 +65,10 @@ const readV4 = async ({ readV4Days, rpcUrl, fetchImpl }: ReadMostTradedRequest):
 };
 
 export const readMostTraded = async (request: ReadMostTradedRequest): Promise<MostTraded> => {
-  const [v3, v4] = await Promise.all([readV3(request.readV3Days), readV4(request)]);
+  const [v3, v4] = await Promise.all([
+    readV3(request.readV3Days, request.chainId ?? 1),
+    request.readV4Days === null ? null : readV4(request.readV4Days, request),
+  ]);
 
   return { v3, v4 };
 };

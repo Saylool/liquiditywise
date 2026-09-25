@@ -17,6 +17,10 @@ import {
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
 import type { ChainId } from "../chains/chains";
+import type { V4PoolDays } from "./ethereumV4PoolDays";
+import type { RawPoolCard } from "./v3PoolCardRawResponse";
+import { V3PoolDaysResponseSchema } from "./v3PoolDaysRawResponse";
+import { cardMatchesTerms } from "./v4PoolSearchAdapter";
 
 /**
  * A pool stores its pair in address order, which has nothing to do with the
@@ -179,6 +183,72 @@ export const fetchEthereumV3PoolSearch = async (
   return normalizeV3PoolSearch({
     payload: transport.payload,
     chainId: request.chainId ?? 1,
+    reserves,
+    terms: terms.data,
+    fetchedAt: request.now().toISOString(),
+    onDiagnostic: request.onDiagnostic,
+  });
+};
+
+export type V3PoolSearchFromDaysRequest = {
+  readonly terms: readonly string[];
+  readonly chainId: ChainId;
+  /** The week's busiest pool-days on that chain, asked for only once the terms are usable. */
+  readonly readDays: () => Promise<DataResult<V4PoolDays>>;
+  /** Raw environment value; without it the results arrive with no reserves. */
+  readonly rpcUrl: string | undefined;
+  readonly fetchImpl: FetchLike;
+  readonly now: () => Date;
+  readonly onDiagnostic?: PoolSearchDiagnostic | undefined;
+};
+
+/**
+ * The same search, over the week's busiest pools rather than every pool — for
+ * a chain whose subgraph cannot filter pools by symbol at all (see chains.ts).
+ *
+ * The pools that match are handed to the same adapter as a source-matched
+ * list would be, so they are verified, read from the chain and ordered by
+ * exactly the same rules; the one difference is the net, which holds only
+ * pools that traded among the week's busiest days. A pool nobody traded this
+ * week is not found by name here, and is still read by its address.
+ */
+export const fetchV3PoolSearchFromDays = async (
+  request: V3PoolSearchFromDaysRequest,
+): Promise<DataResult<PoolSearchResults>> => {
+  const terms = PoolSearchTermsSchema.safeParse(request.terms);
+  if (!terms.success) {
+    return { status: "unavailable", reason: "invalid-input", notice: INVALID_TERMS };
+  }
+
+  const days = await request.readDays();
+  if (days.status === "unavailable") return { status: "unavailable", reason: days.reason, notice: days.notice };
+
+  const parsed = V3PoolDaysResponseSchema.safeParse(days.data.payload);
+  if (!parsed.success || parsed.data.data == null) {
+    return { status: "unavailable", reason: "invalid-response", notice: "market-data-malformed" };
+  }
+
+  /* Each pool once, busiest day first, and no more than a source-matched search would fetch. */
+  const seen = new Set<string>();
+  const matched: RawPoolCard[] = [];
+  for (const { pool } of parsed.data.data.poolDayDatas) {
+    const id = pool.id.toLowerCase();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    if (cardMatchesTerms(pool, terms.data)) matched.push(pool);
+    if (matched.length === POOL_SEARCH_FETCH_LIMIT) break;
+  }
+  const payload = { data: { forward: matched, reverse: [], _meta: parsed.data.data._meta }, errors: parsed.data.errors };
+
+  const reserves = await fetchEthereumV3PoolReserves({
+    pools: readSearchPoolsForReserves(payload, request.now(), request.chainId),
+    rpcUrl: request.rpcUrl,
+    fetchImpl: request.fetchImpl,
+  });
+
+  return normalizeV3PoolSearch({
+    payload,
+    chainId: request.chainId,
     reserves,
     terms: terms.data,
     fetchedAt: request.now().toISOString(),

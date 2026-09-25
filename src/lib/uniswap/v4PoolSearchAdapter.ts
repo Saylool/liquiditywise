@@ -112,7 +112,10 @@ const contains = (symbol: string, term: string): boolean =>
  * fifteen seconds, whichever indexer served it. The busiest pool-days of the
  * week it answers in under a second, so those are read and searched here.
  */
-export const cardMatchesTerms = (card: RawV4PoolCard, terms: PoolSearchTerms): boolean => {
+export const cardMatchesTerms = (
+  card: { readonly token0: { readonly symbol: string }; readonly token1: { readonly symbol: string } },
+  terms: PoolSearchTerms,
+): boolean => {
   const [first, second] = terms;
   const { token0, token1 } = card;
   if (second === undefined) {

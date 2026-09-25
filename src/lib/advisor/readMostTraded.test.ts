@@ -77,7 +77,7 @@ describe("reading the most-traded page", () => {
     });
 
     expect(read.v3.status === "listed" && read.v3.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([1000]);
-    expect(read.v4.status === "listed" && read.v4.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([700]);
+    expect(read.v4?.status === "listed" && read.v4.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([700]);
   });
 
   it("loses only the half whose source is down", async () => {
@@ -89,7 +89,7 @@ describe("reading the most-traded page", () => {
     });
 
     expect(read.v3).toEqual({ status: "unavailable", notice: "market-data-timed-out" });
-    expect(read.v4.status).toBe("listed");
+    expect(read.v4?.status).toBe("listed");
 
     const other = await readMostTraded({
       readV3Days: async () => v3Days,
@@ -110,7 +110,7 @@ describe("reading the most-traded page", () => {
       fetchImpl,
     });
 
-    expect(read.v4.status === "listed" && read.v4.pools[0]?.pool.protocolVersion === "v4" && read.v4.pools[0].pool.fee).toEqual({
+    expect(read.v4?.status === "listed" && read.v4.pools[0]?.pool.protocolVersion === "v4" && read.v4.pools[0].pool.fee).toEqual({
       kind: "unread",
     });
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -129,5 +129,22 @@ describe("reading the most-traded page", () => {
 
     expect(fetchImpl).toHaveBeenCalled();
     expect(String(fetchImpl.mock.calls[0]?.[0])).toBe("https://rpc.example");
+  });
+});
+
+describe("the most-traded page off mainnet", () => {
+  it("reads no v4, and asks nothing of the chain for it", async () => {
+    const fetchImpl = vi.fn();
+    const read = await readMostTraded({
+      chainId: 42161,
+      readV3Days: async () => v3Days,
+      readV4Days: null,
+      rpcUrl: "https://rpc.example",
+      fetchImpl,
+    });
+
+    expect(read.v4).toBeNull();
+    expect(read.v3.status === "listed" && read.v3.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

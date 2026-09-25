@@ -10,9 +10,16 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum" },
-  { id: 8453, slug: "base", name: "Base" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One" },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools" },
+  /*
+   * "days": Base's v3 subgraph answers no query that filters pools by a
+   * token's symbol — measured on 2026-09-25, every shape of it failed at the
+   * gateway after fifteen seconds with a bad indexer — while its day table
+   * answers in six. So a name search there looks through the week's busiest
+   * pools, as the v4 search does on mainnet for the same reason.
+   */
+  { id: 8453, slug: "base", name: "Base", v3Search: "days" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];

@@ -5,6 +5,10 @@ import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getMostTraded } from "@/lib/advisor/getMostTraded";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
+import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
+import { chainLabel } from "@/lib/chains/chainLabel";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
+import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
 
 /*
@@ -27,14 +31,38 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function MostTradedPage() {
+export default async function MostTradedPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { locale, t } = await getRequestDictionary();
   const copy = getMostTradedCopy(locale);
-  const data = await getMostTraded();
+  const chain = readRequestedChain((await searchParams)[CHAIN_PARAMETER]);
+
+  /* A chain nobody reads is said so, not quietly shown as mainnet's list. */
+  if (chain === null) {
+    return (
+      <WorkspaceShell locale={locale} t={t} heading={copy.heading}>
+        <p className="text-sm leading-relaxed text-muted">{getChainCopy(locale).unknown}</p>
+      </WorkspaceShell>
+    );
+  }
+
+  const data = await getMostTraded(chain.id);
 
   return (
-    <WorkspaceShell locale={locale} t={t} heading={copy.heading}>
-      <MostTradedPools data={data} copy={copy} parameters={DEFAULT_PRICE_BAND_PARAMETERS} t={t} locale={locale} />
+    <WorkspaceShell locale={locale} t={t} heading={copy.heading} network={chainLabel(chain.id, locale)}>
+      <MostTradedPools
+        data={data}
+        chain={chain}
+        pageHref={localePath(locale, "/most-traded")}
+        networkLabel={getChainCopy(locale).network}
+        copy={copy}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        t={t}
+        locale={locale}
+      />
     </WorkspaceShell>
   );
 }

@@ -1,7 +1,9 @@
 import "server-only";
 
-import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
-import { fetchEthereumV3PoolDays } from "../uniswap/ethereumV3PoolDays";
+import type { ChainId } from "../chains/chains";
+import { rpcUrlFor } from "../chains/chainEnvironment";
+import { loggingFetch } from "../observability/serverDiagnostics";
+import { getEthereumV3PoolDays } from "../uniswap/getEthereumV3PoolDays";
 import { getEthereumV4PoolDays } from "../uniswap/getEthereumV4PoolDays";
 import { type MostTraded, readMostTraded } from "./readMostTraded";
 
@@ -9,45 +11,40 @@ import { type MostTraded, readMostTraded } from "./readMostTraded";
 const LABEL = "most-traded";
 
 /**
- * Ten minutes, as the v4 day table's own cache: the page is the same for
+ * Ten minutes, as the day tables' own caches: the page is the same for
  * everybody, a week's totals barely move in ten minutes, and a crawler
  * walking every language's address of it should cost one read, not eleven.
  */
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-let cached: { readonly value: MostTraded; readonly writtenAt: number } | null = null;
+const cached = new Map<ChainId, { readonly value: MostTraded; readonly writtenAt: number }>();
 
 /** For tests. */
 export const forgetMostTraded = (): void => {
-  cached = null;
+  cached.clear();
 };
 
 /**
- * The page's figures, read at most once every ten minutes. Only a read in
- * which both halves listed is kept: a half that failed is an outage, and
- * keeping it would extend it by ten minutes.
+ * One chain's page figures, read at most once every ten minutes. Only a read
+ * in which every half listed is kept: a half that failed is an outage, and
+ * keeping it would extend it by ten minutes. v4 is read on mainnet alone.
  */
-export const getMostTraded = async (): Promise<MostTraded> => {
+export const getMostTraded = async (chainId: ChainId = 1): Promise<MostTraded> => {
   const now = Date.now();
-  if (cached !== null && now - cached.writtenAt < CACHE_TTL_MS) return cached.value;
+  const hit = cached.get(chainId);
+  if (hit !== undefined && now - hit.writtenAt < CACHE_TTL_MS) return hit.value;
 
   const value = await readMostTraded({
-    readV3Days: async () =>
-      logUnavailable(
-        LABEL,
-        await fetchEthereumV3PoolDays({
-          apiKey: process.env.THE_GRAPH_API_KEY,
-          subgraphId: process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
-          fetchImpl: loggingFetch(LABEL),
-          now: () => new Date(),
-        }),
-      ),
-    readV4Days: getEthereumV4PoolDays,
-    rpcUrl: process.env.ETHEREUM_RPC_URL,
+    chainId,
+    readV3Days: () => getEthereumV3PoolDays(chainId),
+    readV4Days: chainId === 1 ? getEthereumV4PoolDays : null,
+    rpcUrl: rpcUrlFor(1),
     fetchImpl: loggingFetch(LABEL),
   });
 
-  if (value.v3.status === "listed" && value.v4.status === "listed") cached = { value, writtenAt: now };
+  if (value.v3.status === "listed" && (value.v4 === null || value.v4.status === "listed")) {
+    cached.set(chainId, { value, writtenAt: now });
+  }
 
   return value;
 };

@@ -110,6 +110,14 @@ describe("the v3 half", () => {
     expect(pools[0]?.pool.protocolVersion).toBe("v3");
   });
 
+  it("names the chain the day table was read on, on every pool", () => {
+    const pools = listed(
+      composeMostTradedV3({ payload: v3Payload([day(v3Card(1), MONDAY, "100", "0.05")]), fetchedAt: FETCHED_AT, chainId: 8453 }),
+    );
+
+    expect(pools.map(({ pool }) => pool.chainId)).toEqual([8453]);
+  });
+
   it("shows no more than its share, however many pools traded", () => {
     const days = Array.from({ length: MOST_TRADED_SHOWN + 5 }, (_, index) =>
       day(v3Card(index + 1), MONDAY, String(1000 - index), "1"),

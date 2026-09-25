@@ -2,9 +2,10 @@ import "server-only";
 
 import type { DataResult, PoolSearchResults } from "../../schemas";
 import { logDetail, loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
-import { fetchEthereumV3PoolSearch } from "./ethereumV3PoolSearch";
+import { fetchEthereumV3PoolSearch, fetchV3PoolSearchFromDays } from "./ethereumV3PoolSearch";
+import { getEthereumV3PoolDays } from "./getEthereumV3PoolDays";
 import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
-import type { ChainId } from "../chains/chains";
+import { chainById, type ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v3-pool-search";
@@ -39,7 +40,19 @@ export const getEthereumV3PoolSearch = async (
 ): Promise<DataResult<PoolSearchResults>> =>
   logUnavailable(
     LABEL,
-    await fetchEthereumV3PoolSearch({
+    chainById(chainId).v3Search === "days"
+      ? await fetchV3PoolSearchFromDays({
+          terms,
+          chainId,
+          readDays: () => getEthereumV3PoolDays(chainId),
+          rpcUrl: rpcUrlFor(chainId),
+          fetchImpl: loggingFetch(LABEL),
+          now: () => new Date(),
+          onDiagnostic: (detail) => {
+            logDetail(LABEL, detail);
+          },
+        })
+      : await fetchEthereumV3PoolSearch({
       terms,
       chainId,
       apiKey: process.env.THE_GRAPH_API_KEY,
