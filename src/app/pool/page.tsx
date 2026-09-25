@@ -72,12 +72,13 @@ export async function generateMetadata(): Promise<Metadata> {
 function Shell({
   locale,
   t,
-  chain = ETHEREUM,
+  chain,
   children,
 }: {
   locale: Locale;
   t: Dictionary;
-  chain?: Chain;
+  /** Required, so no branch of this page can forget which network its chip names. */
+  chain: Chain;
   children: React.ReactNode;
 }) {
   return (
@@ -108,7 +109,7 @@ export default async function PoolRangePage({
   const chain = readRequestedChain(params[CHAIN_PARAMETER]);
   if (chain === null) {
     return (
-      <Shell locale={locale} t={t}>
+      <Shell locale={locale} t={t} chain={ETHEREUM}>
         <PoolLookupForm t={t} network={{ label: chainCopy.network, current: ETHEREUM.slug }} />
         <p className="text-sm leading-relaxed text-muted">{chainCopy.unknown}</p>
       </Shell>
@@ -261,7 +262,7 @@ export default async function PoolRangePage({
 
 
   return (
-    <Shell locale={locale} t={t}>
+    <Shell locale={locale} t={t} chain={chain}>
       {/* The validated terms, not the raw string — which may have held a third. */}
       <PoolLookupForm t={t} value={input.terms.join(" ")} network={network} />
       {/*
