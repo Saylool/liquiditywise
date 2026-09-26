@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ProbeDependencies } from "./upstreamProbe";
+import type { OtherChain, ProbeDependencies } from "./upstreamProbe";
 
 /*
  * The cheapest question that still proves a credential.
@@ -45,6 +45,20 @@ const withTimeout = async (run: (signal: AbortSignal) => Promise<Response>): Pro
  * `null` when there is nothing configured to probe — a deployment without
  * these keys is not a deployment whose keys are broken.
  */
+/** One block-number question to an RPC endpoint, answered by its HTTP status alone. */
+const probeRpc = (url: string): Promise<number> =>
+  statusOf(() =>
+    withTimeout((signal) =>
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
+        signal,
+        cache: "no-store",
+      }),
+    ),
+  );
+
 export const upstreamProbes = (): ProbeDependencies | null => {
   const apiKey = process.env.THE_GRAPH_API_KEY?.trim();
   const subgraphId = process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID?.trim();
@@ -65,18 +79,17 @@ export const upstreamProbes = (): ProbeDependencies | null => {
           }),
         ),
       ),
-    probeChainData: () =>
-      statusOf(() =>
-        withTimeout((signal) =>
-          fetch(rpcUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
-            signal,
-            cache: "no-store",
-          }),
-        ),
-      ),
+    probeChainData: () => probeRpc(rpcUrl),
+    probeOtherChains: Object.fromEntries(
+      (
+        [
+          ["base", process.env.BASE_RPC_URL?.trim()],
+          ["arbitrum", process.env.ARBITRUM_RPC_URL?.trim()],
+        ] as const
+      )
+        .filter((entry): entry is readonly [OtherChain, string] => Boolean(entry[1]))
+        .map(([chain, url]) => [chain, () => probeRpc(url)]),
+    ),
     now: () => new Date(),
   };
 };

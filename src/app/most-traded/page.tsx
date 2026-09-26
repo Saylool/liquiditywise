@@ -20,13 +20,20 @@ import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestL
  * limiter in `proxy.ts` for the same reason the hook directory is not.
  */
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
   const { locale } = await getRequestDictionary();
   const copy = getMostTradedCopy(locale);
+  /* Off mainnet the list is v3 alone, and the title says so and names the chain. */
+  const chain = readRequestedChain((await searchParams)[CHAIN_PARAMETER]);
+  const onMainnet = chain === null || chain.id === 1;
 
   return {
-    title: `${copy.title} · LiquidityWise`,
-    description: copy.description,
+    title: `${onMainnet ? copy.title : copy.titleOn(chain.name)} · LiquidityWise`,
+    description: onMainnet ? copy.description : copy.descriptionOn(chain.name),
     alternates: await getOpenPageAlternates("/most-traded"),
   };
 }

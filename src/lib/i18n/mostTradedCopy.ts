@@ -17,7 +17,11 @@ export type MostTradedCopy = {
   readonly title: string;
   readonly description: string;
   readonly heading: string;
-  readonly intro: string;
+  /** Names the chain the list is on. */
+  readonly intro: (chain: string) => string;
+  /** The page's title and description off mainnet, where only v3 is listed. */
+  readonly titleOn: (chain: string) => string;
+  readonly descriptionOn: (chain: string) => string;
   readonly volume: string;
   readonly fees: string;
   /** Under the figures: how many of the window's days they add up. */
@@ -35,8 +39,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "The Uniswap v3 and v4 pools on Ethereum with the most trading over the last seven days, with what each traded and charged. Updated every ten minutes.",
     heading: "Most traded this week",
-    intro:
-      "The pools with the most trading on Ethereum over the last seven days, today so far included. The order is trading volume and nothing else: it is not what a position would have earned, and none of these is a recommendation. Each pool's own page shows the rest.",
+    intro: (chain) =>
+      `The pools with the most trading on ${chain} over the last seven days, today so far included. The order is trading volume and nothing else: it is not what a position would have earned, and none of these is a recommendation. Each pool's own page shows the rest.`,
+    titleOn: (chain) => `The most traded Uniswap v3 pools on ${chain} this week`,
+    descriptionOn: (chain) =>
+      `The Uniswap v3 pools on ${chain} with the most trading over the last seven days, with what each traded and charged. Updated every ten minutes.`,
     volume: "Traded, 7 days",
     fees: "Fees charged, 7 days",
     days: (counted, total) => `${counted} of ${total} days`,
@@ -51,8 +58,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "Ethereum'da son yedi günde en çok işlem gören Uniswap v3 ve v4 havuzları; her birinin işlem hacmi ve aldığı komisyon. On dakikada bir güncellenir.",
     heading: "Bu hafta en çok işlem görenler",
-    intro:
-      "Ethereum'da son yedi günde, bugün dahil, en çok işlem gören havuzlar. Sıralama yalnızca işlem hacmine göre: bir pozisyonun ne kazanacağını göstermez ve hiçbiri bir öneri değildir. Geri kalanı her havuzun kendi sayfasında.",
+    intro: (chain) =>
+      `${chain} üzerinde son yedi günde, bugün dahil, en çok işlem gören havuzlar. Sıralama yalnızca işlem hacmine göre: bir pozisyonun ne kazanacağını göstermez ve hiçbiri bir öneri değildir. Geri kalanı her havuzun kendi sayfasında.`,
+    titleOn: (chain) => `Bu hafta ${chain} üzerinde en çok işlem gören Uniswap v3 havuzları`,
+    descriptionOn: (chain) =>
+      `${chain} üzerinde son yedi günde en çok işlem gören Uniswap v3 havuzları; her birinin işlem hacmi ve aldığı komisyon. On dakikada bir güncellenir.`,
     volume: "İşlem hacmi, 7 gün",
     fees: "Alınan komisyon, 7 gün",
     days: (counted, total) => `${counted} / ${total} gün`,
@@ -67,8 +77,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "Die Uniswap-v3- und -v4-Pools auf Ethereum mit dem meisten Handel der letzten sieben Tage, mit Volumen und erhobenen Gebühren. Alle zehn Minuten aktualisiert.",
     heading: "Diese Woche am meisten gehandelt",
-    intro:
-      "Die Pools mit dem meisten Handel auf Ethereum in den letzten sieben Tagen, der heutige Tag bis jetzt eingeschlossen. Sortiert ist allein nach Handelsvolumen: Das ist nicht, was eine Position verdient hätte, und keiner davon ist eine Empfehlung. Den Rest zeigt die Seite jedes Pools.",
+    intro: (chain) =>
+      `Die Pools mit dem meisten Handel auf ${chain} in den letzten sieben Tagen, der heutige Tag bis jetzt eingeschlossen. Sortiert ist allein nach Handelsvolumen: Das ist nicht, was eine Position verdient hätte, und keiner davon ist eine Empfehlung. Den Rest zeigt die Seite jedes Pools.`,
+    titleOn: (chain) => `Die meistgehandelten Uniswap-v3-Pools dieser Woche (${chain})`,
+    descriptionOn: (chain) =>
+      `Die Uniswap-v3-Pools (${chain}) mit dem meisten Handel der letzten sieben Tage, mit Volumen und erhobenen Gebühren. Alle zehn Minuten aktualisiert.`,
     volume: "Gehandelt, 7 Tage",
     fees: "Erhobene Gebühren, 7 Tage",
     days: (counted, total) => `${counted} von ${total} Tagen`,
@@ -83,8 +96,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "Los pools de Uniswap v3 y v4 en Ethereum con más volumen en los últimos siete días, con lo que negoció y cobró cada uno. Se actualiza cada diez minutos.",
     heading: "Los más negociados esta semana",
-    intro:
-      "Los pools con más volumen en Ethereum en los últimos siete días, incluido lo que va de hoy. El orden es solo por volumen: no es lo que habría ganado una posición, y ninguno es una recomendación. La página de cada pool muestra el resto.",
+    intro: (chain) =>
+      `Los pools con más volumen en ${chain} en los últimos siete días, incluido lo que va de hoy. El orden es solo por volumen: no es lo que habría ganado una posición, y ninguno es una recomendación. La página de cada pool muestra el resto.`,
+    titleOn: (chain) => `Los pools de Uniswap v3 más negociados esta semana (${chain})`,
+    descriptionOn: (chain) =>
+      `Los pools de Uniswap v3 (${chain}) con más volumen en los últimos siete días, con lo que negoció y cobró cada uno. Se actualiza cada diez minutos.`,
     volume: "Volumen, 7 días",
     fees: "Comisiones cobradas, 7 días",
     days: (counted, total) => `${counted} de ${total} días`,
@@ -99,8 +115,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "تجمّعات Uniswap v3 وv4 على Ethereum الأكثر تداولًا خلال الأيام السبعة الماضية، مع حجم تداول كل منها والرسوم التي حصّلها. يُحدَّث كل عشر دقائق.",
     heading: "الأكثر تداولًا هذا الأسبوع",
-    intro:
-      "التجمّعات الأكثر تداولًا على Ethereum خلال الأيام السبعة الماضية، بما فيها ما مضى من اليوم. الترتيب حسب حجم التداول وحده: ليس ما كان سيكسبه مركز، ولا شيء منها توصية. وصفحة كل تجمّع تعرض الباقي.",
+    intro: (chain) =>
+      `التجمّعات الأكثر تداولًا على ${chain} خلال الأيام السبعة الماضية، بما فيها ما مضى من اليوم. الترتيب حسب حجم التداول وحده: ليس ما كان سيكسبه مركز، ولا شيء منها توصية. وصفحة كل تجمّع تعرض الباقي.`,
+    titleOn: (chain) => `تجمّعات Uniswap v3 الأكثر تداولًا هذا الأسبوع (${chain})`,
+    descriptionOn: (chain) =>
+      `تجمّعات Uniswap v3 (${chain}) الأكثر تداولًا خلال الأيام السبعة الماضية، مع حجم تداول كل منها والرسوم التي حصّلها. يُحدَّث كل عشر دقائق.`,
     volume: "حجم التداول، 7 أيام",
     fees: "الرسوم المحصّلة، 7 أيام",
     days: (counted, total) => `${counted} من ${total} أيام`,
@@ -115,8 +134,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "Ethereum पर पिछले सात दिनों में सबसे ज़्यादा कारोबार वाले Uniswap v3 और v4 पूल, हर एक का कारोबार और लिया गया शुल्क। हर दस मिनट में अपडेट।",
     heading: "इस हफ़्ते सबसे ज़्यादा कारोबार",
-    intro:
-      "Ethereum पर पिछले सात दिनों में, आज का अब तक का समय मिलाकर, सबसे ज़्यादा कारोबार वाले पूल। क्रम केवल कारोबार की मात्रा का है: यह वह नहीं है जो कोई पोज़िशन कमाती, और इनमें से कोई सिफ़ारिश नहीं है। बाकी हर पूल के अपने पन्ने पर है।",
+    intro: (chain) =>
+      `${chain} पर पिछले सात दिनों में, आज का अब तक का समय मिलाकर, सबसे ज़्यादा कारोबार वाले पूल। क्रम केवल कारोबार की मात्रा का है: यह वह नहीं है जो कोई पोज़िशन कमाती, और इनमें से कोई सिफ़ारिश नहीं है। बाकी हर पूल के अपने पन्ने पर है।`,
+    titleOn: (chain) => `इस हफ़्ते सबसे ज़्यादा कारोबार वाले Uniswap v3 पूल (${chain})`,
+    descriptionOn: (chain) =>
+      `पिछले सात दिनों में सबसे ज़्यादा कारोबार वाले Uniswap v3 पूल (${chain}), हर एक का कारोबार और लिया गया शुल्क। हर दस मिनट में अपडेट।`,
     volume: "कारोबार, 7 दिन",
     fees: "लिया गया शुल्क, 7 दिन",
     days: (counted, total) => `${total} में से ${counted} दिन`,
@@ -130,8 +152,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     title: "本周交易最活跃的 Uniswap 资金池（v3 与 v4）",
     description: "Ethereum 上过去七天交易量最大的 Uniswap v3 和 v4 资金池，以及每个池的交易量和收取的手续费。每十分钟更新一次。",
     heading: "本周交易最活跃",
-    intro:
-      "Ethereum 上过去七天（含今天截至目前）交易量最大的资金池。排序只看交易量：它不是一个仓位本来能赚多少，其中任何一个都不是推荐。其余内容见每个资金池自己的页面。",
+    intro: (chain) =>
+      `${chain} 上过去七天（含今天截至目前）交易量最大的资金池。排序只看交易量：它不是一个仓位本来能赚多少，其中任何一个都不是推荐。其余内容见每个资金池自己的页面。`,
+    titleOn: (chain) => `本周交易最活跃的 Uniswap v3 资金池（${chain}）`,
+    descriptionOn: (chain) =>
+      `过去七天交易量最大的 Uniswap v3 资金池（${chain}），以及每个池的交易量和收取的手续费。每十分钟更新一次。`,
     volume: "交易量，7 天",
     fees: "收取的手续费，7 天",
     days: (counted, total) => `${total} 天中的 ${counted} 天`,
@@ -146,8 +171,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "Пулы Uniswap v3 и v4 в Ethereum с наибольшим объёмом торгов за последние семь дней — с объёмом и взятыми комиссиями каждого. Обновляется каждые десять минут.",
     heading: "Больше всего торгов на этой неделе",
-    intro:
-      "Пулы с наибольшим объёмом торгов в Ethereum за последние семь дней, включая сегодняшний день на текущий момент. Порядок — только по объёму: это не то, что заработала бы позиция, и ни один из них не рекомендация. Остальное — на странице каждого пула.",
+    intro: (chain) =>
+      `Пулы с наибольшим объёмом торгов (${chain}) за последние семь дней, включая сегодняшний день на текущий момент. Порядок — только по объёму: это не то, что заработала бы позиция, и ни один из них не рекомендация. Остальное — на странице каждого пула.`,
+    titleOn: (chain) => `Самые торгуемые пулы Uniswap v3 на этой неделе (${chain})`,
+    descriptionOn: (chain) =>
+      `Пулы Uniswap v3 (${chain}) с наибольшим объёмом торгов за последние семь дней — с объёмом и взятыми комиссиями каждого. Обновляется каждые десять минут.`,
     volume: "Объём, 7 дней",
     fees: "Взятые комиссии, 7 дней",
     days: (counted, total) => `${counted} из ${total} дней`,
@@ -162,8 +190,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     description:
       "Os pools da Uniswap v3 e v4 na Ethereum com mais volume nos últimos sete dias, com o que cada um negociou e cobrou. Atualizado a cada dez minutos.",
     heading: "Os mais negociados nesta semana",
-    intro:
-      "Os pools com mais volume na Ethereum nos últimos sete dias, incluindo o dia de hoje até agora. A ordem é só por volume: não é o que uma posição teria ganho, e nenhum deles é uma recomendação. A página de cada pool mostra o resto.",
+    intro: (chain) =>
+      `Os pools com mais volume (${chain}) nos últimos sete dias, incluindo o dia de hoje até agora. A ordem é só por volume: não é o que uma posição teria ganho, e nenhum deles é uma recomendação. A página de cada pool mostra o resto.`,
+    titleOn: (chain) => `Os pools da Uniswap v3 mais negociados nesta semana (${chain})`,
+    descriptionOn: (chain) =>
+      `Os pools da Uniswap v3 (${chain}) com mais volume nos últimos sete dias, com o que cada um negociou e cobrou. Atualizado a cada dez minutos.`,
     volume: "Volume, 7 dias",
     fees: "Taxas cobradas, 7 dias",
     days: (counted, total) => `${counted} de ${total} dias`,
@@ -177,8 +208,11 @@ const COPY: Record<Locale, MostTradedCopy> = {
     title: "本週交易最活躍的 Uniswap 資金池（v3 與 v4）",
     description: "Ethereum 上過去七天交易量最大的 Uniswap v3 和 v4 資金池，以及每個池的交易量和收取的手續費。每十分鐘更新一次。",
     heading: "本週交易最活躍",
-    intro:
-      "Ethereum 上過去七天（含今天截至目前）交易量最大的資金池。排序只看交易量：它不是一個倉位本來能賺多少，其中任何一個都不是推薦。其餘內容見每個資金池自己的頁面。",
+    intro: (chain) =>
+      `${chain} 上過去七天（含今天截至目前）交易量最大的資金池。排序只看交易量：它不是一個倉位本來能賺多少，其中任何一個都不是推薦。其餘內容見每個資金池自己的頁面。`,
+    titleOn: (chain) => `本週交易最活躍的 Uniswap v3 資金池（${chain}）`,
+    descriptionOn: (chain) =>
+      `過去七天交易量最大的 Uniswap v3 資金池（${chain}），以及每個池的交易量和收取的手續費。每十分鐘更新一次。`,
     volume: "交易量，7 天",
     fees: "收取的手續費，7 天",
     days: (counted, total) => `${total} 天中的 ${counted} 天`,

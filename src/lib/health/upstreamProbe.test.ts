@@ -173,3 +173,72 @@ describe("taking the reading", () => {
     expect(report?.marketData).toBe("credentials-rejected");
   });
 });
+
+describe("the other chains' endpoints", () => {
+  const withOthers = (base: number, arbitrum?: number): ProbeDependencies => ({
+    ...deps(200, 200),
+    probeOtherChains: {
+      base: async () => base,
+      ...(arbitrum === undefined ? {} : { arbitrum: async () => arbitrum }),
+    },
+  });
+
+  it("asks each configured one on its own, and none that is not configured", async () => {
+    const report = await readUpstreamReport(null, withOthers(403));
+
+    expect(report?.otherChains).toEqual({ base: "credentials-rejected" });
+    expect(report?.chainData).toBe("ok");
+  });
+
+  it("keeps their answers with the rest, for the hour", async () => {
+    const store = fakeStore();
+    await readUpstreamReport(store, withOthers(200, 401));
+    const kept = await readUpstreamReport(store, deps(500, 500));
+
+    expect(kept?.otherChains).toEqual({ base: "ok", arbitrum: "credentials-rejected" });
+  });
+
+  it("reads a report stored before other chains as having none", async () => {
+    const store = fakeStore();
+    store.data.set(
+      "liquiditywise:health:upstream",
+      JSON.stringify({ marketData: "ok", chainData: "ok", atMs: NOW.getTime() }),
+    );
+
+    expect((await readUpstreamReport(store, deps(500, 500)))?.otherChains).toEqual({});
+  });
+
+  it("lets one chain's endpoint failing to answer at all say nothing about another's", async () => {
+    const report = await readUpstreamReport(null, {
+      ...deps(200, 200),
+      probeOtherChains: {
+        base: async () => {
+          throw new Error("down");
+        },
+        arbitrum: async () => 200,
+      },
+    });
+
+    expect(report?.otherChains).toEqual({ base: "unreachable", arbitrum: "ok" });
+  });
+});
+
+describe("a refused key on another chain", () => {
+  it("is a problem of its own, naming the variable and the chain", () => {
+    const problems = problemsFrom({ otherChainStatus: { base: "credentials-rejected", arbitrum: "ok" } });
+
+    expect(problems.map(({ id }) => id)).toEqual(["base-rpc-key-refused"]);
+    expect(problems[0]?.message).toContain("BASE_RPC_URL");
+  });
+
+  it("is not said for an endpoint that is only slow or down", () => {
+    expect(problemsFrom({ otherChainStatus: { base: "rate-limited", arbitrum: "unreachable" } })).toEqual([]);
+  });
+
+  it("names Arbitrum's variable for Arbitrum", () => {
+    const [problem] = problemsFrom({ otherChainStatus: { arbitrum: "credentials-rejected" } });
+
+    expect(problem?.id).toBe("arbitrum-rpc-key-refused");
+    expect(problem?.message).toContain("ARBITRUM_RPC_URL");
+  });
+});

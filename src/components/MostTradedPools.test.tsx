@@ -151,6 +151,10 @@ describe("the most-traded page on another chain", () => {
     expect(html).toContain('href="/tr/most-traded?chain=arbitrum"');
   });
 
+  it("names the chain in its introduction", () => {
+    expect(onBase()).toContain("Base üzerinde son yedi günde");
+  });
+
   it("links each pool on its chain and leaves v4 out", () => {
     const html = onBase();
 

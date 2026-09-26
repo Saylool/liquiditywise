@@ -52,7 +52,11 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
     ...inside,
     ...(upstream === null
       ? {}
-      : { marketDataStatus: upstream.marketData, chainDataStatus: upstream.chainData }),
+      : {
+          marketDataStatus: upstream.marketData,
+          chainDataStatus: upstream.chainData,
+          otherChainStatus: upstream.otherChains,
+        }),
     ...readOutsideReadings(request.nextUrl.searchParams),
   });
 

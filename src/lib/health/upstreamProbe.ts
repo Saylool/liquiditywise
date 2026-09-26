@@ -43,9 +43,19 @@ const PROBE_KEY = "liquiditywise:health:upstream";
 /** One an hour. Often enough to find a dead key the same morning; rare enough to be free. */
 export const PROBE_INTERVAL_MS = 60 * 60 * 1_000;
 
+/** The chains read beside mainnet, each probed on its own endpoint. */
+export const OTHER_CHAINS = ["base", "arbitrum"] as const;
+export type OtherChain = (typeof OTHER_CHAINS)[number];
+
 export type UpstreamReport = {
   readonly marketData: UpstreamStatus;
   readonly chainData: UpstreamStatus;
+  /**
+   * What each other chain's RPC endpoint said, for the ones configured. Their
+   * keys can be refused apart from mainnet's — a network switched off on the
+   * provider's app refuses that network alone — so each is asked on its own.
+   */
+  readonly otherChains?: Partial<Record<OtherChain, UpstreamStatus>>;
   /** When these were taken, so a stale report can be told from a fresh one. */
   readonly atMs: number;
 };
@@ -55,12 +65,19 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { marketData, chainData, atMs } = parsed as Partial<UpstreamReport>;
+    const { marketData, chainData, atMs, otherChains } = parsed as Partial<UpstreamReport>;
     const known = (value: unknown): value is UpstreamStatus =>
       value === "ok" || value === "credentials-rejected" || value === "rate-limited" || value === "unreachable";
 
+    /* A report stored before other chains has none of them, and reads as such. */
+    const others: Partial<Record<OtherChain, UpstreamStatus>> = {};
+    for (const chain of OTHER_CHAINS) {
+      const status = (otherChains as Record<string, unknown> | undefined)?.[chain];
+      if (known(status)) others[chain] = status;
+    }
+
     return known(marketData) && known(chainData) && typeof atMs === "number"
-      ? { marketData, chainData, atMs }
+      ? { marketData, chainData, otherChains: others, atMs }
       : null;
   } catch {
     return null;
@@ -76,6 +93,8 @@ export type ProbeDependencies = {
   readonly probeMarketData: () => Promise<number>;
   /** Asks the chain source; resolves to its HTTP status. */
   readonly probeChainData: () => Promise<number>;
+  /** One probe per other chain with an endpoint configured; the rest are simply not asked. */
+  readonly probeOtherChains?: Partial<Record<OtherChain, () => Promise<number>>>;
   readonly now: () => Date;
 };
 
@@ -101,14 +120,22 @@ export const readUpstreamReport = async (
    * refused says nothing about the RPC endpoint, and a monitor that reported
    * one because of the other would send somebody to the wrong dashboard.
    */
-  const [marketStatus, chainStatus] = await Promise.all([
+  const others = OTHER_CHAINS.flatMap((chain) => {
+    const probe = dependencies.probeOtherChains?.[chain];
+    return probe === undefined ? [] : [{ chain, probe }];
+  });
+  const [marketStatus, chainStatus, ...otherStatuses] = await Promise.all([
     dependencies.probeMarketData().catch(() => 0),
     dependencies.probeChainData().catch(() => 0),
+    ...others.map(({ probe }) => probe().catch(() => 0)),
   ]);
 
   const report: UpstreamReport = {
     marketData: classifyProbeStatus(marketStatus),
     chainData: classifyProbeStatus(chainStatus),
+    otherChains: Object.fromEntries(
+      others.map(({ chain }, index) => [chain, classifyProbeStatus(otherStatuses[index] ?? 0)]),
+    ),
     atMs: nowMs,
   };
 

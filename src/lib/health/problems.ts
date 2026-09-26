@@ -19,7 +19,7 @@
  * for readers.
  */
 
-import type { UpstreamStatus } from "./upstreamProbe";
+import { OTHER_CHAINS, type OtherChain, type UpstreamStatus } from "./upstreamProbe";
 
 /** Each problem has a stable id, so the same fault is not reported twice. */
 export type ProblemId =
@@ -30,7 +30,9 @@ export type ProblemId =
   | "disk-nearly-full"
   | "backup-stale"
   | "market-data-key-refused"
-  | "chain-data-key-refused";
+  | "chain-data-key-refused"
+  | "base-rpc-key-refused"
+  | "arbitrum-rpc-key-refused";
 
 export type Problem = { readonly id: ProblemId; readonly message: string };
 
@@ -56,6 +58,8 @@ export type Readings = {
   readonly marketDataStatus?: UpstreamStatus | undefined;
   /** What the Ethereum RPC endpoint said to a probe. */
   readonly chainDataStatus?: UpstreamStatus | undefined;
+  /** What each other chain's RPC endpoint said, for the ones probed. */
+  readonly otherChainStatus?: Partial<Record<OtherChain, UpstreamStatus>> | undefined;
 };
 
 /**
@@ -66,6 +70,20 @@ export type Readings = {
  * entry somebody removed is found the same morning.
  */
 export const ALERT_SILENCE_LIMIT_MS = 30 * 60 * 1_000;
+
+/** What to say when another chain's endpoint refuses its key. */
+const OTHER_CHAIN_PROBLEMS: Record<OtherChain, Problem> = {
+  base: {
+    id: "base-rpc-key-refused",
+    message:
+      "The Base RPC endpoint is refusing BASE_RPC_URL (401/403). Base pool, holdings and alert reads fail. Check that Base is still enabled on the provider's app.",
+  },
+  arbitrum: {
+    id: "arbitrum-rpc-key-refused",
+    message:
+      "The Arbitrum RPC endpoint is refusing ARBITRUM_RPC_URL (401/403). Arbitrum pool, holdings and alert reads fail. Check that Arbitrum is still enabled on the provider's app.",
+  },
+};
 
 /** Certbot renews at thirty days left. Ten means renewal has been failing. */
 export const CERTIFICATE_WARNING_DAYS = 10;
@@ -159,6 +177,15 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
       message:
         "The Ethereum RPC endpoint is refusing ETHEREUM_RPC_URL (401/403). v4 pool pages cannot be shown at all, and v3 pages lose their tick spacing. Check the provider's dashboard.",
     });
+  }
+
+  /*
+   * Each other chain on its own: its endpoint is the mainnet key under another
+   * host, and the provider refuses a network its app has switched off while
+   * mainnet goes on answering — so mainnet's probe says nothing about it.
+   */
+  for (const chain of OTHER_CHAINS) {
+    if (readings.otherChainStatus?.[chain] === "credentials-rejected") problems.push(OTHER_CHAIN_PROBLEMS[chain]);
   }
 
   const { diskPercent } = readings;
