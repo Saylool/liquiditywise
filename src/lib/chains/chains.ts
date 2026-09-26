@@ -10,7 +10,7 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools" },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools", v4: true },
   /*
    * "days": Base's v3 subgraph answers no query that filters pools by a
    * token's symbol — measured on 2026-09-25, every shape of it failed at the
@@ -18,8 +18,14 @@ export const CHAINS = [
    * answers in six. So a name search there looks through the week's busiest
    * pools, as the v4 search does on mainnet for the same reason.
    */
-  { id: 8453, slug: "base", name: "Base", v3Search: "days" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools" },
+  /*
+   * `v4: false`: both public v4 subgraphs for Base answered every query with
+   * "database unavailable" from the one indexer serving them, measured on
+   * 2026-09-26. Arbitrum's answered the week's day table in 0.7 s, one block
+   * behind the chain, with the PoolManager Uniswap publishes for it.
+   */
+  { id: 8453, slug: "base", name: "Base", v3Search: "days", v4: false },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v4: true },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];
@@ -37,6 +43,14 @@ export const chainById = (id: ChainId): Chain => CHAINS.find((chain) => chain.id
 
 /** The chain a slug names, or `null` for any other text: an unknown chain is refused, never read as mainnet. */
 export const chainBySlug = (slug: string): Chain | null => CHAINS.find((chain) => chain.slug === slug) ?? null;
+
+/** The chains v4 pools are read on. */
+export const V4_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v4);
+
+export type V4ChainId = Extract<Chain, { v4: true }>["id"];
+
+/** Whether v4 pools are read on a chain; off it, a v4 page says so rather than asking mainnet. */
+export const readsV4 = (chainId: ChainId): chainId is V4ChainId => chainById(chainId).v4;
 
 /** The chain a figure's pool names; a pool can only carry a readable chain, so the fallback is never reached in practice. */
 export const chainOf = (id: number): Chain => (isSupportedChainId(id) ? chainById(id) : ETHEREUM);

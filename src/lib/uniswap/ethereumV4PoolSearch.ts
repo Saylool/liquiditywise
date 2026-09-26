@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import {
   type DataResult,
   PoolSearchTermsSchema,
@@ -44,11 +45,13 @@ export type EthereumV4PoolSearchRequest = {
   readonly fetchImpl: FetchLike;
   /** The chain reads' budget. The list's own is spent inside {@link readDays}. */
   readonly timeoutMs?: number;
+  /** The chain the day table and the PoolManager are on; mainnet when not said. */
+  readonly chainId?: ChainId;
   readonly onDiagnostic?: PoolSearchDiagnostic | undefined;
 };
 
 /**
- * Finds the Ethereum mainnet Uniswap v4 pools among this week's busiest whose
+ * Finds the Uniswap v4 pools, on one chain, among this week's busiest whose
  * currencies match one or two terms, and asks the PoolManager what each one's
  * liquidity is.
  *
@@ -107,6 +110,7 @@ export const fetchEthereumV4PoolSearch = async (
     keys,
     terms: terms.data,
     fetchedAt: days.data.fetchedAt,
+    chainId: request.chainId ?? 1,
     onDiagnostic: request.onDiagnostic,
   });
 };

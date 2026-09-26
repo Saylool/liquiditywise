@@ -15,7 +15,7 @@ import {
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
-import { ETHEREUM } from "@/lib/chains/chains";
+import { ETHEREUM, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { getEthereumV3PairFeeTiers } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
@@ -117,16 +117,19 @@ export default async function ComparePage({
   const pool = first.data.pool;
   const pair = `${pool.token0.symbol} / ${pool.token1.symbol}`;
   const current = address.data.toLowerCase();
-  /* v4 is read on mainnet alone; off it the same token addresses would name other tokens there. */
+  /* v4 on the same chain, where it is read; elsewhere the same token addresses would name other tokens. */
   const [listed, v4Listed] = await Promise.all([
     getEthereumV3PairFeeTiers(pool),
-    chain.id !== ETHEREUM.id
+    !readsV4(chain.id)
       ? null
-      : getEthereumV4PairPools({
-          analysedPoolId: null,
-          token0Address: pool.token0.address,
-          token1Address: pool.token1.address,
-        }),
+      : getEthereumV4PairPools(
+          {
+            analysedPoolId: null,
+            token0Address: pool.token0.address,
+            token1Address: pool.token1.address,
+          },
+          chain.id,
+        ),
   ]);
 
   if (listed.status === "unavailable") {

@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import type { DataResult, V4PoolCandidateList } from "../../schemas";
 import type { ReadV4PoolDays } from "./ethereumV4PoolDays";
 import { normalizeV4TradedPools } from "./v4TradedPoolsAdapter";
@@ -13,6 +14,8 @@ import { normalizeV4TradedPools } from "./v4TradedPoolsAdapter";
 /** Turns one read of the day table into the candidate list. */
 export const fetchEthereumV4TradedPools = async (
   readDays: ReadV4PoolDays,
+  /** The chain the day table is on; mainnet when not said. */
+  chainId: ChainId = 1,
 ): Promise<DataResult<V4PoolCandidateList>> => {
   const days = await readDays();
   if (days.status === "unavailable") {
@@ -29,5 +32,6 @@ export const fetchEthereumV4TradedPools = async (
   return normalizeV4TradedPools({
     payload: days.data.payload,
     fetchedAt: days.data.fetchedAt,
+    chainId,
   });
 };

@@ -44,8 +44,7 @@ import type { ChainId } from "../chains/chains";
  */
 const POOL_READERS = {
   v3: getEthereumV3Pool,
-  /* Mainnet only, as every v4 read is; a v4 pool on another chain never gets this far. */
-  v4: (poolId: string) => getEthereumV4Pool(poolId),
+  v4: getEthereumV4Pool,
 } as const satisfies Record<
   ProtocolVersion,
   (id: string, chainId: ChainId) => Promise<DataResult<V3Pool> | DataResult<V4Pool>>

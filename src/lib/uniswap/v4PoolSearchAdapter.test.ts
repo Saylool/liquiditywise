@@ -107,6 +107,14 @@ describe("normalizeV4PoolSearch", () => {
     expect(matches[0]?.exactSymbolMatches).toBe(2);
   });
 
+  it("names the chain the day table was read on, on every pool, and mainnet when not said", () => {
+    const body = payload([rawPool({ id: 1 })]);
+    const arbitrum = normalizeV4PoolSearch({ payload: body, states: new Map(), keys: new Map(), terms: ["usdc", "weth"], fetchedAt: FETCHED_AT, chainId: 42161 });
+
+    expect(matchesOf(arbitrum).map(({ pool }) => [pool.chainId, pool.token0.chainId])).toEqual([[42161, 42161]]);
+    expect(matchesOf(normalize(body))[0]?.pool.chainId).toBe(1);
+  });
+
   /* The fee comes from the key the chain answered with, and from nowhere else. */
   it("takes each pool's fee from its key", () => {
     const raw = rawPool({ id: 1 });

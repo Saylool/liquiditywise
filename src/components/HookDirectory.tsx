@@ -1,4 +1,5 @@
 import type { HookDirectoryResult } from "../lib/advisor/hookDirectory";
+import { chainOf } from "../lib/chains/chains";
 import { v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatPercent, formatWhole } from "../lib/format/displayFormats";
 import { priceStepRatio } from "../lib/format/priceStep";
@@ -98,7 +99,7 @@ export function HookDirectory({
                      * them is more than the endpoint answers for.
                      */}
                     <GuardedLink
-                      href={v4PoolAnalysisHref(pool.id, parameters)}
+                      href={v4PoolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId))}
                       className="block rounded-md border border-border bg-surface-sunken px-3 py-1.5 font-mono text-xs"
                     >
                       {pool.token0.symbol} / {pool.token1.symbol} ·{" "}

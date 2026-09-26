@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { poolAnalysisHref, readRequestedChain } from "../advisor/requestedParameters";
+import { poolAnalysisHref, readRequestedChain, v4PoolAnalysisHref } from "../advisor/requestedParameters";
 import { chainLabel } from "./chainLabel";
-import { chainBySlug, chainOf, CHAINS, ETHEREUM, isSupportedChainId } from "./chains";
+import { chainBySlug, chainOf, CHAINS, ETHEREUM, isSupportedChainId, readsV4, V4_CHAINS } from "./chains";
 import { poolName } from "../usage/usageLines";
 import { poolIdentityFor } from "../uniswap/subgraphPoolIdentity";
 
@@ -56,10 +56,29 @@ describe("a link to a pool's analysis", () => {
   });
 });
 
+describe("the chains v4 is read on", () => {
+  it("are Ethereum and Arbitrum One, and not Base, whose v4 subgraphs did not answer", () => {
+    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "arbitrum"]);
+    expect([readsV4(1), readsV4(8453), readsV4(42161)]).toEqual([true, false, true]);
+  });
+});
+
+describe("a link to a v4 pool's analysis", () => {
+  const ID = `0x${"e5".repeat(32)}`;
+
+  it("says nothing about the chain on mainnet, and carries it elsewhere", () => {
+    expect(v4PoolAnalysisHref(ID, PARAMETERS)).toBe(`/v4?id=${ID}&days=30&sigma=1`);
+    expect(v4PoolAnalysisHref(ID, PARAMETERS, 2500, chainOf(42161))).toBe(
+      `/v4?chain=arbitrum&id=${ID}&days=30&sigma=1&usd=2500`,
+    );
+  });
+});
+
 describe("a pool's name in the journal", () => {
   it("keeps mainnet's form and marks every other chain", () => {
     expect(poolName("v3", POOL)).toBe(`v3:${POOL}`);
     expect(poolName("v3", POOL, 42161)).toBe(`v3@arbitrum:${POOL}`);
+    expect(poolName("v4", `0x${"e5".repeat(32)}`, 42161)).toBe(`v4@arbitrum:0x${"e5".repeat(32)}`);
   });
 });
 
@@ -68,9 +87,13 @@ describe("a pool id asked about on a chain", () => {
     expect(poolIdentityFor("v3", POOL, 8453)?.chainId).toBe(8453);
   });
 
-  it("refuses a v4 id off mainnet rather than looking it up there", () => {
+  it("refuses a v4 id on a chain v4 is not read on, rather than looking it up on mainnet", () => {
     expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 8453)).toBeNull();
     expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`)?.chainId).toBe(1);
+  });
+
+  it("takes a v4 id on Arbitrum, on Arbitrum", () => {
+    expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 42161)?.chainId).toBe(42161);
   });
 });
 

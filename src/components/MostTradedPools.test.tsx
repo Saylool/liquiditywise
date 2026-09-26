@@ -162,3 +162,26 @@ describe("the most-traded page on another chain", () => {
     expect(html).not.toContain("Uniswap v4");
   });
 });
+
+describe("the most-traded page on Arbitrum, where v4 is read too", () => {
+  it("links each v4 pool to its page on Arbitrum", () => {
+    const html = renderToStaticMarkup(
+      <MostTradedPools
+        data={{
+          v3: { status: "listed", pools: [], fetchedAt: "x" },
+          v4: { status: "listed", pools: [{ ...v4, pool: { ...v4.pool, chainId: 42161 } }], fetchedAt: "x" },
+        }}
+        chain={chainOf(42161)}
+        pageHref="/most-traded"
+        networkLabel="Network"
+        copy={getMostTradedCopy("en")}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+    expect(html).toContain(`/v4?chain=arbitrum&amp;id=${V4_ID}`);
+    expect(html).toContain("Uniswap v4");
+  });
+});

@@ -242,14 +242,17 @@ export const poolComparisonHref = (
  * The same link for a v4 pool, which has its own page and is named by a
  * 32-byte id under a different parameter. The band travels with it for the
  * same reason as above: two pools compared under two different bands look
- * comparable and are not.
+ * comparable and are not. The chain travels as it does for v3: unsaid for
+ * mainnet, so every link published before other chains still reads the same.
  */
 export const v4PoolAnalysisHref = (
   poolId: string,
   parameters: PriceBandParameters,
   depositUsd?: number,
+  chain: Chain = ETHEREUM,
 ): string => {
   const query = new URLSearchParams({
+    ...(chain.id === ETHEREUM.id ? {} : { [CHAIN_PARAMETER]: chain.slug }),
     id: poolId,
     [HORIZON_PARAMETER]: String(parameters.horizonDays),
     [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),

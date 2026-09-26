@@ -1,4 +1,5 @@
 import { PoolFeeTiers } from "@/components/PoolFeeTiers";
+import { chainOf, readsV4 } from "@/lib/chains/chains";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV3PairFeeTiers } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
@@ -39,18 +40,22 @@ export async function PoolFeeTiersSection({
    * read, which the `null` says.
    */
   /*
-   * v4 is read on mainnet alone. Off it, the same two token addresses would be
-   * looked up among mainnet's v4 pools, where they name other tokens or none.
+   * On the pool's own chain, and only where v4 is read (see chains.ts). The
+   * same two token addresses on another chain name other tokens or none.
    */
+  const chainId = chainOf(pool.chainId).id;
   const [result, v4Result] = await Promise.all([
     getEthereumV3PairFeeTiers(pool),
-    pool.chainId !== 1
+    !readsV4(chainId)
       ? null
-      : getEthereumV4PairPools({
-          analysedPoolId: null,
-          token0Address: pool.token0.address,
-          token1Address: pool.token1.address,
-        }),
+      : getEthereumV4PairPools(
+          {
+            analysedPoolId: null,
+            token0Address: pool.token0.address,
+            token1Address: pool.token1.address,
+          },
+          chainId,
+        ),
   ]);
 
   return (

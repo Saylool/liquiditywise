@@ -4,6 +4,8 @@ import type { DataResult, V4PoolSearchResults } from "../../schemas";
 import { logDetail, loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV4PoolSearch } from "./ethereumV4PoolSearch";
 import { getEthereumV4PoolDays } from "./getEthereumV4PoolDays";
+import { rpcUrlFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v4-pool-search";
@@ -18,13 +20,15 @@ const LABEL = "v4-pool-search";
  */
 export const getEthereumV4PoolSearch = async (
   terms: readonly string[],
+  chainId: ChainId = 1,
 ): Promise<DataResult<V4PoolSearchResults>> =>
   logUnavailable(
     LABEL,
     await fetchEthereumV4PoolSearch({
       terms,
-      readDays: getEthereumV4PoolDays,
-      rpcUrl: process.env.ETHEREUM_RPC_URL,
+      readDays: () => getEthereumV4PoolDays(chainId),
+      rpcUrl: rpcUrlFor(chainId),
+      chainId,
       fetchImpl: loggingFetch(LABEL),
       onDiagnostic: (detail) => {
         logDetail(LABEL, detail);

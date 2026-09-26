@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import {
   type DataFailureNotice,
   type DataResult,
@@ -35,9 +36,12 @@ const unavailable = (notice: DataFailureNotice): DataResult<V4PoolCandidateList>
 export const normalizeV4TradedPools = ({
   payload,
   fetchedAt,
+  chainId = 1,
 }: {
   readonly payload: unknown;
   readonly fetchedAt: string;
+  /** The chain the day table was read on; mainnet when not said. */
+  readonly chainId?: ChainId;
 }): DataResult<V4PoolCandidateList> => {
   const parsed = V4PoolDaysResponseSchema.safeParse(payload);
   if (!parsed.success) return unavailable(MALFORMED);
@@ -53,7 +57,7 @@ export const normalizeV4TradedPools = ({
   for (const raw of distinctCards(data.poolDayDatas)) {
     if (pools.length === TRADED_POOL_LIMIT) break;
     /* Every fee unread: the chain is asked later, for the pools that are shown. */
-    const card = normalizeV4PoolCard(raw, UNREAD_CHAIN);
+    const card = normalizeV4PoolCard(raw, UNREAD_CHAIN, chainId);
     if (card === null) continue;
     pools.push(card.pool);
     createdAtBlockNumbers[card.pool.id] = raw.createdAtBlockNumber;

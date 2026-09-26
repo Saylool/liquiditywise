@@ -87,7 +87,7 @@ const PositionRow = ({
   const href =
     pool.protocolVersion === "v3"
       ? poolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId))
-      : v4PoolAnalysisHref(pool.id, parameters);
+      : v4PoolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId));
   const fee =
     pool.protocolVersion === "v3"
       ? formatFeePpm(pool.feePpm, locale)

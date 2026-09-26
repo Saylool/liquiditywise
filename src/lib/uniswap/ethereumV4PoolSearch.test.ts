@@ -141,6 +141,14 @@ describe("fetchEthereumV4PoolSearch", () => {
     });
   });
 
+  it("names the chain it was asked on, and mainnet when not said", async () => {
+    const arbitrum = await run({ chainId: 42161 });
+    const mainnet = await run();
+
+    expect(arbitrum.status === "success" && arbitrum.data.matches[0]?.pool.chainId).toBe(42161);
+    expect(mainnet.status === "success" && mainnet.data.matches[0]?.pool.chainId).toBe(1);
+  });
+
   /*
    * The list is shared with the holdings net and may be minutes old, so the
    * page says when it was read rather than when it was rendered.

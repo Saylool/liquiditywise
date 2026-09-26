@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import { Bytes32HexSchema, type DataResult, type V4Pool } from "../../schemas";
 import { fetchEthereumV4PoolChain } from "./ethereumV4PoolChain";
 import { normalizeV4Pool, readV4PoolEnvelope } from "./v4PoolAdapter";
@@ -56,14 +57,16 @@ export type EthereumV4PoolRequest = {
   /** Raw environment values; validated here so the wrapper stays free of logic. */
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
-  /** Ethereum JSON-RPC endpoint, for the key and the fees. */
+  /** The chain's JSON-RPC endpoint, for the key and the fees. */
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs?: number;
+  /** The chain the subgraph and the endpoint are on; mainnet when not said. */
+  readonly chainId?: ChainId;
 };
 
 /**
- * Reads one Ethereum mainnet Uniswap v4 pool's configuration from both sources.
+ * Reads one Uniswap v4 pool, on one chain,'s configuration from both sources.
  *
  * No clock is injected, because nothing here is time-dependent: a PoolKey is
  * settled when the pool is initialised and never changes, and the protocol's
@@ -116,5 +119,5 @@ export const fetchEthereumV4Pool = async (
   });
   if (chain.status === "unavailable") return chain;
 
-  return normalizeV4Pool({ payload: transport.payload, poolId: poolId.data, chain: chain.data });
+  return normalizeV4Pool({ payload: transport.payload, poolId: poolId.data, chain: chain.data, chainId: request.chainId ?? 1 });
 };

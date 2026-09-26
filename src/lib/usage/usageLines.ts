@@ -74,7 +74,8 @@ const poolOf = (page: Page, parameters: URLSearchParams): string | null => {
   }
   if (page === "/v4") {
     const id = parameters.get("id")?.trim().toLowerCase() ?? "";
-    if (POOL_ID.test(id)) return `v4:${id}`;
+    const chain = chainBySlug(parameters.get("chain") ?? "ethereum");
+    if (POOL_ID.test(id) && chain !== null) return poolName("v4", id, chain.id);
   }
   if ((page === "/pool" || page === "/v4") && parameters.get("q") !== null) return "search";
   return null;

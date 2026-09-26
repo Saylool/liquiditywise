@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import {
   Bytes32HexSchema,
   type DataResult,
@@ -59,11 +60,13 @@ export type EthereumV4PairPoolsRequest = {
   readonly fetchImpl: FetchLike;
   readonly now: () => Date;
   readonly timeoutMs?: number;
+  /** The chain the subgraph and the endpoint are on; mainnet when not said. */
+  readonly chainId?: ChainId;
   readonly onDiagnostic?: PairFeeTiersDiagnostic | undefined;
 };
 
 /**
- * Reads every Ethereum mainnet Uniswap v4 pool that trades one currency pair,
+ * Reads every Uniswap v4 pool, on one chain, that trades one currency pair,
  * and asks the PoolManager what each one's depth is.
  *
  * Validation order matches every other reader: caller input first, then
@@ -128,6 +131,7 @@ export const fetchEthereumV4PairPools = async (
     keys,
     analysedPoolId: analysed.data,
     fetchedAt: request.now().toISOString(),
+    chainId: request.chainId ?? 1,
     onDiagnostic: request.onDiagnostic,
   });
 };

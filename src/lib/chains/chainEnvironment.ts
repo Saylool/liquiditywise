@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ChainId } from "./chains";
+import { type ChainId, readsV4, type V4ChainId } from "./chains";
 
 /*
  * Which subgraph and which RPC endpoint serve each chain, read from the
@@ -18,6 +18,11 @@ const V3_SUBGRAPH = {
   42161: () => process.env.UNISWAP_V3_ARBITRUM_SUBGRAPH_ID,
 } as const satisfies Record<ChainId, () => string | undefined>;
 
+const V4_SUBGRAPH = {
+  1: () => process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID,
+  42161: () => process.env.UNISWAP_V4_ARBITRUM_SUBGRAPH_ID,
+} as const satisfies Record<V4ChainId, () => string | undefined>;
+
 const RPC = {
   1: () => process.env.ETHEREUM_RPC_URL,
   8453: () => process.env.BASE_RPC_URL,
@@ -26,12 +31,16 @@ const RPC = {
 
 export const v3SubgraphIdFor = (chainId: ChainId): string | undefined => V3_SUBGRAPH[chainId]();
 
+/** The v4 subgraph on a chain; on a chain v4 is not read on there is none, never mainnet's. */
+export const v4SubgraphIdFor = (chainId: ChainId): string | undefined =>
+  readsV4(chainId) ? V4_SUBGRAPH[chainId]() : undefined;
+
 /**
- * The subgraph for one protocol on one chain. v4 has one, on mainnet; asked
- * for anywhere else there is none, and the read reports itself unconfigured
- * rather than asking mainnet's.
+ * The subgraph for one protocol on one chain. Asked for v4 on a chain it is
+ * not read on, there is none, and the read reports itself unconfigured rather
+ * than asking mainnet's.
  */
 export const subgraphIdFor = (protocolVersion: "v3" | "v4", chainId: ChainId): string | undefined =>
-  protocolVersion === "v3" ? v3SubgraphIdFor(chainId) : chainId === 1 ? process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID : undefined;
+  protocolVersion === "v3" ? v3SubgraphIdFor(chainId) : v4SubgraphIdFor(chainId);
 
 export const rpcUrlFor = (chainId: ChainId): string | undefined => RPC[chainId]();

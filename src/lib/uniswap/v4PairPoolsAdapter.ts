@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import {
   Bytes32HexSchema,
   compareV4PairPools,
@@ -51,6 +52,8 @@ export type NormalizeV4PairPoolsInput = {
   /** The v4 pool being read, or `null` when this list sits beside a v3 pool's page. */
   readonly analysedPoolId: string | null;
   readonly fetchedAt: string;
+  /** The chain the subgraph that answered reads; mainnet when not said. */
+  readonly chainId?: ChainId;
   readonly onDiagnostic?: PairFeeTiersDiagnostic | undefined;
 };
 
@@ -68,6 +71,7 @@ export const normalizeV4PairPools = ({
   keys,
   analysedPoolId,
   fetchedAt,
+  chainId = 1,
   onDiagnostic,
 }: NormalizeV4PairPoolsInput): DataResult<V4PairPools> => {
   const parsed = V4PairPoolsResponseSchema.safeParse(payload);
@@ -83,7 +87,7 @@ export const normalizeV4PairPools = ({
   for (const raw of data.pools) {
     const id = Bytes32HexSchema.safeParse(raw.id);
     const card = id.success
-      ? normalizeV4PoolCard(raw, chainReadingFor(id.data, keys, states))
+      ? normalizeV4PoolCard(raw, chainReadingFor(id.data, keys, states), chainId)
       : null;
     if (card === null) {
       dropped += 1;

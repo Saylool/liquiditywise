@@ -50,7 +50,7 @@ export type ComparedV4 =
   | { readonly status: "listed"; readonly tiers: readonly ComparedTier[]; readonly notShown: number }
   | { readonly status: "none" }
   | { readonly status: "unavailable"; readonly notice: DataFailureNotice }
-  /** Off mainnet, where no v4 is read: the section is left out rather than said to be empty. */
+  /** On a chain v4 is not read on: the section is left out rather than said to be empty. */
   | { readonly status: "not-read" };
 
 const Figure = ({ label, value, note }: { label: string; value: string; note?: string | undefined }) => (
@@ -91,7 +91,7 @@ const TierCard = ({
   const href =
     tier.protocol === "v3"
       ? poolAnalysisHref(tier.id, parameters, depositUsd, chain)
-      : v4PoolAnalysisHref(tier.id, parameters, depositUsd);
+      : v4PoolAnalysisHref(tier.id, parameters, depositUsd, chain);
 
   return (
     <section className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
@@ -180,7 +180,7 @@ export function PoolComparison({
   locale,
 }: {
   pair: string;
-  /** The chain every tier is on; v4 is read on mainnet alone. */
+  /** The chain every tier is on; v4 is read only where chains.ts says. */
   chain?: Chain;
   /** Every v3 tier of the pair, in fee order. */
   v3: readonly ComparedTier[];

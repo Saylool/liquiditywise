@@ -13,6 +13,8 @@ describe("what a visit line records", () => {
   it("names the pool a v3 or v4 page was opened for, in lower case", () => {
     expect(visit(`/pool?address=${ADDRESS}`)?.pool).toBe(`v3:${ADDRESS.toLowerCase()}`);
     expect(visit(`/v4?id=${POOL_ID.toUpperCase().replace("0X", "0x")}`)?.pool).toBe(`v4:${POOL_ID}`);
+    expect(visit(`/v4?chain=arbitrum&id=${POOL_ID}`)?.pool).toBe(`v4@arbitrum:${POOL_ID}`);
+    expect(visit(`/v4?chain=solana&id=${POOL_ID}`)?.pool).toBeNull();
   });
 
   /*

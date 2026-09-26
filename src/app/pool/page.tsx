@@ -21,7 +21,7 @@ import {
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
-import { type Chain, ETHEREUM } from "@/lib/chains/chains";
+import { type Chain, ETHEREUM, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
@@ -250,7 +250,13 @@ export default async function PoolRangePage({
     );
   }
   /* Likewise a v4 id, which has its own page. Same pattern guard, same reason. */
-  if (input.kind === "v4-pool-id") redirect(`/v4?id=${input.poolId}`);
+  if (input.kind === "v4-pool-id") {
+    redirect(
+      chain.id === ETHEREUM.id
+        ? `/v4?id=${input.poolId}`
+        : `/v4?${CHAIN_PARAMETER}=${chain.slug}&id=${input.poolId}`,
+    );
+  }
 
   if (input.kind === "unusable") {
     return (
@@ -279,10 +285,10 @@ export default async function PoolRangePage({
        * what a pool holds, and what its active liquidity is worth — and a single
        * order over both would be comparing them.
        */}
-      {/* v4 is read on mainnet alone. */}
-      {chain.id !== ETHEREUM.id ? null : (
+      {/* Only on a chain v4 is read on (see chains.ts). */}
+      {!readsV4(chain.id) ? null : (
         <Suspense fallback={<V4PoolSearchPending t={t} />}>
-          <V4PoolSearchSection terms={input.terms} locale={locale} t={t} />
+          <V4PoolSearchSection terms={input.terms} chainId={chain.id} locale={locale} t={t} />
         </Suspense>
       )}
     </Shell>

@@ -13,12 +13,11 @@ import { convertSafeInteger } from "./v3SubgraphRawResponse";
 import type { V4PoolChainFees, V4PoolChainReading } from "./v4PoolChainReading";
 import { DYNAMIC_FEE_FLAG, type V4PoolKey } from "./v4PoolKey";
 import { type RawV4Pool, V4PoolResponseSchema } from "./v4PoolRawResponse";
+import type { ChainId } from "../chains/chains";
 
 /** Re-exported for the readers that decode the flag's wire form. */
 export { DYNAMIC_FEE_FLAG } from "./v4PoolKey";
 
-/** This adapter reads Ethereum mainnet only; multi-chain support is not modelled yet. */
-export const ETHEREUM_MAINNET_CHAIN_ID = 1;
 
 const MALFORMED = "market-data-malformed";
 const INDEXING_ERRORS = "market-data-indexing-errors";
@@ -114,6 +113,8 @@ export const applyV4ChainReading = (pool: V4Pool, chain: V4PoolChainReading): V4
 export const normalizeV4PoolEntity = (
   raw: RawV4Pool,
   chain: V4PoolChainReading,
+  /** The chain the indexer that listed it reads; mainnet when not said. */
+  chainId: ChainId = 1,
 ): V4Pool | null => {
   const id = Bytes32HexSchema.safeParse(raw.id);
   if (!id.success) return null;
@@ -121,8 +122,8 @@ export const normalizeV4PoolEntity = (
   const tickSpacing = convertSafeInteger(raw.tickSpacing);
   if (!tickSpacing.ok) return null;
 
-  const token0 = normalizeV3Token(raw.token0, ETHEREUM_MAINNET_CHAIN_ID);
-  const token1 = normalizeV3Token(raw.token1, ETHEREUM_MAINNET_CHAIN_ID);
+  const token0 = normalizeV3Token(raw.token0, chainId);
+  const token1 = normalizeV3Token(raw.token1, chainId);
   if (token0 === null || token1 === null) return null;
 
   /*
@@ -145,7 +146,7 @@ export const normalizeV4PoolEntity = (
    */
   const pool = V4PoolSchema.safeParse({
     protocolVersion: "v4",
-    chainId: ETHEREUM_MAINNET_CHAIN_ID,
+    chainId,
     id: id.data,
     token0,
     token1,
@@ -199,15 +200,18 @@ export const normalizeV4Pool = ({
   payload,
   poolId,
   chain,
+  chainId = 1,
 }: {
   readonly payload: unknown;
   readonly poolId: string;
   readonly chain: V4PoolChainReading;
+  /** The chain the subgraph that answered reads; mainnet when not said. */
+  readonly chainId?: ChainId;
 }): DataResult<V4Pool> => {
   const envelope = readV4PoolEnvelope(payload);
   if (!envelope.ok) return envelope.result;
 
-  const pool = normalizeV4PoolEntity(envelope.raw, chain);
+  const pool = normalizeV4PoolEntity(envelope.raw, chain, chainId);
   if (pool === null || pool.id !== poolId) return unavailable("invalid-response", MALFORMED);
 
   return { status: "success", data: pool };

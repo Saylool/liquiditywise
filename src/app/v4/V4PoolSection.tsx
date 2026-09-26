@@ -12,6 +12,7 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV4Pool } from "@/lib/uniswap/getEthereumV4Pool";
 import type { PriceBandParameters } from "@/schemas";
+import type { V4ChainId } from "@/lib/chains/chains";
 
 /**
  * Reads one v4 pool, and works it through to a range.
@@ -27,6 +28,7 @@ import type { PriceBandParameters } from "@/schemas";
  */
 export async function V4PoolSection({
   poolId,
+  chainId,
   parameters,
   depositUsd,
   controls,
@@ -34,6 +36,8 @@ export async function V4PoolSection({
   t,
 }: {
   poolId: string;
+  /** The chain the pool is read on, one v4 is read on. */
+  chainId: V4ChainId;
   parameters: PriceBandParameters;
   /** The deposit the fee-share figure is worked out for. Scales nothing else. */
   depositUsd: number;
@@ -42,8 +46,8 @@ export async function V4PoolSection({
   locale: Locale;
   t: Dictionary;
 }) {
-  const poolRead = getEthereumV4Pool(poolId);
-  const analysis = getPoolRangeAnalysis("v4", poolId, parameters, depositUsd, poolRead);
+  const poolRead = getEthereumV4Pool(poolId, chainId);
+  const analysis = getPoolRangeAnalysis("v4", poolId, parameters, depositUsd, poolRead, chainId);
 
   const pool = await poolRead;
 

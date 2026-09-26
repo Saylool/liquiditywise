@@ -8,8 +8,13 @@ import {
   HORIZON_PARAMETER,
   MULTIPLIER_PARAMETER,
   DEPOSIT_PARAMETER,
+  CHAIN_PARAMETER,
+  readRequestedChain,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
+import { chainLabel } from "@/lib/chains/chainLabel";
+import { type Chain, ETHEREUM, readsV4 } from "@/lib/chains/chains";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
@@ -46,14 +51,17 @@ export async function generateMetadata(): Promise<Metadata> {
 function Shell({
   locale,
   t,
+  chain,
   children,
 }: {
   locale: Locale;
   t: Dictionary;
+  /** Required, so no branch of this page can forget which network its chip names. */
+  chain: Chain;
   children: React.ReactNode;
 }) {
   return (
-    <WorkspaceShell locale={locale} t={t} section="pools">
+    <WorkspaceShell locale={locale} t={t} section="pools" network={chainLabel(chain.id, locale)}>
       {children}
     </WorkspaceShell>
   );
@@ -70,6 +78,26 @@ export default async function V4PoolPage({
 }) {
   const { locale, t } = await getRequestDictionary();
   const params = await searchParams;
+  const chainCopy = getChainCopy(locale);
+
+  /*
+   * The chain first, as on the v3 page: the same id on another chain is
+   * another pool or none. A chain nothing reads is refused, and a chain whose
+   * v4 pools are not read is said so — never looked up on mainnet instead.
+   */
+  const chain = readRequestedChain(params[CHAIN_PARAMETER]);
+  if (chain === null || !readsV4(chain.id)) {
+    return (
+      <Shell locale={locale} t={t} chain={chain ?? ETHEREUM}>
+        <PoolLookupForm t={t} network={{ label: chainCopy.network, current: (chain ?? ETHEREUM).slug }} />
+        <p className="text-sm leading-relaxed text-muted">
+          {chain === null ? chainCopy.unknown : chainCopy.v4NotRead(chain.name)}
+        </p>
+      </Shell>
+    );
+  }
+  const network = { label: chainCopy.network, current: chain.slug };
+
   const requested = params.id;
   const poolId = Bytes32HexSchema.safeParse(single(requested));
   const band = readRequestedParameters(
@@ -81,9 +109,9 @@ export default async function V4PoolPage({
 
   if (!poolId.success) {
     return (
-      <Shell locale={locale} t={t}>
+      <Shell locale={locale} t={t} chain={chain}>
         {/* Deliberately does not echo what arrived: it is unvalidated input. */}
-        <PoolLookupForm t={t} />
+        <PoolLookupForm t={t} network={network} />
         <p className="text-sm leading-relaxed text-muted">
           {requested === undefined ? t.v4.noId : t.v4.invalidId}
         </p>
@@ -92,12 +120,13 @@ export default async function V4PoolPage({
   }
 
   return (
-    <Shell locale={locale} t={t}>
+    <Shell locale={locale} t={t} chain={chain}>
       {/* The one box, as on the pool page: a v4 id goes back in it and reads as one. */}
-      <PoolLookupForm t={t} value={poolId.data} />
+      <PoolLookupForm t={t} value={poolId.data} network={network} />
       <Suspense fallback={<V4PoolPending t={t} />}>
         <V4PoolSection
           poolId={poolId.data}
+          chainId={chain.id}
           parameters={band.parameters}
           depositUsd={band.depositUsd}
           locale={locale}
@@ -112,6 +141,7 @@ export default async function V4PoolPage({
               action="/v4"
               poolParameter="id"
               poolId={poolId.data}
+              chain={chain.slug}
               parameters={band.parameters}
               depositUsd={band.depositUsd}
               fellBack={band.fellBack}

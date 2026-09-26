@@ -3,6 +3,7 @@ import { convertNonNegativeDecimal } from "./v3SubgraphRawResponse";
 import { normalizeV4PoolEntity } from "./v4PoolAdapter";
 import type { V4PoolChainReading } from "./v4PoolChainReading";
 import type { RawV4PoolCard } from "./v4PoolCardRawResponse";
+import type { ChainId } from "../chains/chains";
 
 /** A listed v4 pool, verified. What every list of v4 pools is made of. */
 export type V4PoolCard = {
@@ -32,8 +33,10 @@ export type V4PoolCard = {
 export const normalizeV4PoolCard = (
   raw: RawV4PoolCard,
   chain: V4PoolChainReading,
+  /** The chain the indexer that listed it reads; mainnet when not said. */
+  chainId: ChainId = 1,
 ): V4PoolCard | null => {
-  const pool = normalizeV4PoolEntity(raw, chain);
+  const pool = normalizeV4PoolEntity(raw, chain, chainId);
   if (pool === null) return null;
 
   const price0 = convertNonNegativeDecimal(raw.token0.derivedETH, { allowZero: true });

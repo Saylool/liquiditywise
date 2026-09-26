@@ -5,7 +5,7 @@ import {
   nonZeroEvmAddress,
   type ProtocolVersion,
 } from "../../schemas";
-import type { ChainId } from "../chains/chains";
+import { type ChainId, readsV4, type V4ChainId } from "../chains/chains";
 
 /*
  * What a subgraph adapter needs to know about *which* pool it is reading, and
@@ -77,14 +77,13 @@ export const v3PoolIdentity = (poolAddress: string, chainId: ChainId = 1): Subgr
  * possible keccak256 output, and no pool is known to occupy it, so it simply
  * fails to be found like any other id nobody initialised.
  */
-export const v4PoolIdentity = (poolId: string): SubgraphPoolIdentity | null => {
+export const v4PoolIdentity = (poolId: string, chainId: V4ChainId = 1): SubgraphPoolIdentity | null => {
   const id = Bytes32HexSchema.safeParse(poolId);
   if (!id.success) return null;
 
   return {
     protocolVersion: "v4",
-    /* Mainnet only: no v4 subgraph is configured for any other chain. */
-    chainId: 1,
+    chainId,
     source: "uniswap-v4-subgraph",
     id: id.data,
     matches: (echoed) => {
@@ -103,8 +102,9 @@ export const v4PoolIdentity = (poolId: string): SubgraphPoolIdentity | null => {
  */
 /**
  * Validates a caller-supplied pool id the way its protocol spells one, on the
- * chain it was asked about. A v4 pool on another chain is refused rather than
- * looked up on mainnet, where the same id would name a different pool or none.
+ * chain it was asked about. A v4 pool on a chain v4 is not read on is refused
+ * rather than looked up on mainnet, where the same id would name a different
+ * pool or none.
  */
 export const poolIdentityFor = (
   protocolVersion: ProtocolVersion,
@@ -112,5 +112,5 @@ export const poolIdentityFor = (
   chainId: ChainId = 1,
 ): SubgraphPoolIdentity | null => {
   if (protocolVersion === "v3") return v3PoolIdentity(poolId, chainId);
-  return chainId === 1 ? v4PoolIdentity(poolId) : null;
+  return readsV4(chainId) ? v4PoolIdentity(poolId, chainId) : null;
 };

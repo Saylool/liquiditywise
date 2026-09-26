@@ -116,11 +116,11 @@ export type ChainId = z.infer<typeof ChainIdSchema>;
 
 /**
  * The chains a figure may describe a pool on, per protocol: v3 on Ethereum,
- * Base and Arbitrum One; v4 on Ethereum alone, the only chain a v4 subgraph is
- * configured for. The list lib/chains/chains.ts holds, restated here so the
+ * Base and Arbitrum One; v4 on Ethereum and Arbitrum One, the chains a working
+ * v4 subgraph was found for. The list lib/chains/chains.ts holds, restated here so the
  * domain layer depends on nothing above it — a test holds the two together.
  */
-export const READABLE_CHAIN_IDS = { v3: [1, 8453, 42161], v4: [1] } as const;
+export const READABLE_CHAIN_IDS = { v3: [1, 8453, 42161], v4: [1, 42161] } as const;
 
 export const isReadableChain = (chainId: number, protocolVersion: "v3" | "v4"): boolean =>
   (READABLE_CHAIN_IDS[protocolVersion] as readonly number[]).includes(chainId);

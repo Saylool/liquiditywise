@@ -80,6 +80,19 @@ describe("reading the most-traded page", () => {
     expect(read.v4?.status === "listed" && read.v4.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([700]);
   });
 
+  it("names the chain it was read on, on the v4 pools as on the v3 ones", async () => {
+    const read = await readMostTraded({
+      chainId: 42161,
+      readV3Days: async () => v3Days,
+      readV4Days: async () => v4Days,
+      rpcUrl: undefined,
+      fetchImpl: vi.fn(),
+    });
+
+    expect(read.v3.status === "listed" && read.v3.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
+    expect(read.v4?.status === "listed" && read.v4.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
+  });
+
   it("loses only the half whose source is down", async () => {
     const read = await readMostTraded({
       readV3Days: async () => down,

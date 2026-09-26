@@ -76,6 +76,14 @@ describe("fetchEthereumV4PairPools", () => {
     expect(result.data.analysedPoolId).toBe(POOL_ID);
   });
 
+  it("names the chain it was asked on, and mainnet when not said", async () => {
+    const arbitrum = await run({ chainId: 42161 });
+    const mainnet = await run();
+
+    expect(arbitrum.status === "success" && arbitrum.data.pools[0]?.pool.chainId).toBe(42161);
+    expect(mainnet.status === "success" && mainnet.data.pools[0]?.pool.chainId).toBe(1);
+  });
+
   it("asks for the pair by both addresses, as variables, with the wide window", async () => {
     const fetchImpl = bothEndpoints();
     await run({ fetchImpl });

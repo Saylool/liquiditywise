@@ -75,6 +75,13 @@ describe("V4PoolSearchResults", () => {
     expect(render(found([match()]))).toContain(`href="/v4?id=${POOL_ID}"`);
   });
 
+  it("links a pool on another chain to its page on that chain", () => {
+    const onArbitrum = match();
+    const pool = { ...onArbitrum.pool, chainId: 42161 };
+
+    expect(render(found([{ ...onArbitrum, pool }]))).toContain(`href="/v4?chain=arbitrum&amp;id=${POOL_ID}"`);
+  });
+
   it("says a pool is unread rather than empty when the chain would not answer", () => {
     const markup = render(found([match({ state: null })]));
 

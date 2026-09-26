@@ -67,6 +67,14 @@ describe("normalizeV4PairPools", () => {
     expect(pools.find((entry) => entry.pool.id === poolId(3))?.pool.fee).toEqual({ kind: "unread" });
   });
 
+  it("names the chain the pair was read on, on every pool, and mainnet when not said", () => {
+    const body = payload([rawPool(1), rawPool(2)]);
+    const arbitrum = normalizeV4PairPools({ payload: body, states: statesFor({ 1: "1", 2: "1" }), keys: new Map(), analysedPoolId: poolId(1), fetchedAt: FETCHED_AT, chainId: 42161 });
+
+    expect(poolsOf(arbitrum).map(({ pool }) => pool.chainId)).toEqual([42161, 42161]);
+    expect(poolsOf(normalize(body, statesFor({ 1: "1", 2: "1" })))[0]?.pool.chainId).toBe(1);
+  });
+
   /* A key that says one fee beside a state that stores another is not one pool's, and the pool is refused. */
   it("drops a pool whose key and state disagree about the fee", () => {
     const raw = rawPool(1);

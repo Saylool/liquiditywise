@@ -216,6 +216,14 @@ describe("the v4 half", () => {
     expect(pools[0]).toMatchObject({ volumeUsd: 300, feesUsd: 0.15, hookAltersSwaps: false });
   });
 
+  it("names the chain the day table was read on, on every pool", () => {
+    const { weeks } = candidates([day(v4Card(1), MONDAY, "300", "0.15")]);
+    const pools = listed(composeMostTradedV4({ weeks, keys: new Map(), fees: new Map(), fetchedAt: FETCHED_AT, chainId: 42161 }));
+
+    expect(pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
+    expect(listed(composeMostTradedV4({ weeks, keys: new Map(), fees: new Map(), fetchedAt: FETCHED_AT }))[0]?.pool.chainId).toBe(1);
+  });
+
   it("says so beside a pool whose hook may change what a swap costs", () => {
     const { weeks } = candidates([day(v4Card(1, SWAP_HOOK), MONDAY, "300", "0.15")]);
     const pools = listed(composeMostTradedV4({ weeks, keys: new Map(), fees: new Map(), fetchedAt: FETCHED_AT }));

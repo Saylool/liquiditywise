@@ -3,7 +3,8 @@ import "server-only";
 import type { DataResult } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV4PoolDays, type V4PoolDays } from "./ethereumV4PoolDays";
-import { ethereumSubgraphId } from "./ethereumSubgraphs";
+import { v4SubgraphIdFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
 import { isCleanAnswer } from "./cleanAnswer";
 import { processShared } from "../cache/processShared";
 
@@ -32,12 +33,12 @@ type Entry = {
   readonly writtenAt: number;
 };
 
-/* Shared with the warmer (see processShared.ts). */
-const kept = processShared("v4-pool-days", () => ({ entry: null as Entry | null }));
+/* One entry per chain, shared with the warmer (see processShared.ts). */
+const kept = processShared("v4-pool-days", () => new Map<ChainId, Entry>());
 
 /** Exposed so a test can start from nothing rather than from another test's read. */
 export const forgetV4PoolDays = (): void => {
-  kept.entry = null;
+  kept.clear();
 };
 
 /**
@@ -45,24 +46,25 @@ export const forgetV4PoolDays = (): void => {
  * then leaves the kept one in place.
  */
 export const getEthereumV4PoolDays = async (
+  chainId: ChainId = 1,
   { refresh = false }: { readonly refresh?: boolean } = {},
 ): Promise<DataResult<V4PoolDays>> => {
   const now = Date.now();
-  const cached = kept.entry;
-  if (!refresh && cached !== null && now - cached.writtenAt < CACHE_TTL_MS) return cached.value;
+  const cached = kept.get(chainId);
+  if (!refresh && cached !== undefined && now - cached.writtenAt < CACHE_TTL_MS) return cached.value;
 
   const result = await logUnavailable(
     LABEL,
     await fetchEthereumV4PoolDays({
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: ethereumSubgraphId("v4"),
+      subgraphId: v4SubgraphIdFor(chainId),
       fetchImpl: loggingFetch(LABEL),
       now: () => new Date(),
     }),
   );
 
   /* Only a read that answered. A refusal cached for ten minutes is an outage extended. */
-  if (result.status === "success" && isCleanAnswer(result.data.payload)) kept.entry = { value: result, writtenAt: now };
+  if (result.status === "success" && isCleanAnswer(result.data.payload)) kept.set(chainId, { value: result, writtenAt: now });
 
   return result;
 };

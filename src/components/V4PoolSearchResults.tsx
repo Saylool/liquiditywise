@@ -1,4 +1,5 @@
 
+import { chainOf, ETHEREUM } from "../lib/chains/chains";
 import { GuardedLink } from "./GuardedLink";
 import { formatEtherAmount, formatFeePpm } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
@@ -47,7 +48,9 @@ const PairRow = ({ match, t, locale }: { match: V4PoolSearchMatch; t: Dictionary
   return (
     <li>
       <GuardedLink
-        href={`/v4?id=${pool.id}`}
+        href={
+          pool.chainId === ETHEREUM.id ? `/v4?id=${pool.id}` : `/v4?chain=${chainOf(pool.chainId).slug}&id=${pool.id}`
+        }
         className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">

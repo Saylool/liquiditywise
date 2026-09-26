@@ -1,4 +1,5 @@
 import { V4PairPanel } from "@/components/V4PairPanel";
+import { chainOf } from "@/lib/chains/chains";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV3PoolsOfPair } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
@@ -7,7 +8,7 @@ import { type PriceBandParameters, type V4Pool, ZERO_ADDRESS } from "@/schemas";
 
 /**
  * Reads where one v4 pool's pair trades: its v4 siblings, and the same two
- * token contracts on v3.
+ * token contracts on v3 — both on the pool's own chain.
  *
  * Lives in the route because it reads data. Rendered inside a `<Suspense>`
  * boundary and never awaited by the page: the figures above are the answer,
@@ -37,10 +38,10 @@ export async function V4PairSection({
     token1Address: pool.token1.address,
   };
   const [v4Result, v3Result] = await Promise.all([
-    getEthereumV4PairPools({ analysedPoolId: pool.id, ...pair }),
+    getEthereumV4PairPools({ analysedPoolId: pool.id, ...pair }, chainOf(pool.chainId).id),
     pool.token0.address === ZERO_ADDRESS
       ? Promise.resolve(null)
-      : getEthereumV3PoolsOfPair({ analysedPoolId: null, ...pair }),
+      : getEthereumV3PoolsOfPair({ analysedPoolId: null, ...pair, chainId: chainOf(pool.chainId).id }),
   ]);
 
   return (

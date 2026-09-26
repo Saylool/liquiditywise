@@ -42,6 +42,14 @@ describe("normalizeV4TradedPools", () => {
     expect(result.data.source).toBe("uniswap-v4-subgraph");
   });
 
+  it("names the chain the day table was read on, and mainnet when not said", () => {
+    const arbitrum = normalizeV4TradedPools({ payload: payload([rawPool(1)]), fetchedAt: FETCHED_AT, chainId: 42161 });
+
+    expect(arbitrum.status === "success" && arbitrum.data.pools.map((pool) => pool.chainId)).toEqual([42161]);
+    const mainnet = normalize(payload([rawPool(1)]));
+    expect(mainnet.status === "success" && mainnet.data.pools[0]?.chainId).toBe(1);
+  });
+
   it("carries the chain's own ether as a currency", () => {
     const result = normalize(payload([rawPool(1)]));
 

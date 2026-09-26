@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import {
   Bytes32HexSchema,
   countExactSymbolMatches,
@@ -42,11 +43,12 @@ const normalizeMatch = (
   terms: PoolSearchTerms,
   states: ReadonlyMap<string, V4PoolState>,
   keys: ReadonlyMap<string, V4PoolKey>,
+  chainId: ChainId,
 ): V4PoolSearchMatch | null => {
   const id = Bytes32HexSchema.safeParse(raw.id);
   if (!id.success) return null;
 
-  const card = normalizeV4PoolCard(raw, chainReadingFor(id.data, keys, states));
+  const card = normalizeV4PoolCard(raw, chainReadingFor(id.data, keys, states), chainId);
   if (card === null) return null;
 
   const state = states.get(card.pool.id);
@@ -223,6 +225,8 @@ export type NormalizeV4PoolSearchInput = {
   readonly terms: PoolSearchTerms;
   /** When the request was made, from the reader's injected clock. */
   readonly fetchedAt: string;
+  /** The chain the day table was read on; mainnet when not said. */
+  readonly chainId?: ChainId;
   readonly onDiagnostic?: PoolSearchDiagnostic | undefined;
 };
 
@@ -242,6 +246,7 @@ export const normalizeV4PoolSearch = ({
   keys,
   terms,
   fetchedAt,
+  chainId = 1,
   onDiagnostic,
 }: NormalizeV4PoolSearchInput): DataResult<V4PoolSearchResults> => {
   const parsed = V4PoolDaysResponseSchema.safeParse(payload);
@@ -257,7 +262,7 @@ export const normalizeV4PoolSearch = ({
   let dropped = 0;
 
   for (const raw of window) {
-    const match = normalizeMatch(raw, terms, states, keys);
+    const match = normalizeMatch(raw, terms, states, keys, chainId);
     if (match === null) {
       dropped += 1;
       continue;

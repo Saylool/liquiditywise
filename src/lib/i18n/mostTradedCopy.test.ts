@@ -46,19 +46,29 @@ describe("the most-traded page on a chain", () => {
   it("names the chain in its introduction, title and description, in every language", () => {
     for (const locale of LOCALES) {
       const copy = getMostTradedCopy(locale);
-      for (const line of [copy.intro("Arbitrum One"), copy.titleOn("Arbitrum One"), copy.descriptionOn("Arbitrum One")]) {
+      for (const line of [copy.intro("Arbitrum One"), copy.titleOn("Arbitrum One", true), copy.descriptionOn("Arbitrum One", true)]) {
         expect(line, locale).toContain("Arbitrum One");
       }
       expect(copy.intro("Ethereum"), locale).not.toContain("Arbitrum");
     }
   });
 
-  it("says v3 alone off mainnet, where no v4 is listed", () => {
+  it("says v3 alone on a chain where no v4 is listed", () => {
     for (const locale of LOCALES) {
       const copy = getMostTradedCopy(locale);
-      expect(copy.titleOn("Base"), locale).toContain("v3");
-      expect(copy.titleOn("Base"), locale).not.toContain("v4");
-      expect(copy.descriptionOn("Base"), locale).not.toContain("v4");
+      expect(copy.titleOn("Base", false), locale).toContain("v3");
+      expect(copy.titleOn("Base", false), locale).not.toContain("v4");
+      expect(copy.descriptionOn("Base", false), locale).not.toContain("v4");
+    }
+  });
+
+  it("names v3 and v4 on a chain where both are listed", () => {
+    for (const locale of LOCALES) {
+      const copy = getMostTradedCopy(locale);
+      for (const line of [copy.titleOn("Arbitrum One", true), copy.descriptionOn("Arbitrum One", true)]) {
+        expect(line, locale).toContain("v3");
+        expect(line, locale).toContain("v4");
+      }
     }
   });
 });

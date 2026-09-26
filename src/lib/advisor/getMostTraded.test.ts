@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-vi.mock("../chains/chainEnvironment", () => ({ rpcUrlFor: () => undefined }));
+vi.mock("../chains/chainEnvironment", () => ({ rpcUrlFor: (chainId: number) => `rpc-${chainId}` }));
 
 const calls = vi.hoisted(() => ({
   v3: [] as { chainId: number; refresh: boolean | undefined }[],
   v4: [] as (boolean | undefined)[],
+  v4Chains: [] as number[],
+  rpcUrls: [] as unknown[],
   reads: 0,
   v3Status: "listed" as "listed" | "unavailable",
 }));
@@ -17,8 +19,9 @@ vi.mock("../uniswap/getEthereumV3PoolDays", () => ({
   },
 }));
 vi.mock("../uniswap/getEthereumV4PoolDays", () => ({
-  getEthereumV4PoolDays: async (options?: { refresh?: boolean }) => {
+  getEthereumV4PoolDays: async (chainId: number, options?: { refresh?: boolean }) => {
     calls.v4.push(options?.refresh);
+    calls.v4Chains.push(chainId);
     return { status: "unavailable", notice: "market-data-unavailable" };
   },
 }));
@@ -27,14 +30,16 @@ vi.mock("./readMostTraded", () => ({
     chainId: number;
     readV3Days: () => Promise<unknown>;
     readV4Days: (() => Promise<unknown>) | null;
+    rpcUrl: unknown;
   }) => {
     calls.reads += 1;
+    calls.rpcUrls.push(request.rpcUrl);
     await request.readV3Days();
     if (request.readV4Days !== null) await request.readV4Days();
     const listed = { status: "listed", pools: [], fetchedAt: String(calls.reads) };
     return {
       v3: calls.v3Status === "listed" ? listed : { status: "unavailable", notice: "market-data-unavailable" },
-      v4: request.chainId === 1 ? listed : null,
+      v4: request.readV4Days === null ? null : listed,
     };
   },
 }));
@@ -42,6 +47,8 @@ vi.mock("./readMostTraded", () => ({
 beforeEach(async () => {
   calls.v3 = [];
   calls.v4 = [];
+  calls.v4Chains = [];
+  calls.rpcUrls = [];
   calls.reads = 0;
   calls.v3Status = "listed";
   const { forgetMostTraded } = await import("./getMostTraded");
@@ -49,16 +56,19 @@ beforeEach(async () => {
 });
 
 describe("the most-traded figures kept for thirty minutes", () => {
-  it("reads once per chain, and v4 on mainnet alone", async () => {
+  it("reads once per chain, v4 only where it is read, each on its own chain's endpoint", async () => {
     const { getMostTraded } = await import("./getMostTraded");
 
     await getMostTraded(1);
     await getMostTraded(1);
-    await getMostTraded(8453);
+    const base = await getMostTraded(8453);
+    await getMostTraded(42161);
 
-    expect(calls.reads).toBe(2);
-    expect(calls.v3.map(({ chainId }) => chainId)).toEqual([1, 8453]);
-    expect(calls.v4).toHaveLength(1);
+    expect(calls.reads).toBe(3);
+    expect(calls.v3.map(({ chainId }) => chainId)).toEqual([1, 8453, 42161]);
+    expect(calls.v4Chains).toEqual([1, 42161]);
+    expect(calls.rpcUrls).toEqual(["rpc-1", "rpc-8453", "rpc-42161"]);
+    expect(base.v4).toBeNull();
   });
 
   it("reads anew, day tables included, when asked to refresh", async () => {

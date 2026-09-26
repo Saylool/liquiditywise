@@ -207,7 +207,7 @@ export function PoolFeeTiers({
   locale,
 }: {
   result: DataResult<PairFeeTiers>;
-  /** The same two token contracts on v4, read beside the tiers — or `null` off mainnet, where no v4 is read. */
+  /** The same two token contracts on v4, read beside the tiers — or `null` on a chain v4 is not read on. */
   v4Result: DataResult<V4PairPools> | null;
   /** The pair as the report above names it, so the two agree. */
   pair: string;

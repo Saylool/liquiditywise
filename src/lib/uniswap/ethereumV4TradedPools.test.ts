@@ -32,6 +32,15 @@ const run = (value: DataResult<V4PoolDays> = { status: "success", data: { payloa
   fetchEthereumV4TradedPools(days(value));
 
 describe("fetchEthereumV4TradedPools", () => {
+  it("names the chain the day table is on, and mainnet when not said", async () => {
+    const read = { status: "success", data: { payload, fetchedAt: FETCHED_AT } } as const;
+    const arbitrum = await fetchEthereumV4TradedPools(days(read), 42161);
+    const mainnet = await fetchEthereumV4TradedPools(days(read));
+
+    expect(arbitrum.status === "success" && arbitrum.data.pools[0]?.chainId).toBe(42161);
+    expect(mainnet.status === "success" && mainnet.data.pools[0]?.chainId).toBe(1);
+  });
+
   it("folds the days into pools, each once, with the time they were read", async () => {
     const result = await run();
 

@@ -81,6 +81,15 @@ describe("normalizeV4Pool", () => {
     expect(pool.hookAddress).toBeNull();
   });
 
+  it("names mainnet when no chain is said, and the chain it is told otherwise, on the pool and its tokens", () => {
+    expect(succeeded(normalize(payload())).chainId).toBe(1);
+
+    const arbitrum = succeeded(
+      normalizeV4Pool({ payload: payload(), poolId: POOL_ID, chain: chainFor(rawPool()), chainId: 42161 }),
+    );
+    expect([arbitrum.chainId, arbitrum.token0.chainId, arbitrum.token1.chainId]).toEqual([42161, 42161, 42161]);
+  });
+
   /*
    * v4 permits fees far below anything v3 could express: the busiest pool on
    * mainnet charges twelve parts per million, where v3's lowest tier is a

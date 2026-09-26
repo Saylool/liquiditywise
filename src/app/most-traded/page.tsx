@@ -7,6 +7,7 @@ import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
+import { readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -16,7 +17,7 @@ import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestL
  *
  * Like the hook directory it takes no input, so it is the same page for
  * everybody and open to search engines, and its reads are shared: one every
- * ten minutes however many readers and crawlers ask. Not behind the rate
+ * half hour however many readers and crawlers ask. Not behind the rate
  * limiter in `proxy.ts` for the same reason the hook directory is not.
  */
 
@@ -27,13 +28,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await getRequestDictionary();
   const copy = getMostTradedCopy(locale);
-  /* Off mainnet the list is v3 alone, and the title says so and names the chain. */
+  /* Off mainnet the title names the chain, and v4 only where it is listed there too. */
   const chain = readRequestedChain((await searchParams)[CHAIN_PARAMETER]);
   const onMainnet = chain === null || chain.id === 1;
 
   return {
-    title: `${onMainnet ? copy.title : copy.titleOn(chain.name)} · LiquidityWise`,
-    description: onMainnet ? copy.description : copy.descriptionOn(chain.name),
+    title: `${onMainnet ? copy.title : copy.titleOn(chain.name, readsV4(chain.id))} · LiquidityWise`,
+    description: onMainnet ? copy.description : copy.descriptionOn(chain.name, readsV4(chain.id)),
     alternates: await getOpenPageAlternates("/most-traded"),
   };
 }

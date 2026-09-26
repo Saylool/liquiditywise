@@ -87,6 +87,14 @@ describe("fetchEthereumV4Pool", () => {
     expect(result.data.hookAddress).toBe(HOOK);
   });
 
+  it("names the chain it was asked on, and mainnet when not said", async () => {
+    const arbitrum = await run({ chainId: 42161 });
+    const mainnet = await run();
+
+    expect(arbitrum.status === "success" && arbitrum.data.chainId).toBe(42161);
+    expect(mainnet.status === "success" && mainnet.data.chainId).toBe(1);
+  });
+
   /* The ETH/USDC pool as the chain holds it: 500 ppm in the key, 125 ppm to the protocol. */
   it("reads a static pool's fee from its key and the protocol's cut from its state", async () => {
     const result = await run({ poolId: STATIC_ID, fetchImpl: bothEndpoints(STATIC, STATIC_ID, slot0(500n, 125n)) });

@@ -190,7 +190,10 @@ export const composeMostTradedV4 = ({
   keys,
   fees,
   fetchedAt,
+  chainId = 1,
 }: {
+  /** The chain the day table was read on; mainnet when not said. */
+  readonly chainId?: ChainId;
   readonly weeks: readonly WeekOfPool<RawV4PoolCard>[];
   readonly keys: ReadonlyMap<string, V4PoolKey>;
   readonly fees: ReadonlyMap<string, V4PoolChainFees>;
@@ -200,7 +203,7 @@ export const composeMostTradedV4 = ({
   for (const week of weeks) {
     const id = Bytes32HexSchema.safeParse(week.card.id);
     if (!id.success) continue;
-    const card = normalizeV4PoolCard(week.card, chainReadingFor(id.data, keys, fees));
+    const card = normalizeV4PoolCard(week.card, chainReadingFor(id.data, keys, fees), chainId);
     if (card === null) continue;
     pools.push(entry(card.pool, week));
   }

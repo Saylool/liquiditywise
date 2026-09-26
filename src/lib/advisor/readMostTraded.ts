@@ -16,18 +16,18 @@ import type { ChainId } from "../chains/chains";
  * costs the v4 half its fees, which then read as unread, and never the list.
  */
 
-/** `v4` is `null` off mainnet, the only chain a v4 subgraph is read on. */
+/** `v4` is `null` on a chain v4 is not read on (see chains.ts). */
 export type MostTraded = { readonly v3: MostTradedList; readonly v4: MostTradedList | null };
 
 export type ReadDays = () => Promise<DataResult<V4PoolDays>>;
 
 export type ReadMostTradedRequest = {
   readonly readV3Days: ReadDays;
-  /** `null` off mainnet: no v4 is read there. */
+  /** `null` on a chain v4 is not read on. */
   readonly readV4Days: ReadDays | null;
   /** The chain the v3 day table is on; mainnet when not said. */
   readonly chainId?: ChainId;
-  /** Raw environment value; without it the v4 fees are unread. */
+  /** The chain's endpoint, raw from the environment; without it the v4 fees are unread. */
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
 };
@@ -41,7 +41,7 @@ const readV3 = async (readDays: ReadDays, chainId: ChainId): Promise<MostTradedL
 
 const readV4 = async (
   readV4Days: ReadDays,
-  { rpcUrl, fetchImpl }: ReadMostTradedRequest,
+  { rpcUrl, fetchImpl, chainId = 1 }: ReadMostTradedRequest,
 ): Promise<MostTradedList> => {
   const days = await readV4Days();
   if (days.status === "unavailable") return { status: "unavailable", notice: days.notice };
@@ -61,7 +61,7 @@ const readV4 = async (
     fetchEthereumV4PoolStates({ poolIds: refs.map(({ id }) => id), ...chain }),
   ]);
 
-  return composeMostTradedV4({ weeks: candidates.weeks, keys, fees, fetchedAt: days.data.fetchedAt });
+  return composeMostTradedV4({ weeks: candidates.weeks, keys, fees, fetchedAt: days.data.fetchedAt, chainId });
 };
 
 export const readMostTraded = async (request: ReadMostTradedRequest): Promise<MostTraded> => {

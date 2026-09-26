@@ -47,7 +47,7 @@ const PoolCard = ({ entry, shared }: { entry: MostTradedPool; shared: Shared }) 
   const href =
     pool.protocolVersion === "v3"
       ? poolAnalysisHref(pool.id, parameters, undefined, chain)
-      : v4PoolAnalysisHref(pool.id, parameters);
+      : v4PoolAnalysisHref(pool.id, parameters, undefined, chain);
 
   return (
     <li className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface p-5">
@@ -131,7 +131,7 @@ export function MostTradedPools({
   locale,
 }: {
   data: MostTraded;
-  /** The chain these pools are on; v4 is read on mainnet alone. */
+  /** The chain these pools are on; v4 is read only where chains.ts says. */
   chain?: Chain;
   /** The page's own address in the reader's language, for the chain tabs. */
   pageHref: string;

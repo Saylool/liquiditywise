@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { rpcUrlFor, subgraphIdFor, v3SubgraphIdFor } from "./chainEnvironment";
+import { rpcUrlFor, subgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "./chainEnvironment";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -29,11 +29,15 @@ describe("which source serves which chain", () => {
     ]);
   });
 
-  it("has no v4 subgraph off mainnet, rather than mainnet's", () => {
+  it("gives each v4 chain its own v4 subgraph, and Base none rather than mainnet's", () => {
     vi.stubEnv("UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", "mainnet-v4");
+    vi.stubEnv("UNISWAP_V4_ARBITRUM_SUBGRAPH_ID", "arbitrum-v4");
+    vi.stubEnv("UNISWAP_V4_BASE_SUBGRAPH_ID", "base-v4");
     vi.stubEnv("UNISWAP_V3_BASE_SUBGRAPH_ID", "base-v3");
 
     expect(subgraphIdFor("v4", 1)).toBe("mainnet-v4");
+    expect(subgraphIdFor("v4", 42161)).toBe("arbitrum-v4");
+    expect(v4SubgraphIdFor(42161)).toBe("arbitrum-v4");
     expect(subgraphIdFor("v4", 8453)).toBeUndefined();
     expect(subgraphIdFor("v3", 8453)).toBe("base-v3");
   });
