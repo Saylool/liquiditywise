@@ -5,6 +5,7 @@ import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics
 import { fetchEthereumV4PoolDays, type V4PoolDays } from "./ethereumV4PoolDays";
 import { ethereumSubgraphId } from "./ethereumSubgraphs";
 import { isCleanAnswer } from "./cleanAnswer";
+import { processShared } from "../cache/processShared";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v4-pool-days";
@@ -31,16 +32,24 @@ type Entry = {
   readonly writtenAt: number;
 };
 
-let cached: Entry | null = null;
+/* Shared with the warmer (see processShared.ts). */
+const kept = processShared("v4-pool-days", () => ({ entry: null as Entry | null }));
 
 /** Exposed so a test can start from nothing rather than from another test's read. */
 export const forgetV4PoolDays = (): void => {
-  cached = null;
+  kept.entry = null;
 };
 
-export const getEthereumV4PoolDays = async (): Promise<DataResult<V4PoolDays>> => {
+/**
+ * `refresh` reads anew whatever is kept, for the warmer; a read that fails
+ * then leaves the kept one in place.
+ */
+export const getEthereumV4PoolDays = async (
+  { refresh = false }: { readonly refresh?: boolean } = {},
+): Promise<DataResult<V4PoolDays>> => {
   const now = Date.now();
-  if (cached !== null && now - cached.writtenAt < CACHE_TTL_MS) return cached.value;
+  const cached = kept.entry;
+  if (!refresh && cached !== null && now - cached.writtenAt < CACHE_TTL_MS) return cached.value;
 
   const result = await logUnavailable(
     LABEL,
@@ -53,7 +62,7 @@ export const getEthereumV4PoolDays = async (): Promise<DataResult<V4PoolDays>> =
   );
 
   /* Only a read that answered. A refusal cached for ten minutes is an outage extended. */
-  if (result.status === "success" && isCleanAnswer(result.data.payload)) cached = { value: result, writtenAt: now };
+  if (result.status === "success" && isCleanAnswer(result.data.payload)) kept.entry = { value: result, writtenAt: now };
 
   return result;
 };

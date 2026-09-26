@@ -39,4 +39,28 @@ describe("the day table kept for ten minutes", () => {
 
     expect(answers.asked).toBe(2);
   });
+
+  it("reads anew when asked to refresh, and keeps the new answer", async () => {
+    answers.queue = [{ data: { poolDayDatas: [] } }, { data: { poolDayDatas: [{ date: 1 }] } }];
+    const { getEthereumV3PoolDays } = await import("./getEthereumV3PoolDays");
+
+    await getEthereumV3PoolDays(8453);
+    await getEthereumV3PoolDays(8453, { refresh: true });
+    const kept = await getEthereumV3PoolDays(8453);
+
+    expect(answers.asked).toBe(2);
+    expect(kept.status === "success" && kept.data.payload).toEqual({ data: { poolDayDatas: [{ date: 1 }] } });
+  });
+
+  it("keeps the old answer when a refresh comes back with errors", async () => {
+    answers.queue = [{ data: { poolDayDatas: [] } }, { data: null, errors: [{ message: "bad indexers" }] }];
+    const { getEthereumV3PoolDays } = await import("./getEthereumV3PoolDays");
+
+    await getEthereumV3PoolDays(8453);
+    await getEthereumV3PoolDays(8453, { refresh: true });
+    const kept = await getEthereumV3PoolDays(8453);
+
+    expect(answers.asked).toBe(2);
+    expect(kept.status === "success" && kept.data.payload).toEqual({ data: { poolDayDatas: [] } });
+  });
 });

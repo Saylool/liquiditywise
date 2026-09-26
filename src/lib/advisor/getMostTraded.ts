@@ -2,22 +2,22 @@ import "server-only";
 
 import type { ChainId } from "../chains/chains";
 import { rpcUrlFor } from "../chains/chainEnvironment";
+import { processShared } from "../cache/processShared";
 import { loggingFetch } from "../observability/serverDiagnostics";
 import { getEthereumV3PoolDays } from "../uniswap/getEthereumV3PoolDays";
 import { getEthereumV4PoolDays } from "../uniswap/getEthereumV4PoolDays";
 import { type MostTraded, readMostTraded } from "./readMostTraded";
+import { MOST_TRADED_TTL_MS } from "./warmMostTraded";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "most-traded";
 
-/**
- * Ten minutes, as the day tables' own caches: the page is the same for
- * everybody, a week's totals barely move in ten minutes, and a crawler
- * walking every language's address of it should cost one read, not eleven.
- */
-const CACHE_TTL_MS = 10 * 60 * 1000;
 
-const cached = new Map<ChainId, { readonly value: MostTraded; readonly writtenAt: number }>();
+/* Shared with the warmer (see processShared.ts). */
+const cached = processShared(
+  "most-traded",
+  () => new Map<ChainId, { readonly value: MostTraded; readonly writtenAt: number }>(),
+);
 
 /** For tests. */
 export const forgetMostTraded = (): void => {
@@ -25,19 +25,26 @@ export const forgetMostTraded = (): void => {
 };
 
 /**
- * One chain's page figures, read at most once every ten minutes. Only a read
+ * One chain's page figures, read at most once every thirty minutes, and
+ * anew every twenty-five by the warmer, so a reader never waits on the read. Only a read
  * in which every half listed is kept: a half that failed is an outage, and
- * keeping it would extend it by ten minutes. v4 is read on mainnet alone.
+ * keeping it would extend it. v4 is read on mainnet alone.
+ *
+ * `refresh` reads anew, day tables included, whatever is kept; a read that
+ * fails then leaves the kept one to serve until it runs out.
  */
-export const getMostTraded = async (chainId: ChainId = 1): Promise<MostTraded> => {
+export const getMostTraded = async (
+  chainId: ChainId = 1,
+  { refresh = false }: { readonly refresh?: boolean } = {},
+): Promise<MostTraded> => {
   const now = Date.now();
   const hit = cached.get(chainId);
-  if (hit !== undefined && now - hit.writtenAt < CACHE_TTL_MS) return hit.value;
+  if (!refresh && hit !== undefined && now - hit.writtenAt < MOST_TRADED_TTL_MS) return hit.value;
 
   const value = await readMostTraded({
     chainId,
-    readV3Days: () => getEthereumV3PoolDays(chainId),
-    readV4Days: chainId === 1 ? getEthereumV4PoolDays : null,
+    readV3Days: () => getEthereumV3PoolDays(chainId, { refresh }),
+    readV4Days: chainId === 1 ? () => getEthereumV4PoolDays({ refresh }) : null,
     rpcUrl: rpcUrlFor(1),
     fetchImpl: loggingFetch(LABEL),
   });
