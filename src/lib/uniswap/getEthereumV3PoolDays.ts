@@ -6,6 +6,7 @@ import type { ChainId } from "../chains/chains";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV3PoolDays } from "./ethereumV3PoolDays";
 import type { V4PoolDays } from "./ethereumV4PoolDays";
+import { isCleanAnswer } from "./cleanAnswer";
 
 const LABEL = "v3-pool-days";
 
@@ -39,8 +40,11 @@ export const getEthereumV3PoolDays = async (chainId: ChainId = 1): Promise<DataR
     }),
   );
 
-  /* Only a read that answered: a refusal kept for ten minutes is an outage extended. */
-  if (value.status === "success") cached.set(chainId, { value, writtenAt: now });
+  /*
+   * Only a read that answered cleanly: a refusal kept for ten minutes is an
+   * outage extended, and so is an answer the gateway sent with errors in it.
+   */
+  if (value.status === "success" && isCleanAnswer(value.data.payload)) cached.set(chainId, { value, writtenAt: now });
 
   return value;
 };

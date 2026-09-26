@@ -4,6 +4,7 @@ import type { DataResult } from "../../schemas";
 import { loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV4PoolDays, type V4PoolDays } from "./ethereumV4PoolDays";
 import { ethereumSubgraphId } from "./ethereumSubgraphs";
+import { isCleanAnswer } from "./cleanAnswer";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v4-pool-days";
@@ -52,7 +53,7 @@ export const getEthereumV4PoolDays = async (): Promise<DataResult<V4PoolDays>> =
   );
 
   /* Only a read that answered. A refusal cached for ten minutes is an outage extended. */
-  if (result.status === "success") cached = { value: result, writtenAt: now };
+  if (result.status === "success" && isCleanAnswer(result.data.payload)) cached = { value: result, writtenAt: now };
 
   return result;
 };
