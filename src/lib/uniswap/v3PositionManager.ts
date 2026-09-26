@@ -1,4 +1,5 @@
 import { argumentWord, decodeAddress, decodeInt24, decodeUint, words } from "./abiWords";
+import type { ChainId } from "../chains/chains";
 
 /*
  * The contract that holds Uniswap v3 positions, and how to ask it what an
@@ -32,6 +33,30 @@ export const POSITION_MANAGER_CODE_HASH =
   "0x692e658b31cbe3407682854806658d315d61a58c7e4933a2f91d383dc00736c6";
 
 /**
+ * The manager on every chain this application reads, each with the hash of
+ * its own runtime.
+ *
+ * **One hash per chain, even at one address.** Arbitrum's manager sits at
+ * mainnet's address and its code is not mainnet's: the runtime carries the
+ * chain's WETH, factory and token descriptor as immutables, so it hashes
+ * differently on every chain. Both hashes were read on 2026-09-26 with the
+ * same keccak that recomputed mainnet's exactly — 24,384 bytes on each chain —
+ * and the factories they name were read from the managers themselves:
+ * 0x33128a8f…6fdfd on Base, and mainnet's own 0x1f98431c…1f984 on Arbitrum.
+ */
+export const V3_POSITION_MANAGERS: Readonly<Record<ChainId, { readonly address: string; readonly codeHash: string }>> = {
+  1: { address: POSITION_MANAGER_ADDRESS, codeHash: POSITION_MANAGER_CODE_HASH },
+  8453: {
+    address: "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
+    codeHash: "0x9177a11768996e8f951e0f0013d7165134178b15b21fb9916108f995e6c564bf",
+  },
+  42161: {
+    address: "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+    codeHash: "0x45b4bff8136324d175c01151fd0fb715c82bcc8923019a4faba3eafb0cc3a20b",
+  },
+};
+
+/**
  * The four-byte selectors, each the first four bytes of the keccak of its own
  * signature. Written out rather than hashed at load, and a test derives every
  * one of them from its signature so a wrong digit cannot survive.
@@ -44,9 +69,12 @@ export const SLOT0_SELECTOR = "0x3850c7bd";
 
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 
-/** True when a returned `eth_getCode` is the manager this was built against. */
-export const isPositionManagerCode = (code: unknown, hashOf: (hex: string) => string | null): boolean =>
-  typeof code === "string" && hashOf(code) === POSITION_MANAGER_CODE_HASH;
+/** True when a returned `eth_getCode` is the manager this was built against, on the chain it was read from. */
+export const isPositionManagerCode = (
+  code: unknown,
+  hashOf: (hex: string) => string | null,
+  chainId: ChainId = 1,
+): boolean => typeof code === "string" && hashOf(code) === V3_POSITION_MANAGERS[chainId].codeHash;
 
 /** `balanceOf(owner)`: how many position tokens an address holds. */
 export const balanceOfCalldata = (owner: string): string | null =>

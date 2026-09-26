@@ -341,3 +341,13 @@ describe("AddressPositions", () => {
     expect(markup).not.toContain("could not be read");
   });
 });
+
+describe("a position off mainnet", () => {
+  it("links to its pool on its own chain", () => {
+    const onArbitrum = position({
+      pool: { ...position().pool, chainId: 42161, token0: { ...position().pool.token0, chainId: 42161 }, token1: { ...position().pool.token1, chainId: 42161 } },
+    });
+
+    expect(render(answer({ positions: [onArbitrum] }))).toContain(`/pool?chain=arbitrum&amp;address=${POOL}`);
+  });
+});

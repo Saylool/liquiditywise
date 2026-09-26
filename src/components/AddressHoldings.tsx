@@ -11,6 +11,8 @@ import {
   ONE_SIDED_SHOWN,
   type PriceBandParameters,
 } from "../schemas";
+import { chainLabel } from "../lib/chains/chainLabel";
+import { chainOf } from "../lib/chains/chains";
 
 /**
  * What an address holds, and the pools that opens.
@@ -54,7 +56,7 @@ const TierRow = ({
   const { pool } = entry;
   const href =
     pool.protocolVersion === "v3"
-      ? poolAnalysisHref(pool.id, parameters)
+      ? poolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId))
       : v4PoolAnalysisHref(pool.id, parameters);
   const fee =
     pool.protocolVersion === "v3"
@@ -137,10 +139,13 @@ const PoolGroup = ({
 export function AddressHoldings({
   result,
   parameters,
+  chainId = 1,
   t,
   locale,
 }: {
   result: DataResult<Holdings>;
+  /** The chain the address was read on; v4 is read on mainnet alone. */
+  chainId?: number;
   parameters: PriceBandParameters;
   t: Dictionary;
   locale: Locale;
@@ -197,10 +202,12 @@ export function AddressHoldings({
             formatWhole(tokensChecked, locale),
             formatWhole(poolsSearched.v3 ?? 0, locale),
             poolsSearched.v4 === null ? null : formatWhole(poolsSearched.v4, locale),
+            chainLabel(chainId, locale),
           )}
         </p>
         {/* Said out loud, so a v3-only list cannot read as "no v4 pool takes this". */}
-        {poolsSearched.v4 === null ? (
+        {/* Off mainnet no v4 is read at all, which is not the net failing to be cast. */}
+        {poolsSearched.v4 === null && chainId === 1 ? (
           <p className="text-xs leading-relaxed text-muted">{t.holdings.v4NotSearched}</p>
         ) : null}
       </section>

@@ -252,3 +252,41 @@ describe("AddressHoldings and a v4 pool whose fee was not read", () => {
     expect(markup).toContain("v4 · fee not read");
   });
 });
+
+describe("holdings read off mainnet", () => {
+  const onBase = () => {
+    const baseUsdc = { ...USDC, chainId: 8453 };
+    const baseWeth = { ...WETH, chainId: 8453 };
+    return renderToStaticMarkup(
+      <AddressHoldings
+        result={holdings({
+          holdings: [{ token: baseUsdc, amount: "1000000" }],
+          pools: [{ pool: { ...pool(`0x${"5".repeat(40)}`, 500), chainId: 8453, token0: baseUsdc, token1: baseWeth }, heldSides: "both" }],
+          poolsSearched: { v3: 250, v4: null },
+          sources: ["uniswap-v3-subgraph", "ethereum-rpc"],
+        })}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        chainId={8453}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+  };
+
+  it("says which chain it looked on, and links each pool there", () => {
+    const html = onBase();
+
+    expect(html).toContain("most-traded Uniswap v3 pools on Base");
+    expect(html).toContain(`/pool?chain=base&amp;address=0x${"5".repeat(40)}`);
+  });
+
+  it("does not call a v4 net that was never cast there a failure", () => {
+    expect(onBase()).not.toContain(getDictionary("en").holdings.v4NotSearched);
+  });
+
+  it("still says so on mainnet, where the v4 net could not be cast", () => {
+    expect(render(holdings({ poolsSearched: { v3: 250, v4: null }, sources: ["uniswap-v3-subgraph", "ethereum-rpc"] }))).toContain(
+      getDictionary("en").holdings.v4NotSearched,
+    );
+  });
+});

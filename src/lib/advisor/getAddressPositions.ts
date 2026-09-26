@@ -19,6 +19,8 @@ import {
   type V3Side,
   type V4Side,
 } from "./addressPositions";
+import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "address-positions";
@@ -70,10 +72,11 @@ const orNothing = async (
  * the pair and the fee each one names. The last two both hang off the
  * positions, so they go out together.
  */
-const readV3 = async (address: string): Promise<SideResult<V3Side>> => {
+const readV3 = async (address: string, chainId: ChainId): Promise<SideResult<V3Side>> => {
   const positions = await fetchEthereumV3Positions({
     owner: address,
-    rpcUrl: process.env.ETHEREUM_RPC_URL,
+    chainId,
+    rpcUrl: rpcUrlFor(chainId),
     /* Not the logging fetch: the composed result is logged once, by the caller. */
     fetchImpl: fetch,
   });
@@ -85,8 +88,9 @@ const readV3 = async (address: string): Promise<SideResult<V3Side>> => {
   const [pools, fees] = await Promise.all([
     fetchEthereumV3PoolsByIds({
       poolAddresses: derivedPoolAddresses(positions.data),
+      chainId,
       apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: ethereumSubgraphId("v3"),
+      subgraphId: v3SubgraphIdFor(chainId),
       fetchImpl: loggingFetch(LABEL),
     }),
     orNothing(
@@ -94,7 +98,7 @@ const readV3 = async (address: string): Promise<SideResult<V3Side>> => {
       fetchEthereumV3PositionFees({
         positions: positions.data.open,
         factory: positions.data.factory,
-        rpcUrl: process.env.ETHEREUM_RPC_URL,
+        rpcUrl: rpcUrlFor(chainId),
         fetchImpl: fetch,
       }),
     ),
@@ -164,8 +168,17 @@ const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
   return { ok: true, side: { raw: positions.data, pools: pools.data, fees } };
 };
 
-export const getAddressPositions = async (address: string): Promise<AddressPositionsResult> => {
-  const [v3, v4] = await Promise.all([readV3(address), readV4(address)]);
+/**
+ * One address's positions on one chain — mainnet unless `chainId` says
+ * otherwise. v4 is read on mainnet alone; elsewhere its side is left out as
+ * not asked, which the page does not report as a failure.
+ */
+export const getAddressPositions = async (address: string, chainId: ChainId = 1): Promise<AddressPositionsResult> => {
+  const v4Asked = chainId === 1;
+  const [v3, v4] = await Promise.all([
+    readV3(address, chainId),
+    v4Asked ? readV4(address) : ({ ok: false, notice: "market-data-not-configured" } as const),
+  ]);
 
   /*
    * Both failing is not a partial answer. The v3 notice is the one reported
@@ -178,6 +191,7 @@ export const getAddressPositions = async (address: string): Promise<AddressPosit
     address,
     v3: v3.ok ? v3.side : null,
     v4: v4.ok ? v4.side : null,
+    v4Asked,
     fetchedAt: new Date().toISOString(),
   });
 };

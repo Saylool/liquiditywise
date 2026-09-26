@@ -16,6 +16,7 @@ const position = {
   tokenId: "7",
   pool: {
     protocolVersion: "v3",
+    chainId: 1,
     id: "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
     token0: { symbol: "USDC", decimals: 6 },
     token1: { symbol: "WETH", decimals: 18 },
@@ -51,5 +52,26 @@ describe("the warning that a position is close to an edge", () => {
 
     for (const value of ["PAIR", "PROTOCOL", "RANGE", "PRICE", "EDGE"]) expect(text).toContain(value);
     expect(text.startsWith("⏳")).toBe(true);
+  });
+});
+
+describe("an alert about a position off mainnet", () => {
+  const onBase = { ...position, pool: { ...position.pool, chainId: 8453 } } as Position;
+
+  it("names the chain beside the protocol, so it cannot be read as a mainnet pool of the same pair", () => {
+    const text = alertText({ kind: "left", position: onBase }, getDictionary("en"), "en", 8453);
+
+    expect(text).toContain("Uniswap v3 · Base");
+  });
+
+  it("names the chain of the link for a position that is gone, which has no pool left to ask", () => {
+    const text = alertText({ kind: "closed", key: "v3:7" }, getDictionary("en"), "en", 42161);
+
+    expect(text).toContain("Uniswap v3 · Arbitrum One");
+    expect(alertText({ kind: "closed", key: "v3:7" }, getDictionary("en"), "en")).not.toContain("·");
+  });
+
+  it("says nothing extra on mainnet", () => {
+    expect(alertText({ kind: "left", position }, getDictionary("en"), "en")).toContain("(Uniswap v3)");
   });
 });

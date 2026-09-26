@@ -45,6 +45,11 @@ export type AddressHoldingsInput = {
    */
   readonly v4Candidates: DataResult<V4PoolCandidateList>;
   readonly balances: DataResult<AddressBalances>;
+  /**
+   * The chain's own ether, named here where no v4 list is read to name it —
+   * off mainnet — so a balance the sweep asked for has an identity to show.
+   */
+  readonly nativeToken?: Token;
   readonly fetchedAt: string;
 };
 
@@ -106,6 +111,7 @@ export const composeAddressHoldings = (
    * no identity at all. The v4 list is what can name the chain's own ether.
    */
   const tokensByAddress = new Map<string, Token>();
+  if (input.nativeToken !== undefined) tokensByAddress.set(input.nativeToken.address, input.nativeToken);
   for (const pool of [...v3Pools, ...v4Pools]) {
     if (!tokensByAddress.has(pool.token0.address)) tokensByAddress.set(pool.token0.address, pool.token0);
     if (!tokensByAddress.has(pool.token1.address)) tokensByAddress.set(pool.token1.address, pool.token1);

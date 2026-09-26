@@ -114,3 +114,50 @@ describe("Telegram links", () => {
     expect(await readLink(store, TOKEN)).toBeNull();
   });
 });
+
+describe("a link on a chain", () => {
+  const key = `liquiditywise:telegram:link:${TOKEN}`;
+
+  it("reads a link stored before chains existed as a mainnet link, unchanged", async () => {
+    const store = fakeStore();
+    store.data.set(
+      key,
+      JSON.stringify({ address: ADDRESS, locale: "tr", chatId: 42, createdAt: NOW.toISOString(), snapshot: { "v3:1": true } }),
+    );
+
+    const link = await readLink(store, TOKEN);
+
+    expect(link?.chatId).toBe(42);
+    expect(link?.chainId).toBeUndefined();
+    expect(link?.snapshot).toEqual({ "v3:1": true });
+  });
+
+  it("writes the chain off mainnet, and nothing new for mainnet", async () => {
+    const store = fakeStore();
+    await createPendingLink(store, TOKEN, { address: ADDRESS, locale: "tr", now: NOW, chainId: 8453 });
+    await createPendingLink(store, OTHER, { address: ADDRESS, locale: "tr", now: NOW, chainId: 1 });
+
+    expect((await readLink(store, TOKEN))?.chainId).toBe(8453);
+    expect(JSON.parse(store.data.get(`liquiditywise:telegram:link:${OTHER}`) ?? "{}")).not.toHaveProperty("chainId");
+  });
+
+  it("keeps the chain when the checker records what it saw", async () => {
+    const store = fakeStore();
+    await createPendingLink(store, TOKEN, { address: ADDRESS, locale: "tr", now: NOW, chainId: 42161 });
+    await claimLink(store, TOKEN, 7);
+    const link = await readLink(store, TOKEN);
+    await recordSnapshot(store, TOKEN, link!, { "v3:9": false });
+
+    expect((await readLink(store, TOKEN))?.chainId).toBe(42161);
+  });
+
+  it("refuses a stored link naming a chain nobody reads, rather than following it on mainnet", async () => {
+    const store = fakeStore();
+    store.data.set(
+      key,
+      JSON.stringify({ address: ADDRESS, locale: "tr", chatId: 42, createdAt: NOW.toISOString(), chainId: 10, snapshot: null }),
+    );
+
+    expect(await readLink(store, TOKEN)).toBeNull();
+  });
+});

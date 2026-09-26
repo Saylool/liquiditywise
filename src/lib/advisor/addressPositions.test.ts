@@ -400,3 +400,13 @@ describe("composing both protocols at once", () => {
     });
   });
 });
+
+describe("positions off mainnet", () => {
+  it("does not call v4 unread where it was never asked", () => {
+    expect(succeed({ v4: null, v4Asked: false }).unread).toEqual([]);
+  });
+
+  it("still calls it unread on mainnet, where it was asked and did not answer", () => {
+    expect(succeed({ v4: null }).unread).toEqual(["v4"]);
+  });
+});

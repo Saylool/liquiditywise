@@ -13,6 +13,7 @@ import {
   type FetchLike,
   postV3SubgraphQuery,
 } from "./v3SubgraphTransport";
+import type { ChainId } from "../chains/chains";
 
 /*
  * Several v3 pools at once, by address.
@@ -32,8 +33,6 @@ const MALFORMED = "market-data-malformed";
 const NOT_CONFIGURED = "market-data-not-configured";
 const INDEXING_ERRORS = "market-data-indexing-errors";
 
-/** Ethereum mainnet only, like every other reader here. */
-const CHAIN_ID = 1;
 
 export const V3_POOLS_BY_IDS_QUERY = `query V3PoolsByIds($ids: [ID!]!, $limit: Int!) {
   pools(where: { id_in: $ids }, first: $limit) {
@@ -83,6 +82,8 @@ export type V3PoolWithTick = {
 export type EthereumV3PoolsByIdsRequest = {
   /** Pool addresses, lower-cased. Deduplicated here; order is not significant. */
   readonly poolAddresses: readonly string[];
+  /** The chain the subgraph indexes; mainnet when not said. */
+  readonly chainId?: ChainId;
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
   readonly fetchImpl: FetchLike;
@@ -103,6 +104,7 @@ const unavailable = (
  */
 export const fetchEthereumV3PoolsByIds = async ({
   poolAddresses,
+  chainId = 1,
   apiKey,
   subgraphId,
   fetchImpl,
@@ -146,17 +148,17 @@ export const fetchEthereumV3PoolsByIds = async ({
 
     const pool = V3PoolMetadataSchema.safeParse({
       protocolVersion: "v3",
-      chainId: CHAIN_ID,
+      chainId,
       id: raw.id.toLowerCase(),
       feePpm: feePpm.value,
       token0: {
-        chainId: CHAIN_ID,
+        chainId,
         address: raw.token0.id.toLowerCase(),
         symbol: raw.token0.symbol,
         decimals: decimals0.value,
       },
       token1: {
-        chainId: CHAIN_ID,
+        chainId,
         address: raw.token1.id.toLowerCase(),
         symbol: raw.token1.symbol,
         decimals: decimals1.value,

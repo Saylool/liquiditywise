@@ -177,3 +177,52 @@ describe("checkWatches, near an edge", () => {
     expect((await readLink(store, TOKEN))?.snapshot).toEqual({ "v3:7": "near" });
   });
 });
+
+describe("checking a link on a chain", () => {
+  const askedOn = async (chainId?: number) => {
+    const store = fakeStore();
+    await createPendingLink(store, TOKEN, {
+      address: ADDRESS,
+      locale: "tr",
+      now: new Date(),
+      ...(chainId === undefined ? {} : { chainId: chainId as 8453 }),
+    });
+    await claimLink(store, TOKEN, 42);
+    const asked: [string, number][] = [];
+    await checkWatches({
+      store,
+      bot: bot().client,
+      readPositions: async (address, chain) => {
+        asked.push([address, chain]);
+        return answer([position("1", true)]);
+      },
+      dictionary: getDictionary,
+    });
+    return asked;
+  };
+
+  it("reads the address on the link's own chain", async () => {
+    expect(await askedOn(8453)).toEqual([[ADDRESS, 8453]]);
+  });
+
+  it("reads a link with no chain in it on mainnet", async () => {
+    expect(await askedOn()).toEqual([[ADDRESS, 1]]);
+  });
+});
+
+describe("a closed position on a chain", () => {
+  it("names the link's chain in the message, since nothing is left of the pool to ask", async () => {
+    const store = fakeStore();
+    await createPendingLink(store, TOKEN, { address: ADDRESS, locale: "en", now: new Date(), chainId: 8453 });
+    await claimLink(store, TOKEN, 42);
+    const { client, sent } = bot();
+    const check = (positions: readonly Position[]) =>
+      checkWatches({ store, bot: client, readPositions: async () => answer(positions), dictionary: getDictionary });
+
+    await check([position("5", true)]);
+    await check([]);
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.text).toContain("Uniswap v3 · Base");
+  });
+});

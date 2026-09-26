@@ -9,6 +9,11 @@ import { getEthereumV3TradedPools } from "../uniswap/getEthereumV3TradedPools";
 import { getEthereumV4TradedPools } from "../uniswap/getEthereumV4TradedPools";
 import { chainReadingFor } from "../uniswap/v4PoolChainReading";
 import { composeAddressHoldings, displayedV4Pools, withV4ChainReadings } from "./addressHoldings";
+import { rpcUrlFor } from "../chains/chainEnvironment";
+import type { ChainId } from "../chains/chains";
+import { getEthereumV3PoolDays } from "../uniswap/getEthereumV3PoolDays";
+import { normalizeV3TradedPoolsFromDays } from "../uniswap/v3TradedPoolsAdapter";
+import { type Token, ZERO_ADDRESS } from "../../schemas";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "address-holdings";
@@ -34,9 +39,58 @@ const LABEL = "address-holdings";
  * anywhere can enumerate an address's tokens, so the candidates must be chosen
  * before they can be checked.
  */
+/** Base's and Arbitrum's own ether, which both call ETH, under the zero address the sweep asks about. */
+const nativeEtherOn = (chainId: ChainId): Token => ({
+  chainId,
+  address: ZERO_ADDRESS,
+  symbol: "ETH",
+  name: "Ether",
+  decimals: 18,
+});
+
+/**
+ * Off mainnet: the v3 net from the chain's week of busiest pool-days, the
+ * chain's own ether asked for by name, and no v4 — none is read there, which
+ * the page says rather than calling it unread.
+ */
+const holdingsOffMainnet = async (address: string, chainId: ChainId): Promise<DataResult<AddressHoldings>> => {
+  const days = await getEthereumV3PoolDays(chainId);
+  const v3Candidates =
+    days.status === "unavailable" ? days : normalizeV3TradedPoolsFromDays({ ...days.data, chainId });
+  const tokenAddresses = [
+    ZERO_ADDRESS,
+    ...(v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools).flatMap((pool) => [
+      pool.token0.address,
+      pool.token1.address,
+    ]),
+  ];
+
+  const balances = await fetchEthereumBalances({
+    holder: address,
+    tokenAddresses,
+    rpcUrl: rpcUrlFor(chainId),
+    fetchImpl: fetch,
+  });
+
+  return logUnavailable(
+    LABEL,
+    composeAddressHoldings({
+      address,
+      v3Candidates,
+      v4Candidates: { status: "unavailable", reason: "configuration-error", notice: "market-data-not-configured" },
+      balances,
+      nativeToken: nativeEtherOn(chainId),
+      fetchedAt: new Date().toISOString(),
+    }),
+  );
+};
+
 export const getAddressHoldings = async (
   address: string,
+  chainId: ChainId = 1,
 ): Promise<DataResult<AddressHoldings>> => {
+  if (chainId !== 1) return holdingsOffMainnet(address, chainId);
+
   /*
    * Both behind a cache, because neither query takes input: every visitor asks
    * the same two questions, and the v3 one cost 3.7 seconds cold. See either

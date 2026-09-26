@@ -4,6 +4,7 @@ import { choosePriceQuote, quotedInterval, quotedPrice } from "../format/priceQu
 import type { Dictionary } from "../i18n/dictionaries";
 import type { Locale } from "../i18n/locales";
 import type { PositionChange } from "./positionChanges";
+import { chainOf } from "../chains/chains";
 
 /*
  * The text of one alert, in the reader's language.
@@ -14,6 +15,14 @@ import type { PositionChange } from "./positionChanges";
  * the site carries: this is information, not advice.
  */
 
+/**
+ * "Uniswap v3", and off mainnet the chain after it — "Uniswap v3 · Base" — so
+ * an alert about a Base position cannot be read as one about a mainnet pool
+ * of the same pair.
+ */
+const protocolOn = (protocolVersion: string, chainId: number): string =>
+  chainId === 1 ? `Uniswap ${protocolVersion}` : `Uniswap ${protocolVersion} · ${chainOf(chainId).name}`;
+
 const describe = (position: Position, locale: Locale): { pair: string; protocol: string; range: string } => {
   const { pool } = position;
   const quote = choosePriceQuote(pool, Math.sqrt(position.lowerPrice) * Math.sqrt(position.upperPrice));
@@ -21,7 +30,7 @@ const describe = (position: Position, locale: Locale): { pair: string; protocol:
 
   return {
     pair: `${pool.token0.symbol}/${pool.token1.symbol}`,
-    protocol: `Uniswap ${pool.protocolVersion}`,
+    protocol: protocolOn(pool.protocolVersion, pool.chainId),
     range: `${formatPrice(edges.lower, locale)} – ${formatPrice(edges.upper, locale)} ${quote.quote.symbol}/${quote.base.symbol}`,
   };
 };
@@ -43,7 +52,7 @@ const nearingPrices = (position: Position, edge: "lower" | "upper", locale: Loca
   };
 };
 
-export const alertText = (change: PositionChange, t: Dictionary, locale: Locale): string => {
+export const alertText = (change: PositionChange, t: Dictionary, locale: Locale, chainId: number = 1): string => {
   const body = (() => {
     switch (change.kind) {
       case "left": {
@@ -65,7 +74,8 @@ export const alertText = (change: PositionChange, t: Dictionary, locale: Locale)
       }
       case "closed": {
         const [protocol, tokenId] = change.key.split(":");
-        return t.telegram.closed(`Uniswap ${protocol ?? ""}`.trim(), tokenId ?? "");
+        /* A closed position is gone from the read, so its chain comes from the link that followed it. */
+        return t.telegram.closed(protocolOn(protocol ?? "", chainId), tokenId ?? "");
       }
     }
   })();

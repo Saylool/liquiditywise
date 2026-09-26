@@ -5,6 +5,9 @@ import { connectTelegram, disconnectTelegram } from "@/lib/telegram/connectTeleg
 import { telegramSetup } from "@/lib/telegram/environment";
 import { readLink, TELEGRAM_LINK_COOKIE } from "@/lib/telegram/links";
 import type { EvmAddress } from "@/schemas";
+import { chainLabel } from "@/lib/chains/chainLabel";
+import { type Chain, ETHEREUM } from "@/lib/chains/chains";
+import type { Locale } from "@/lib/i18n/locales";
 
 /*
  * Alerts, offered under the positions they are about.
@@ -16,7 +19,18 @@ import type { EvmAddress } from "@/schemas";
  * they follow — and each mint replaces the cookie, so one browser follows
  * one address.
  */
-export async function TelegramSection({ address, t }: { address: EvmAddress; t: Dictionary }) {
+export async function TelegramSection({
+  address,
+  chain,
+  t,
+  locale,
+}: {
+  address: EvmAddress;
+  /** The chain the page reads, which a new link follows the address on. */
+  chain: Chain;
+  t: Dictionary;
+  locale: Locale;
+}) {
   const setup = telegramSetup();
   const token = (await cookies()).get(TELEGRAM_LINK_COOKIE)?.value;
   const link = setup === null || token === undefined ? null : await readLink(setup.store, token);
@@ -38,12 +52,15 @@ export async function TelegramSection({ address, t }: { address: EvmAddress; t: 
           ) : link === null ? null : link.chatId === null ? (
             <p className="text-sm leading-relaxed text-muted">{t.telegram.pending}</p>
           ) : (
-            <p className="text-sm leading-relaxed text-muted">{t.telegram.connected(link.address)}</p>
+            <p className="text-sm leading-relaxed text-muted">
+              {`${t.telegram.connected(link.address)} · ${chainLabel(link.chainId ?? 1, locale)}`}
+            </p>
           )}
 
           <div className="flex flex-wrap items-center gap-3">
             <form action={connectTelegram}>
               <input type="hidden" name="address" value={address} />
+              {chain.id === ETHEREUM.id ? null : <input type="hidden" name="chain" value={chain.slug} />}
               <button
                 type="submit"
                 className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-on transition-[filter] hover:brightness-110"

@@ -13,6 +13,10 @@ import { EvmAddressSchema } from "@/schemas/primitives";
 import { HoldingsSection, HoldingsPending } from "./HoldingsSection";
 import { PositionsSection, PositionsPending } from "./PositionsSection";
 import { TelegramSection } from "./TelegramSection";
+import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
+import { chainLabel } from "@/lib/chains/chainLabel";
+import { type Chain, ETHEREUM } from "@/lib/chains/chains";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
 
 /*
  * What one address holds, and the pools that opens.
@@ -40,14 +44,17 @@ export async function generateMetadata(): Promise<Metadata> {
 function Shell({
   locale,
   t,
+  chain,
   children,
 }: {
   locale: Locale;
   t: Dictionary;
+  /** Required, so no branch of this page can forget which network its chip names. */
+  chain: Chain;
   children: React.ReactNode;
 }) {
   return (
-    <WorkspaceShell locale={locale} t={t} section="positions">
+    <WorkspaceShell locale={locale} t={t} section="positions" network={chainLabel(chain.id, locale)}>
       {children}
     </WorkspaceShell>
   );
@@ -68,11 +75,24 @@ export default async function HoldingsPage({
   /* Every link out of this page carries a band, and it should be the reader's. */
   const { parameters } = await getRangePreferences();
   const address = EvmAddressSchema.safeParse(single(requested));
+  const chainCopy = getChainCopy(locale);
+
+  /* The same address holds different things on every chain, and a chain nobody reads is refused. */
+  const chain = readRequestedChain(params[CHAIN_PARAMETER]);
+  if (chain === null) {
+    return (
+      <Shell locale={locale} t={t} chain={ETHEREUM}>
+        <AddressLookupForm copy={getInterfaceCopy(locale)} network={{ label: chainCopy.network, current: ETHEREUM.slug }} />
+        <p className="text-sm leading-relaxed text-muted">{chainCopy.unknown}</p>
+      </Shell>
+    );
+  }
+  const network = { label: chainCopy.network, current: chain.slug };
 
   if (!address.success) {
     return (
-      <Shell locale={locale} t={t}>
-        <AddressLookupForm copy={getInterfaceCopy(locale)} />
+      <Shell locale={locale} t={t} chain={chain}>
+        <AddressLookupForm copy={getInterfaceCopy(locale)} network={network} />
         {/* Deliberately does not echo what arrived: it is unvalidated input. */}
         <p className="text-sm leading-relaxed text-muted">
           {requested === undefined ? t.holdings.noAddress : t.holdings.invalidAddress}
@@ -83,7 +103,7 @@ export default async function HoldingsPage({
   }
 
   return (
-    <Shell locale={locale} t={t}>
+    <Shell locale={locale} t={t} chain={chain}>
       {/*
        * Streamed, because the sweep is the slowest read in this application: a
        * pool list and then seven batches of contract calls, spaced so the
@@ -98,6 +118,7 @@ export default async function HoldingsPage({
       <Suspense fallback={<PositionsPending t={t} />}>
         <PositionsSection
           address={address.data}
+          chainId={chain.id}
           parameters={parameters}
           locale={locale}
           t={t}
@@ -109,11 +130,12 @@ export default async function HoldingsPage({
        * when there is one, the store — a few milliseconds — so it needs no
        * boundary of its own.
        */}
-      <TelegramSection address={address.data} t={t} />
+      <TelegramSection address={address.data} chain={chain} t={t} locale={locale} />
 
       <Suspense fallback={<HoldingsPending t={t} />}>
         <HoldingsSection
           address={address.data}
+          chainId={chain.id}
           parameters={parameters}
           locale={locale}
           t={t}

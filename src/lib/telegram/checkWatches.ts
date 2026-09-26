@@ -6,6 +6,7 @@ import { listWatches, recordSnapshot } from "./links";
 import { alertText } from "./messages";
 import { positionChanges, snapshotOf } from "./positionChanges";
 import type { KeyValueStore } from "../store/keyValueStore";
+import type { ChainId } from "../chains/chains";
 
 /*
  * One pass over every linked address.
@@ -35,7 +36,8 @@ export type CheckSummary = {
 export type WatchChecking = {
   readonly store: KeyValueStore;
   readonly bot: BotClient;
-  readonly readPositions: (address: string) => Promise<AddressPositionsResult>;
+  /** One address's positions on one chain; a link with no chain in it is mainnet. */
+  readonly readPositions: (address: string, chainId: ChainId) => Promise<AddressPositionsResult>;
   readonly dictionary: (locale: Locale) => Dictionary;
 };
 
@@ -58,7 +60,7 @@ export const checkWatches = async ({
   for (const { token, link } of watches) {
     if (link.chatId === null) continue;
 
-    const result = await readPositions(link.address);
+    const result = await readPositions(link.address, link.chainId ?? 1);
     if (result.status === "unavailable") {
       unreadable += 1;
       continue;
@@ -68,7 +70,7 @@ export const checkWatches = async ({
     const t = dictionary(link.locale);
     for (const change of positionChanges(link.snapshot, result.data.positions)) {
       alerts += 1;
-      if (await bot.sendMessage(link.chatId, alertText(change, t, link.locale))) sent += 1;
+      if (await bot.sendMessage(link.chatId, alertText(change, t, link.locale, link.chainId ?? 1))) sent += 1;
     }
 
     await recordSnapshot(store, token, link, snapshotOf(result.data.positions, link.snapshot));

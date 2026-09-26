@@ -17,6 +17,7 @@ import {
   V3_MAX_TICK_SPACING,
 } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
+import { chainOf } from "../lib/chains/chains";
 
 /**
  * The positions an address is already in, of either protocol.
@@ -85,7 +86,7 @@ const PositionRow = ({
   const edges = quotedInterval(quote, { lower: position.lowerPrice, upper: position.upperPrice });
   const href =
     pool.protocolVersion === "v3"
-      ? poolAnalysisHref(pool.id, parameters)
+      ? poolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId))
       : v4PoolAnalysisHref(pool.id, parameters);
   const fee =
     pool.protocolVersion === "v3"

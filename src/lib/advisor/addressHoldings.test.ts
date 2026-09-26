@@ -267,3 +267,25 @@ describe("withV4ChainReadings", () => {
     );
   });
 });
+
+describe("holdings off mainnet", () => {
+  it("names the chain's own ether from the identity it is handed, where no v4 list names it", () => {
+    const holdings = answered(
+      compose({
+        v4Candidates: unavailable(),
+        balances: balances([{ address: NATIVE, amount: "2000000000000000000" }]),
+        nativeToken: ETH,
+      }),
+    );
+
+    expect(holdings.holdings.map(({ token }) => token.symbol)).toEqual(["ETH"]);
+  });
+
+  it("leaves an ether balance out when nothing names it, as before", () => {
+    const holdings = answered(
+      compose({ v4Candidates: unavailable(), balances: balances([{ address: NATIVE, amount: "1" }]) }),
+    );
+
+    expect(holdings.holdings).toEqual([]);
+  });
+});

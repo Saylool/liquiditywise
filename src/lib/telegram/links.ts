@@ -5,6 +5,7 @@ import { isLocale, type Locale } from "../i18n/locales";
 import { isLinkToken } from "./linkToken";
 import type { PositionSnapshot } from "./positionChanges";
 import type { KeyValueStore } from "../store/keyValueStore";
+import { type ChainId, isSupportedChainId } from "../chains/chains";
 
 /*
  * What this application keeps about a Telegram link, and for how long.
@@ -42,6 +43,12 @@ const LinkSchema = z.object({
   locale: z.string().refine(isLocale),
   chatId: z.number().int().nullable(),
   createdAt: IsoTimestampSchema,
+  /*
+   * Absent on every link made before other chains, and on every mainnet link
+   * since: such a link reads as mainnet, so the links already stored keep
+   * working exactly as they did, and nothing had to be migrated.
+   */
+  chainId: z.number().int().refine(isSupportedChainId).optional(),
   snapshot: z.record(z.string(), z.union([z.boolean(), z.literal("near")]).nullable()).nullable(),
 });
 
@@ -51,6 +58,8 @@ export type TelegramLink = {
   /** `null` until the bot has been handed the token from a chat. */
   readonly chatId: number | null;
   readonly createdAt: string;
+  /** The chain the address is followed on; absent means mainnet. */
+  readonly chainId?: ChainId;
   /** What the checker saw last time, or `null` before its first run. */
   readonly snapshot: PositionSnapshot | null;
 };
@@ -88,13 +97,15 @@ const writeLink = (store: KeyValueStore, token: string, link: TelegramLink): Pro
 export const createPendingLink = (
   store: KeyValueStore,
   token: string,
-  input: { readonly address: string; readonly locale: Locale; readonly now: Date },
+  input: { readonly address: string; readonly locale: Locale; readonly now: Date; readonly chainId?: ChainId },
 ): Promise<boolean> =>
   writeLink(store, token, {
     address: input.address,
     locale: input.locale,
     chatId: null,
     createdAt: input.now.toISOString(),
+    /* Written only off mainnet, so a mainnet link is stored exactly as it always was. */
+    ...(input.chainId === undefined || input.chainId === 1 ? {} : { chainId: input.chainId }),
     snapshot: null,
   });
 

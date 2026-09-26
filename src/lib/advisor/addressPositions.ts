@@ -69,6 +69,11 @@ export type AddressPositionsInput = {
   readonly address: string;
   readonly v3: V3Side | null;
   readonly v4: V4Side | null;
+  /**
+   * Whether v4 was asked at all. Off mainnet it is not — no v4 is read there —
+   * and a `null` side then means "not this chain", not "could not be read".
+   */
+  readonly v4Asked?: boolean;
   readonly fetchedAt: string;
 };
 
@@ -212,6 +217,7 @@ export const composeAddressPositions = ({
   address,
   v3,
   v4,
+  v4Asked = true,
   fetchedAt,
 }: AddressPositionsInput): AddressPositionsResult => {
   /* Nothing read is not a partial answer, and the caller reports the failure. */
@@ -234,7 +240,8 @@ export const composeAddressPositions = ({
 
   const unread: ProtocolVersion[] = [];
   if (v3 === null) unread.push("v3");
-  if (v4 === null) unread.push("v4");
+  /* Unread is a failure; off mainnet v4 was never asked, and that is not one. */
+  if (v4 === null && v4Asked) unread.push("v4");
 
   /** Both protocols' figures added together, counting a protocol that was not read as nothing. */
   const counted = [v3?.raw, v4?.raw].filter((side) => side !== undefined);

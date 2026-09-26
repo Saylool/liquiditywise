@@ -3,6 +3,7 @@ import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import type { EvmAddress, PriceBandParameters } from "@/schemas";
+import type { ChainId } from "@/lib/chains/chains";
 
 /**
  * Reads the positions one address already holds.
@@ -16,18 +17,21 @@ import type { EvmAddress, PriceBandParameters } from "@/schemas";
  */
 export async function PositionsSection({
   address,
+  chainId = 1,
   parameters,
   locale,
   t,
 }: {
   address: EvmAddress;
+  /** The chain to read the address on; mainnet when not said. */
+  chainId?: ChainId;
   parameters: PriceBandParameters;
   locale: Locale;
   t: Dictionary;
 }) {
   return (
     <AddressPositions
-      result={await getAddressPositions(address)}
+      result={await getAddressPositions(address, chainId)}
       parameters={parameters}
       t={t}
       locale={locale}

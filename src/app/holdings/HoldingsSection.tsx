@@ -3,6 +3,7 @@ import { getAddressHoldings } from "@/lib/advisor/getAddressHoldings";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import type { EvmAddress, PriceBandParameters } from "@/schemas";
+import type { ChainId } from "@/lib/chains/chains";
 
 /**
  * Reads one address's holdings.
@@ -15,21 +16,25 @@ import type { EvmAddress, PriceBandParameters } from "@/schemas";
  */
 export async function HoldingsSection({
   address,
+  chainId = 1,
   parameters,
   locale,
   t,
 }: {
   address: EvmAddress;
+  /** The chain to read the address on; mainnet when not said. */
+  chainId?: ChainId;
   parameters: PriceBandParameters;
   locale: Locale;
   t: Dictionary;
 }) {
-  const result = await getAddressHoldings(address);
+  const result = await getAddressHoldings(address, chainId);
 
   return (
     <AddressHoldings
       result={result}
       parameters={parameters}
+      chainId={chainId}
       t={t}
       locale={locale}
     />

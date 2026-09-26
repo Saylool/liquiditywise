@@ -12,6 +12,8 @@ import {
   SLOT0_SELECTOR,
   TOKEN_OF_OWNER_BY_INDEX_SELECTOR,
   tokenOfOwnerByIndexCalldata,
+  POSITION_MANAGER_CODE_HASH,
+  V3_POSITION_MANAGERS,
 } from "./v3PositionManager";
 
 const OWNER = "0xb6f1f0c31689f4c06df33c88da2a8b9c7c0fedbd";
@@ -132,5 +134,24 @@ describe("the manager's own code", () => {
     ).toBe(true);
     expect(isPositionManagerCode(real, keccak256Hex)).toBe(false);
     expect(isPositionManagerCode(null, () => null)).toBe(false);
+  });
+});
+
+describe("the manager on each chain", () => {
+  const hashing = (hash: string) => () => hash;
+
+  it("is proved by that chain's own runtime hash, and no other chain's", () => {
+    const base = V3_POSITION_MANAGERS[8453].codeHash;
+
+    expect(isPositionManagerCode("0x01", hashing(base), 8453)).toBe(true);
+    expect(isPositionManagerCode("0x01", hashing(base), 1)).toBe(false);
+    expect(isPositionManagerCode("0x01", hashing(base), 42161)).toBe(false);
+    expect(isPositionManagerCode("0x01", hashing(POSITION_MANAGER_CODE_HASH))).toBe(true);
+  });
+
+  it("is at mainnet's address on Arbitrum, with a runtime of its own", () => {
+    expect(V3_POSITION_MANAGERS[42161].address).toBe(V3_POSITION_MANAGERS[1].address);
+    expect(V3_POSITION_MANAGERS[42161].codeHash).not.toBe(V3_POSITION_MANAGERS[1].codeHash);
+    expect(new Set(Object.values(V3_POSITION_MANAGERS).map(({ codeHash }) => codeHash)).size).toBe(3);
   });
 });

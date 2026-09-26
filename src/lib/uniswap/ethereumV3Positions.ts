@@ -9,11 +9,12 @@ import {
   decodePosition,
   FACTORY_SELECTOR,
   isPositionManagerCode,
-  POSITION_MANAGER_ADDRESS,
+  V3_POSITION_MANAGERS,
   positionsCalldata,
   type RawV3Position,
   tokenOfOwnerByIndexCalldata,
 } from "./v3PositionManager";
+import type { ChainId } from "../chains/chains";
 
 /*
  * Which Uniswap v3 positions one address actually holds.
@@ -60,6 +61,8 @@ const ADDRESS = /^0x[0-9a-f]{40}$/;
 export type EthereumV3PositionsRequest = {
   /** Whose positions. Lower-cased and checked here before anything goes out. */
   readonly owner: string;
+  /** The chain the endpoint serves, which decides whose manager is asked; mainnet when not said. */
+  readonly chainId?: ChainId;
   /** Raw environment value; validated here so the wrapper stays free of logic. */
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
@@ -140,6 +143,7 @@ const unavailable = (
  */
 export const fetchEthereumV3Positions = async ({
   owner,
+  chainId = 1,
   rpcUrl,
   fetchImpl,
   timeoutMs = DEFAULT_POSITIONS_TIMEOUT_MS,
@@ -156,18 +160,19 @@ export const fetchEthereumV3Positions = async ({
   if (balanceOf === null) return unavailable("invalid-input", INVALID_ADDRESS);
 
   const shared = { rpcUrl: endpoint, fetchImpl, timeoutMs };
+  const manager = V3_POSITION_MANAGERS[chainId].address;
   const first = await postAggregatedCalls({
     ...shared,
     calls: [
-      { to: POSITION_MANAGER_ADDRESS, data: balanceOf },
-      { to: POSITION_MANAGER_ADDRESS, data: FACTORY_SELECTOR },
+      { to: manager, data: balanceOf },
+      { to: manager, data: FACTORY_SELECTOR },
     ],
-    codeOf: [POSITION_MANAGER_ADDRESS],
+    codeOf: [manager],
   });
   if (!first.ok) return unavailable(first.reason, first.notice);
 
   /* The proof before the answers, as with the aggregator one layer down. */
-  if (!isPositionManagerCode(first.codes[0], keccak256Hex)) {
+  if (!isPositionManagerCode(first.codes[0], keccak256Hex, chainId)) {
     return unavailable("configuration-error", MANAGER_UNVERIFIED);
   }
 
@@ -186,7 +191,7 @@ export const fetchEthereumV3Positions = async ({
   const indexed = await postAggregatedCalls({
     ...shared,
     calls: Array.from({ length: read }, (_unused, index) => ({
-      to: POSITION_MANAGER_ADDRESS,
+      to: manager,
       data: tokenOfOwnerByIndexCalldata(holder, index) ?? "",
     })),
   });
@@ -197,7 +202,7 @@ export const fetchEthereumV3Positions = async ({
   const described = await postAggregatedCalls({
     ...shared,
     calls: tokenIds.map((tokenId) => ({
-      to: POSITION_MANAGER_ADDRESS,
+      to: manager,
       data: positionsCalldata(tokenId) ?? "",
     })),
   });

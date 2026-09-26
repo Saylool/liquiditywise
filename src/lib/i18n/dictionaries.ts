@@ -478,8 +478,8 @@ const en = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${v3Pools} most-traded Uniswap v3 pools on Ethereum mainnet${v4Pools === null ? "" : `, and every currency in the ${v4Pools} v4 pools that traded the most over the last seven days, the chain's own ether among them`}. Something held outside that set is not missing from this page because the address does not hold it.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${v3Pools} most-traded Uniswap v3 pools on ${chain}${v4Pools === null ? "" : `, and every currency in the ${v4Pools} v4 pools that traded the most over the last seven days, the chain's own ether among them`}. Something held outside that set is not missing from this page because the address does not hold it.`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
@@ -1581,8 +1581,8 @@ const tr: Dictionary = {
       "Bu adreste bulunan jetonlar ve girebilecekleri havuzlar. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve adres herkese açık bir bilgidir — aynı liste onu arayan herkese görünür.",
     forAddress: "Adres",
     loading: "Bu adresin ne tuttuğu token sözleşmelerine soruluyor…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: Ethereum mainnet'te en çok işlem gören ${v3Pools} Uniswap v3 havuzunda geçen tokenların tamamı${v4Pools === null ? "" : ` ve son yedi günde en çok işlem gören ${v4Pools} v4 havuzundaki para birimlerinin tamamı — zincirin kendi ether'i dahil`}. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: ${chain} üzerinde en çok işlem gören ${v3Pools} Uniswap v3 havuzunda geçen tokenların tamamı${v4Pools === null ? "" : ` ve son yedi günde en çok işlem gören ${v4Pools} v4 havuzundaki para birimlerinin tamamı — zincirin kendi ether'i dahil`}. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
     v4NotSearched:
       "Uniswap v4 havuzları aranmadı: listeleri okunamadı. Ether ve v4 havuzlarının para birimleri bu sayfada bu yüzden yok, başka bir sebepten değil.",
     hookTag: "hook",
@@ -2525,8 +2525,8 @@ const de: Dictionary = {
       "Die Token, die unter dieser Adresse gefunden wurden, und die Pools, in die sie gehen können. Nichts hier wird gespeichert, sofern du unten keine Telegram-Hinweise anforderst, und die Adresse ist öffentlich — dieselbe Liste sieht jeder, der sie nachschlägt.",
     forAddress: "Adresse",
     loading: "Die Token-Verträge werden gefragt, was diese Adresse hält…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `Der Bestand eines Tokens liegt im Vertrag des Tokens selbst; es gibt also keine Liste dessen, was eine Adresse besitzt — nur Token, die sich einzeln fragen lassen. Hier wurden ${tokens} davon gefragt: jeder Token in den ${v3Pools} meistgehandelten Uniswap-v3-Pools im Ethereum-Mainnet${v4Pools === null ? "" : `, und jede Währung in den ${v4Pools} v4-Pools mit dem größten Handel der letzten sieben Tage, das Ether der Chain selbst darunter`}. Was außerhalb dieser Menge gehalten wird, fehlt auf dieser Seite nicht deshalb, weil die Adresse es nicht hält.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `Der Bestand eines Tokens liegt im Vertrag des Tokens selbst; es gibt also keine Liste dessen, was eine Adresse besitzt — nur Token, die sich einzeln fragen lassen. Hier wurden ${tokens} davon gefragt: jeder Token in den ${v3Pools} meistgehandelten Uniswap-v3-Pools (${chain})${v4Pools === null ? "" : `, und jede Währung in den ${v4Pools} v4-Pools mit dem größten Handel der letzten sieben Tage, das Ether der Chain selbst darunter`}. Was außerhalb dieser Menge gehalten wird, fehlt auf dieser Seite nicht deshalb, weil die Adresse es nicht hält.`,
     v4NotSearched:
       "Uniswap-v4-Pools wurden nicht durchsucht: ihre Liste ließ sich nicht lesen. Ether und die Währungen der v4-Pools fehlen auf dieser Seite aus diesem Grund und aus keinem anderen.",
     hookTag: "hook",
@@ -3447,8 +3447,8 @@ const es: Dictionary = {
       "Los tokens encontrados en esta dirección, y los pools a los que pueden ir. Nada de esto se guarda salvo que pidas avisos por Telegram más abajo, y la dirección es información pública — la misma lista la ve cualquiera que la consulte.",
     forAddress: "Dirección",
     loading: "Preguntando a los contratos de token qué tiene esta dirección…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `El saldo de un token vive dentro del contrato del propio token, así que no existe una lista de lo que posee una dirección — solo tokens a los que se puede preguntar, de uno en uno. Aquí se preguntó a ${tokens} de ellos: todos los tokens de los ${v3Pools} pools de Uniswap v3 más negociados en la red principal de Ethereum${v4Pools === null ? "" : `, y todas las monedas de los ${v4Pools} pools v4 que más se negociaron en los últimos siete días, el ether propio de la cadena entre ellas`}. Algo que se tenga fuera de ese conjunto no falta en esta página porque la dirección no lo tenga.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `El saldo de un token vive dentro del contrato del propio token, así que no existe una lista de lo que posee una dirección — solo tokens a los que se puede preguntar, de uno en uno. Aquí se preguntó a ${tokens} de ellos: todos los tokens de los ${v3Pools} pools de Uniswap v3 más negociados (${chain})${v4Pools === null ? "" : `, y todas las monedas de los ${v4Pools} pools v4 que más se negociaron en los últimos siete días, el ether propio de la cadena entre ellas`}. Algo que se tenga fuera de ese conjunto no falta en esta página porque la dirección no lo tenga.`,
     v4NotSearched:
       "No se buscaron pools de Uniswap v4: su lista no pudo leerse. El ether y las monedas de los pools v4 faltan en esta página por esa razón y por ninguna otra.",
     hookTag: "hook",
@@ -4370,8 +4370,8 @@ const ar: Dictionary = {
       "الرموز الموجودة في هذا العنوان، والمجمّعات التي يمكن أن تدخلها. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، والعنوان معلومة علنية — القائمة نفسها يراها كل من يبحث عنه.",
     forAddress: "العنوان",
     loading: "تُسأل عقود الرموز عمّا يملكه هذا العنوان…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `رصيد الرمز موجود داخل عقد الرمز نفسه، فلا توجد قائمة بما يملكه عنوان — بل رموز يمكن سؤالها، واحدًا واحدًا. وقد سُئل هنا ${tokens} منها: كل رمز في أكثر ${v3Pools} تجمّعًا تداولًا في Uniswap v3 على شبكة إيثيريوم الرئيسية${v4Pools === null ? "" : `، وكل عملة في تجمّعات v4 الـ ${v4Pools} الأكثر تداولًا خلال الأيام السبعة الماضية، ومنها الإيثر الأصلي للسلسلة`}. وما يُملك خارج تلك المجموعة ليس غائبًا عن هذه الصفحة لأن العنوان لا يملكه.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `رصيد الرمز موجود داخل عقد الرمز نفسه، فلا توجد قائمة بما يملكه عنوان — بل رموز يمكن سؤالها، واحدًا واحدًا. وقد سُئل هنا ${tokens} منها: كل رمز في أكثر ${v3Pools} تجمّعًا تداولًا في Uniswap v3 على ${chain}${v4Pools === null ? "" : `، وكل عملة في تجمّعات v4 الـ ${v4Pools} الأكثر تداولًا خلال الأيام السبعة الماضية، ومنها الإيثر الأصلي للسلسلة`}. وما يُملك خارج تلك المجموعة ليس غائبًا عن هذه الصفحة لأن العنوان لا يملكه.`,
     v4NotSearched:
       "لم يُبحث في تجمّعات Uniswap v4: تعذّرت قراءة قائمتها. والإيثر وعملات تجمّعات v4 غائبة عن هذه الصفحة لهذا السبب لا لغيره.",
     hookTag: "hook",
@@ -5268,8 +5268,8 @@ const hi: Dictionary = {
       "इस पते पर मिले टोकन, और वे पूल जिनमें वे जा सकते हैं। जब तक आप नीचे Telegram सूचनाएँ न माँगें, यहाँ कुछ भी रखा नहीं जाता, और पता सार्वजनिक जानकारी है — वही सूची उसे खोजने वाले हर किसी को दिखती है।",
     forAddress: "पता",
     loading: "टोकन कॉन्ट्रैक्ट से पूछा जा रहा है कि इस पते के पास क्या है…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: Ethereum मेननेट के ${v3Pools} सबसे अधिक कारोबार वाले Uniswap v3 पूलों का हर टोकन${v4Pools === null ? "" : `, और पिछले सात दिनों में सबसे अधिक कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन का अपना ether भी है`}। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} के ${v3Pools} सबसे अधिक कारोबार वाले Uniswap v3 पूलों का हर टोकन${v4Pools === null ? "" : `, और पिछले सात दिनों में सबसे अधिक कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन का अपना ether भी है`}। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
     v4NotSearched:
       "Uniswap v4 पूल खोजे नहीं गए: उनकी सूची पढ़ी नहीं जा सकी। ether और v4 पूलों की मुद्राएँ इस पृष्ठ से इसी कारण से अनुपस्थित हैं, किसी और कारण से नहीं।",
     hookTag: "hook",
@@ -6269,8 +6269,8 @@ const zh: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `一个代币的余额存放在这个代币自己的合约里，所以并不存在一份“某地址拥有什么”的清单——只有可以被逐个询问的代币。这次询问了其中 ${tokens} 个：以太坊主网上成交最活跃的 ${v3Pools} 个 Uniswap v3 资金池里的每一种代币${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在这个集合之外的东西，之所以没有出现在这一页上，并不是因为这个地址没有它。`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `一个代币的余额存放在这个代币自己的合约里，所以并不存在一份“某地址拥有什么”的清单——只有可以被逐个询问的代币。这次询问了其中 ${tokens} 个：${chain}上成交最活跃的 ${v3Pools} 个 Uniswap v3 资金池里的每一种代币${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在这个集合之外的东西，之所以没有出现在这一页上，并不是因为这个地址没有它。`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
@@ -7441,8 +7441,8 @@ const ru: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `Баланс токена живёт внутри контракта самого токена, поэтому списка того, чем владеет адрес, не существует — есть только токены, которые можно спросить по одному. Спросили ${tokens}: каждый токен из ${v3Pools} самых торгуемых пулов Uniswap v3 в основной сети Ethereum${v4Pools === null ? "" : `, и каждую валюту из ${v4Pools} пулов v4, торговавших больше всего за последние семь дней, включая собственный эфир сети`}. Если что-то держится вне этого набора, оно отсутствует на этой странице не потому, что адрес этого не держит.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `Баланс токена живёт внутри контракта самого токена, поэтому списка того, чем владеет адрес, не существует — есть только токены, которые можно спросить по одному. Спросили ${tokens}: каждый токен из ${v3Pools} самых торгуемых пулов Uniswap v3 (${chain})${v4Pools === null ? "" : `, и каждую валюту из ${v4Pools} пулов v4, торговавших больше всего за последние семь дней, включая собственный эфир сети`}. Если что-то держится вне этого набора, оно отсутствует на этой странице не потому, что адрес этого не держит.`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
@@ -8625,8 +8625,8 @@ const pt: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `O saldo de um token mora dentro do contrato do próprio token, então não existe uma lista do que um endereço possui — só tokens que podem ser perguntados, um de cada vez. Foram perguntados ${tokens} deles: cada token dos ${v3Pools} pools do Uniswap v3 mais negociados na rede principal do Ethereum${v4Pools === null ? "" : `, e cada moeda dos ${v4Pools} pools v4 que mais negociaram nos últimos sete dias, incluindo o ether da própria rede`}. Se algo é mantido fora desse conjunto, ele não falta nesta página porque o endereço não o tenha.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `O saldo de um token mora dentro do contrato do próprio token, então não existe uma lista do que um endereço possui — só tokens que podem ser perguntados, um de cada vez. Foram perguntados ${tokens} deles: cada token dos ${v3Pools} pools do Uniswap v3 mais negociados (${chain})${v4Pools === null ? "" : `, e cada moeda dos ${v4Pools} pools v4 que mais negociaram nos últimos sete dias, incluindo o ether da própria rede`}. Se algo é mantido fora desse conjunto, ele não falta nesta página porque o endereço não o tenha.`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
@@ -9803,8 +9803,8 @@ const zhHant: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null) =>
-      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：以太坊主網上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
+      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：${chain}上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes

@@ -8,6 +8,7 @@ import { getRequestLocale } from "../i18n/requestLocale";
 import { telegramSetup } from "./environment";
 import { createPendingLink, forgetLink, TELEGRAM_LINK_COOKIE } from "./links";
 import { newLinkToken } from "./linkToken";
+import { chainBySlug, ETHEREUM } from "../chains/chains";
 
 /*
  * The two things a reader can do about alerts from the site: ask for them,
@@ -28,10 +29,15 @@ export const connectTelegram = async (formData: FormData): Promise<void> => {
 
   const address = EvmAddressSchema.safeParse(formData.get("address"));
   if (!address.success) return;
+  /* No chain is mainnet; a chain nobody reads is refused rather than followed on mainnet. */
+  const requestedChain = formData.get("chain");
+  const chain = requestedChain === null ? ETHEREUM : typeof requestedChain === "string" ? chainBySlug(requestedChain) : null;
+  if (chain === null) return;
 
   const token = newLinkToken();
   const written = await createPendingLink(setup.store, token, {
     address: address.data,
+    chainId: chain.id,
     locale: await getRequestLocale(),
     now: new Date(),
   });

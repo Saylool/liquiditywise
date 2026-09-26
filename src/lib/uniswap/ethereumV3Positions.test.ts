@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import type { Aggregate3Result } from "./multicall3";
@@ -7,6 +10,8 @@ import {
   fetchEthereumV3Positions,
   MAX_POSITIONS_READ,
 } from "./ethereumV3Positions";
+import { MULTICALL3_ADDRESS } from "./multicall3";
+import { MULTICALL3_RUNTIME_CODE } from "./multicall3RuntimeCode";
 import { rpcEndpoint } from "./testing/multicall3Endpoint";
 
 /*
@@ -132,5 +137,67 @@ describe("fetchEthereumV3Positions", () => {
 
   it("reads no further than its ceiling", () => {
     expect(MAX_POSITIONS_READ).toBeGreaterThan(12);
+  });
+});
+
+describe("positions on another chain", () => {
+  const BASE_MANAGER = "0x03a520b32c04bf3beef7beb72e919cf822ed34f1";
+
+  it("asks that chain's own manager, and only it", async () => {
+    const askedFor: string[] = [];
+    const called: string[] = [];
+    await fetchEthereumV3Positions({
+      owner: "0xb6f1f0c31689f4c06df33c88da2a8b9c7c0fedbd",
+      chainId: 8453,
+      rpcUrl: "https://node.example.invalid/key",
+      fetchImpl: rpcEndpoint({
+        code: (address) => {
+          askedFor.push(address.toLowerCase());
+          return "0x";
+        },
+        call: (question) => {
+          called.push(question.to.toLowerCase());
+          return { success: true, data: "0x" };
+        },
+      }),
+      timeoutMs: 1_000,
+    });
+
+    expect(askedFor).toContain(BASE_MANAGER);
+    expect(called.every((target) => target === BASE_MANAGER)).toBe(true);
+    expect(called.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the proof on another chain", () => {
+  /*
+   * The Base manager's real runtime, read from the chain on 2026-09-26: the
+   * only way past the proof without a live node, and so the only way to show
+   * that each chain is held to its own hash rather than to mainnet's.
+   */
+  const BASE_RUNTIME = readFileSync(join(__dirname, "testing", "base-v3-position-manager.hex"), "utf8").trim();
+  const withBaseCode = (chainId: 1 | 8453) =>
+    fetchEthereumV3Positions({
+      owner: "0xb6f1f0c31689f4c06df33c88da2a8b9c7c0fedbd",
+      chainId,
+      rpcUrl: "https://node.example.invalid/key",
+      fetchImpl: rpcEndpoint({
+        /* Multicall3 answers with its own code, so only the manager is on trial. */
+        code: (address) => (address.toLowerCase() === MULTICALL3_ADDRESS ? MULTICALL3_RUNTIME_CODE : BASE_RUNTIME),
+        call: () => ({ success: true, data: `0x${"0".repeat(64)}` }),
+      }),
+      timeoutMs: 1_000,
+    });
+
+  it("accepts Base's manager on Base, and reads on past the proof", async () => {
+    const result = await withBaseCode(8453);
+
+    expect(result).toEqual({ status: "success", data: { factory: `0x${"0".repeat(40)}`, held: 0, read: 0, open: [], closed: 0 } });
+  });
+
+  it("refuses Base's code where mainnet's manager should be", async () => {
+    const result = await withBaseCode(1);
+
+    expect(result.status === "unavailable" && result.notice).toBe("positions-manager-unverified");
   });
 });
