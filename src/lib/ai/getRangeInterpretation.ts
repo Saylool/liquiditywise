@@ -11,7 +11,8 @@ import type {
 import type { PoolRangeAnalysis } from "../advisor/poolRangeAnalysis";
 import type { Locale } from "../i18n/locales";
 import { logDetail, logUnavailable, logUsage } from "../observability/serverDiagnostics";
-import { cappedLine, spendLine } from "../usage/usageLines";
+import { cappedLine, reusedLine, spendLine, warmedLine } from "../usage/usageLines";
+import { processShared } from "../cache/processShared";
 import {
   createInterpretationCache,
   interpretationCacheKey,
@@ -75,17 +76,20 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 500;
 
 /*
- * Module-level, so it lives as long as the process. Like every other in-memory
- * store here it is per-instance: a platform running several copies keeps
- * several caches and calls the model once per copy. That costs a little more
- * than a shared store would and is wrong in no way — an entry is either valid
- * or absent, never stale in one place and fresh in another.
+ * Per process, like every other in-memory store here: a platform running
+ * several copies keeps several caches and calls the model once per copy.
+ * That costs a little more than a shared store would and is wrong in no way —
+ * an entry is either valid or absent, never stale in one place and fresh in
+ * another. On `globalThis` (processShared.ts), so the explanation warmer,
+ * started from instrumentation.ts, fills the cache the pages read.
  */
-const cache = createInterpretationCache<WrittenInterpretation>({
-  ttlMs: CACHE_TTL_MS,
-  maxEntries: CACHE_MAX_ENTRIES,
-  now: () => Date.now(),
-});
+const cache = processShared("interpretation-cache", () =>
+  createInterpretationCache<WrittenInterpretation>({
+    ttlMs: CACHE_TTL_MS,
+    maxEntries: CACHE_MAX_ENTRIES,
+    now: () => Date.now(),
+  }),
+);
 
 export type RangeInterpretationRequest = {
   readonly analysis: PoolRangeAnalysis;
@@ -101,7 +105,7 @@ export type RangeInterpretationRequest = {
  * is held in a closure.
  */
 /** The server's hourly ceiling on new explanations; see explanationBudget.ts. */
-const budget = createExplanationBudget();
+const budget = processShared("explanation-budget", () => createExplanationBudget());
 
 /** What a reader is shown in the explanation's place once the ceiling is reached. */
 const CAPPED: InterpretationOutcome<WrittenInterpretation> = {
@@ -129,8 +133,38 @@ const recordSpend = (analysis: PoolRangeAnalysis, model: string, usage: TokenUsa
   );
 };
 
-export const getRangeInterpretation = async (
+export const getRangeInterpretation = (
   request: RangeInterpretationRequest,
+): Promise<InterpretationOutcome<WrittenInterpretation>> => writeInterpretation(request, { forReader: true });
+
+/**
+ * Writes an explanation ahead of its first reader, when none is kept for it:
+ * the warmer's way in (see warmExplanations.ts). Not counted against the
+ * readers' hourly ceiling, which exists to bound what readers can spend —
+ * the warmer's own schedule bounds what it spends — and not logged as a
+ * reuse when it finds one already kept, since no reader was served.
+ */
+export const warmRangeInterpretation = async (
+  request: RangeInterpretationRequest,
+): Promise<"kept" | "written" | "failed"> => {
+  const key = interpretationCacheKey({
+    analysis: request.analysis,
+    warnings: request.warnings,
+    locale: request.locale,
+    model: interpretationModelInUse(),
+    instruction: BASE_INSTRUCTION,
+  });
+  if (cache.get(key) !== undefined) return "kept";
+
+  const outcome = await writeInterpretation(request, { forReader: false });
+  if (outcome.status !== "success") return "failed";
+  logUsage(warmedLine(poolOf(request.analysis)));
+  return "written";
+};
+
+const writeInterpretation = async (
+  request: RangeInterpretationRequest,
+  { forReader }: { readonly forReader: boolean },
 ): Promise<InterpretationOutcome<WrittenInterpretation>> => {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = interpretationModelInUse();
@@ -144,10 +178,13 @@ export const getRangeInterpretation = async (
   });
 
   const cached = cache.get(key);
-  if (cached !== undefined) return { status: "success", data: cached };
+  if (cached !== undefined) {
+    logUsage(reusedLine(poolOf(request.analysis)));
+    return { status: "success", data: cached };
+  }
 
   // Past the ceiling nothing is asked of the model; a cached answer above was still free.
-  if (!budget.take()) {
+  if (forReader && !budget.take()) {
     logUsage(cappedLine(poolOf(request.analysis)));
     return CAPPED;
   }
@@ -243,6 +280,7 @@ export const streamRangeInterpretation = (
 
   const cached = cache.get(key);
   if (cached !== undefined) {
+    logUsage(reusedLine(poolOf(request.analysis)));
     return {
       sections: settledSectionGates(cached.interpretation),
       whole: Promise.resolve({ status: "success", data: cached }),

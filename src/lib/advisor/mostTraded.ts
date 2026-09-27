@@ -41,6 +41,9 @@ import type { ChainId } from "../chains/chains";
 /** How many pools each half of the page shows. */
 export const MOST_TRADED_SHOWN = 12;
 
+/** How many of each half the front page shows, and the explanation warmer writes ahead for. */
+export const FRONT_PAGE_POOLS = 3;
+
 export type MostTradedPool = {
   readonly pool: V3PoolMetadata | V4Pool;
   readonly volumeUsd: number;

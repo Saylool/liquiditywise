@@ -32,6 +32,10 @@ export type WarmerRequest<Chain> = {
   readonly chains: readonly Chain[];
   /** Reads one chain anew. Its failures are its own to log; the warmer goes on to the next. */
   readonly warm: (chain: Chain) => Promise<unknown>;
+  /** Between rounds; the most-traded rounds' twenty-five minutes when not said. */
+  readonly everyMs?: number;
+  /** Before the first round; five seconds when not said. */
+  readonly firstAfterMs?: number;
   readonly setTimer?: (run: () => void, afterMs: number) => Timer;
   readonly clearTimer?: (timer: Timer) => void;
 };
@@ -40,6 +44,8 @@ export type WarmerRequest<Chain> = {
 export const startWarming = <Chain>({
   chains,
   warm,
+  everyMs = WARM_EVERY_MS,
+  firstAfterMs = FIRST_WARM_AFTER_MS,
   setTimer = setTimeout,
   clearTimer = (timer) => clearTimeout(timer as ReturnType<typeof setTimeout>),
 }: WarmerRequest<Chain>): (() => void) => {
@@ -61,10 +67,10 @@ export const startWarming = <Chain>({
         /* Logged by the reader, which alone knows what is safe to write down. */
       }
     }
-    if (!stopped) schedule(WARM_EVERY_MS);
+    if (!stopped) schedule(everyMs);
   };
 
-  schedule(FIRST_WARM_AFTER_MS);
+  schedule(firstAfterMs);
 
   return () => {
     stopped = true;

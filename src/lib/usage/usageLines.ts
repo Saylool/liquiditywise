@@ -155,6 +155,12 @@ export const spendLine = (spend: Spend): string =>
 /** An explanation that was not written because the hourly ceiling had been reached. */
 export const cappedLine = (pool: string): string => `[interpretation] capped pool=${pool}`;
 
+/** An explanation served from the cache, so the report can say how often one is reused. */
+export const reusedLine = (pool: string): string => `[interpretation] reused pool=${pool}`;
+
+/** An explanation written ahead of its first reader, by the warmer. */
+export const warmedLine = (pool: string): string => `[interpretation] warmed pool=${pool}`;
+
 export type UsageLine =
   | {
       readonly kind: "visit";
@@ -165,7 +171,9 @@ export type UsageLine =
     }
   | { readonly kind: "spend"; readonly at: string | null; readonly spend: Spend }
   | { readonly kind: "rejected"; readonly at: string | null }
-  | { readonly kind: "capped"; readonly at: string | null };
+  | { readonly kind: "capped"; readonly at: string | null }
+  | { readonly kind: "reused"; readonly at: string | null }
+  | { readonly kind: "warmed"; readonly at: string | null };
 
 const fields = (text: string): Record<string, string> =>
   Object.fromEntries(
@@ -213,5 +221,7 @@ export const parseUsageLine = (line: string): UsageLine | null => {
 
   if (line.includes("[interpretation] answer rejected")) return { kind: "rejected", at };
   if (line.includes("[interpretation] capped")) return { kind: "capped", at };
+  if (line.includes("[interpretation] reused")) return { kind: "reused", at };
+  if (line.includes("[interpretation] warmed")) return { kind: "warmed", at };
   return null;
 };

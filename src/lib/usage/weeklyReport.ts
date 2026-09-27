@@ -200,6 +200,12 @@ export const weeklyReport = (input: WeekInput): string => {
     );
   }
   if (rejected > 0) out.push(`Answers the checks turned down: ${number(rejected)}`);
+  const reused = input.lines.filter((line) => line.kind === "reused").length;
+  const warmed = input.lines.filter((line) => line.kind === "warmed").length;
+  /* Whether writing ahead pays: how many were written before any reader, and how many readers were served one already kept. */
+  if (reused > 0 || warmed > 0) {
+    out.push(`Explanations served from the cache: ${number(reused)}${warmed > 0 ? ` · written ahead of readers: ${number(warmed)}` : ""}`);
+  }
   const capped = input.lines.filter((line) => line.kind === "capped").length;
   if (capped > 0) out.push(`Explanations held back by the hourly ceiling: ${number(capped)}`);
 

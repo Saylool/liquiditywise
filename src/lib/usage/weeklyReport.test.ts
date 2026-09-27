@@ -159,6 +159,21 @@ describe("the weekly report", () => {
     expect(report(lines.slice(4))).toContain("Pages opened by people: 5\n");
   });
 
+  it("says how many explanations were served from the cache and written ahead, and nothing when there were none", () => {
+    const text = report([
+      at("2026-09-18", "[interpretation] reused pool=v3:0xabc"),
+      at("2026-09-18", "[interpretation] reused pool=v3:0xabc"),
+      at("2026-09-18", "[interpretation] warmed pool=v3:0xabc"),
+    ]);
+
+    expect(text).toContain("Explanations served from the cache: 2 · written ahead of readers: 1");
+    expect(report([at("2026-09-18", "[interpretation] reused pool=v3:0xabc")])).toContain("Explanations served from the cache: 1\n");
+    expect(report([])).not.toContain("served from the cache");
+    expect(report([at("2026-09-18", "[interpretation] warmed pool=v3:0xabc")])).toContain(
+      "Explanations served from the cache: 0 · written ahead of readers: 1",
+    );
+  });
+
   it("names the busiest day, and languages most first", () => {
     const text = report([
       opened("2026-09-18", { locale: "tr" }),

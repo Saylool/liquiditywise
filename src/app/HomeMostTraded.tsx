@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ArrowIcon } from "@/components/BrandMark";
 import { MostTradedPreview } from "@/components/MostTradedPools";
+import { FRONT_PAGE_POOLS } from "@/lib/advisor/mostTraded";
 import { getMostTraded } from "@/lib/advisor/getMostTraded";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -9,8 +10,6 @@ import { localePath } from "@/lib/i18n/localePath";
 import type { Locale } from "@/lib/i18n/locales";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
 
-/** How many pools of each protocol the front page shows. */
-export const HOME_POOLS_SHOWN = 3;
 
 /**
  * This week's busiest mainnet pools, on the front page.
@@ -30,7 +29,7 @@ export async function HomeMostTraded({ locale, t }: { locale: Locale; t: Diction
     <div className="flex flex-col gap-6">
       <MostTradedPreview
         data={data}
-        count={HOME_POOLS_SHOWN}
+        count={FRONT_PAGE_POOLS}
         copy={copy}
         parameters={DEFAULT_PRICE_BAND_PARAMETERS}
         t={t}

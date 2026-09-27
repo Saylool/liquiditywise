@@ -147,3 +147,19 @@ describe("the most-traded warmer", () => {
     expect(MOST_TRADED_TTL_MS - WARM_EVERY_MS).toBeGreaterThanOrEqual(60 * 1000);
   });
 });
+
+describe("a warmer with its own pace", () => {
+  it("waits its own first delay, then its own interval", async () => {
+    vi.useFakeTimers();
+    const { warmed, warm } = recorder();
+    const stop = startWarming({ chains: ["front page"], warm, everyMs: 1_000, firstAfterMs: 100 });
+
+    await vi.advanceTimersByTimeAsync(99);
+    expect(warmed).toEqual([]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(warmed).toEqual(["front page"]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(warmed).toEqual(["front page", "front page"]);
+    stop();
+  });
+});
