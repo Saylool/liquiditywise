@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { keccak256, keccak256Hex, utf8Bytes } from "../crypto/keccak256";
@@ -12,6 +15,7 @@ import {
   positionLiquidityCalldata,
   V4_BALANCE_OF_SELECTOR,
   V4_POSITION_MANAGER_CODE_HASH,
+  V4_POSITION_MANAGERS,
   v4BalanceOfCalldata,
 } from "./v4PositionManager";
 
@@ -152,5 +156,29 @@ describe("the manager's own code", () => {
     expect(isV4PositionManagerCode("0xfeed", () => V4_POSITION_MANAGER_CODE_HASH)).toBe(true);
     expect(isV4PositionManagerCode("0xfeed", keccak256Hex)).toBe(false);
     expect(isV4PositionManagerCode(null, () => V4_POSITION_MANAGER_CODE_HASH)).toBe(false);
+  });
+});
+
+describe("the manager on each chain", () => {
+  const BASE_RUNTIME = readFileSync(join(__dirname, "testing", "base-v4-position-manager.hex"), "utf8").trim();
+
+  it("holds Base's manager to Base's hash, recomputed from its real runtime, and to no other chain's", () => {
+    expect(keccak256Hex(BASE_RUNTIME)).toBe(V4_POSITION_MANAGERS[8453].codeHash);
+    expect(isV4PositionManagerCode(BASE_RUNTIME, keccak256Hex, 8453)).toBe(true);
+    expect(isV4PositionManagerCode(BASE_RUNTIME, keccak256Hex, 1)).toBe(false);
+    expect(isV4PositionManagerCode(BASE_RUNTIME, keccak256Hex, 42161)).toBe(false);
+    expect(isV4PositionManagerCode(BASE_RUNTIME, keccak256Hex)).toBe(false);
+  });
+
+  it("is 23,877 bytes on Base, as on mainnet", () => {
+    expect((BASE_RUNTIME.length - 2) / 2).toBe(23_877);
+  });
+
+  it("has a different address and a different hash on every chain", () => {
+    const managers = Object.values(V4_POSITION_MANAGERS);
+
+    expect(new Set(managers.map(({ address }) => address)).size).toBe(3);
+    expect(new Set(managers.map(({ codeHash }) => codeHash)).size).toBe(3);
+    expect(V4_POSITION_MANAGERS[1].codeHash).toBe(V4_POSITION_MANAGER_CODE_HASH);
   });
 });

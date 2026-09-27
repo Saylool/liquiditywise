@@ -55,6 +55,12 @@ describe("fetchEthereumV4PoolsByIds", () => {
     ]);
   });
 
+  it("names every token on the chain the subgraph reads", async () => {
+    const [pool] = await succeed({ chainId: 8453 });
+
+    expect([pool?.token0.chainId, pool?.token1.chainId]).toEqual([8453, 8453]);
+  });
+
   /*
    * Measured on 2026-09-15: the indexer's `feeTier` is the total fee of the
    * pool's latest swap, not the key's fee. The key is already here from the

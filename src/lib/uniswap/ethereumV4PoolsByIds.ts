@@ -1,3 +1,4 @@
+import type { ChainId } from "../chains/chains";
 import { z } from "zod";
 
 import {
@@ -35,9 +36,6 @@ import {
 const MALFORMED = "market-data-malformed";
 const NOT_CONFIGURED = "market-data-not-configured";
 const INDEXING_ERRORS = "market-data-indexing-errors";
-
-/** Ethereum mainnet only, like every other reader here. */
-const CHAIN_ID = 1;
 
 export const V4_POOLS_BY_IDS_QUERY = `query V4PoolsByIds($ids: [ID!]!, $limit: Int!) {
   pools(where: { id_in: $ids }, first: $limit) {
@@ -92,6 +90,8 @@ export type EthereumV4PoolsByIdsRequest = {
   readonly subgraphId: string | undefined;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs?: number;
+  /** The chain the subgraph reads, which every token is named on; mainnet when not said. */
+  readonly chainId?: ChainId;
 };
 
 const unavailable = (
@@ -112,6 +112,7 @@ export const fetchEthereumV4PoolsByIds = async ({
   subgraphId,
   fetchImpl,
   timeoutMs = DEFAULT_SUBGRAPH_TIMEOUT_MS,
+  chainId = 1,
 }: EthereumV4PoolsByIdsRequest): Promise<DataResult<readonly V4PoolTokens[]>> => {
   const ids = [...new Set(poolIds.map((id) => id.toLowerCase()))];
   if (ids.length === 0) return { status: "success", data: [] };
@@ -149,13 +150,13 @@ export const fetchEthereumV4PoolsByIds = async ({
     if (!decimals0.ok || !decimals1.ok) continue;
 
     const token0 = TokenSchema.safeParse({
-      chainId: CHAIN_ID,
+      chainId,
       address: raw.token0.id.toLowerCase(),
       symbol: raw.token0.symbol,
       decimals: decimals0.value,
     });
     const token1 = TokenSchema.safeParse({
-      chainId: CHAIN_ID,
+      chainId,
       address: raw.token1.id.toLowerCase(),
       symbol: raw.token1.symbol,
       decimals: decimals1.value,

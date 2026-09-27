@@ -280,8 +280,8 @@ describe("holdings read off mainnet", () => {
     expect(html).toContain(`/pool?chain=base&amp;address=0x${"5".repeat(40)}`);
   });
 
-  it("does not call a v4 net that was never cast there a failure", () => {
-    expect(onBase()).not.toContain(getDictionary("en").holdings.v4NotSearched);
+  it("says the v4 net could not be cast on Base too, now that v4 is read there", () => {
+    expect(onBase()).toContain(getDictionary("en").holdings.v4NotSearched);
   });
 
   it("still says so on mainnet, where the v4 net could not be cast", () => {

@@ -1,3 +1,4 @@
+import type { V4ChainId } from "../chains/chains";
 import { argumentWord, decodeAddress, decodePackedInt24, decodeUint, words } from "./abiWords";
 import { poolIdOf, type V4PoolKey } from "./v4PoolKey";
 
@@ -28,7 +29,7 @@ import { poolIdOf, type V4PoolKey } from "./v4PoolKey";
  * chain's or another version's.
  */
 
-/** The `PositionManager` on Ethereum mainnet. */
+/** The `PositionManager` on Ethereum mainnet; every chain's is in {@link V4_POSITION_MANAGERS}. */
 export const V4_POSITION_MANAGER_ADDRESS = "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e";
 
 /**
@@ -38,6 +39,30 @@ export const V4_POSITION_MANAGER_ADDRESS = "0xbd216513d74c8cf14cf4747e6aaa6420ff
  */
 export const V4_POSITION_MANAGER_CODE_HASH =
   "0x77e36c08b19959a30dde46dec9abe6208e371ff2f56884a56fe1e1a53615528b";
+
+/**
+ * The manager on every chain v4 is read on, each with the hash of its own
+ * runtime.
+ *
+ * Same length everywhere — 23,877 bytes — and a different hash on each chain,
+ * because the runtime carries that chain's PoolManager (and its WETH and
+ * descriptor) as immutables. Read on 2026-09-27 and hashed with the keccak
+ * that reproduces mainnet's; each manager's own `poolManager()` answered the
+ * PoolManager Uniswap publishes for its chain — 0x498581ff…2b2b on Base,
+ * 0x360e68fa…fb32 on Arbitrum. Base's runtime is a test fixture
+ * (testing/base-v4-position-manager.hex).
+ */
+export const V4_POSITION_MANAGERS: Readonly<Record<V4ChainId, { readonly address: string; readonly codeHash: string }>> = {
+  1: { address: V4_POSITION_MANAGER_ADDRESS, codeHash: V4_POSITION_MANAGER_CODE_HASH },
+  8453: {
+    address: "0x7c5f5a4bbd8fd63184577525326123b519429bdc",
+    codeHash: "0x243f9e091ddf11c7c04e28059fdbbf1bab82b72d414fafb8e096c097aaeb622a",
+  },
+  42161: {
+    address: "0xd88f38f930b7952f2db2432cb002e7abbf3dd869",
+    codeHash: "0x6156ddaa1c8cd2c26d37455a5dc57b1761dc2848856426c0ac261ae0c7fecd68",
+  },
+};
 
 /**
  * The four-byte selectors, each the first four bytes of the keccak of its own
@@ -62,11 +87,12 @@ export const POOL_MANAGER_SELECTOR = "0xdc4c90d3";
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 const DECIMAL = /^[0-9]+$/;
 
-/** True when a returned `eth_getCode` is the manager this was built against. */
+/** True when a returned `eth_getCode` is the manager this was built against, on the chain it was read from. */
 export const isV4PositionManagerCode = (
   code: unknown,
   hashOf: (hex: string) => string | null,
-): boolean => typeof code === "string" && hashOf(code) === V4_POSITION_MANAGER_CODE_HASH;
+  chainId: V4ChainId = 1,
+): boolean => typeof code === "string" && hashOf(code) === V4_POSITION_MANAGERS[chainId].codeHash;
 
 /** `balanceOf(owner)`: how many position tokens an address holds. */
 export const v4BalanceOfCalldata = (owner: string): string | null =>

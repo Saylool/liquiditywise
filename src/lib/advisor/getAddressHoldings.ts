@@ -10,7 +10,7 @@ import { getEthereumV4TradedPools } from "../uniswap/getEthereumV4TradedPools";
 import { chainReadingFor } from "../uniswap/v4PoolChainReading";
 import { composeAddressHoldings, displayedV4Pools, withV4ChainReadings } from "./addressHoldings";
 import { rpcUrlFor } from "../chains/chainEnvironment";
-import type { ChainId } from "../chains/chains";
+import { type ChainId, readsV4 } from "../chains/chains";
 import { getEthereumV3PoolDays } from "../uniswap/getEthereumV3PoolDays";
 import { normalizeV3TradedPoolsFromDays } from "../uniswap/v3TradedPoolsAdapter";
 import { type Token, ZERO_ADDRESS } from "../../schemas";
@@ -39,7 +39,7 @@ const LABEL = "address-holdings";
  * anywhere can enumerate an address's tokens, so the candidates must be chosen
  * before they can be checked.
  */
-/** Base's and Arbitrum's own ether, which both call ETH, under the zero address the sweep asks about. */
+/** The chain's own ether — ETH on all three — under the zero address the sweep asks about. */
 const nativeEtherOn = (chainId: ChainId): Token => ({
   chainId,
   address: ZERO_ADDRESS,
@@ -49,72 +49,54 @@ const nativeEtherOn = (chainId: ChainId): Token => ({
 });
 
 /**
- * Off mainnet: the v3 net from the chain's week of busiest pool-days, the
- * chain's own ether asked for by name, and no v4 — none is read there, which
- * the page says rather than calling it unread.
+ * The v3 net: mainnet's traded-pools list, and elsewhere the chain's week of
+ * busiest pool-days, which is what those subgraphs can answer quickly.
  */
-const holdingsOffMainnet = async (address: string, chainId: ChainId): Promise<DataResult<AddressHoldings>> => {
+const v3CandidatesOn = async (chainId: ChainId) => {
+  if (chainId === 1) return getEthereumV3TradedPools();
   const days = await getEthereumV3PoolDays(chainId);
-  const v3Candidates =
-    days.status === "unavailable" ? days : normalizeV3TradedPoolsFromDays({ ...days.data, chainId });
-  const tokenAddresses = [
-    ZERO_ADDRESS,
-    ...(v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools).flatMap((pool) => [
-      pool.token0.address,
-      pool.token1.address,
-    ]),
-  ];
-
-  const balances = await fetchEthereumBalances({
-    holder: address,
-    tokenAddresses,
-    rpcUrl: rpcUrlFor(chainId),
-    fetchImpl: fetch,
-  });
-
-  return logUnavailable(
-    LABEL,
-    composeAddressHoldings({
-      address,
-      v3Candidates,
-      v4Candidates: { status: "unavailable", reason: "configuration-error", notice: "market-data-not-configured" },
-      balances,
-      nativeToken: nativeEtherOn(chainId),
-      fetchedAt: new Date().toISOString(),
-    }),
-  );
+  return days.status === "unavailable" ? days : normalizeV3TradedPoolsFromDays({ ...days.data, chainId });
 };
+
+const V4_NOT_READ = {
+  status: "unavailable",
+  reason: "configuration-error",
+  notice: "market-data-not-configured",
+} as const;
 
 export const getAddressHoldings = async (
   address: string,
   chainId: ChainId = 1,
 ): Promise<DataResult<AddressHoldings>> => {
-  if (chainId !== 1) return holdingsOffMainnet(address, chainId);
-
   /*
    * Both behind a cache, because neither query takes input: every visitor asks
    * the same two questions, and the v3 one cost 3.7 seconds cold. See either
    * wrapper for why reusing a net is safe in a way that reusing a figure would
-   * not be.
+   * not be. On a chain v4 is not read on, its net is left out as not read.
    */
   const [v3Candidates, v4Candidates] = await Promise.all([
-    getEthereumV3TradedPools(),
-    getEthereumV4TradedPools(),
+    v3CandidatesOn(chainId),
+    readsV4(chainId) ? getEthereumV4TradedPools(chainId) : Promise.resolve(V4_NOT_READ),
   ]);
+  const rpcUrl = rpcUrlFor(chainId);
 
   /*
    * Both nets' currencies, together. The v4 list is what brings in the chain's
    * own ether, under the zero address, which the sweep asks about directly.
    */
   const tokenAddresses = [
-    ...(v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools),
-    ...(v4Candidates.status === "unavailable" ? [] : v4Candidates.data.pools),
-  ].flatMap((pool) => [pool.token0.address, pool.token1.address]);
+    /* The chain's own ether, asked for by name, whether or not a v4 net named it. */
+    ZERO_ADDRESS,
+    ...[
+      ...(v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools),
+      ...(v4Candidates.status === "unavailable" ? [] : v4Candidates.data.pools),
+    ].flatMap((pool) => [pool.token0.address, pool.token1.address]),
+  ];
 
   const balances = await fetchEthereumBalances({
     holder: address,
     tokenAddresses,
-    rpcUrl: process.env.ETHEREUM_RPC_URL,
+    rpcUrl,
     /*
      * Not the logging fetch. The sweep is one aggregated call now, but the fee
      * reads after it are a batch per handful of pools, and a line each would
@@ -129,6 +111,7 @@ export const getAddressHoldings = async (
     v3Candidates,
     v4Candidates,
     balances,
+    nativeToken: nativeEtherOn(chainId),
     fetchedAt: new Date().toISOString(),
   });
   if (composed.status === "unavailable" || v4Candidates.status === "unavailable") {
@@ -146,7 +129,7 @@ export const getAddressHoldings = async (
   const createdAt = v4Candidates.data.createdAtBlockNumbers;
   const chain = {
     poolManager: v4Candidates.data.poolManager,
-    rpcUrl: process.env.ETHEREUM_RPC_URL,
+    rpcUrl,
     fetchImpl: fetch,
   };
   const [keys, fees] = await Promise.all([

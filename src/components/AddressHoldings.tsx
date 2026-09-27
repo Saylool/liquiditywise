@@ -12,7 +12,7 @@ import {
   type PriceBandParameters,
 } from "../schemas";
 import { chainLabel } from "../lib/chains/chainLabel";
-import { chainOf } from "../lib/chains/chains";
+import { chainOf, readsV4 } from "../lib/chains/chains";
 
 /**
  * What an address holds, and the pools that opens.
@@ -144,7 +144,7 @@ export function AddressHoldings({
   locale,
 }: {
   result: DataResult<Holdings>;
-  /** The chain the address was read on; v4 is read on mainnet alone. */
+  /** The chain the address was read on. */
   chainId?: number;
   parameters: PriceBandParameters;
   t: Dictionary;
@@ -206,8 +206,8 @@ export function AddressHoldings({
           )}
         </p>
         {/* Said out loud, so a v3-only list cannot read as "no v4 pool takes this". */}
-        {/* Off mainnet no v4 is read at all, which is not the net failing to be cast. */}
-        {poolsSearched.v4 === null && chainId === 1 ? (
+        {/* On a chain v4 is not read on, that is not the net failing to be cast. */}
+        {poolsSearched.v4 === null && readsV4(chainOf(chainId).id) ? (
           <p className="text-xs leading-relaxed text-muted">{t.holdings.v4NotSearched}</p>
         ) : null}
       </section>

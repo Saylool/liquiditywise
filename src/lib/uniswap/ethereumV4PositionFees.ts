@@ -1,3 +1,4 @@
+import type { V4ChainId } from "../chains/chains";
 import type { DataFailureNotice, DataFailureReason, DataResult } from "../../schemas";
 import { postAggregatedCalls } from "./ethereumAggregatedCalls";
 import { feeGrowthInside, type PositionFees, uncollectedFee } from "./feeGrowth";
@@ -5,7 +6,7 @@ import type { Aggregate3Result } from "./multicall3";
 import type { FetchLike } from "./v3SubgraphTransport";
 import { extsloadCalldata, poolStateSlot, readStorageWord, unpackSlot0 } from "./v4PoolStateSlots";
 import { tickFeeGrowthSlots, v4PositionKey, v4PositionSlots } from "./v4PositionSlots";
-import { V4_POSITION_MANAGER_ADDRESS, type RawV4Position } from "./v4PositionManager";
+import { V4_POSITION_MANAGER_ADDRESS, V4_POSITION_MANAGERS, type RawV4Position } from "./v4PositionManager";
 
 /*
  * What each v4 position has earned and not yet taken out.
@@ -38,6 +39,8 @@ export type EthereumV4PositionFeesRequest = {
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs?: number;
+  /** The chain the positions are on, whose PositionManager owns them; mainnet when not said. */
+  readonly chainId?: V4ChainId;
 };
 
 type PoolReading = {
@@ -46,12 +49,19 @@ type PoolReading = {
   readonly global1: bigint;
 };
 
-/** The seven slots one position's fees are read from, in the order they are asked. */
-export const v4FeeSlots = (position: RawV4Position): readonly string[] | null => {
+/**
+ * The seven slots one position's fees are read from, in the order they are
+ * asked. `manager` is the position's owner in the PoolManager's books: the
+ * chain's PositionManager, whose address differs from chain to chain.
+ */
+export const v4FeeSlots = (
+  position: RawV4Position,
+  manager: string = V4_POSITION_MANAGER_ADDRESS,
+): readonly string[] | null => {
   const lower = tickFeeGrowthSlots(position.poolId, position.tickLower);
   const upper = tickFeeGrowthSlots(position.poolId, position.tickUpper);
   const key = v4PositionKey({
-    owner: V4_POSITION_MANAGER_ADDRESS,
+    owner: manager,
     tickLower: position.tickLower,
     tickUpper: position.tickUpper,
     salt: BigInt(position.tokenId),
@@ -147,6 +157,7 @@ export const fetchEthereumV4PositionFees = async ({
   rpcUrl,
   fetchImpl,
   timeoutMs = DEFAULT_V4_FEES_TIMEOUT_MS,
+  chainId = 1,
 }: EthereumV4PositionFeesRequest): Promise<DataResult<ReadonlyMap<string, PositionFees>>> => {
   if (positions.length === 0) return { status: "success", data: new Map() };
   if (!ADDRESS.test(poolManager)) return unavailable("invalid-response", UNREADABLE);
@@ -156,7 +167,8 @@ export const fetchEthereumV4PositionFees = async ({
     return unavailable("configuration-error", "chain-data-not-configured");
   }
 
-  const askable = positions.filter((position) => v4FeeSlots(position) !== null);
+  const manager = V4_POSITION_MANAGERS[chainId].address;
+  const askable = positions.filter((position) => v4FeeSlots(position, manager) !== null);
   const distinct = [...new Set(askable.map((position) => position.poolId))];
   if (distinct.length === 0) return { status: "success", data: new Map() };
 
@@ -172,7 +184,7 @@ export const fetchEthereumV4PositionFees = async ({
     calls: [
       ...poolSlots.flat().map((slot) => ({ to: poolManager, data: extsloadCalldata(slot as string) })),
       ...askable.flatMap((position) =>
-        (v4FeeSlots(position) as readonly string[]).map((slot) => ({
+        (v4FeeSlots(position, manager) as readonly string[]).map((slot) => ({
           to: poolManager,
           data: extsloadCalldata(slot),
         })),

@@ -1,8 +1,13 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { collectV4Positions, fetchEthereumV4Positions } from "./ethereumV4Positions";
-import type { Aggregate3Result } from "./multicall3";
+import { type Aggregate3Call, type Aggregate3Result, MULTICALL3_ADDRESS } from "./multicall3";
+import { MULTICALL3_RUNTIME_CODE } from "./multicall3RuntimeCode";
 import { rpcEndpoint } from "./testing/multicall3Endpoint";
+import { V4_POSITION_MANAGERS } from "./v4PositionManager";
 
 const OWNER = "0xee67b29f25a44a1cf65d3500afcf29af25033a67";
 const STRANGER = "0xcccabbaef2244e8692bac1678e8db661834d3389";
@@ -170,5 +175,46 @@ describe("fetchEthereumV4Positions", () => {
     expect(result.status).toBe("unavailable");
     if (result.status !== "unavailable") return;
     expect(result.notice).toBe("positions-manager-unverified");
+  });
+});
+
+describe("the proof on another chain", () => {
+  /*
+   * Base's v4 manager as the chain held it on 2026-09-27: the only way past
+   * the proof without a live node, and so the only way to show each chain is
+   * held to its own hash, and asked at its own address, rather than mainnet's.
+   */
+  const BASE_RUNTIME = readFileSync(join(__dirname, "testing", "base-v4-position-manager.hex"), "utf8").trim();
+  const read = (chainId: 1 | 8453) => {
+    const asked: Aggregate3Call[] = [];
+    const result = fetchEthereumV4Positions({
+      owner: OWNER,
+      tokenIds: ["408162"],
+      chainId,
+      rpcUrl: "https://node.example.invalid/key",
+      fetchImpl: rpcEndpoint({
+        code: (address) => (address.toLowerCase() === MULTICALL3_ADDRESS ? MULTICALL3_RUNTIME_CODE : BASE_RUNTIME),
+        call: (call) => {
+          asked.push(call);
+          return { success: true, data: `0x${"0".repeat(64)}` };
+        },
+      }),
+      timeoutMs: 1_000,
+    });
+    return { result, asked };
+  };
+
+  it("accepts Base's manager on Base, asked at Base's address, and reads on past the proof", async () => {
+    const { result, asked } = read(8453);
+
+    expect((await result).status).toBe("success");
+    expect(new Set(asked.map(({ to }) => to.toLowerCase()))).toEqual(new Set([V4_POSITION_MANAGERS[8453].address]));
+  });
+
+  it("refuses Base's code where mainnet's manager should be", async () => {
+    const { result } = read(1);
+    const answer = await result;
+
+    expect(answer.status === "unavailable" && answer.notice).toBe("positions-manager-unverified");
   });
 });

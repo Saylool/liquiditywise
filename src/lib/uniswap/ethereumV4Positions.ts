@@ -1,3 +1,4 @@
+import type { V4ChainId } from "../chains/chains";
 import type { DataFailureNotice, DataFailureReason, DataResult } from "../../schemas";
 import { keccak256Hex } from "../crypto/keccak256";
 import { decodeAddress, decodeUint } from "./abiWords";
@@ -12,7 +13,7 @@ import {
   poolAndPositionInfoCalldata,
   positionLiquidityCalldata,
   type RawV4Position,
-  V4_POSITION_MANAGER_ADDRESS,
+  V4_POSITION_MANAGERS,
   v4BalanceOfCalldata,
 } from "./v4PositionManager";
 
@@ -56,6 +57,8 @@ export type EthereumV4PositionsRequest = {
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs?: number;
+  /** The chain the endpoint is on, whose manager is asked and proved; mainnet when not said. */
+  readonly chainId?: V4ChainId;
 };
 
 /** What the chain said, before anything is made of it. */
@@ -133,6 +136,7 @@ export const fetchEthereumV4Positions = async ({
   rpcUrl,
   fetchImpl,
   timeoutMs = DEFAULT_V4_POSITIONS_TIMEOUT_MS,
+  chainId = 1,
 }: EthereumV4PositionsRequest): Promise<DataResult<RawV4Positions>> => {
   const holder = owner.trim().toLowerCase();
   if (!ADDRESS.test(holder)) return unavailable("invalid-input", INVALID_ADDRESS);
@@ -157,25 +161,26 @@ export const fetchEthereumV4Positions = async ({
       positionLiquidityCalldata(tokenId) !== null,
   );
 
+  const manager = V4_POSITION_MANAGERS[chainId].address;
   const batch = await postAggregatedCalls({
     rpcUrl: endpoint,
     fetchImpl,
     timeoutMs,
     calls: [
-      { to: V4_POSITION_MANAGER_ADDRESS, data: balanceOf },
-      { to: V4_POSITION_MANAGER_ADDRESS, data: POOL_MANAGER_SELECTOR },
+      { to: manager, data: balanceOf },
+      { to: manager, data: POOL_MANAGER_SELECTOR },
       ...asked.flatMap((tokenId) => [
-        { to: V4_POSITION_MANAGER_ADDRESS, data: ownerOfCalldata(tokenId) ?? "" },
-        { to: V4_POSITION_MANAGER_ADDRESS, data: poolAndPositionInfoCalldata(tokenId) ?? "" },
-        { to: V4_POSITION_MANAGER_ADDRESS, data: positionLiquidityCalldata(tokenId) ?? "" },
+        { to: manager, data: ownerOfCalldata(tokenId) ?? "" },
+        { to: manager, data: poolAndPositionInfoCalldata(tokenId) ?? "" },
+        { to: manager, data: positionLiquidityCalldata(tokenId) ?? "" },
       ]),
     ],
-    codeOf: [V4_POSITION_MANAGER_ADDRESS],
+    codeOf: [manager],
   });
   if (!batch.ok) return unavailable(batch.reason, batch.notice);
 
   /* The proof before the answers, as with the aggregator one layer down. */
-  if (!isV4PositionManagerCode(batch.codes[0], keccak256Hex)) {
+  if (!isV4PositionManagerCode(batch.codes[0], keccak256Hex, chainId)) {
     return unavailable("configuration-error", MANAGER_UNVERIFIED);
   }
 

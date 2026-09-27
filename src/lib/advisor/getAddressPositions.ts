@@ -2,7 +2,6 @@ import "server-only";
 
 import type { DataFailureNotice, DataResult } from "../../schemas";
 import { logUnavailable, loggingFetch } from "../observability/serverDiagnostics";
-import { ethereumSubgraphId } from "../uniswap/ethereumSubgraphs";
 import { fetchEthereumV3PoolsByIds } from "../uniswap/ethereumV3PoolsByIds";
 import { fetchEthereumV3PositionFees } from "../uniswap/ethereumV3PositionFees";
 import { fetchEthereumV3Positions } from "../uniswap/ethereumV3Positions";
@@ -19,8 +18,8 @@ import {
   type V3Side,
   type V4Side,
 } from "./addressPositions";
-import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
-import type { ChainId } from "../chains/chains";
+import { rpcUrlFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
+import { type ChainId, readsV4, type V4ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "address-positions";
@@ -117,9 +116,9 @@ const readV3 = async (address: string, chainId: ChainId): Promise<SideResult<V3S
  * and go straight back to the chain to be checked. What each one *is* takes a
  * single call, unlike v3.
  */
-const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
+const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V4Side>> => {
   const apiKey = process.env.THE_GRAPH_API_KEY;
-  const subgraphId = ethereumSubgraphId("v4");
+  const subgraphId = v4SubgraphIdFor(chainId);
 
   const ids = await fetchEthereumV4PositionIds({
     owner: address,
@@ -135,8 +134,9 @@ const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
   const positions = await fetchEthereumV4Positions({
     owner: address,
     tokenIds: ids.data,
-    rpcUrl: process.env.ETHEREUM_RPC_URL,
+    rpcUrl: rpcUrlFor(chainId),
     fetchImpl: fetch,
+    chainId,
   });
   if (positions.status === "unavailable") {
     await logUnavailable(`${LABEL}-v4`, positions);
@@ -148,6 +148,7 @@ const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
       poolIds: heldPoolIds(positions.data),
       apiKey,
       subgraphId,
+      chainId,
       fetchImpl: loggingFetch(LABEL),
     }),
     orNothing(
@@ -155,8 +156,9 @@ const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
       fetchEthereumV4PositionFees({
         positions: positions.data.open,
         poolManager: positions.data.poolManager,
-        rpcUrl: process.env.ETHEREUM_RPC_URL,
+        rpcUrl: rpcUrlFor(chainId),
         fetchImpl: fetch,
+        chainId,
       }),
     ),
   ]);
@@ -170,14 +172,14 @@ const readV4 = async (address: string): Promise<SideResult<V4Side>> => {
 
 /**
  * One address's positions on one chain — mainnet unless `chainId` says
- * otherwise. v4 is read on mainnet alone; elsewhere its side is left out as
- * not asked, which the page does not report as a failure.
+ * otherwise. On a chain v4 is not read on, its side is left out as not asked,
+ * which the page does not report as a failure.
  */
 export const getAddressPositions = async (address: string, chainId: ChainId = 1): Promise<AddressPositionsResult> => {
-  const v4Asked = chainId === 1;
+  const v4Asked = readsV4(chainId);
   const [v3, v4] = await Promise.all([
     readV3(address, chainId),
-    v4Asked ? readV4(address) : ({ ok: false, notice: "market-data-not-configured" } as const),
+    readsV4(chainId) ? readV4(address, chainId) : ({ ok: false, notice: "market-data-not-configured" } as const),
   ]);
 
   /*
