@@ -1,4 +1,4 @@
-import { chainBySlug, chainOf } from "../chains/chains";
+import { chainBySlug, chainOf } from "../chains/chains.ts";
 
 /*
  * The two lines this application writes about its own use, and the reader of
