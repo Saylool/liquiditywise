@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getChainCopy, titleOnChain } from "./chainCopy";
+import { getPositionOutlookCopy } from "./positionOutlookCopy";
 import { LOCALES } from "./locales";
 
 describe("the words the chain choice needs", () => {
@@ -32,5 +33,17 @@ describe("a chain whose v3 pools are not read", () => {
 
   it("is among the chains the unknown-chain line names, in every language", () => {
     for (const locale of LOCALES) expect(getChainCopy(locale).unknown, locale).toContain("Unichain");
+  });
+});
+
+describe("the words under a position", () => {
+  it("carry every count and the range, in every language", () => {
+    for (const locale of LOCALES) {
+      const copy = getPositionOutlookCopy(locale);
+      const line = copy.days("30", "11", "22", "33");
+      for (const count of ["30", "11", "22", "33"]) expect(line, locale).toContain(count);
+      expect(copy.suggested("RANGE"), locale).toContain("RANGE");
+      if (locale !== "en") expect(line, locale).not.toBe(getPositionOutlookCopy("en").days("30", "11", "22", "33"));
+    }
   });
 });

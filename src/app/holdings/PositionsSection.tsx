@@ -1,5 +1,6 @@
 import { AddressPositions } from "@/components/AddressPositions";
 import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
+import { getPositionOutlooks } from "@/lib/advisor/getPositionOutlooks";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import type { EvmAddress, PriceBandParameters } from "@/schemas";
@@ -29,14 +30,11 @@ export async function PositionsSection({
   locale: Locale;
   t: Dictionary;
 }) {
-  return (
-    <AddressPositions
-      result={await getAddressPositions(address, chainId)}
-      parameters={parameters}
-      t={t}
-      locale={locale}
-    />
-  );
+  const result = await getAddressPositions(address, chainId);
+  /* Each open position against its pool's last days, from the histories the pool pages already read. */
+  const outlooks = result.status === "success" ? await getPositionOutlooks(result.data.positions, parameters) : new Map();
+
+  return <AddressPositions result={result} outlooks={outlooks} parameters={parameters} t={t} locale={locale} />;
 }
 
 /** The panel's shape while the contract is being asked. */

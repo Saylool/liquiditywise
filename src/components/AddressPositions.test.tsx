@@ -351,3 +351,32 @@ describe("a position off mainnet", () => {
     expect(render(answer({ positions: [onArbitrum] }))).toContain(`/pool?chain=arbitrum&amp;address=${POOL}`);
   });
 });
+
+describe("how each position has fared", () => {
+  const withOutlook = (outlook: unknown, locale: Locale = "en") =>
+    renderToStaticMarkup(
+      <AddressPositions
+        result={answer()}
+        outlooks={new Map([["v3-1112391", outlook as never]])}
+        parameters={PARAMETERS}
+        t={getDictionary(locale)}
+        locale={locale}
+      />,
+    );
+
+  it("says the last days as counts, and the suggested range in the row's own quote", () => {
+    const markup = withOutlook({ days: 30, inside: 12, outside: 10, crossed: 8, suggested: { lowerPrice: 0.5, upperPrice: 0.8 } });
+
+    expect(markup).toContain("Last 30 days — wholly inside this range: 12 · wholly outside: 10 · across an edge: 8");
+    expect(markup).toContain("The range this site suggests for the pool now:");
+    expect(markup).toContain("WETH");
+  });
+
+  it("says the days alone when no range could be drawn, and nothing when there is no outlook", () => {
+    const daysOnly = withOutlook({ days: 30, inside: 1, outside: 2, crossed: 3, suggested: null });
+
+    expect(daysOnly).toContain("wholly inside this range: 1");
+    expect(daysOnly).not.toContain("suggests for the pool");
+    expect(render(answer())).not.toContain("wholly inside this range");
+  });
+});

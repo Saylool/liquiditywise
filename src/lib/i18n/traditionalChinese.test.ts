@@ -6,6 +6,7 @@ import { getChainCopy } from "./chainCopy";
 import { getDictionary } from "./dictionaries";
 import { getInterfaceCopy } from "./interface";
 import { getMostTradedCopy } from "./mostTradedCopy";
+import { getPositionOutlookCopy } from "./positionOutlookCopy";
 
 /*
  * Traditional Chinese, held to the one thing its neighbour cannot check.
@@ -130,6 +131,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     learn: getLearnCopy,
     topics: getTopicCopy,
     mostTraded: getMostTradedCopy,
+    positionOutlook: getPositionOutlookCopy,
   } as const;
 
   it("carries no character that only exists in the Simplified script, in any copy module", () => {

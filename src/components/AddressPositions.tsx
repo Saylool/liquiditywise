@@ -1,4 +1,6 @@
 import type { AddressPositionsResult } from "../lib/advisor/addressPositions";
+import type { PositionOutlook } from "../lib/advisor/positionOutlook";
+import { getPositionOutlookCopy } from "../lib/i18n/positionOutlookCopy";
 import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import {
   formatFeePpm,
@@ -72,11 +74,14 @@ const earningFirst = (positions: readonly Position[]): readonly Position[] =>
 
 const PositionRow = ({
   position,
+  outlook,
   parameters,
   t,
   locale,
 }: {
   position: Position;
+  /** How it has fared against its pool's last days, when the pool's history could be read. */
+  outlook: PositionOutlook | undefined;
   parameters: PriceBandParameters;
   t: Dictionary;
   locale: Locale;
@@ -84,6 +89,11 @@ const PositionRow = ({
   const { pool } = position;
   const quote = choosePriceQuote(pool, referencePrice(position));
   const edges = quotedInterval(quote, { lower: position.lowerPrice, upper: position.upperPrice });
+  /* A range in the row's own quote, so the position's and the suggested one read in the same units. */
+  const inQuote = (lower: number, upper: number) => {
+    const band = quotedInterval(quote, { lower, upper });
+    return t.report.rangeValue(formatPrice(band.lower, locale), formatPrice(band.upper, locale), quote.quote.symbol, quote.base.symbol);
+  };
   const href =
     pool.protocolVersion === "v3"
       ? poolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId))
@@ -159,6 +169,28 @@ const PositionRow = ({
                   pool.token1.symbol,
                 )}
         </p>
+        {/*
+         * How it has fared, in the row's own quote so the two ranges read in
+         * the same units — counted and drawn by the same code the pool page
+         * uses, and said as counts, not as a verdict on the position.
+         */}
+        {outlook === undefined ? null : (
+          <div className="flex flex-col gap-1 border-t border-border pt-2 text-xs leading-relaxed text-muted">
+            <p>
+              {getPositionOutlookCopy(locale).days(
+                formatWhole(outlook.days, locale),
+                formatWhole(outlook.inside, locale),
+                formatWhole(outlook.outside, locale),
+                formatWhole(outlook.crossed, locale),
+              )}
+            </p>
+            {outlook.suggested === null ? null : (
+              <p>
+                {getPositionOutlookCopy(locale).suggested(inQuote(outlook.suggested.lowerPrice, outlook.suggested.upperPrice))}
+              </p>
+            )}
+          </div>
+        )}
         <p className="text-xs text-accent">{t.positions.analyse}</p>
       </GuardedLink>
     </li>
@@ -167,11 +199,14 @@ const PositionRow = ({
 
 export function AddressPositions({
   result,
+  outlooks = new Map(),
   parameters,
   t,
   locale,
 }: {
   result: AddressPositionsResult;
+  /** Each open position's outlook, keyed as getPositionOutlooks.ts keys it; none when not read. */
+  outlooks?: ReadonlyMap<string, PositionOutlook>;
   /** Carried into the links out, so a chosen band survives leaving this page. */
   parameters: PriceBandParameters;
   t: Dictionary;
@@ -227,6 +262,7 @@ export function AddressPositions({
                 <PositionRow
                   key={`${position.pool.protocolVersion}-${position.tokenId}`}
                   position={position}
+                  outlook={outlooks.get(`${position.pool.protocolVersion}-${position.tokenId}`)}
                   parameters={parameters}
                   t={t}
                   locale={locale}
