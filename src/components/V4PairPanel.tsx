@@ -1,3 +1,4 @@
+import { nativeSymbolOf } from "../lib/chains/chains";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import {
@@ -25,6 +26,7 @@ export function V4PairPanel({
   v3NotRead,
   pair,
   token0Address,
+  chainId = 1,
   parameters,
   depositUsd,
   t,
@@ -37,6 +39,8 @@ export function V4PairPanel({
   v3NotRead?: string | undefined;
   pair: string;
   token0Address: string;
+  /** The chain the pair is on, whose own currency a v4 pool may hold. */
+  chainId?: number;
   parameters: PriceBandParameters;
   /** Carried into every link out, so a chosen size survives leaving this pool. */
   depositUsd: number;
@@ -58,7 +62,7 @@ export function V4PairPanel({
       {v3NotRead !== undefined ? (
         <p className="text-sm leading-relaxed text-muted">{v3NotRead}</p>
       ) : v3Result === null || token0Address === ZERO_ADDRESS ? (
-        <p className="text-sm leading-relaxed text-muted">{t.feeTiers.v3NoNative}</p>
+        <p className="text-sm leading-relaxed text-muted">{t.feeTiers.v3NoNative(nativeSymbolOf(chainId))}</p>
       ) : (
         <V3PairPoolList result={v3Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
       )}

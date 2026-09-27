@@ -12,7 +12,7 @@ import {
   type PriceBandParameters,
 } from "../schemas";
 import { chainLabel } from "../lib/chains/chainLabel";
-import { chainOf, readsV3, readsV4 } from "../lib/chains/chains";
+import { chainOf, nativeSymbolOf, readsV3, readsV4 } from "../lib/chains/chains";
 import { getChainCopy } from "../lib/i18n/chainCopy";
 
 /**
@@ -211,12 +211,13 @@ export function AddressHoldings({
                 formatWhole(poolsSearched.v3 ?? 0, locale),
                 poolsSearched.v4 === null ? null : formatWhole(poolsSearched.v4, locale),
                 chainLabel(chainId, locale),
+                nativeSymbolOf(chainId),
               )}
         </p>
         {/* Said out loud, so a v3-only list cannot read as "no v4 pool takes this". */}
         {/* On a chain v4 is not read on, that is not the net failing to be cast. */}
         {poolsSearched.v4 === null && readsV4(chainOf(chainId).id) ? (
-          <p className="text-xs leading-relaxed text-muted">{t.holdings.v4NotSearched}</p>
+          <p className="text-xs leading-relaxed text-muted">{t.holdings.v4NotSearched(nativeSymbolOf(chainId))}</p>
         ) : null}
       </section>
 

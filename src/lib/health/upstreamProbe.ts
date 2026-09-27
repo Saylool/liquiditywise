@@ -44,7 +44,7 @@ const PROBE_KEY = "liquiditywise:health:upstream";
 export const PROBE_INTERVAL_MS = 60 * 60 * 1_000;
 
 /** The chains read beside mainnet, each probed on its own endpoint. */
-export const OTHER_CHAINS = ["base", "arbitrum", "unichain"] as const;
+export const OTHER_CHAINS = ["base", "arbitrum", "unichain", "optimism", "polygon"] as const;
 export type OtherChain = (typeof OTHER_CHAINS)[number];
 
 /**
@@ -59,10 +59,14 @@ export const SUBGRAPHS = [
   "v3-ethereum",
   "v3-base",
   "v3-arbitrum",
+  "v3-optimism",
+  "v3-polygon",
   "v4-ethereum",
   "v4-base",
   "v4-arbitrum",
   "v4-unichain",
+  "v4-optimism",
+  "v4-polygon",
 ] as const;
 export type SubgraphName = (typeof SUBGRAPHS)[number];
 

@@ -42,6 +42,8 @@ export type ProblemId =
   | "base-rpc-key-refused"
   | "arbitrum-rpc-key-refused"
   | "unichain-rpc-key-refused"
+  | "optimism-rpc-key-refused"
+  | "polygon-rpc-key-refused"
   | `${SubgraphName}-subgraph-failing`;
 
 export type Problem = { readonly id: ProblemId; readonly message: string };
@@ -88,10 +90,14 @@ const SUBGRAPH_WORDS: Record<SubgraphName, { readonly variable: string; readonly
   "v3-ethereum": { variable: "UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", loses: "Ethereum v3 pool pages, searches, holdings and most-traded" },
   "v3-base": { variable: "UNISWAP_V3_BASE_SUBGRAPH_ID", loses: "Base v3 pool pages, searches, holdings and most-traded" },
   "v3-arbitrum": { variable: "UNISWAP_V3_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v3 pool pages, searches, holdings and most-traded" },
+  "v3-optimism": { variable: "UNISWAP_V3_OPTIMISM_SUBGRAPH_ID", loses: "OP Mainnet v3 pool pages, searches, holdings and most-traded" },
+  "v3-polygon": { variable: "UNISWAP_V3_POLYGON_SUBGRAPH_ID", loses: "Polygon v3 pool pages, searches, holdings and most-traded" },
   "v4-ethereum": { variable: "UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", loses: "Ethereum v4 pool pages, searches, hooks and most-traded" },
   "v4-base": { variable: "UNISWAP_V4_BASE_SUBGRAPH_ID", loses: "Base v4 pool pages, searches and most-traded" },
   "v4-arbitrum": { variable: "UNISWAP_V4_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v4 pool pages, searches and most-traded" },
   "v4-unichain": { variable: "UNISWAP_V4_UNICHAIN_SUBGRAPH_ID", loses: "Every Unichain page" },
+  "v4-optimism": { variable: "UNISWAP_V4_OPTIMISM_SUBGRAPH_ID", loses: "OP Mainnet v4 pool pages, searches and most-traded" },
+  "v4-polygon": { variable: "UNISWAP_V4_POLYGON_SUBGRAPH_ID", loses: "Polygon v4 pool pages, searches and most-traded" },
 };
 
 const SUBGRAPH_FAULT: Record<Exclude<SubgraphStatus, "ok" | "unanswered">, string> = {
@@ -125,6 +131,16 @@ const OTHER_CHAIN_PROBLEMS: Record<OtherChain, Problem> = {
     id: "unichain-rpc-key-refused",
     message:
       "The Unichain RPC endpoint is refusing UNICHAIN_RPC_URL (401/403). Unichain v4 pool, holdings and alert reads fail. Check that Unichain is still enabled on the provider's app.",
+  },
+  optimism: {
+    id: "optimism-rpc-key-refused",
+    message:
+      "The OP Mainnet RPC endpoint is refusing OPTIMISM_RPC_URL (401/403). OP Mainnet pool, holdings and alert reads fail. Check that OP Mainnet is still enabled on the provider's app.",
+  },
+  polygon: {
+    id: "polygon-rpc-key-refused",
+    message:
+      "The Polygon RPC endpoint is refusing POLYGON_RPC_URL (401/403). Polygon pool, holdings and alert reads fail. Check that Polygon is still enabled on the provider's app.",
   },
 };
 

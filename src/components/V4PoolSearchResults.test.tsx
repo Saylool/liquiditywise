@@ -71,6 +71,15 @@ describe("V4PoolSearchResults", () => {
     expect(markup).toContain("ETH");
   });
 
+  it("puts the depth in POL on Polygon, where the data source prices in POL", () => {
+    const polygon = match();
+    const markup = render(found([{ ...polygon, pool: { ...polygon.pool, chainId: 137 } }]));
+
+    expect(markup).toMatch(/≈ [^<]+ POL</);
+    expect(markup).not.toMatch(/≈ [^<]+ ETH</);
+    expect(render(found([match()]))).toMatch(/≈ [^<]+ ETH</);
+  });
+
   it("links each pool to its own v4 page, by id", () => {
     expect(render(found([match()]))).toContain(`href="/v4?id=${POOL_ID}"`);
   });

@@ -54,6 +54,21 @@ export const V3_POSITION_MANAGERS: Readonly<Record<V3ChainId, { readonly address
     address: "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     codeHash: "0x45b4bff8136324d175c01151fd0fb715c82bcc8923019a4faba3eafb0cc3a20b",
   },
+  /*
+   * Mainnet's address again on OP Mainnet and Polygon, each with its own hash
+   * (read 2026-09-27, 24,384 bytes, factory() mainnet's own 0x1f98431c…1f984
+   * on both). Polygon's names WPOL as its wrapped currency, which is why the
+   * two differ; both runtimes are test fixtures
+   * (testing/optimism-… and polygon-v3-position-manager.hex).
+   */
+  10: {
+    address: "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+    codeHash: "0x8ded00bd0e1fd41d3d876539253086023145272ec80fe30d3354a7c10fbc2523",
+  },
+  137: {
+    address: "0xc36442b4a4522e871399cd717abdd847ab11fe88",
+    codeHash: "0xdcffe49a687c3ea536e42193f2e0bc89c20282c7bd6106eddc2bfc19a091114e",
+  },
 };
 
 /**

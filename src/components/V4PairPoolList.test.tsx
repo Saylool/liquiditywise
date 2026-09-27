@@ -49,6 +49,16 @@ const render = (result: DataResult<V4PairPools>, locale: Locale = "en") =>
   );
 
 describe("V4PairPoolList", () => {
+  it("puts each depth in the chain's own currency: ether on mainnet, POL on Polygon", () => {
+    const onPolygon = (pool: V4PairPool): V4PairPool => ({ ...pool, pool: { ...pool.pool, chainId: 137 } });
+    const mainnet = render(found([entry(1, "20"), entry(2, "10")], null));
+    const polygon = render(found([onPolygon(entry(1, "20")), onPolygon(entry(2, "10"))], null));
+
+    expect(mainnet).toMatch(/≈ [^<]+ ETH</);
+    expect(polygon).toMatch(/≈ [^<]+ POL</);
+    expect(polygon).not.toMatch(/≈ [^<]+ ETH</);
+  });
+
   it("shows each sibling's fee, price step, hook and depth", () => {
     const markup = render(found([entry(1, "20"), entry(2, "10", SWAP_HOOK)]));
 

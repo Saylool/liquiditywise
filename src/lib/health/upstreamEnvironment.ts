@@ -65,10 +65,14 @@ const SUBGRAPH_IDS: Record<SubgraphName, () => string | undefined> = {
   "v3-ethereum": () => v3SubgraphIdFor(1),
   "v3-base": () => v3SubgraphIdFor(8453),
   "v3-arbitrum": () => v3SubgraphIdFor(42161),
+  "v3-optimism": () => v3SubgraphIdFor(10),
+  "v3-polygon": () => v3SubgraphIdFor(137),
   "v4-ethereum": () => v4SubgraphIdFor(1),
   "v4-base": () => v4SubgraphIdFor(8453),
   "v4-arbitrum": () => v4SubgraphIdFor(42161),
   "v4-unichain": () => v4SubgraphIdFor(130),
+  "v4-optimism": () => v4SubgraphIdFor(10),
+  "v4-polygon": () => v4SubgraphIdFor(137),
 };
 
 /**
@@ -120,6 +124,8 @@ export const upstreamProbes = (): ProbeDependencies | null => {
           ["base", process.env.BASE_RPC_URL?.trim()],
           ["arbitrum", process.env.ARBITRUM_RPC_URL?.trim()],
           ["unichain", process.env.UNICHAIN_RPC_URL?.trim()],
+          ["optimism", process.env.OPTIMISM_RPC_URL?.trim()],
+          ["polygon", process.env.POLYGON_RPC_URL?.trim()],
         ] as const
       )
         .filter((entry): entry is readonly [OtherChain, string] => Boolean(entry[1]))

@@ -11,9 +11,10 @@ import { chainReadingFor } from "../uniswap/v4PoolChainReading";
 import { composeAddressHoldings, displayedV4Pools, withV4ChainReadings } from "./addressHoldings";
 import { rpcUrlFor } from "../chains/chainEnvironment";
 import { type ChainId, readsV3, readsV4 } from "../chains/chains";
+import { nativeCurrencyOn } from "../chains/nativeCurrency";
 import { getEthereumV3PoolDays } from "../uniswap/getEthereumV3PoolDays";
 import { normalizeV3TradedPoolsFromDays } from "../uniswap/v3TradedPoolsAdapter";
-import { type Token, ZERO_ADDRESS } from "../../schemas";
+import { ZERO_ADDRESS } from "../../schemas";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "address-holdings";
@@ -39,14 +40,6 @@ const LABEL = "address-holdings";
  * anywhere can enumerate an address's tokens, so the candidates must be chosen
  * before they can be checked.
  */
-/** The chain's own ether — ETH on all three — under the zero address the sweep asks about. */
-const nativeEtherOn = (chainId: ChainId): Token => ({
-  chainId,
-  address: ZERO_ADDRESS,
-  symbol: "ETH",
-  name: "Ether",
-  decimals: 18,
-});
 
 /** A net this chain does not cast, which the page says rather than calling it unread. */
 const NOT_READ = {
@@ -115,7 +108,7 @@ export const getAddressHoldings = async (
     v3Candidates,
     v4Candidates,
     balances,
-    nativeToken: nativeEtherOn(chainId),
+    nativeToken: nativeCurrencyOn(chainId),
     fetchedAt: new Date().toISOString(),
   });
   if (composed.status === "unavailable" || v4Candidates.status === "unavailable") {

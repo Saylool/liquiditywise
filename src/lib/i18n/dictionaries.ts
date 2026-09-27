@@ -416,10 +416,10 @@ const en = {
     v4OnlyThis: (pair: string) => `On v4, ${pair} trades at only this pool.`,
     v3Intro: (pair: string) => `The v3 pools that trade ${pair} — the same two token contracts, at each fee tier.`,
     v3None: (pair: string) => `No Uniswap v3 pool trades ${pair} with these two contracts.`,
-    v3NoNative:
-      "This pool holds the chain's own ether, and v3 cannot: every v3 currency is a token contract. Its nearest v3 pools trade wrapped ether instead, which is a different token to a pool.",
+    v3NoNative: (native: string) =>
+      `This pool holds the chain's own currency, ${native}, and v3 cannot: every v3 currency is a token contract. Its nearest v3 pools trade wrapped ${native} (W${native}) instead, which is a different token to a pool.`,
     depth: "Depth at the current price",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "The pool's liquidity could not be read from the chain.",
     hook: "hook",
     noHook: "no hook",
@@ -498,15 +498,15 @@ const en = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${v3Pools} most-traded Uniswap v3 pools on ${chain}${v4Pools === null ? "" : `, and every currency in the ${v4Pools} v4 pools that traded the most over the last seven days, the chain's own ether among them`}. Something held outside that set is not missing from this page because the address does not hold it.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `A token's balance lives inside the token's own contract, so there is no list of what an address owns — only tokens that can be asked, one at a time. This asked ${tokens} of them: every token in the ${v3Pools} most-traded Uniswap v3 pools on ${chain}${v4Pools === null ? "" : `, and every currency in the ${v4Pools} v4 pools that traded the most over the last seven days, the chain's own ${native} among them`}. Something held outside that set is not missing from this page because the address does not hold it.`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
      * what you hold", which nobody checked.
      */
-    v4NotSearched:
-      "Uniswap v4 pools were not searched: their list could not be read. Ether and the currencies of v4 pools are absent from this page for that reason and no other.",
+    v4NotSearched: (native: string) =>
+      `Uniswap v4 pools were not searched: their list could not be read. ${native} and the currencies of v4 pools are absent from this page for that reason and no other.`,
     /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
     hookTag: "hook",
     holdingsHeading: "Tokens found",
@@ -565,9 +565,9 @@ const en = {
     priceStep: "Price step",
     priceStepNote: (spacing: string) =>
       `The finest step at which a position's edges can be placed in this pool — its tick spacing of ${spacing}. Part of the pool's key in v4, so unlike v3 it needs no separate contract call.`,
-    nativeCurrency: "Native ether",
-    nativeCurrencyNote:
-      "The zero address here is not a missing field. v4 lets a pool hold the chain's own ether rather than a wrapped token, and that is what this is.",
+    nativeCurrency: (native: string) => `Native ${native}`,
+    nativeCurrencyNote: (native: string) =>
+      `The zero address here is not a missing field. v4 lets a pool hold the chain's own currency, ${native}, rather than a wrapped token, and that is what this is.`,
     hookHeading: "The hook",
     noHook: "This pool runs without a hook.",
     noHookNote:
@@ -824,7 +824,7 @@ const en = {
     v4Empty: (terms: string) =>
       `No Ethereum mainnet Uniswap v4 pool has a currency matching ${terms}.`,
     v4Depth: "Depth at the current price",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "What the pool's active liquidity is worth right now, read from the PoolManager's own storage — not what the pool holds, which no v4 pool reports on its own.",
     v4StateUnread: "The pool's liquidity could not be read from the chain.",
@@ -1560,10 +1560,10 @@ const tr: Dictionary = {
     v4OnlyThis: (pair: string) => `v4'te ${pair} yalnızca bu havuzda işlem görüyor.`,
     v3Intro: (pair: string) => `${pair} işlem gören v3 havuzları — aynı iki token sözleşmesi, her komisyon kademesinde.`,
     v3None: (pair: string) => `Bu iki sözleşmeyle ${pair} işlem gören bir Uniswap v3 havuzu yok.`,
-    v3NoNative:
-      "Bu havuz zincirin kendi ether'ini tutuyor; v3 bunu yapamaz, çünkü v3'te her para birimi bir token sözleşmesidir. En yakın v3 havuzları sarmalanmış ether'le işlem görür; o da bir havuz için başka bir token.",
+    v3NoNative: (native: string) =>
+      `Bu havuz zincirin kendi parasını (${native}) tutuyor; v3 bunu yapamaz, çünkü v3'te her para birimi bir token sözleşmesidir. En yakın v3 havuzları onun sarmalanmış hâliyle (W${native}) işlem görür; o da bir havuz için başka bir token.`,
     depth: "Güncel fiyattaki derinlik",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "Havuzun likiditesi zincirden okunamadı.",
     hook: "hook",
     noHook: "hook yok",
@@ -1621,10 +1621,10 @@ const tr: Dictionary = {
       "Bu adreste bulunan jetonlar ve girebilecekleri havuzlar. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve adres herkese açık bir bilgidir — aynı liste onu arayan herkese görünür.",
     forAddress: "Adres",
     loading: "Bu adresin ne tuttuğu token sözleşmelerine soruluyor…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: ${chain} üzerinde en çok işlem gören ${v3Pools} Uniswap v3 havuzunda geçen tokenların tamamı${v4Pools === null ? "" : ` ve son yedi günde en çok işlem gören ${v4Pools} v4 havuzundaki para birimlerinin tamamı — zincirin kendi ether'i dahil`}. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
-    v4NotSearched:
-      "Uniswap v4 havuzları aranmadı: listeleri okunamadı. Ether ve v4 havuzlarının para birimleri bu sayfada bu yüzden yok, başka bir sebepten değil.",
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `Bir tokenın bakiyesi tokenın kendi sözleşmesinin içinde durur; yani bir adresin nelere sahip olduğunun listesi diye bir şey yoktur, yalnızca tek tek sorulabilecek tokenlar vardır. Burada ${tokens} tanesi soruldu: ${chain} üzerinde en çok işlem gören ${v3Pools} Uniswap v3 havuzunda geçen tokenların tamamı${v4Pools === null ? "" : ` ve son yedi günde en çok işlem gören ${v4Pools} v4 havuzundaki para birimlerinin tamamı — zincirin kendi parası (${native}) dahil`}. Bu kümenin dışında tutulan bir şey, adres onu tutmadığı için değil, sorulmadığı için bu sayfada yok.`,
+    v4NotSearched: (native: string) =>
+      `Uniswap v4 havuzları aranmadı: listeleri okunamadı. Zincirin kendi parası (${native}) ve v4 havuzlarının para birimleri bu sayfada bu yüzden yok, başka bir sebepten değil.`,
     hookTag: "hook",
     holdingsHeading: "Bulunan tokenlar",
     nothingFound:
@@ -1672,9 +1672,9 @@ const tr: Dictionary = {
     priceStep: "Fiyat adımı",
     priceStepNote: (spacing: string) =>
       `Bu havuzda bir pozisyonun kenarlarının yerleştirilebildiği en ince adım — tick adımı ${spacing}. v4'te havuzun anahtarının parçası; yani v3'ten farklı olarak ayrı bir sözleşme çağrısı gerektirmiyor.`,
-    nativeCurrency: "Yerli ether",
-    nativeCurrencyNote:
-      "Buradaki sıfır adres eksik bir alan değil. v4, bir havuzun sarmalanmış token yerine zincirin kendi ether'ini tutmasına izin veriyor; bu da o.",
+    nativeCurrency: (native: string) => `Yerli para (${native})`,
+    nativeCurrencyNote: (native: string) =>
+      `Buradaki sıfır adres eksik bir alan değil. v4, bir havuzun sarmalanmış token yerine zincirin kendi parasını (${native}) tutmasına izin veriyor; bu da o.`,
     hookHeading: "Hook",
     noHook: "Bu havuz hook'suz çalışıyor.",
     noHookNote:
@@ -1854,7 +1854,7 @@ const tr: Dictionary = {
     v4Empty: (terms: string) =>
       `Ethereum mainnet üzerinde ${terms} ile eşleşen para birimi olan bir Uniswap v4 havuzu bulunamadı.`,
     v4Depth: "Güncel fiyattaki derinlik",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "Havuzun aktif likiditesinin şu an ettiği değer; PoolManager'ın kendi depolamasından okundu — havuzun tuttuğu şey değil, çünkü hiçbir v4 havuzu onu kendi başına bildirmez.",
     v4StateUnread: "Havuzun likiditesi zincirden okunamadı.",
@@ -2525,10 +2525,10 @@ const de: Dictionary = {
     v3Intro: (pair: string) =>
       `Die v3-Pools, die ${pair} handeln — dieselben zwei Token-Verträge, auf jeder Gebührenstufe.`,
     v3None: (pair: string) => `Kein Uniswap-v3-Pool handelt ${pair} mit diesen beiden Verträgen.`,
-    v3NoNative:
-      "Dieser Pool hält das Ether der Chain selbst, und v3 kann das nicht: jede v3-Währung ist ein Token-Vertrag. Seine nächstgelegenen v3-Pools handeln stattdessen Wrapped Ether, was für einen Pool ein anderer Token ist.",
+    v3NoNative: (native: string) =>
+      `Dieser Pool hält die eigene Währung der Chain, ${native}, und v3 kann das nicht: jede v3-Währung ist ein Token-Vertrag. Seine nächstgelegenen v3-Pools handeln stattdessen Wrapped ${native} (W${native}), was für einen Pool ein anderer Token ist.`,
     depth: "Tiefe beim aktuellen Preis",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "Die Liquidität des Pools ließ sich nicht aus der Chain lesen.",
     hook: "hook",
     noHook: "kein Hook",
@@ -2585,10 +2585,10 @@ const de: Dictionary = {
       "Die Token, die unter dieser Adresse gefunden wurden, und die Pools, in die sie gehen können. Nichts hier wird gespeichert, sofern du unten keine Telegram-Hinweise anforderst, und die Adresse ist öffentlich — dieselbe Liste sieht jeder, der sie nachschlägt.",
     forAddress: "Adresse",
     loading: "Die Token-Verträge werden gefragt, was diese Adresse hält…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `Der Bestand eines Tokens liegt im Vertrag des Tokens selbst; es gibt also keine Liste dessen, was eine Adresse besitzt — nur Token, die sich einzeln fragen lassen. Hier wurden ${tokens} davon gefragt: jeder Token in den ${v3Pools} meistgehandelten Uniswap-v3-Pools (${chain})${v4Pools === null ? "" : `, und jede Währung in den ${v4Pools} v4-Pools mit dem größten Handel der letzten sieben Tage, das Ether der Chain selbst darunter`}. Was außerhalb dieser Menge gehalten wird, fehlt auf dieser Seite nicht deshalb, weil die Adresse es nicht hält.`,
-    v4NotSearched:
-      "Uniswap-v4-Pools wurden nicht durchsucht: ihre Liste ließ sich nicht lesen. Ether und die Währungen der v4-Pools fehlen auf dieser Seite aus diesem Grund und aus keinem anderen.",
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `Der Bestand eines Tokens liegt im Vertrag des Tokens selbst; es gibt also keine Liste dessen, was eine Adresse besitzt — nur Token, die sich einzeln fragen lassen. Hier wurden ${tokens} davon gefragt: jeder Token in den ${v3Pools} meistgehandelten Uniswap-v3-Pools (${chain})${v4Pools === null ? "" : `, und jede Währung in den ${v4Pools} v4-Pools mit dem größten Handel der letzten sieben Tage, die eigene Währung der Chain (${native}) darunter`}. Was außerhalb dieser Menge gehalten wird, fehlt auf dieser Seite nicht deshalb, weil die Adresse es nicht hält.`,
+    v4NotSearched: (native: string) =>
+      `Uniswap-v4-Pools wurden nicht durchsucht: ihre Liste ließ sich nicht lesen. ${native} und die Währungen der v4-Pools fehlen auf dieser Seite aus diesem Grund und aus keinem anderen.`,
     hookTag: "hook",
     holdingsHeading: "Gefundene Token",
     nothingFound:
@@ -2637,9 +2637,9 @@ const de: Dictionary = {
     priceStep: "Preisschritt",
     priceStepNote: (spacing: string) =>
       `Der feinste Schritt, in dem die Kanten einer Position in diesem Pool gesetzt werden können — sein Tick-Abstand von ${spacing}. In v4 Teil des Pool-Schlüssels, daher braucht es anders als bei v3 keinen eigenen Vertragsaufruf.`,
-    nativeCurrency: "Natives Ether",
-    nativeCurrencyNote:
-      "Die Nulladresse ist hier kein fehlendes Feld. v4 erlaubt einem Pool, das Ether der Chain selbst zu halten statt eines verpackten Tokens, und genau das ist hier der Fall.",
+    nativeCurrency: (native: string) => `Natives ${native}`,
+    nativeCurrencyNote: (native: string) =>
+      `Die Nulladresse ist hier kein fehlendes Feld. v4 erlaubt einem Pool, die eigene Währung der Chain (${native}) zu halten statt eines verpackten Tokens, und genau das ist hier der Fall.`,
     hookHeading: "Der Hook",
     noHook: "Dieser Pool läuft ohne Hook.",
     noHookNote:
@@ -2820,7 +2820,7 @@ const de: Dictionary = {
     v4Empty: (terms: string) =>
       `Kein Uniswap-v4-Pool im Ethereum-Mainnet hat eine Währung, die zu ${terms} passt.`,
     v4Depth: "Tiefe beim aktuellen Preis",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "Was die aktive Liquidität des Pools gerade wert ist, gelesen aus dem Speicher des PoolManagers selbst — nicht, was der Pool hält, was kein v4-Pool für sich allein meldet.",
     v4StateUnread: "Die Liquidität des Pools ließ sich nicht aus der Chain lesen.",
@@ -3467,10 +3467,10 @@ const es: Dictionary = {
     v3Intro: (pair: string) =>
       `Los pools v3 que negocian ${pair} — los mismos dos contratos de token, en cada nivel de comisión.`,
     v3None: (pair: string) => `Ningún pool de Uniswap v3 negocia ${pair} con estos dos contratos.`,
-    v3NoNative:
-      "Este pool contiene el ether propio de la cadena, y v3 no puede: toda moneda en v3 es un contrato de token. Sus pools v3 más cercanos negocian ether envuelto, que para un pool es un token distinto.",
+    v3NoNative: (native: string) =>
+      `Este pool contiene la moneda propia de la cadena, ${native}, y v3 no puede: toda moneda en v3 es un contrato de token. Sus pools v3 más cercanos negocian ${native} envuelto (W${native}), que para un pool es un token distinto.`,
     depth: "Profundidad al precio actual",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "La liquidez del pool no pudo leerse de la cadena.",
     hook: "hook",
     noHook: "sin hook",
@@ -3527,10 +3527,10 @@ const es: Dictionary = {
       "Los tokens encontrados en esta dirección, y los pools a los que pueden ir. Nada de esto se guarda salvo que pidas avisos por Telegram más abajo, y la dirección es información pública — la misma lista la ve cualquiera que la consulte.",
     forAddress: "Dirección",
     loading: "Preguntando a los contratos de token qué tiene esta dirección…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `El saldo de un token vive dentro del contrato del propio token, así que no existe una lista de lo que posee una dirección — solo tokens a los que se puede preguntar, de uno en uno. Aquí se preguntó a ${tokens} de ellos: todos los tokens de los ${v3Pools} pools de Uniswap v3 más negociados (${chain})${v4Pools === null ? "" : `, y todas las monedas de los ${v4Pools} pools v4 que más se negociaron en los últimos siete días, el ether propio de la cadena entre ellas`}. Algo que se tenga fuera de ese conjunto no falta en esta página porque la dirección no lo tenga.`,
-    v4NotSearched:
-      "No se buscaron pools de Uniswap v4: su lista no pudo leerse. El ether y las monedas de los pools v4 faltan en esta página por esa razón y por ninguna otra.",
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `El saldo de un token vive dentro del contrato del propio token, así que no existe una lista de lo que posee una dirección — solo tokens a los que se puede preguntar, de uno en uno. Aquí se preguntó a ${tokens} de ellos: todos los tokens de los ${v3Pools} pools de Uniswap v3 más negociados (${chain})${v4Pools === null ? "" : `, y todas las monedas de los ${v4Pools} pools v4 que más se negociaron en los últimos siete días, la moneda propia de la cadena (${native}) entre ellas`}. Algo que se tenga fuera de ese conjunto no falta en esta página porque la dirección no lo tenga.`,
+    v4NotSearched: (native: string) =>
+      `No se buscaron pools de Uniswap v4: su lista no pudo leerse. La moneda propia de la cadena (${native}) y las monedas de los pools v4 faltan en esta página por esa razón y por ninguna otra.`,
     hookTag: "hook",
     holdingsHeading: "Tokens encontrados",
     nothingFound:
@@ -3578,9 +3578,9 @@ const es: Dictionary = {
     priceStep: "Escalón de precio",
     priceStepNote: (spacing: string) =>
       `El escalón más fino en el que pueden colocarse los bordes de una posición en este pool — su separación de ticks de ${spacing}. En v4 forma parte de la clave del pool, así que a diferencia de v3 no necesita una llamada aparte al contrato.`,
-    nativeCurrency: "Ether nativo",
-    nativeCurrencyNote:
-      "La dirección cero aquí no es un campo que falte. v4 permite que un pool contenga el ether propio de la cadena en lugar de un token envuelto, y eso es lo que ocurre aquí.",
+    nativeCurrency: (native: string) => `${native} nativo`,
+    nativeCurrencyNote: (native: string) =>
+      `La dirección cero aquí no es un campo que falte. v4 permite que un pool contenga la moneda propia de la cadena (${native}) en lugar de un token envuelto, y eso es lo que ocurre aquí.`,
     hookHeading: "El hook",
     noHook: "Este pool funciona sin hook.",
     noHookNote:
@@ -3760,7 +3760,7 @@ const es: Dictionary = {
     v4Empty: (terms: string) =>
       `Ningún pool de Uniswap v4 en la red principal de Ethereum tiene una moneda que coincida con ${terms}.`,
     v4Depth: "Profundidad al precio actual",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "Lo que vale ahora mismo la liquidez activa del pool, leído del propio almacenamiento del PoolManager — no lo que el pool contiene, que ningún pool v4 declara por su cuenta.",
     v4StateUnread: "La liquidez del pool no pudo leerse de la cadena.",
@@ -4410,10 +4410,10 @@ const ar: Dictionary = {
     v3Intro: (pair: string) =>
       `تجمّعات v3 التي تتداول ${pair} — عقدا الرمزين نفساهما، عند كل مستوى رسوم.`,
     v3None: (pair: string) => `لا يتداول أي تجمّع في Uniswap v3 زوج ${pair} بهذين العقدين.`,
-    v3NoNative:
-      "يحمل هذا التجمّع الإيثر الأصلي للسلسلة، وv3 لا تستطيع ذلك: فكل عملة في v3 عقد رمز. وأقرب تجمّعات v3 إليه تتداول الإيثر المغلّف، وهو رمز مختلف بالنسبة إلى تجمّع.",
+    v3NoNative: (native: string) =>
+      `يحمل هذا التجمّع العملة الأصلية للسلسلة (${native})، وv3 لا تستطيع ذلك: فكل عملة في v3 عقد رمز. وأقرب تجمّعات v3 إليه تتداول نسختها المغلّفة (W${native})، وهي رمز مختلف بالنسبة إلى تجمّع.`,
     depth: "العمق عند السعر الحالي",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "تعذّرت قراءة سيولة التجمّع من السلسلة.",
     hook: "hook",
     noHook: "بلا hook",
@@ -4470,10 +4470,10 @@ const ar: Dictionary = {
       "الرموز الموجودة في هذا العنوان، والمجمّعات التي يمكن أن تدخلها. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، والعنوان معلومة علنية — القائمة نفسها يراها كل من يبحث عنه.",
     forAddress: "العنوان",
     loading: "تُسأل عقود الرموز عمّا يملكه هذا العنوان…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `رصيد الرمز موجود داخل عقد الرمز نفسه، فلا توجد قائمة بما يملكه عنوان — بل رموز يمكن سؤالها، واحدًا واحدًا. وقد سُئل هنا ${tokens} منها: كل رمز في أكثر ${v3Pools} تجمّعًا تداولًا في Uniswap v3 على ${chain}${v4Pools === null ? "" : `، وكل عملة في تجمّعات v4 الـ ${v4Pools} الأكثر تداولًا خلال الأيام السبعة الماضية، ومنها الإيثر الأصلي للسلسلة`}. وما يُملك خارج تلك المجموعة ليس غائبًا عن هذه الصفحة لأن العنوان لا يملكه.`,
-    v4NotSearched:
-      "لم يُبحث في تجمّعات Uniswap v4: تعذّرت قراءة قائمتها. والإيثر وعملات تجمّعات v4 غائبة عن هذه الصفحة لهذا السبب لا لغيره.",
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `رصيد الرمز موجود داخل عقد الرمز نفسه، فلا توجد قائمة بما يملكه عنوان — بل رموز يمكن سؤالها، واحدًا واحدًا. وقد سُئل هنا ${tokens} منها: كل رمز في أكثر ${v3Pools} تجمّعًا تداولًا في Uniswap v3 على ${chain}${v4Pools === null ? "" : `، وكل عملة في تجمّعات v4 الـ ${v4Pools} الأكثر تداولًا خلال الأيام السبعة الماضية، ومنها العملة الأصلية للسلسلة (${native})`}. وما يُملك خارج تلك المجموعة ليس غائبًا عن هذه الصفحة لأن العنوان لا يملكه.`,
+    v4NotSearched: (native: string) =>
+      `لم يُبحث في تجمّعات Uniswap v4: تعذّرت قراءة قائمتها. والعملة الأصلية للسلسلة (${native}) وعملات تجمّعات v4 غائبة عن هذه الصفحة لهذا السبب لا لغيره.`,
     hookTag: "hook",
     holdingsHeading: "الرموز الموجودة",
     nothingFound:
@@ -4521,9 +4521,9 @@ const ar: Dictionary = {
     priceStep: "الخطوة السعرية",
     priceStepNote: (spacing: string) =>
       `أدقّ خطوة يمكن أن تُوضع عندها حافّتا مركز في هذا التجمّع — تباعد الـ tick لديه وقدره ${spacing}. وهي جزء من مفتاح التجمّع في v4، فهي بخلاف v3 لا تحتاج إلى استدعاء عقد منفصل.`,
-    nativeCurrency: "إيثر أصلي",
-    nativeCurrencyNote:
-      "العنوان الصفري هنا ليس حقلًا ناقصًا. فـ v4 تتيح للتجمّع أن يحمل الإيثر الأصلي للسلسلة بدل رمز مغلّف، وهذا ما يحدث هنا.",
+    nativeCurrency: (native: string) => `العملة الأصلية (${native})`,
+    nativeCurrencyNote: (native: string) =>
+      `العنوان الصفري هنا ليس حقلًا ناقصًا. فـ v4 تتيح للتجمّع أن يحمل العملة الأصلية للسلسلة (${native}) بدل رمز مغلّف، وهذا ما يحدث هنا.`,
     hookHeading: "الـ hook",
     noHook: "يعمل هذا التجمّع بلا hook.",
     noHookNote: "لا يعمل شيء إلى جانب تبادلاته أو إيداعاته، فهو يتصرّف كما يتصرّف تجمّع v3.",
@@ -4696,7 +4696,7 @@ const ar: Dictionary = {
     v4Empty: (terms: string) =>
       `لا يوجد تجمّع Uniswap v4 على شبكة إيثيريوم الرئيسية فيه عملة تطابق ${terms}.`,
     v4Depth: "العمق عند السعر الحالي",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "كم تساوي سيولة التجمّع النشطة الآن، مقروءةً من مخزن PoolManager نفسه — لا ما يحمله التجمّع، وهو ما لا يعلنه أي تجمّع v4 عن نفسه.",
     v4StateUnread: "تعذّرت قراءة سيولة التجمّع من السلسلة.",
@@ -5328,10 +5328,10 @@ const hi: Dictionary = {
     v3Intro: (pair: string) =>
       `वे v3 पूल जो ${pair} का कारोबार करते हैं — वही दो टोकन कॉन्ट्रैक्ट, हर शुल्क स्तर पर।`,
     v3None: (pair: string) => `इन दो कॉन्ट्रैक्ट के साथ कोई Uniswap v3 पूल ${pair} का कारोबार नहीं करता।`,
-    v3NoNative:
-      "यह पूल चेन का अपना ether रखता है, और v3 यह नहीं कर सकती: v3 की हर मुद्रा एक टोकन कॉन्ट्रैक्ट है। उसके सबसे नज़दीकी v3 पूल इसके बजाय लपेटा हुआ ether कारोबार करते हैं, जो किसी पूल के लिए अलग टोकन है।",
+    v3NoNative: (native: string) =>
+      `यह पूल चेन की अपनी मुद्रा (${native}) रखता है, और v3 यह नहीं कर सकती: v3 की हर मुद्रा एक टोकन कॉन्ट्रैक्ट है। उसके सबसे नज़दीकी v3 पूल इसके बजाय लपेटा हुआ ${native} (W${native}) कारोबार करते हैं, जो किसी पूल के लिए अलग टोकन है।`,
     depth: "मौजूदा कीमत पर गहराई",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "पूल की तरलता चेन से पढ़ी नहीं जा सकी।",
     hook: "hook",
     noHook: "कोई hook नहीं",
@@ -5388,10 +5388,10 @@ const hi: Dictionary = {
       "इस पते पर मिले टोकन, और वे पूल जिनमें वे जा सकते हैं। जब तक आप नीचे Telegram सूचनाएँ न माँगें, यहाँ कुछ भी रखा नहीं जाता, और पता सार्वजनिक जानकारी है — वही सूची उसे खोजने वाले हर किसी को दिखती है।",
     forAddress: "पता",
     loading: "टोकन कॉन्ट्रैक्ट से पूछा जा रहा है कि इस पते के पास क्या है…",
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} के ${v3Pools} सबसे अधिक कारोबार वाले Uniswap v3 पूलों का हर टोकन${v4Pools === null ? "" : `, और पिछले सात दिनों में सबसे अधिक कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन का अपना ether भी है`}। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
-    v4NotSearched:
-      "Uniswap v4 पूल खोजे नहीं गए: उनकी सूची पढ़ी नहीं जा सकी। ether और v4 पूलों की मुद्राएँ इस पृष्ठ से इसी कारण से अनुपस्थित हैं, किसी और कारण से नहीं।",
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} के ${v3Pools} सबसे अधिक कारोबार वाले Uniswap v3 पूलों का हर टोकन${v4Pools === null ? "" : `, और पिछले सात दिनों में सबसे अधिक कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन की अपनी मुद्रा (${native}) भी है`}। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
+    v4NotSearched: (native: string) =>
+      `Uniswap v4 पूल खोजे नहीं गए: उनकी सूची पढ़ी नहीं जा सकी। चेन की अपनी मुद्रा (${native}) और v4 पूलों की मुद्राएँ इस पृष्ठ से इसी कारण से अनुपस्थित हैं, किसी और कारण से नहीं।`,
     hookTag: "hook",
     holdingsHeading: "मिले टोकन",
     nothingFound:
@@ -5439,9 +5439,9 @@ const hi: Dictionary = {
     priceStep: "कीमत-क़दम",
     priceStepNote: (spacing: string) =>
       `इस पूल में किसी पोज़िशन के किनारे जिस सबसे बारीक क़दम पर रखे जा सकते हैं — उसका ${spacing} का tick अंतराल। v4 में यह पूल की कुंजी का हिस्सा है, इसलिए v3 के विपरीत इसके लिए अलग कॉन्ट्रैक्ट कॉल नहीं चाहिए।`,
-    nativeCurrency: "मूल ether",
-    nativeCurrencyNote:
-      "यहाँ शून्य पता कोई छूटा हुआ खाना नहीं है। v4 किसी पूल को लपेटे हुए टोकन के बजाय चेन का अपना ether रखने देती है, और यहाँ यही है।",
+    nativeCurrency: (native: string) => `मूल ${native}`,
+    nativeCurrencyNote: (native: string) =>
+      `यहाँ शून्य पता कोई छूटा हुआ खाना नहीं है। v4 किसी पूल को लपेटे हुए टोकन के बजाय चेन की अपनी मुद्रा (${native}) रखने देती है, और यहाँ यही है।`,
     hookHeading: "hook",
     noHook: "यह पूल बिना hook के चलता है।",
     noHookNote:
@@ -5621,7 +5621,7 @@ const hi: Dictionary = {
     v4Empty: (terms: string) =>
       `Ethereum मेननेट के किसी Uniswap v4 पूल में ${terms} से मेल खाती कोई मुद्रा नहीं है।`,
     v4Depth: "मौजूदा कीमत पर गहराई",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "पूल की सक्रिय तरलता अभी किस मूल्य की है, PoolManager के अपने भंडारण से पढ़ी गई — यह नहीं कि पूल क्या रखता है, जो कोई v4 पूल अपने बारे में बताता ही नहीं।",
     v4StateUnread: "पूल की तरलता चेन से पढ़ी नहीं जा सकी।",
@@ -6328,10 +6328,10 @@ const zh: Dictionary = {
     v4OnlyThis: (pair: string) => `在 v4 上，${pair} 只在这一个池子里交易。`,
     v3Intro: (pair: string) => `交易 ${pair} 的那些 v3 资金池——同样的两个代币合约，在各个费率档上。`,
     v3None: (pair: string) => `没有任何 Uniswap v3 资金池用这两个合约交易 ${pair}。`,
-    v3NoNative:
-      "这个池子持有的是链自己的以太币，而 v3 做不到：v3 的每一种货币都是一个代币合约。与它最接近的那些 v3 池子交易的是包装以太币，对一个池子来说那是另一种代币。",
+    v3NoNative: (native: string) =>
+      `这个池子持有的是链自己的原生币（${native}），而 v3 做不到：v3 的每一种货币都是一个代币合约。与它最接近的那些 v3 池子交易的是包装后的 W${native}，对一个池子来说那是另一种代币。`,
     depth: "当前价格处的深度",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "这个池子的流动性无法从链上读出。",
     hook: "hook",
     noHook: "无 hook",
@@ -6409,15 +6409,15 @@ const zh: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `一个代币的余额存放在这个代币自己的合约里，所以并不存在一份“某地址拥有什么”的清单——只有可以被逐个询问的代币。这次询问了其中 ${tokens} 个：${chain}上成交最活跃的 ${v3Pools} 个 Uniswap v3 资金池里的每一种代币${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在这个集合之外的东西，之所以没有出现在这一页上，并不是因为这个地址没有它。`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `一个代币的余额存放在这个代币自己的合约里，所以并不存在一份“某地址拥有什么”的清单——只有可以被逐个询问的代币。这次询问了其中 ${tokens} 个：${chain}上成交最活跃的 ${v3Pools} 个 Uniswap v3 资金池里的每一种代币${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的原生币（${native}）`}。持有在这个集合之外的东西，之所以没有出现在这一页上，并不是因为这个地址没有它。`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
      * what you hold", which nobody checked.
      */
-    v4NotSearched:
-      "没有搜索 Uniswap v4 资金池：它们的清单读不出来。以太币和 v4 资金池的各种货币没有出现在这一页上，原因仅此而已。",
+    v4NotSearched: (native: string) =>
+      `没有搜索 Uniswap v4 资金池：它们的清单读不出来。链自己的原生币（${native}）和 v4 资金池的各种货币没有出现在这一页上，原因仅此而已。`,
     /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
     hookTag: "hook",
     holdingsHeading: "找到的代币",
@@ -6476,9 +6476,9 @@ const zh: Dictionary = {
     priceStep: "价格步长",
     priceStepNote: (spacing: string) =>
       `在这个池子里，一个仓位的两条边缘所能放置的最细步长——也就是它 ${spacing} 的 tick 间距。在 v4 里它是这个池子 key 的一部分，所以和 v3 不同，不需要另外调用合约。`,
-    nativeCurrency: "原生以太币",
-    nativeCurrencyNote:
-      "这里的零地址不是一个漏填的字段。v4 允许一个池子持有链自己的以太币而不是一个包装代币，这里就是这种情况。",
+    nativeCurrency: (native: string) => `原生币（${native}）`,
+    nativeCurrencyNote: (native: string) =>
+      `这里的零地址不是一个漏填的字段。v4 允许一个池子持有链自己的原生币（${native}）而不是一个包装代币，这里就是这种情况。`,
     hookHeading: "这个 hook",
     noHook: "这个池子在运行时没有 hook。",
     noHookNote:
@@ -6729,7 +6729,7 @@ const zh: Dictionary = {
     v4Empty: (terms: string) =>
       `以太坊主网上没有任何 Uniswap v4 资金池的货币与 ${terms} 匹配。`,
     v4Depth: "当前价格处的深度",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "这个池子此刻的活跃流动性值多少，读自 PoolManager 自己的存储——不是这个池子持有什么，那是任何 v4 池子都不会自行报告的。",
     v4StateUnread: "这个池子的流动性无法从链上读出。",
@@ -7519,10 +7519,10 @@ const ru: Dictionary = {
     v4OnlyThis: (pair: string) => `В v4 ${pair} торгуется только в этом пуле.`,
     v3Intro: (pair: string) => `Пулы v3, торгующие ${pair}, — те же два контракта токенов, на каждом уровне комиссии.`,
     v3None: (pair: string) => `Ни один пул Uniswap v3 не торгует ${pair} этими двумя контрактами.`,
-    v3NoNative:
-      "Этот пул держит собственный эфир сети, а v3 так не умеет: каждая валюта в v3 — это контракт токена. Ближайшие к нему пулы v3 торгуют обёрнутым эфиром, а для пула это другой токен.",
+    v3NoNative: (native: string) =>
+      `Этот пул держит собственную валюту сети — ${native}, а v3 так не умеет: каждая валюта в v3 — это контракт токена. Ближайшие к нему пулы v3 торгуют обёрнутым ${native} (W${native}), а для пула это другой токен.`,
     depth: "Глубина на текущей цене",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "Ликвидность пула не удалось прочитать из сети.",
     hook: "hook",
     noHook: "без hook",
@@ -7601,15 +7601,15 @@ const ru: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `Баланс токена живёт внутри контракта самого токена, поэтому списка того, чем владеет адрес, не существует — есть только токены, которые можно спросить по одному. Спросили ${tokens}: каждый токен из ${v3Pools} самых торгуемых пулов Uniswap v3 (${chain})${v4Pools === null ? "" : `, и каждую валюту из ${v4Pools} пулов v4, торговавших больше всего за последние семь дней, включая собственный эфир сети`}. Если что-то держится вне этого набора, оно отсутствует на этой странице не потому, что адрес этого не держит.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `Баланс токена живёт внутри контракта самого токена, поэтому списка того, чем владеет адрес, не существует — есть только токены, которые можно спросить по одному. Спросили ${tokens}: каждый токен из ${v3Pools} самых торгуемых пулов Uniswap v3 (${chain})${v4Pools === null ? "" : `, и каждую валюту из ${v4Pools} пулов v4, торговавших больше всего за последние семь дней, включая собственную валюту сети (${native})`}. Если что-то держится вне этого набора, оно отсутствует на этой странице не потому, что адрес этого не держит.`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
      * what you hold", which nobody checked.
      */
-    v4NotSearched:
-      "Пулы Uniswap v4 не искали: их список не удалось прочитать. Эфир и валюты пулов v4 отсутствуют на этой странице по этой причине и ни по какой другой.",
+    v4NotSearched: (native: string) =>
+      `Пулы Uniswap v4 не искали: их список не удалось прочитать. Собственная валюта сети (${native}) и валюты пулов v4 отсутствуют на этой странице по этой причине и ни по какой другой.`,
     /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
     hookTag: "hook",
     holdingsHeading: "Найденные токены",
@@ -7668,9 +7668,9 @@ const ru: Dictionary = {
     priceStep: "Ценовой шаг",
     priceStepNote: (spacing: string) =>
       `Самый мелкий шаг, с которым в этом пуле можно ставить границы позиции, — его tick spacing, равный ${spacing}. В v4 это часть ключа пула, поэтому, в отличие от v3, отдельный вызов контракта не нужен.`,
-    nativeCurrency: "Собственный эфир",
-    nativeCurrencyNote:
-      "Нулевой адрес здесь — не пропущенное поле. v4 позволяет пулу держать собственный эфир сети вместо обёрнутого токена, и это именно такой случай.",
+    nativeCurrency: (native: string) => `Собственная валюта (${native})`,
+    nativeCurrencyNote: (native: string) =>
+      `Нулевой адрес здесь — не пропущенное поле. v4 позволяет пулу держать собственную валюту сети (${native}) вместо обёрнутого токена, и это именно такой случай.`,
     hookHeading: "Hook",
     noHook: "Этот пул работает без hook’а.",
     noHookNote:
@@ -7927,7 +7927,7 @@ const ru: Dictionary = {
     v4Empty: (terms: string) =>
       `Ни у одного пула Uniswap v4 в основной сети Ethereum нет валюты, совпадающей с ${terms}.`,
     v4Depth: "Глубина на текущей цене",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "Сколько прямо сейчас стоит активная ликвидность пула, прочитанная из собственного хранилища PoolManager, — а не то, что пул держит, чего ни один пул v4 сам о себе не сообщает.",
     v4StateUnread: "Ликвидность пула не удалось прочитать из сети.",
@@ -8723,10 +8723,10 @@ const pt: Dictionary = {
     v4OnlyThis: (pair: string) => `No v4, ${pair} é negociado só neste pool.`,
     v3Intro: (pair: string) => `Os pools v3 que negociam ${pair} — os mesmos dois contratos de token, em cada nível de taxa.`,
     v3None: (pair: string) => `Nenhum pool do Uniswap v3 negocia ${pair} com estes dois contratos.`,
-    v3NoNative:
-      "Este pool tem o ether da própria rede, e o v3 não consegue: toda moeda no v3 é um contrato de token. Os pools v3 mais próximos dele negociam ether empacotado, que para um pool é outro token.",
+    v3NoNative: (native: string) =>
+      `Este pool tem a moeda da própria rede, ${native}, e o v3 não consegue: toda moeda no v3 é um contrato de token. Os pools v3 mais próximos dele negociam ${native} empacotado (W${native}), que para um pool é outro token.`,
     depth: "Profundidade no preço atual",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "Não foi possível ler da rede a liquidez do pool.",
     hook: "hook",
     noHook: "sem hook",
@@ -8805,15 +8805,15 @@ const pt: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `O saldo de um token mora dentro do contrato do próprio token, então não existe uma lista do que um endereço possui — só tokens que podem ser perguntados, um de cada vez. Foram perguntados ${tokens} deles: cada token dos ${v3Pools} pools do Uniswap v3 mais negociados (${chain})${v4Pools === null ? "" : `, e cada moeda dos ${v4Pools} pools v4 que mais negociaram nos últimos sete dias, incluindo o ether da própria rede`}. Se algo é mantido fora desse conjunto, ele não falta nesta página porque o endereço não o tenha.`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `O saldo de um token mora dentro do contrato do próprio token, então não existe uma lista do que um endereço possui — só tokens que podem ser perguntados, um de cada vez. Foram perguntados ${tokens} deles: cada token dos ${v3Pools} pools do Uniswap v3 mais negociados (${chain})${v4Pools === null ? "" : `, e cada moeda dos ${v4Pools} pools v4 que mais negociaram nos últimos sete dias, incluindo a moeda da própria rede (${native})`}. Se algo é mantido fora desse conjunto, ele não falta nesta página porque o endereço não o tenha.`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
      * what you hold", which nobody checked.
      */
-    v4NotSearched:
-      "Os pools do Uniswap v4 não foram pesquisados: não foi possível ler a lista deles. O ether e as moedas dos pools v4 estão ausentes desta página por esse motivo e por nenhum outro.",
+    v4NotSearched: (native: string) =>
+      `Os pools do Uniswap v4 não foram pesquisados: não foi possível ler a lista deles. A moeda da própria rede (${native}) e as moedas dos pools v4 estão ausentes desta página por esse motivo e por nenhum outro.`,
     /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
     hookTag: "hook",
     holdingsHeading: "Tokens encontrados",
@@ -8872,9 +8872,9 @@ const pt: Dictionary = {
     priceStep: "Passo de preço",
     priceStepNote: (spacing: string) =>
       `O passo mais fino em que as bordas de uma posição podem ser colocadas neste pool — o espaçamento de ticks dele, de ${spacing}. No v4 isso faz parte da chave do pool, então, ao contrário do v3, não precisa de uma chamada de contrato separada.`,
-    nativeCurrency: "Ether nativo",
-    nativeCurrencyNote:
-      "O endereço zero aqui não é um campo faltando. O v4 deixa um pool ter o ether da própria rede em vez de um token empacotado, e é isso que está acontecendo.",
+    nativeCurrency: (native: string) => `${native} nativo`,
+    nativeCurrencyNote: (native: string) =>
+      `O endereço zero aqui não é um campo faltando. O v4 deixa um pool ter a moeda da própria rede (${native}) em vez de um token empacotado, e é isso que está acontecendo.`,
     hookHeading: "O hook",
     noHook: "Este pool funciona sem hook.",
     noHookNote:
@@ -9131,7 +9131,7 @@ const pt: Dictionary = {
     v4Empty: (terms: string) =>
       `Nenhum pool do Uniswap v4 na rede principal do Ethereum tem uma moeda correspondente a ${terms}.`,
     v4Depth: "Profundidade no preço atual",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "Quanto vale agora a liquidez ativa do pool, lida do próprio armazenamento do PoolManager — e não o que o pool tem, coisa que nenhum pool v4 informa por conta própria.",
     v4StateUnread: "Não foi possível ler da rede a liquidez do pool.",
@@ -9922,10 +9922,10 @@ const zhHant: Dictionary = {
     v4OnlyThis: (pair: string) => `在 v4 上，${pair} 只在這一個池子裡交易。`,
     v3Intro: (pair: string) => `交易 ${pair} 的那些 v3 資金池——同樣的兩個代幣合約，在各個費率檔上。`,
     v3None: (pair: string) => `沒有任何 Uniswap v3 資金池用這兩個合約交易 ${pair}。`,
-    v3NoNative:
-      "這個池子持有的是鏈自己的以太幣，而 v3 做不到：v3 的每一種貨幣都是一個代幣合約。與它最接近的那些 v3 池子交易的是包裝以太幣，對一個池子來說那是另一種代幣。",
+    v3NoNative: (native: string) =>
+      `這個池子持有的是鏈自己的原生幣（${native}），而 v3 做不到：v3 的每一種貨幣都是一個代幣合約。與它最接近的那些 v3 池子交易的是包裝後的 W${native}，對一個池子來說那是另一種代幣。`,
     depth: "當前價格處的深度",
-    depthValue: (ether: string) => `≈ ${ether} ETH`,
+    depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "這個池子的流動性無法從鏈上讀出。",
     hook: "hook",
     noHook: "無 hook",
@@ -10003,15 +10003,15 @@ const zhHant: Dictionary = {
      * The sentence that keeps the answer honest. Nothing can list an address's
      * tokens, so the width of the search is part of the answer.
      */
-    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：${chain}上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 個 v4 資金池裡的每一種貨幣，其中也包括鏈自己的以太幣`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
+    howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
+      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：${chain}上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 個 v4 資金池裡的每一種貨幣，其中也包括鏈自己的原生幣（${native}）`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes
      * what you hold", which nobody checked.
      */
-    v4NotSearched:
-      "沒有搜尋 Uniswap v4 資金池：它們的清單讀不出來。以太幣和 v4 資金池的各種貨幣沒有出現在這一頁上，原因僅此而已。",
+    v4NotSearched: (native: string) =>
+      `沒有搜尋 Uniswap v4 資金池：它們的清單讀不出來。鏈自己的原生幣（${native}）和 v4 資金池的各種貨幣沒有出現在這一頁上，原因僅此而已。`,
     /** A row's protocol, beside its fee. The names are the protocol's own and are not translated. */
     hookTag: "hook",
     holdingsHeading: "找到的代幣",
@@ -10070,9 +10070,9 @@ const zhHant: Dictionary = {
     priceStep: "價格步長",
     priceStepNote: (spacing: string) =>
       `在這個池子裡，一個倉位的兩條邊緣所能放置的最細步長——也就是它 ${spacing} 的 tick 間距。在 v4 裡它是這個池子 key 的一部分，所以和 v3 不同，不需要另外呼叫合約。`,
-    nativeCurrency: "原生以太幣",
-    nativeCurrencyNote:
-      "這裡的零地址不是一個漏填的欄位。v4 允許一個池子持有鏈自己的以太幣而不是一個包裝代幣，這裡就是這種情況。",
+    nativeCurrency: (native: string) => `原生幣（${native}）`,
+    nativeCurrencyNote: (native: string) =>
+      `這裡的零地址不是一個漏填的欄位。v4 允許一個池子持有鏈自己的原生幣（${native}）而不是一個包裝代幣，這裡就是這種情況。`,
     hookHeading: "這個 hook",
     noHook: "這個池子在執行時沒有 hook。",
     noHookNote:
@@ -10323,7 +10323,7 @@ const zhHant: Dictionary = {
     v4Empty: (terms: string) =>
       `以太坊主網上沒有任何 Uniswap v4 資金池的貨幣與 ${terms} 匹配。`,
     v4Depth: "當前價格處的深度",
-    v4DepthValue: (ether: string) => `≈ ${ether} ETH`,
+    v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
       "這個池子此刻的活躍流動性值多少，讀自 PoolManager 自己的儲存——不是這個池子持有什麼，那是任何 v4 池子都不會自行報告的。",
     v4StateUnread: "這個池子的流動性無法從鏈上讀出。",

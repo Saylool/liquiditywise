@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Gives the application an RPC endpoint on Base, Arbitrum and Unichain, made from the
+# Gives the application an RPC endpoint on Base, Arbitrum, Unichain, OP Mainnet and
+# Polygon, made from the
 # Ethereum one it already has, and the Uniswap subgraphs of each. Run as root:
 #
 #   bash /opt/liquiditywise/deploy/set-chain-rpcs.sh
@@ -77,9 +78,15 @@ status=0
 set_one BASE_RPC_URL base-mainnet 0x2105 || status=1
 set_one ARBITRUM_RPC_URL arb-mainnet 0xa4b1 || status=1
 set_one UNICHAIN_RPC_URL unichain-mainnet 0x82 || status=1
+set_one OPTIMISM_RPC_URL opt-mainnet 0xa || status=1
+set_one POLYGON_RPC_URL polygon-mainnet 0x89 || status=1
 set_public UNISWAP_V3_BASE_SUBGRAPH_ID 43Hwfi3dJSoGpyas9VwNoDAv55yjgGrPpNSmbQZArzMG
 set_public UNISWAP_V3_ARBITRUM_SUBGRAPH_ID FbCGRftH4a3yZugY7TnbYgPJVEv2LvMT6oF1fxPe9aJM
 set_public UNISWAP_V4_ARBITRUM_SUBGRAPH_ID D1VHPU6cXXSC8eaApWCjCnPcTZQFSYCpGoDAvt4ogDWh
 set_public UNISWAP_V4_BASE_SUBGRAPH_ID Gqm2b5J85n1bhCyDMpGbtbVn4935EvvdyHdHrx3dibyj
 set_public UNISWAP_V4_UNICHAIN_SUBGRAPH_ID EoCvJ5tyMLMJcTnLQwWpjAtPdn74PcrZgzfcT5bYxNBH
+set_public UNISWAP_V3_OPTIMISM_SUBGRAPH_ID 49LkWjoVKd3bM9ZrMdFgYkjaCuVj4ExZttQi6XfbcPpG
+set_public UNISWAP_V4_OPTIMISM_SUBGRAPH_ID Ab7CAcb1yPXUU2j9Bha1BPDHjE5QqUtjC3rPYyAyodJA
+set_public UNISWAP_V3_POLYGON_SUBGRAPH_ID 3hCPRGf4z88VC5rsBKU5AA9FBBq5nF3jbKJG7VZCbhjm
+set_public UNISWAP_V4_POLYGON_SUBGRAPH_ID 2CB2uQxcDKWDenagn2z17KQVCtfwSx5eXYuvqTciRTJu
 exit "$status"

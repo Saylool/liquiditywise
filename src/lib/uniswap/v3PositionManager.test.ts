@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { keccak256, keccak256Hex, utf8Bytes } from "../crypto/keccak256";
@@ -152,6 +155,25 @@ describe("the manager on each chain", () => {
   it("is at mainnet's address on Arbitrum, with a runtime of its own", () => {
     expect(V3_POSITION_MANAGERS[42161].address).toBe(V3_POSITION_MANAGERS[1].address);
     expect(V3_POSITION_MANAGERS[42161].codeHash).not.toBe(V3_POSITION_MANAGERS[1].codeHash);
-    expect(new Set(Object.values(V3_POSITION_MANAGERS).map(({ codeHash }) => codeHash)).size).toBe(3);
+    expect(new Set(Object.values(V3_POSITION_MANAGERS).map(({ codeHash }) => codeHash)).size).toBe(5);
+  });
+
+  it("is at mainnet's address on OP Mainnet and Polygon too, each with a runtime of its own", () => {
+    expect(V3_POSITION_MANAGERS[10].address).toBe(V3_POSITION_MANAGERS[1].address);
+    expect(V3_POSITION_MANAGERS[137].address).toBe(V3_POSITION_MANAGERS[1].address);
+    expect(V3_POSITION_MANAGERS[10].codeHash).not.toBe(V3_POSITION_MANAGERS[42161].codeHash);
+  });
+
+  it.each([
+    ["OP Mainnet", 10, "optimism", 137],
+    ["Polygon", 137, "polygon", 10],
+  ] as const)("holds %s's manager to its own hash, recomputed from its real runtime of 24,384 bytes", (_, id, file, other) => {
+    const runtime = readFileSync(join(__dirname, "testing", `${file}-v3-position-manager.hex`), "utf8").trim();
+
+    expect((runtime.length - 2) / 2).toBe(24_384);
+    expect(keccak256Hex(runtime)).toBe(V3_POSITION_MANAGERS[id].codeHash);
+    expect(isPositionManagerCode(runtime, keccak256Hex, id)).toBe(true);
+    expect(isPositionManagerCode(runtime, keccak256Hex, other)).toBe(false);
+    expect(isPositionManagerCode(runtime, keccak256Hex, 1)).toBe(false);
   });
 });

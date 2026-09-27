@@ -1,5 +1,5 @@
 
-import { chainOf, ETHEREUM } from "../lib/chains/chains";
+import { chainOf, ETHEREUM, nativeSymbolOf } from "../lib/chains/chains";
 import { GuardedLink } from "./GuardedLink";
 import { formatEtherAmount, formatFeePpm } from "../lib/format/displayFormats";
 import type { Dictionary } from "../lib/i18n/dictionaries";
@@ -79,7 +79,7 @@ const PairRow = ({ match, t, locale }: { match: V4PoolSearchMatch; t: Dictionary
             <>
               {t.search.v4Depth}{" "}
               <span className="font-mono">
-                {t.search.v4DepthValue(formatEtherAmount(depth, locale))}
+                {t.search.v4DepthValue(formatEtherAmount(depth, locale), nativeSymbolOf(pool.chainId))}
               </span>
             </>
           )}

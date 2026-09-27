@@ -438,7 +438,7 @@ describe("PoolDailyPriceHistorySchema", () => {
   });
 
   it.each([
-    ["a chain this application does not read", { pool: { protocolVersion: "v3", chainId: 10, id: `0x${"d".repeat(40)}` } }],
+    ["a chain this application does not read", { pool: { protocolVersion: "v3", chainId: 56, id: `0x${"d".repeat(40)}` } }],
       ["v4 off mainnet", { pool: { protocolVersion: "v4", chainId: 8453, id: `0x${"d".repeat(64)}` } }],
     ["a v4 pool", { pool: { protocolVersion: "v4", chainId: 1, id: `0x${"c".repeat(64)}` } }],
     ["a foreign source", { source: "derived-analytics" }],

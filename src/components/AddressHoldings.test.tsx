@@ -281,12 +281,28 @@ describe("holdings read off mainnet", () => {
   });
 
   it("says the v4 net could not be cast on Base too, now that v4 is read there", () => {
-    expect(onBase()).toContain(getDictionary("en").holdings.v4NotSearched);
+    expect(onBase()).toContain(getDictionary("en").holdings.v4NotSearched("ETH"));
   });
 
   it("still says so on mainnet, where the v4 net could not be cast", () => {
     expect(render(holdings({ poolsSearched: { v3: 250, v4: null }, sources: ["uniswap-v3-subgraph", "ethereum-rpc"] }))).toContain(
-      getDictionary("en").holdings.v4NotSearched,
+      getDictionary("en").holdings.v4NotSearched("ETH"),
     );
+  });
+
+  it("names Polygon's own currency as POL, not ether, wherever the page names it", () => {
+    const html = renderToStaticMarkup(
+      <AddressHoldings
+        result={holdings({ poolsSearched: { v3: 250, v4: null } })}
+        chainId={137}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+    expect(html).toContain(getDictionary("en").holdings.v4NotSearched("POL"));
+    expect(html).toContain("POL and the currencies of v4 pools");
+    expect(html).not.toContain(getDictionary("en").holdings.v4NotSearched("ETH"));
   });
 });

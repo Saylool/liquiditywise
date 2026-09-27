@@ -55,6 +55,7 @@ export async function V4PairSection({
       v3NotRead={v3Read ? undefined : getChainCopy(locale).v3NotRead(chain.name)}
       pair={`${pool.token0.symbol} / ${pool.token1.symbol}`}
       token0Address={pool.token0.address}
+      chainId={chain.id}
       parameters={parameters}
       depositUsd={depositUsd}
       t={t}

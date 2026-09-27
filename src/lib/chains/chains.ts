@@ -10,7 +10,7 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
   /*
    * "days": Base's v3 subgraph answers no query that filters pools by a
    * token's symbol — measured on 2026-09-25, every shape of it failed at the
@@ -39,8 +39,8 @@ export const CHAINS = [
    * `v3Pairs: "days"` for the same reason: Base's v3 pair query answered in
    * 10.5 to 14.5 seconds on 2026-09-25, and still took ten on 2026-09-27.
    */
-  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
+  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days", native: "ETH" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
   /*
    * v4 alone. Uniswap's own chain, where the week's trading is v4's: its v4
    * subgraph answered the day table in half a second, two seconds behind the
@@ -48,7 +48,24 @@ export const CHAINS = [
    * 2026-09-27). The one public v3 subgraph for it has no indexer serving it.
    * `v3Search` and `v3Pairs` are never read where `v3` is false.
    */
-  { id: 130, slug: "unichain", name: "Unichain", v3: false, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
+  { id: 130, slug: "unichain", name: "Unichain", v3: false, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
+  /*
+   * OP Mainnet, v3 and v4, from the subgraphs .env.example names (measured
+   * 2026-09-27: the week's day table in about a second on each, seconds behind
+   * the chain, with the factory and PoolManager Uniswap publishes for it).
+   */
+  { id: 10, slug: "optimism", name: "OP Mainnet", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
+  /*
+   * Polygon PoS. Its own currency is POL, not ether: a v4 pool's zero address
+   * is POL there, and its subgraphs price every token in POL where the others
+   * price in ether — which is what `native` is for.
+   *
+   * `v3Search` and `v3Pairs` are "days" because both public v3 subgraphs for
+   * Polygon answered every query that filters or orders pools with "bad
+   * indexers" on 2026-09-27, fifteen seconds and more, while their day table
+   * answered in three.
+   */
+  { id: 137, slug: "polygon", name: "Polygon", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "pools", native: "POL" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];
@@ -85,3 +102,6 @@ export const readsV4 = (chainId: ChainId): chainId is V4ChainId => chainById(cha
 
 /** The chain a figure's pool names; a pool can only carry a readable chain, so the fallback is never reached in practice. */
 export const chainOf = (id: number): Chain => (isSupportedChainId(id) ? chainById(id) : ETHEREUM);
+
+/** The chain's own currency — what a v4 pool's zero address holds, and what its subgraph prices tokens in. */
+export const nativeSymbolOf = (id: number): Chain["native"] => chainOf(id).native;

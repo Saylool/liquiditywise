@@ -13,16 +13,13 @@ describe("the chains a figure may describe", () => {
     expect([...READABLE_CHAIN_IDS.v4]).toEqual(V4_CHAINS.map(({ id }) => id));
   });
 
-  it("take all three chains for v4, and refuse a chain nothing reads", () => {
-    expect(isReadableChain(1, "v4")).toBe(true);
-    expect(isReadableChain(8453, "v4")).toBe(true);
-    expect(isReadableChain(42161, "v4")).toBe(true);
-    expect(isReadableChain(10, "v4")).toBe(false);
+  it("take every chain for v4, and refuse a chain nothing reads", () => {
+    for (const id of [1, 8453, 42161, 130, 10, 137]) expect(isReadableChain(id, "v4")).toBe(true);
+    expect(isReadableChain(56, "v4")).toBe(false);
   });
 
-  it("take Base and Arbitrum for v3, and refuse a chain nothing reads", () => {
-    expect(isReadableChain(8453, "v3")).toBe(true);
-    expect(isReadableChain(42161, "v3")).toBe(true);
-    expect(isReadableChain(10, "v3")).toBe(false);
+  it("take every chain but Unichain for v3, and refuse a chain nothing reads", () => {
+    for (const id of [1, 8453, 42161, 10, 137]) expect(isReadableChain(id, "v3")).toBe(true);
+    expect(isReadableChain(56, "v3")).toBe(false);
   });
 });

@@ -67,6 +67,19 @@ export const V4_POSITION_MANAGERS: Readonly<Record<V4ChainId, { readonly address
     address: "0x4529a01c7a0410167c5740c487a8de60232617bf",
     codeHash: "0x9b8dd0bc00039cced1336c17f2933187219b9812e18b1310b688de7ae961b25f",
   },
+  /*
+   * And on 2026-09-27 again: poolManager() answered 0x9a13f98c…4ec3 on OP
+   * Mainnet and 0x67366782…5cd6 on Polygon. Both runtimes are test
+   * fixtures (testing/optimism-… and polygon-v4-position-manager.hex).
+   */
+  10: {
+    address: "0x3c3ea4b57a46241e54610e5f022e5c45859a1017",
+    codeHash: "0xe4322627bfc2ef92e06ca70f93e897a78882ec7023c411c498846e87318f37de",
+  },
+  137: {
+    address: "0x1ec2ebf4f37e7363fdfe3551602425af0b3ceef9",
+    codeHash: "0x876d8664907d1fa2b3f00e6f49671585abd614c836f110b36c1e76fd407e67ba",
+  },
 };
 
 /**

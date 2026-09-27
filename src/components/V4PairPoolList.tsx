@@ -1,5 +1,5 @@
 
-import { chainOf } from "../lib/chains/chains";
+import { chainOf, nativeSymbolOf } from "../lib/chains/chains";
 import { GuardedLink } from "./GuardedLink";
 import { v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import {
@@ -86,7 +86,7 @@ const PoolRow = ({
         ) : (
           <>
             {t.feeTiers.depth}{" "}
-            <span className="font-mono">{t.feeTiers.depthValue(formatEtherAmount(depth, locale))}</span>
+            <span className="font-mono">{t.feeTiers.depthValue(formatEtherAmount(depth, locale), nativeSymbolOf(pool.chainId))}</span>
           </>
         )}
       </p>

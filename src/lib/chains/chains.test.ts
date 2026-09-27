@@ -2,7 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import { poolAnalysisHref, readRequestedChain, v4PoolAnalysisHref } from "../advisor/requestedParameters";
 import { chainLabel } from "./chainLabel";
-import { chainBySlug, chainOf, CHAINS, ETHEREUM, isSupportedChainId, readsV3, readsV4, V3_CHAINS, V4_CHAINS } from "./chains";
+import {
+  chainBySlug,
+  chainOf,
+  CHAINS,
+  ETHEREUM,
+  isSupportedChainId,
+  nativeSymbolOf,
+  readsV3,
+  readsV4,
+  V3_CHAINS,
+  V4_CHAINS,
+} from "./chains";
 import { poolName } from "../usage/usageLines";
 import { poolIdentityFor } from "../uniswap/subgraphPoolIdentity";
 
@@ -10,20 +21,38 @@ const POOL = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640";
 const PARAMETERS = { horizonDays: 30, standardDeviationMultiplier: 1 } as const;
 
 describe("the chains", () => {
-  it("are Ethereum, Base, Arbitrum One and Unichain, by their own ids", () => {
+  it("are Ethereum, Base, Arbitrum One, Unichain, OP Mainnet and Polygon, by their own ids", () => {
     expect(CHAINS.map(({ id, slug }) => [id, slug])).toEqual([
       [1, "ethereum"],
       [8453, "base"],
       [42161, "arbitrum"],
       [130, "unichain"],
+      [10, "optimism"],
+      [137, "polygon"],
     ]);
-    expect(isSupportedChainId(10)).toBe(false);
+    expect(isSupportedChainId(56)).toBe(false);
+  });
+
+  it("each name their own currency: ether everywhere but Polygon, where it is POL", () => {
+    expect(CHAINS.map(({ slug, native }) => [slug, native])).toEqual([
+      ["ethereum", "ETH"],
+      ["base", "ETH"],
+      ["arbitrum", "ETH"],
+      ["unichain", "ETH"],
+      ["optimism", "ETH"],
+      ["polygon", "POL"],
+    ]);
+    expect(nativeSymbolOf(137)).toBe("POL");
+    expect(nativeSymbolOf(10)).toBe("ETH");
+    expect(nativeSymbolOf(56)).toBe("ETH");
   });
 
   it("are found by slug, and nothing else is read as one", () => {
     expect(chainBySlug("base")?.id).toBe(8453);
     expect(chainBySlug("Base")).toBeNull();
-    expect(chainBySlug("optimism")).toBeNull();
+    expect(chainBySlug("optimism")?.id).toBe(10);
+    expect(chainBySlug("polygon")?.id).toBe(137);
+    expect(chainBySlug("bnb")).toBeNull();
     expect(chainOf(42161).slug).toBe("arbitrum");
   });
 });
@@ -59,12 +88,14 @@ describe("a link to a pool's analysis", () => {
 
 describe("the chains v4 is read on", () => {
   it("are every chain", () => {
-    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum", "unichain"]);
-    expect([readsV4(1), readsV4(8453), readsV4(42161), readsV4(130)]).toEqual([true, true, true, true]);
+    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum", "unichain", "optimism", "polygon"]);
+    expect([readsV4(1), readsV4(8453), readsV4(42161), readsV4(130), readsV4(10), readsV4(137)]).toEqual([
+      true, true, true, true, true, true,
+    ]);
   });
 
   it("read v3 everywhere but Unichain, where no v3 source answers", () => {
-    expect(V3_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum"]);
+    expect(V3_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum", "optimism", "polygon"]);
     expect([readsV3(1), readsV3(130)]).toEqual([true, false]);
     expect(poolIdentityFor("v3", POOL, 130)).toBeNull();
     expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 130)?.chainId).toBe(130);

@@ -198,3 +198,26 @@ describe("V4PoolIdentity and the hook", () => {
     expect(markup).not.toContain("Around swaps");
   });
 });
+
+describe("V4PoolIdentity and the chain's own currency", () => {
+  const holdingNative = (chainId: number, symbol: string): DataResult<V4Pool> => {
+    const base = pool({ kind: "static", feePpm: 500 }, null);
+    if (base.status !== "success") throw new Error("fixture");
+    return {
+      status: "success",
+      data: {
+        ...base.data,
+        chainId,
+        token0: { chainId, address: `0x${"0".repeat(40)}`, symbol, decimals: 18 },
+        token1: { ...base.data.token1, chainId },
+      },
+    };
+  };
+
+  it("names ether as ether on mainnet, and POL as POL on Polygon", () => {
+    expect(render(holdingNative(1, "ETH"))).toContain("Native ETH");
+    expect(render(holdingNative(137, "POL"))).toContain("Native POL");
+    expect(render(holdingNative(137, "POL"))).toContain("own currency, POL,");
+    expect(render(holdingNative(137, "POL"))).not.toContain("Native ETH");
+  });
+});

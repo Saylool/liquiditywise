@@ -170,6 +170,19 @@ describe("the manager on each chain", () => {
     expect(isV4PositionManagerCode(BASE_RUNTIME, keccak256Hex)).toBe(false);
   });
 
+  it.each([
+    ["OP Mainnet", 10, "optimism", 137],
+    ["Polygon", 137, "polygon", 10],
+  ] as const)("holds %s's manager to its own hash, recomputed from its real runtime, and to no other chain's", (_, id, file, other) => {
+    const runtime = readFileSync(join(__dirname, "testing", `${file}-v4-position-manager.hex`), "utf8").trim();
+
+    expect((runtime.length - 2) / 2).toBe(23_877);
+    expect(keccak256Hex(runtime)).toBe(V4_POSITION_MANAGERS[id].codeHash);
+    expect(isV4PositionManagerCode(runtime, keccak256Hex, id)).toBe(true);
+    expect(isV4PositionManagerCode(runtime, keccak256Hex, other)).toBe(false);
+    expect(isV4PositionManagerCode(runtime, keccak256Hex, 8453)).toBe(false);
+  });
+
   it("is 23,877 bytes on Base, as on mainnet", () => {
     expect((BASE_RUNTIME.length - 2) / 2).toBe(23_877);
   });
@@ -179,7 +192,7 @@ describe("the manager on each chain", () => {
 
     expect(new Set(managers.map(({ address }) => address)).size).toBe(managers.length);
     expect(new Set(managers.map(({ codeHash }) => codeHash)).size).toBe(managers.length);
-    expect(managers).toHaveLength(4);
+    expect(managers).toHaveLength(6);
     expect(V4_POSITION_MANAGERS[1].codeHash).toBe(V4_POSITION_MANAGER_CODE_HASH);
   });
 });

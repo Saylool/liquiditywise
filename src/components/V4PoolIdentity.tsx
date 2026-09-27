@@ -1,3 +1,4 @@
+import { nativeSymbolOf } from "../lib/chains/chains";
 import { formatFeePpm, formatPercent, formatWhole } from "../lib/format/displayFormats";
 import { priceStepRatio } from "../lib/format/priceStep";
 import { HookPermissions } from "./HookPermissions";
@@ -155,9 +156,9 @@ export function V4PoolIdentity({
           />
           {holdsNativeEther ? (
             <Figure
-              label={t.v4.nativeCurrency}
+              label={t.v4.nativeCurrency(nativeSymbolOf(pool.chainId))}
               value={ZERO_ADDRESS}
-              note={t.v4.nativeCurrencyNote}
+              note={t.v4.nativeCurrencyNote(nativeSymbolOf(pool.chainId))}
             />
           ) : null}
         </dl>

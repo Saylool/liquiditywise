@@ -16,6 +16,8 @@ const V3_SUBGRAPH = {
   1: () => process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
   8453: () => process.env.UNISWAP_V3_BASE_SUBGRAPH_ID,
   42161: () => process.env.UNISWAP_V3_ARBITRUM_SUBGRAPH_ID,
+  10: () => process.env.UNISWAP_V3_OPTIMISM_SUBGRAPH_ID,
+  137: () => process.env.UNISWAP_V3_POLYGON_SUBGRAPH_ID,
 } as const satisfies Record<V3ChainId, () => string | undefined>;
 
 const V4_SUBGRAPH = {
@@ -23,6 +25,8 @@ const V4_SUBGRAPH = {
   8453: () => process.env.UNISWAP_V4_BASE_SUBGRAPH_ID,
   42161: () => process.env.UNISWAP_V4_ARBITRUM_SUBGRAPH_ID,
   130: () => process.env.UNISWAP_V4_UNICHAIN_SUBGRAPH_ID,
+  10: () => process.env.UNISWAP_V4_OPTIMISM_SUBGRAPH_ID,
+  137: () => process.env.UNISWAP_V4_POLYGON_SUBGRAPH_ID,
 } as const satisfies Record<V4ChainId, () => string | undefined>;
 
 const RPC = {
@@ -30,6 +34,8 @@ const RPC = {
   8453: () => process.env.BASE_RPC_URL,
   42161: () => process.env.ARBITRUM_RPC_URL,
   130: () => process.env.UNICHAIN_RPC_URL,
+  10: () => process.env.OPTIMISM_RPC_URL,
+  137: () => process.env.POLYGON_RPC_URL,
 } as const satisfies Record<ChainId, () => string | undefined>;
 
 /** The v3 subgraph on a chain; on a chain v3 is not read on there is none, never mainnet's. */

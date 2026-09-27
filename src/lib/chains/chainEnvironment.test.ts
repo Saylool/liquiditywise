@@ -43,6 +43,31 @@ describe("which source serves which chain", () => {
   });
 });
 
+describe("OP Mainnet and Polygon", () => {
+  it("each have their own v3 and v4 subgraph and their own endpoint, never mainnet's", () => {
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", "mainnet-v4");
+    vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
+    vi.stubEnv("UNISWAP_V3_OPTIMISM_SUBGRAPH_ID", "optimism-v3");
+    vi.stubEnv("UNISWAP_V4_OPTIMISM_SUBGRAPH_ID", "optimism-v4");
+    vi.stubEnv("OPTIMISM_RPC_URL", "https://optimism.example");
+    vi.stubEnv("UNISWAP_V3_POLYGON_SUBGRAPH_ID", "polygon-v3");
+    vi.stubEnv("UNISWAP_V4_POLYGON_SUBGRAPH_ID", "polygon-v4");
+    vi.stubEnv("POLYGON_RPC_URL", "https://polygon.example");
+
+    expect([v3SubgraphIdFor(10), v4SubgraphIdFor(10), rpcUrlFor(10)]).toEqual([
+      "optimism-v3",
+      "optimism-v4",
+      "https://optimism.example",
+    ]);
+    expect([v3SubgraphIdFor(137), v4SubgraphIdFor(137), rpcUrlFor(137)]).toEqual([
+      "polygon-v3",
+      "polygon-v4",
+      "https://polygon.example",
+    ]);
+  });
+});
+
 describe("a chain whose v3 pools are not read", () => {
   it("has no v3 subgraph, rather than another chain's, and its own endpoint and v4 subgraph", () => {
     vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
