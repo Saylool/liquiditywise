@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { DataResult } from "../../schemas";
-import { loggingFetch, logUnavailable, logUsage } from "./serverDiagnostics";
+import { loggingFetch, logUnavailable, logUsage, SLOW_RESPONSE_MS } from "./serverDiagnostics";
 
 /*
  * The secrets these tests hunt for. Both are shaped like the real thing: the RPC
@@ -225,5 +225,64 @@ describe("logUsage", () => {
     logUsage("[visit] page=/ pool=- locale=en bot=0 outcome=served", log);
 
     expect(entries).toEqual([{ level: "info", message: "[visit] page=/ pool=- locale=en bot=0 outcome=served" }]);
+  });
+});
+
+describe("a slow answer", () => {
+  const GATEWAY_URL = `https://gateway.thegraph.com/api/subgraphs/id/${GRAPH_KEY}`;
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /* Answers after `ms` by the clock the wrapper reads. */
+  const answeringAfter = (ms: number, status = 200) => {
+    let now = 1_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    return async () => {
+      now += ms;
+      return new Response("{}", { status });
+    };
+  };
+
+  it("is a warning naming the label, the kind of source and the time, and nothing of the request", async () => {
+    const { entries, log } = capture();
+
+    await loggingFetch("v4-pair-pools", answeringAfter(SLOW_RESPONSE_MS), log)(RPC_URL, init);
+    await loggingFetch("v4-pair-pools", answeringAfter(SLOW_RESPONSE_MS + 500), log)(GATEWAY_URL, init);
+
+    expect(entries).toEqual([
+      { level: "warn", message: `[v4-pair-pools] slow chain answer: ${SLOW_RESPONSE_MS}ms` },
+      { level: "warn", message: `[v4-pair-pools] slow subgraph answer: ${SLOW_RESPONSE_MS + 500}ms` },
+    ]);
+    expect(entries.map(({ message }) => message).join(" ")).not.toMatch(/SUPERSECRETKEY|graphkey|example\.com/);
+  });
+
+  it("is nothing just under the line", async () => {
+    const { lines, log } = capture();
+
+    await loggingFetch("v4-pair-pools", answeringAfter(SLOW_RESPONSE_MS - 1), log)(RPC_URL, init);
+
+    expect(lines).toEqual([]);
+  });
+
+  it("is reported once, as the failure, when the answer was also a failure", async () => {
+    const { lines, log } = capture();
+
+    await loggingFetch("v4-pair-pools", answeringAfter(SLOW_RESPONSE_MS, 503), log)(RPC_URL, init);
+
+    expect(lines).toEqual([`[v4-pair-pools] HTTP 503 after ${SLOW_RESPONSE_MS}ms`]);
+  });
+
+  it("names the source a request that threw was sent to, and reads an address it cannot parse as the chain", async () => {
+    const { lines, log } = capture();
+    const thrower = async () => {
+      throw new DOMException("aborted", "AbortError");
+    };
+
+    await expect(loggingFetch("v4-pair-pools", thrower, log)(GATEWAY_URL, init)).rejects.toThrow();
+    await expect(loggingFetch("v4-pair-pools", thrower, log)("not a url", init)).rejects.toThrow();
+
+    expect(lines[0]).toMatch(/^\[v4-pair-pools\] request threw AbortError from the subgraph after \d+ms$/);
+    expect(lines[1]).toContain("from the chain");
   });
 });

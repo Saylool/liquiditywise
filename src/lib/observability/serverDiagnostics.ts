@@ -79,15 +79,39 @@ const errorName = (error: unknown): string =>
   error instanceof Error ? error.name : typeof error;
 
 /**
- * Wraps a `fetch` so failed responses leave a server-side trace.
+ * How long a successful answer may take before it is worth a line: longer than
+ * any healthy read here, and short enough that a page streaming a panel ten
+ * seconds late says which request held it.
+ */
+export const SLOW_RESPONSE_MS = 3_000;
+
+const GRAPH_GATEWAY_HOST = "gateway.thegraph.com";
+
+/**
+ * Which kind of source a request went to, for a slow line: the subgraph
+ * gateway or a chain endpoint. The one thing read from `input`, compared
+ * against a public host name and never written down — the URL itself may
+ * carry a key.
+ */
+const sourceKind = (input: Parameters<FetchLike>[0]): "subgraph" | "chain" => {
+  try {
+    return new URL(input).hostname === GRAPH_GATEWAY_HOST ? "subgraph" : "chain";
+  } catch {
+    return "chain";
+  }
+};
+
+/**
+ * Wraps a `fetch` so failed and slow responses leave a server-side trace.
  *
- * A successful response logs nothing. Every read this application makes succeeds
- * far more often than it fails, and a line per request would bury the one that
- * matters.
+ * A quick successful response logs nothing. Every read this application makes
+ * succeeds far more often than it fails, and a line per request would bury the
+ * one that matters. A slow one is a line, because a panel that streams in ten
+ * seconds late is otherwise a mystery.
  *
- * Neither `input` nor `init` is ever read for logging — that is the whole point
- * of putting this at the edge rather than inside the transport, which would have
- * to be handed the same dangerous values to be useful.
+ * `init` is never read, and `input` only for its host (see {@link sourceKind}) —
+ * that is the whole point of putting this at the edge rather than inside the
+ * transport, which would have to be handed the same dangerous values.
  */
 export const loggingFetch = (
   label: string,
@@ -99,17 +123,20 @@ export const loggingFetch = (
 
     try {
       const response = await fetchImpl(input, init);
+      const elapsed = Date.now() - startedAt;
       if (!response.ok) {
         // Always `error`: a provider answering with a failure status is never
         // ordinary use. An address that matches no pool comes back as a
         // perfectly successful 200 with an empty result.
-        log("error", `[${label}] HTTP ${response.status} after ${Date.now() - startedAt}ms`);
+        log("error", `[${label}] HTTP ${response.status} after ${elapsed}ms`);
+      } else if (elapsed >= SLOW_RESPONSE_MS) {
+        log("warn", `[${label}] slow ${sourceKind(input)} answer: ${elapsed}ms`);
       }
       return response;
     } catch (error) {
       log(
         "error",
-        `[${label}] request threw ${errorName(error)} after ${Date.now() - startedAt}ms`,
+        `[${label}] request threw ${errorName(error)} from the ${sourceKind(input)} after ${Date.now() - startedAt}ms`,
       );
       throw error;
     }
