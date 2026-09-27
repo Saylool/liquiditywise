@@ -99,17 +99,35 @@ export const weeklyReport = (input: WeekInput): string => {
   const rejected = input.lines.filter((line) => line.kind === "rejected").length;
 
   const people = visits.filter((visit) => !visit.bot);
-  const served = people.filter((visit) => visit.outcome === "served");
   const refusedVisits = people.filter((visit) => visit.outcome === "refused");
   const refused = refusedVisits.length;
   const bots = visits.length - people.length;
+  /*
+   * A minute in which the rate limit turned a reader's whole allowance away
+   * is a client going faster than any reader, whatever its user agent says;
+   * the pages it was served in that minute are its too, and counted apart
+   * rather than as people's — the first week's burst came with 32 of them.
+   */
+  const burstMinutes = new Set(
+    ranked(tally(refusedVisits.flatMap(({ minute }) => (minute === null ? [] : [minute]))))
+      .filter(([, n]) => n >= BURST_MINIMUM)
+      .map(([minute]) => minute),
+  );
+  const inBurst = (visit: { readonly minute: string | null }) => visit.minute !== null && burstMinutes.has(visit.minute);
+  const servedAll = people.filter((visit) => visit.outcome === "served");
+  const served = servedAll.filter((visit) => !inBurst(visit));
+  const burstServed = servedAll.length - served.length;
 
   const out: string[] = [`📊 LiquidityWise · the week of ${day(input.from)} – ${day(input.to)}`];
 
   if (visits.length === 0) {
     out.push("No page was opened this week, by people or by bots.");
   } else {
-    out.push(`Pages opened by people: ${number(served.length)}${bots > 0 ? ` (and ${number(bots)} by bots)` : ""}`);
+    const aside = [
+      ...(bots > 0 ? [`${number(bots)} by bots`] : []),
+      ...(burstServed > 0 ? [`${number(burstServed)} in a burst the rate limit cut short`] : []),
+    ];
+    out.push(`Pages opened by people: ${number(served.length)}${aside.length > 0 ? ` (and ${aside.join(", and ")})` : ""}`);
     const byPage = ranked(tally(served.map((visit) => PAGE_NAMES[visit.page])));
     if (byPage.length > 0) out.push(`  ${byPage.map(([name, n]) => `${name} ${number(n)}`).join(" · ")}`);
     if (refused > 0) out.push(`Turned away by the rate limit: ${number(refused)}${burst(refusedVisits, refused)}`);

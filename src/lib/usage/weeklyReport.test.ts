@@ -139,6 +139,26 @@ describe("the weekly report", () => {
     expect(undated).not.toContain("within one minute");
   });
 
+  it("counts the pages served inside a refused burst apart from people's", () => {
+    const stamped = (stamp: string, outcome: "served" | "refused", page: "/pool" | "/" = "/pool") => {
+      const parsed = parseUsageLine(`${stamp}:12+0000 srv npm[1]: ${visitLine({ page, pool: page === "/" ? null : USDC_WETH, locale: "en", bot: false, outcome })}`);
+      if (parsed === null) throw new Error("not a line");
+      return parsed;
+    };
+    const lines = [
+      ...Array.from({ length: 10 }, () => stamped("2026-09-20T05:05", "refused")),
+      ...Array.from({ length: 4 }, () => stamped("2026-09-20T05:05", "served")),
+      stamped("2026-09-20T09:00", "served", "/"),
+      stamped("2026-09-20T09:01", "refused"),
+    ];
+    const text = report(lines);
+
+    expect(text).toContain("Pages opened by people: 1 (and 4 in a burst the rate limit cut short)");
+    expect(text).toContain("  home 1");
+    expect(text).not.toContain("Pools opened");
+    expect(report(lines.slice(4))).toContain("Pages opened by people: 5\n");
+  });
+
   it("names the busiest day, and languages most first", () => {
     const text = report([
       opened("2026-09-18", { locale: "tr" }),
