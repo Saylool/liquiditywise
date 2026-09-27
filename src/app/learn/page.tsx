@@ -37,6 +37,7 @@ export default async function LearnPage() {
         copy={copy}
         pools={{ href: "/pool", label: getInterfaceCopy(locale).pools }}
         hooks={{ href: localePath(locale, "/hooks"), label: t.hooks.fromHome }}
+        topicHref={(id) => localePath(locale, `/learn/${id}`)}
       />
     </WorkspaceShell>
   );

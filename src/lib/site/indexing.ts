@@ -3,7 +3,8 @@
  * robots file, the sitemap and the test that holds every page's own metadata
  * to them all read it.
  *
- * Open: the front page, the hook directory and the quick guide, which say the
+ * Open: the front page, the hook directory and the quick guide with its
+ * topics, and the week's most traded pools, which say the
  * same thing to everyone and cost nothing to render twice. Closed: every page
  * that reads
  * live data for one pool, pair or address. Each render spends third-party
@@ -13,7 +14,21 @@
 
 export const SITE_URL = "https://liquiditywise.com";
 
-export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded"] as const;
+/**
+ * One page per quick-guide topic, so a search for one idea in one language
+ * lands on that idea. Written out rather than built from the guide's ids,
+ * because the proxy's matcher has to be, and a test holds the two together.
+ */
+export const LEARN_TOPIC_PAGES = [
+  "/learn/concentrated",
+  "/learn/in-range",
+  "/learn/divergence",
+  "/learn/width",
+  "/learn/fee-tiers",
+  "/learn/hooks",
+] as const;
+
+export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", ...LEARN_TOPIC_PAGES] as const;
 
 /** Pages that read live data per request, plus the routes that are not pages at all. */
 export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/holdings", "/api/", "/__backup/"] as const;

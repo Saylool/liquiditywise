@@ -6,7 +6,8 @@ import robots from "../../app/robots";
 import sitemap from "../../app/sitemap";
 import { LOCALES } from "../i18n/locales";
 import { PAGES } from "../usage/usageLines";
-import { CLOSED_PATHS, INDEXED_PAGES, SITE_URL } from "./indexing";
+import { BRIEF_IDS } from "../learn/briefs";
+import { CLOSED_PATHS, INDEXED_PAGES, LEARN_TOPIC_PAGES, SITE_URL } from "./indexing";
 
 /*
  * Every page's own metadata, the robots file and the sitemap, held to one
@@ -26,25 +27,41 @@ const routes = (directory: string): { route: string; source: string }[] =>
     return [{ route: `/${segment}`, source: readFileSync(path, "utf8") }];
   });
 
+/*
+ * A dynamic route stands for the pages it serves: the guide's topics are one
+ * `page.tsx` under `[topic]` and six open addresses.
+ */
+const DYNAMIC: Record<string, { readonly pages: readonly string[]; readonly alternates: string }> = {
+  "/learn/[topic]": { pages: LEARN_TOPIC_PAGES, alternates: "getOpenPageAlternates(`/learn/${topic}`)" },
+};
+
 const pages = routes(APP);
 const closedToCrawlers = (source: string) => /robots:\s*\{\s*index:\s*false/.test(source);
 
 describe("which pages a search engine may read", () => {
   it("finds the pages, so it is not passing on an empty list", () => {
-    expect(pages.map(({ route }) => route).sort()).toEqual([...PAGES].sort());
+    const served = pages.flatMap(({ route }) => DYNAMIC[route]?.pages ?? [route]);
+
+    expect(served.sort()).toEqual([...PAGES].sort());
   });
 
   it("closes every page that says it is closed, and lists every page that does not", () => {
     for (const { route, source } of pages) {
-      if (closedToCrawlers(source)) expect(CLOSED_PATHS, route).toContain(route);
-      else expect(INDEXED_PAGES, route).toContain(route);
+      for (const page of DYNAMIC[route]?.pages ?? [route]) {
+        if (closedToCrawlers(source)) expect(CLOSED_PATHS, page).toContain(page);
+        else expect(INDEXED_PAGES, page).toContain(page);
+      }
     }
   });
 
   it("has every open page name its own address in every language", () => {
     for (const { route, source } of pages.filter(({ source }) => !closedToCrawlers(source))) {
-      expect(source, route).toContain(`getOpenPageAlternates("${route}")`);
+      expect(source, route).toContain(DYNAMIC[route]?.alternates ?? `getOpenPageAlternates("${route}")`);
     }
+  });
+
+  it("has a topic page for every brief in the guide, and no other", () => {
+    expect([...LEARN_TOPIC_PAGES]).toEqual(BRIEF_IDS.map((id) => `/learn/${id}`));
   });
 
   it("tells crawlers the same thing in robots.txt, and points at the sitemap", () => {

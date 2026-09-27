@@ -10,6 +10,7 @@ const render = () =>
       copy={getLearnCopy("tr")}
       pools={{ href: "/pool", label: "Havuzları keşfet" }}
       hooks={{ href: "/tr/hooks", label: "Tüm hook'ları gör" }}
+      topicHref={(id) => `/tr/learn/${id}`}
     />,
   );
 
@@ -32,5 +33,13 @@ describe("the quick guide page", () => {
 
     expect(markup).toContain('href="/pool"');
     expect(markup).toContain('href="/tr/hooks"');
+  });
+});
+
+describe("the guide's topics", () => {
+  it("lead from each brief's title to its own page, at the language's address", () => {
+    const markup = render();
+
+    for (const id of BRIEF_IDS) expect(markup).toContain(`href="/tr/learn/${id}"`);
   });
 });

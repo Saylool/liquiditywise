@@ -1,4 +1,5 @@
 import { chainBySlug, chainOf } from "../chains/chains.ts";
+import { LEARN_TOPIC_PAGES } from "../site/indexing.ts";
 
 /*
  * The two lines this application writes about its own use, and the reader of
@@ -16,7 +17,17 @@ import { chainBySlug, chainOf } from "../chains/chains.ts";
  * No runtime imports: deploy/usage-report.mts runs this under plain Node.
  */
 
-export const PAGES = ["/", "/pool", "/v4", "/compare", "/holdings", "/hooks", "/learn", "/most-traded"] as const;
+export const PAGES = [
+  "/",
+  "/pool",
+  "/v4",
+  "/compare",
+  "/holdings",
+  "/hooks",
+  "/learn",
+  "/most-traded",
+  ...LEARN_TOPIC_PAGES,
+] as const;
 export type Page = (typeof PAGES)[number];
 
 export type Outcome = "served" | "refused";
