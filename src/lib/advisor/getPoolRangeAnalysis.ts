@@ -11,12 +11,7 @@ import { getEthereumDailyPriceHistory } from "../uniswap/getEthereumDailyPriceHi
 import { getEthereumPoolMarketSnapshot } from "../uniswap/getEthereumPoolMarketSnapshot";
 import { getEthereumV3Pool } from "../uniswap/getEthereumV3Pool";
 import { getEthereumV4Pool } from "../uniswap/getEthereumV4Pool";
-import {
-  analysePoolRange,
-  DEFAULT_DEPOSIT_USD,
-  DEFAULT_PRICE_BAND_PARAMETERS,
-  type PoolRangeAnalysisResult,
-} from "./poolRangeAnalysis";
+import { analysePoolRange, type PoolRangeAnalysisResult } from "./poolRangeAnalysis";
 import type { ChainId } from "../chains/chains";
 
 /*
@@ -73,10 +68,15 @@ const POOL_READERS = {
 export const getPoolRangeAnalysis = async (
   protocolVersion: ProtocolVersion,
   poolId: string,
-  parameters: PriceBandParameters = DEFAULT_PRICE_BAND_PARAMETERS,
-  depositUsd: number = DEFAULT_DEPOSIT_USD,
-  poolRead?: Promise<DataResult<V3Pool> | DataResult<V4Pool>>,
-  chainId: ChainId = 1,
+  parameters: PriceBandParameters,
+  depositUsd: number,
+  poolRead: Promise<DataResult<V3Pool> | DataResult<V4Pool>> | undefined,
+  /*
+   * Required, with no mainnet default: the compare page once left it out for
+   * its v4 column, and every v4 pool on another chain was then looked up on
+   * mainnet and reported missing.
+   */
+  chainId: ChainId,
 ): Promise<PoolRangeAnalysisResult> => {
   const [pool, snapshot, history] = await Promise.all([
     poolRead ?? POOL_READERS[protocolVersion](poolId, chainId),

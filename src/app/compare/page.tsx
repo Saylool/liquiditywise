@@ -175,7 +175,7 @@ export default async function ComparePage({
           tickSpacing: entry.tickSpacing,
           hookAltersSwaps: alterSwapEconomics(entry.hookAddress),
           current: false,
-          result: await getPoolRangeAnalysis("v4", entry.id, parameters, depositUsd),
+          result: await getPoolRangeAnalysis("v4", entry.id, parameters, depositUsd, undefined, chain.id),
         }),
       ),
     ),

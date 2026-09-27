@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "./poolRangeAnalysis";
+
 /*
  * The one place the three reads of an analysis meet: each must be asked about
  * the chain the page was asked about, or two of them would describe a
@@ -17,7 +19,12 @@ vi.mock("../uniswap/getEthereumV3Pool", () => ({
     return unavailable;
   },
 }));
-vi.mock("../uniswap/getEthereumV4Pool", () => ({ getEthereumV4Pool: async () => unavailable }));
+vi.mock("../uniswap/getEthereumV4Pool", () => ({
+  getEthereumV4Pool: async (...args: unknown[]) => {
+    asked.pool.push(args);
+    return unavailable;
+  },
+}));
 vi.mock("../uniswap/getEthereumPoolMarketSnapshot", () => ({
   getEthereumPoolMarketSnapshot: async (...args: unknown[]) => {
     asked.snapshot.push(args);
@@ -43,18 +50,21 @@ describe("an analysis on a chain", () => {
   it("asks every read about that chain", async () => {
     const { getPoolRangeAnalysis } = await import("./getPoolRangeAnalysis");
 
-    await getPoolRangeAnalysis("v3", POOL, undefined, undefined, undefined, 8453);
+    await getPoolRangeAnalysis("v3", POOL, DEFAULT_PRICE_BAND_PARAMETERS, DEFAULT_DEPOSIT_USD, undefined, 8453);
 
     expect(asked.pool).toEqual([[POOL, 8453]]);
     expect(asked.snapshot).toEqual([["v3", POOL, 8453]]);
     expect(asked.history).toEqual([["v3", POOL, 8453]]);
   });
 
-  it("asks about mainnet when no chain is named", async () => {
+  it("asks a v4 pool's reads about its own chain too", async () => {
     const { getPoolRangeAnalysis } = await import("./getPoolRangeAnalysis");
+    const id = `0x${"e5".repeat(32)}`;
 
-    await getPoolRangeAnalysis("v3", POOL);
+    await getPoolRangeAnalysis("v4", id, DEFAULT_PRICE_BAND_PARAMETERS, DEFAULT_DEPOSIT_USD, undefined, 137);
 
-    expect(asked.history).toEqual([["v3", POOL, 1]]);
+    expect(asked.pool).toEqual([[id, 137]]);
+    expect(asked.snapshot).toEqual([["v4", id, 137]]);
+    expect(asked.history).toEqual([["v4", id, 137]]);
   });
 });
