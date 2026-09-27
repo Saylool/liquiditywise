@@ -4,9 +4,12 @@ import {
   type PairFeeTier,
   type PairFeeTiers,
   PairFeeTiersSchema,
+  PAIR_FEE_TIER_FETCH_LIMIT,
   type V3PoolMetadata,
 } from "../../schemas";
 import { V3PoolListResponseSchema } from "./v3PoolListRawResponse";
+import { V3PoolDaysResponseSchema } from "./v3PoolDaysRawResponse";
+import type { RawPoolCard } from "./v3PoolCardRawResponse";
 import type { PoolReserves } from "./ethereumV3PoolReserves";
 import { normalizePoolCard } from "./v3PoolCardAdapter";
 import type { ChainId } from "../chains/chains";
@@ -133,4 +136,34 @@ export const normalizeV3PairFeeTiers = ({
   if (!result.success) return unavailable(MALFORMED);
 
   return { status: "success", data: result.data };
+};
+
+/**
+ * A pair payload made from the week's busiest pool-days: every pool of the
+ * pair that traded, once, in the order it first appears, with the day
+ * table's health. For a chain whose subgraph answers the pair query too
+ * slowly (see chains.ts). Pure.
+ *
+ * A tier that did not trade this week is not here, which is not the same as
+ * not existing, so a caller must not treat an absent pool as an answer.
+ */
+export const v3PairPayloadFromDays = (payload: unknown, token0: string, token1: string): unknown => {
+  const parsed = V3PoolDaysResponseSchema.safeParse(payload);
+  if (!parsed.success) return payload;
+  const { data, errors } = parsed.data;
+  if (data == null) return { data, errors };
+
+  const seen = new Set<string>();
+  const pools: RawPoolCard[] = [];
+  for (const { pool } of data.poolDayDatas) {
+    const id = pool.id.toLowerCase();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    if (pool.token0.id.toLowerCase() !== token0 || pool.token1.id.toLowerCase() !== token1) continue;
+    pools.push(pool);
+    /* No more than the pair query would have fetched, which is as many as the schema admits. */
+    if (pools.length === PAIR_FEE_TIER_FETCH_LIMIT) break;
+  }
+
+  return { data: { pools, _meta: data._meta }, errors };
 };

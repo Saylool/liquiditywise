@@ -10,7 +10,7 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools", v4: true, v4Pairs: "pools" },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
   /*
    * "days": Base's v3 subgraph answers no query that filters pools by a
    * token's symbol — measured on 2026-09-25, every shape of it failed at the
@@ -35,8 +35,12 @@ export const CHAINS = [
    * panel was found timing out on every page. So a v4 page there lists the
    * pair's pools from the week's busiest pool-days, which the warmer keeps.
    */
-  { id: 8453, slug: "base", name: "Base", v3Search: "days", v4: true, v4Pairs: "days" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v4: true, v4Pairs: "pools" },
+  /*
+   * `v3Pairs: "days"` for the same reason: Base's v3 pair query answered in
+   * 10.5 to 14.5 seconds on 2026-09-25, and still took ten on 2026-09-27.
+   */
+  { id: 8453, slug: "base", name: "Base", v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];

@@ -205,3 +205,52 @@ describe("fetchEthereumV3PairFeeTiers for a pair named from elsewhere", () => {
     expect(result.data.analysedPoolId).toBeNull();
   });
 });
+
+describe("the tiers from the week's day table", () => {
+  const OTHER = "0x" + "7".repeat(40);
+  const daysOf = (cards: readonly unknown[]) => async () =>
+    ({
+      status: "success",
+      data: {
+        payload: {
+          data: {
+            poolDayDatas: cards.map((pool) => ({ date: 1, volumeUSD: "1", feesUSD: "0", pool })),
+            _meta: { hasIndexingErrors: false },
+          },
+        },
+        fetchedAt: NOW.toISOString(),
+      },
+    }) as const;
+
+  it("lists the pair's tiers from it, and asks the subgraph nothing", async () => {
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
+    const result = await run({
+      fetchImpl,
+      readDays: daysOf([rawPool(POOL_3000, "3000", "1"), rawPool(POOL_500, "500", "1"), rawPool(POOL_500, "500", "1")]),
+    });
+
+    expect(result.status === "success" && result.data.tiers.map(({ pool }) => pool.id).sort()).toEqual(
+      [POOL_500, POOL_3000].sort(),
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("asks the pair query when the pool being read did not trade this week", async () => {
+    const fetchImpl = vi.fn<FetchLike>(async () => jsonResponse(successBody));
+    await run({ fetchImpl, readDays: daysOf([rawPool(POOL_3000, "3000", "1")]) });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks the pair query when the week holds none of the pair, or could not be read", async () => {
+    const quiet = vi.fn<FetchLike>(async () => jsonResponse(successBody));
+    await run({ fetchImpl: quiet, poolAddress: null, readDays: daysOf([{ ...rawPool(OTHER, "500", "1"), token0: { ...rawPool(OTHER, "500", "1").token0, id: OTHER } }]) });
+    const down = vi.fn<FetchLike>(async () => jsonResponse(successBody));
+    await run({
+      fetchImpl: down,
+      readDays: async () => ({ status: "unavailable", reason: "timeout", notice: "market-data-timed-out" }) as const,
+    });
+
+    expect([quiet.mock.calls.length, down.mock.calls.length]).toEqual([1, 1]);
+  });
+});

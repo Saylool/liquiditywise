@@ -4,6 +4,8 @@ import {
   PAIR_FEE_TIER_FETCH_LIMIT,
   type PairFeeTiers,
 } from "../../schemas";
+import { v3PairPayloadFromDays } from "./v3PairFeeTiersAdapter";
+import { V3PoolListResponseSchema } from "./v3PoolListRawResponse";
 import { fetchEthereumV3PoolReserves } from "./ethereumV3PoolReserves";
 import {
   normalizeV3PairFeeTiers,
@@ -78,6 +80,12 @@ export type EthereumV3PairFeeTiersRequest = {
   /** Injected, because a result carries when it was read. */
   readonly now: () => Date;
   readonly timeoutMs?: number;
+  /**
+   * The week's pool-days, for a chain whose subgraph answers the pair query
+   * too slowly: the pair's tiers are then the ones that traded this week, and
+   * the query is asked only when the analysed pool is not among them.
+   */
+  readonly readDays?: () => Promise<DataResult<{ readonly payload: unknown; readonly fetchedAt: string }>>;
   readonly onDiagnostic?: PairFeeTiersDiagnostic | undefined;
 };
 
@@ -93,6 +101,31 @@ export type EthereumV3PairFeeTiersRequest = {
  * second selection bolted onto the metadata read. A pair's siblings are context;
  * failing to read them must cost the page a panel, never its figures.
  */
+/**
+ * The pair's tiers from the week's day table, or `null` to ask the pair query
+ * instead: when there is no day table to read, when it could not be read, or
+ * when the pool being read is not among the week's — its page must still find
+ * it, which the schema requires to be listed.
+ */
+const pairFromDays = async (
+  readDays: EthereumV3PairFeeTiersRequest["readDays"],
+  token0: string,
+  token1: string,
+  analysedPoolId: string | null,
+): Promise<{ readonly ok: true; readonly payload: unknown } | null> => {
+  if (readDays === undefined) return null;
+  const days = await readDays();
+  if (days.status === "unavailable") return null;
+
+  const payload = v3PairPayloadFromDays(days.data.payload, token0, token1);
+  const listed = V3PoolListResponseSchema.safeParse(payload);
+  const ids = listed.success ? (listed.data.data?.pools ?? []).map((pool) => pool.id.toLowerCase()) : [];
+  if (ids.length === 0) return null;
+  if (analysedPoolId !== null && !ids.includes(analysedPoolId)) return null;
+
+  return { ok: true, payload };
+};
+
 export const fetchEthereumV3PairFeeTiers = async (
   request: EthereumV3PairFeeTiersRequest,
 ): Promise<DataResult<PairFeeTiers>> => {
@@ -112,18 +145,20 @@ export const fetchEthereumV3PairFeeTiers = async (
     return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
-  const transport = await postV3SubgraphQuery({
-    apiKey,
-    subgraphId,
-    query: V3_PAIR_FEE_TIERS_QUERY,
-    variables: {
-      token0: token0.data,
-      token1: token1.data,
-      limit: PAIR_FEE_TIER_FETCH_LIMIT,
-    },
-    fetchImpl: request.fetchImpl,
-    timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
-  });
+  const transport =
+    (await pairFromDays(request.readDays, token0.data, token1.data, poolAddress.data)) ??
+    (await postV3SubgraphQuery({
+      apiKey,
+      subgraphId,
+      query: V3_PAIR_FEE_TIERS_QUERY,
+      variables: {
+        token0: token0.data,
+        token1: token1.data,
+        limit: PAIR_FEE_TIER_FETCH_LIMIT,
+      },
+      fetchImpl: request.fetchImpl,
+      timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
+    }));
 
   if (!transport.ok) {
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };

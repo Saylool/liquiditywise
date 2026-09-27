@@ -11,6 +11,7 @@ const asked = vi.hoisted(() => ({
   v4: [] as Record<string, unknown>[],
   v3: [] as Record<string, unknown>[],
   dayChains: [] as unknown[],
+  v3DayChains: [] as unknown[],
   answer: { status: "success", data: "pools" } as unknown,
 }));
 
@@ -22,9 +23,16 @@ vi.mock("./ethereumV4PairPools", () => ({
   },
 }));
 vi.mock("./ethereumV3PairFeeTiers", () => ({
-  fetchEthereumV3PairFeeTiers: async (request: Record<string, unknown>) => {
+  fetchEthereumV3PairFeeTiers: async (request: Record<string, unknown> & { readDays?: () => Promise<unknown> }) => {
     asked.v3.push(request);
+    await request.readDays?.();
     return asked.answer;
+  },
+}));
+vi.mock("./getEthereumV3PoolDays", () => ({
+  getEthereumV3PoolDays: async (chainId: unknown) => {
+    asked.v3DayChains.push(chainId);
+    return { status: "unavailable" };
   },
 }));
 vi.mock("./getEthereumV4PoolDays", () => ({
@@ -44,6 +52,7 @@ beforeEach(() => {
   asked.v4 = [];
   asked.v3 = [];
   asked.dayChains = [];
+  asked.v3DayChains = [];
   asked.answer = { status: "success", data: "pools" };
   forgetV4PairPools();
   forgetV3PairFeeTiers();
@@ -92,6 +101,14 @@ describe("a pair's v3 tiers", () => {
     await getEthereumV3PoolsOfPair({ ...PAIR, chainId: 42161 });
     await getEthereumV3PoolsOfPair({ ...PAIR, chainId: 42161 });
     expect(asked.v3).toHaveLength(4);
+  });
+
+  it("come from the week's day table on Base alone", async () => {
+    await getEthereumV3PoolsOfPair({ ...PAIR, chainId: 8453 });
+    await getEthereumV3PoolsOfPair({ ...PAIR, chainId: 42161 });
+    await getEthereumV3PoolsOfPair(PAIR);
+
+    expect(asked.v3DayChains).toEqual([8453]);
   });
 
   it("wait the search timeout off mainnet, and the default on it", async () => {

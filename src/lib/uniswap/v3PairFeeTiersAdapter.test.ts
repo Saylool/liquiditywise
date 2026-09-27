@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { normalizeV3PairFeeTiers, readPoolsForReserves } from "./v3PairFeeTiersAdapter";
+import { normalizeV3PairFeeTiers, readPoolsForReserves, v3PairPayloadFromDays } from "./v3PairFeeTiersAdapter";
+import { PAIR_FEE_TIER_FETCH_LIMIT } from "../../schemas";
 
 const FETCHED_AT = "2026-09-15T08:21:00.000Z";
 
@@ -266,5 +267,64 @@ describe("the chain a pair's tiers are on", () => {
     expect(succeeded(result).tiers.map(({ pool }) => pool.chainId)).toEqual([8453]);
     expect(readPoolsForReserves(body, 42161).map(({ chainId }) => chainId)).toEqual([42161]);
     expect(readPoolsForReserves(body).map(({ chainId }) => chainId)).toEqual([1]);
+  });
+});
+
+describe("a v3 pair payload made from the week's pool-days", () => {
+  const days = (cards: readonly unknown[], extra: Record<string, unknown> = {}) => ({
+    data: {
+      poolDayDatas: cards.map((pool) => ({ date: 1, volumeUSD: "1", feesUSD: "0", pool })),
+      _meta: { hasIndexingErrors: false },
+    },
+    ...extra,
+  });
+  const idsOf = (made: unknown) => (made as { data: { pools: { id: string }[] } }).data.pools.map(({ id }) => id);
+
+  it("keeps the pair's pools, each once, in the order they first appear, whatever the case of their tokens", () => {
+    const upper = { ...rawPool({ id: address("6"), feeTier: "3000" }), token0: rawToken(USDC.toUpperCase().replace("0X", "0x"), "USDC", "6") };
+    const made = v3PairPayloadFromDays(
+      days([
+        rawPool({ id: POOL_500, feeTier: "500" }),
+        upper,
+        rawPool({ id: POOL_500, feeTier: "500" }),
+        rawPool({ id: address("7"), feeTier: "500", pair: [WETH, USDC] }),
+        rawPool({ id: address("8"), feeTier: "500", pair: [USDC, OTHER_HIGH] }),
+      ]),
+      USDC,
+      WETH,
+    );
+
+    expect(idsOf(made)).toEqual([POOL_500, address("6")]);
+    expect((made as { data: { _meta: unknown } }).data._meta).toEqual({ hasIndexingErrors: false });
+  });
+
+  it("matches the first token as well as the second, in any case", () => {
+    const LETTERS = address("a");
+    const made = v3PairPayloadFromDays(
+      days([
+        rawPool({ id: address("6"), feeTier: "500", pair: [LETTERS.toUpperCase().replace("0X", "0x"), WETH] }),
+        rawPool({ id: address("7"), feeTier: "500", pair: [OTHER_HIGH, WETH] }),
+      ]),
+      LETTERS,
+      WETH,
+    );
+
+    expect(idsOf(made)).toEqual([address("6")]);
+  });
+
+  it("keeps no more than the pair query would have fetched", () => {
+    const cards = Array.from({ length: PAIR_FEE_TIER_FETCH_LIMIT + 3 }, (_, index) =>
+      rawPool({ id: `0x${(index + 1).toString(16).padStart(40, "0")}`, feeTier: "500" }),
+    );
+
+    expect(idsOf(v3PairPayloadFromDays(days(cards), USDC, WETH))).toHaveLength(PAIR_FEE_TIER_FETCH_LIMIT);
+  });
+
+  it("carries the source's errors and missing data through, for the pair reader to refuse", () => {
+    const withErrors = v3PairPayloadFromDays(days([rawPool({ id: POOL_500, feeTier: "500" })], { errors: ["x"] }), USDC, WETH);
+
+    expect(normalize(withErrors).status).toBe("unavailable");
+    expect(v3PairPayloadFromDays({ data: null, errors: ["x"] }, USDC, WETH)).toEqual({ data: null, errors: ["x"] });
+    expect(v3PairPayloadFromDays("nonsense", USDC, WETH)).toBe("nonsense");
   });
 });

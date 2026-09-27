@@ -178,7 +178,7 @@ describe("fetchEthereumV4PoolKeys", () => {
    * seventh batch on, and a reader that threw away the first six with it
    * published every pool as unread.
    */
-  it("keeps what the other batches answered when one is refused", async () => {
+  it("keeps what the other batches answered when one is refused, and asks the refused pools again", async () => {
     const many = Array.from({ length: LOG_BATCH_SIZE + 1 }, (_u, index) => keyAt(index + 1));
     const answering = holding(...many);
     let call = 0;
@@ -188,7 +188,44 @@ describe("fetchEthereumV4PoolKeys", () => {
     };
     const keys = await run({ pools: many.map((key) => request(key)), fetchImpl: flaky });
 
-    expect(keys.size).toBe(1);
-    expect(keys.has(idOf(keyAt(LOG_BATCH_SIZE + 1)))).toBe(true);
+    expect(keys.size).toBe(LOG_BATCH_SIZE + 1);
+    expect(call).toBe(3);
+  });
+
+  it("leaves a pool out when it is refused twice, keeping the rest", async () => {
+    const many = Array.from({ length: LOG_BATCH_SIZE + 1 }, (_u, index) => keyAt(index + 1));
+    const answering = holding(...many);
+    let call = 0;
+    const refusing: FetchLike = async (url, init) => {
+      call += 1;
+      return call === 2 ? answering(url, init) : new Response("nope", { status: 429 });
+    };
+    const keys = await run({ pools: many.map((key) => request(key)), fetchImpl: refusing });
+
+    expect([...keys.keys()]).toEqual([idOf(keyAt(LOG_BATCH_SIZE + 1))]);
+  });
+
+  /* Measured on 2026-09-26: Arbitrum's endpoint answered four pools in ten with no log, and with it when asked again. */
+  it("asks again, once, for a pool that came back with no log", async () => {
+    let asked = 0;
+    const forgetful = endpoint((filter) => {
+      if (filter.topics[1] !== idOf(keyAt(500))) return [logFor(keyAt(3000))];
+      asked += 1;
+      return asked === 1 ? [] : [logFor(keyAt(500))];
+    });
+    const keys = await run({ fetchImpl: forgetful });
+
+    expect(keys.has(idOf(keyAt(500)))).toBe(true);
+    expect(vi.mocked(forgetful)).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks nothing more once every pool has its key, and a pool with none twice at most", async () => {
+    const answered = holding(keyAt(500), keyAt(3000));
+    await run({ fetchImpl: answered });
+    const empty = endpoint(() => []);
+    await run({ fetchImpl: empty });
+
+    expect(vi.mocked(answered)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(empty)).toHaveBeenCalledTimes(2);
   });
 });

@@ -4,7 +4,8 @@ import type { DataResult, PairFeeTiers, V3PoolMetadata } from "../../schemas";
 import { logDetail, loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
 import { fetchEthereumV3PairFeeTiers } from "./ethereumV3PairFeeTiers";
 import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
-import { type ChainId, isSupportedChainId } from "../chains/chains";
+import { chainById, type ChainId, isSupportedChainId } from "../chains/chains";
+import { getEthereumV3PoolDays } from "./getEthereumV3PoolDays";
 import { SEARCH_SUBGRAPH_TIMEOUT_MS } from "./v3SubgraphTransport";
 import { keptReads } from "../cache/keptReads";
 import { PAIR_READ_TTL_MS, readerLabel } from "./pairReads";
@@ -95,6 +96,8 @@ export const getEthereumV3PoolsOfPair = async (pair: {
          * panel, streamed after the analysis, so the wait delays nothing else.
          */
         ...(chainId === 1 ? {} : { timeoutMs: SEARCH_SUBGRAPH_TIMEOUT_MS }),
+        /* On Base the tiers that traded this week, from the day table the warmer keeps (see chains.ts). */
+        ...(chainById(chainId).v3Pairs === "days" ? { readDays: () => getEthereumV3PoolDays(chainId) } : {}),
         fetchImpl: loggingFetch(label),
         now: () => new Date(),
         onDiagnostic: (detail) => {

@@ -93,32 +93,43 @@ export const fetchEthereumV4PoolKeys = async ({
   }
 
   const keys = new Map<string, V4PoolKey>();
-  for (let at = 0; at < askable.length; at += LOG_BATCH_SIZE) {
-    const slice = askable.slice(at, at + LOG_BATCH_SIZE);
-    const batch = await postEthGetLogsBatch({
-      rpcUrl: endpoint,
-      filters: slice.map((entry) => entry.filter),
-      fetchImpl,
-      timeoutMs: timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-    });
-    /* A refused batch costs its pools their key; the batches before and after it stand. */
-    if (!batch.ok) continue;
+  const readBatches = async (entries: readonly { readonly id: string; readonly filter: LogFilter }[]) => {
+    for (let at = 0; at < entries.length; at += LOG_BATCH_SIZE) {
+      const slice = entries.slice(at, at + LOG_BATCH_SIZE);
+      const batch = await postEthGetLogsBatch({
+        rpcUrl: endpoint,
+        filters: slice.map((entry) => entry.filter),
+        fetchImpl,
+        timeoutMs: timeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
+      });
+      /* A refused batch costs its pools their key; the batches before and after it stand. */
+      if (!batch.ok) continue;
 
-    batch.results.forEach((result, index) => {
-      const entry = slice[index];
-      if (entry === undefined || !result.ok) return;
-      /*
-       * One log is expected. Every candidate is decoded rather than the first
-       * taken, so a stray log the filter admitted could never stand in for the
-       * real one — decoding refuses anything that does not hash to the id, and
-       * two that do are the same key.
-       */
-      for (const log of result.logs) {
-        const key = decodeInitializeLog(log, { poolManager: manager.data, poolId: entry.id });
-        if (key !== null) keys.set(entry.id, key);
-      }
-    });
-  }
+      batch.results.forEach((result, index) => {
+        const entry = slice[index];
+        if (entry === undefined || !result.ok) return;
+        /*
+         * One log is expected. Every candidate is decoded rather than the first
+         * taken, so a stray log the filter admitted could never stand in for the
+         * real one — decoding refuses anything that does not hash to the id, and
+         * two that do are the same key.
+         */
+        for (const log of result.logs) {
+          const key = decodeInitializeLog(log, { poolManager: manager.data, poolId: entry.id });
+          if (key !== null) keys.set(entry.id, key);
+        }
+      });
+    }
+  };
+
+  await readBatches(askable);
+  /*
+   * Once more for the pools still without a key. Measured on 2026-09-26, the
+   * Arbitrum endpoint answered a batch with no log for four pools in ten whose
+   * log was there, and answered for all of them when asked again. A pool
+   * really without one is asked twice and stays unread, which is what it is.
+   */
+  await readBatches(askable.filter((entry) => !keys.has(entry.id)));
 
   return keys;
 };
