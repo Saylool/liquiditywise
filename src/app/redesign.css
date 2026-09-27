@@ -455,6 +455,16 @@ main:focus {
 .explore-section .section-heading {
   max-width: 15ch;
 }
+/* The week's busiest pools, straight under the search: somewhere to click before anything is typed. */
+.most-traded-section {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-block: 0 78px;
+}
+.most-traded-section .section-description {
+  max-width: 62ch;
+}
 .pool-lookup {
   display: flex;
   flex-direction: column;

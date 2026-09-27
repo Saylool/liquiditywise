@@ -133,3 +133,43 @@ export function MostTradedPools({
     </>
   );
 }
+
+/**
+ * The first few of each half, for the front page: real pools one click from
+ * their analysis, for a visitor who has not yet typed anything. A half that
+ * could not be read is left out rather than explained — the full page, a
+ * link away, says why.
+ */
+export function MostTradedPreview({
+  data,
+  chain = ETHEREUM,
+  count,
+  copy,
+  parameters,
+  t,
+  locale,
+}: {
+  data: MostTraded;
+  chain?: Chain;
+  /** How many pools of each half to show. */
+  count: number;
+  copy: MostTradedCopy;
+  parameters: PriceBandParameters;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const shared = { chain, copy, parameters, t, locale };
+  const first = (list: MostTradedList | null): MostTradedList | null =>
+    list === null || list.status === "unavailable" || list.pools.length === 0
+      ? null
+      : { ...list, pools: list.pools.slice(0, count) };
+  const v3 = first(data.v3);
+  const v4 = first(data.v4);
+
+  return (
+    <>
+      {v3 === null ? null : <Half heading={t.feeTiers.onV3} list={v3} shared={shared} />}
+      {v4 === null ? null : <Half heading={t.feeTiers.onV4} list={v4} shared={shared} />}
+    </>
+  );
+}

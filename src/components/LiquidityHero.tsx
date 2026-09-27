@@ -1,5 +1,6 @@
 "use client";
 
+import { CHAINS } from "../lib/chains/chains";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { InterfaceCopy } from "../lib/i18n/interface";
@@ -263,7 +264,8 @@ export function LiquidityHero({
                   fill="currentColor"
                 />
               </svg>
-              {copy.chain}
+              {/* The chains' own names, the same in every language. */}
+              {CHAINS.map(({ name }) => name).join(" · ")}
             </span>
             <span>Uniswap v3 + v4</span>
           </div>

@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import { configDefaults, defineConfig } from "vitest/config";
 
 /*
@@ -10,6 +12,8 @@ import { configDefaults, defineConfig } from "vitest/config";
  * failure here, and a pass from it hides one.
  */
 export default defineConfig({
+  /* The app's own "@/…" imports, as tsconfig.json's paths spell them, so a route's files can be tested too. */
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
     exclude: [
       ...configDefaults.exclude,

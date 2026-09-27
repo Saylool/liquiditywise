@@ -7,7 +7,7 @@ import type { MostTraded } from "../lib/advisor/readMostTraded";
 import { getDictionary } from "../lib/i18n/dictionaries";
 import { getMostTradedCopy } from "../lib/i18n/mostTradedCopy";
 import { chainOf } from "../lib/chains/chains";
-import { MostTradedPools } from "./MostTradedPools";
+import { MostTradedPools, MostTradedPreview } from "./MostTradedPools";
 
 const token = (symbol: string, address: string) => ({ chainId: 1, symbol, decimals: 18, address });
 const V3_ID = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640";
@@ -205,5 +205,39 @@ describe("the most-traded page on a v4-only chain", () => {
     expect(html).toContain("Uniswap v4");
     expect(html).toContain(`/v4?chain=unichain&amp;id=${V4_ID}`);
     expect(html).toContain('href="/most-traded?chain=unichain" aria-current="page"');
+  });
+});
+
+describe("the front page's preview of the week", () => {
+  const many = (entry: MostTradedPool, count: number) =>
+    Array.from({ length: count }, (_, index) => ({ ...entry, pool: { ...entry.pool, id: entry.pool.id.slice(0, -2) + String(10 + index) } }));
+  const preview = (data: MostTraded) =>
+    renderToStaticMarkup(
+      <MostTradedPreview
+        data={data}
+        count={3}
+        copy={getMostTradedCopy("en")}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+  it("shows the first few of each half, one click from their analysis", () => {
+    const html = preview({
+      v3: { status: "listed", pools: many(v3, 5), fetchedAt: "x" },
+      v4: { status: "listed", pools: many(v4, 5), fetchedAt: "x" },
+    });
+
+    expect(html.match(/\/pool\?address=/g)).toHaveLength(3);
+    expect(html.match(/\/v4\?id=/g)).toHaveLength(3);
+    expect(html).toContain("Uniswap v3");
+    expect(html).toContain("Uniswap v4");
+  });
+
+  it("leaves out a half that could not be read, or has nothing, rather than explaining it there", () => {
+    const html = preview({ v3: { status: "unavailable", notice: "market-data-timed-out" }, v4: { status: "listed", pools: [], fetchedAt: "x" } });
+
+    expect(html).toBe("");
   });
 });

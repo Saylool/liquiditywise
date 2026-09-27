@@ -12,6 +12,10 @@ import { getLearnCopy } from "@/lib/learn/briefs";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { HomeMostTraded } from "./HomeMostTraded";
+import { ETHEREUM } from "@/lib/chains/chains";
 
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
 
@@ -66,6 +70,15 @@ export default async function Home() {
             <ArrowIcon />
           </Link>
         </div>
+      </section>
+      <section className="landing-section most-traded-section">
+        <div>
+          <p className="eyebrow section-kicker">{getMostTradedCopy(locale).heading}</p>
+          <p className="section-description">{getMostTradedCopy(locale).intro(ETHEREUM.name)}</p>
+        </div>
+        <Suspense fallback={<p className="text-sm text-muted">{getMostTradedCopy(locale).loading}</p>}>
+          <HomeMostTraded locale={locale} t={t} />
+        </Suspense>
       </section>
       <section className="landing-section range-section" data-reveal>
         <div>
