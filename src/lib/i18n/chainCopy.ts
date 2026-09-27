@@ -78,3 +78,14 @@ const COPY: Record<Locale, ChainCopy> = {
 };
 
 export const getChainCopy = (locale: Locale): ChainCopy => COPY[locale];
+
+const SITE_SUFFIX = " · LiquidityWise";
+
+/**
+ * A page's title on a chain: the chain named before the site's name, in any
+ * language, since every title ends the same way.
+ */
+export const titleOnChain = (title: string, chainName: string): string =>
+  title.endsWith(SITE_SUFFIX)
+    ? `${title.slice(0, -SITE_SUFFIX.length)} · ${chainName}${SITE_SUFFIX}`
+    : `${title} · ${chainName}`;

@@ -194,7 +194,7 @@ describe("counting visits for the weekly report", () => {
 
     expect(lines()).toEqual([
       "[visit] page=/ pool=- locale=tr bot=0 outcome=served",
-      "[visit] page=/hooks pool=- locale=tr bot=1 outcome=served",
+      "[visit] page=/hooks pool=- locale=tr bot=1 outcome=served chain=ethereum",
     ]);
   });
 
@@ -205,7 +205,7 @@ describe("counting visits for the weekly report", () => {
     await proxy(browsing("/zh-Hant", "198.51.100.206"));
 
     expect(lines()).toEqual([
-      "[visit] page=/hooks pool=- locale=de bot=0 outcome=served",
+      "[visit] page=/hooks pool=- locale=de bot=0 outcome=served chain=ethereum",
       "[visit] page=/ pool=- locale=zh-Hant bot=0 outcome=served",
     ]);
   });

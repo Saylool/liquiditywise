@@ -37,7 +37,7 @@ export type Visit = {
 };
 
 /** The pages whose address carries `?chain=`. */
-const CHAIN_PAGES: readonly Page[] = ["/pool", "/v4", "/compare", "/holdings", "/most-traded"];
+const CHAIN_PAGES: readonly Page[] = ["/pool", "/v4", "/compare", "/holdings", "/most-traded", "/hooks"];
 
 const chainOfVisit = (page: Page, parameters: URLSearchParams): string | null => {
   if (!CHAIN_PAGES.includes(page)) return null;

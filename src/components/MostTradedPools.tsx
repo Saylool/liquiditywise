@@ -9,7 +9,8 @@ import type { Locale } from "../lib/i18n/locales";
 import type { MostTradedCopy } from "../lib/i18n/mostTradedCopy";
 import type { PriceBandParameters } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
-import { type Chain, CHAINS, ETHEREUM } from "../lib/chains/chains";
+import { type Chain, ETHEREUM } from "../lib/chains/chains";
+import { ChainTabs } from "./ChainTabs";
 
 /*
  * The week's most traded pools, v3 and v4 apart.
@@ -99,27 +100,6 @@ const Half = ({ heading, list, shared }: { heading: string; list: MostTradedList
   </section>
 );
 
-/**
- * One page per chain, reached by a tab for each: the same address with
- * `?chain=`, so the chain is in the link a reader shares.
- */
-const ChainTabs = ({ current, hrefFor, label }: { current: Chain; hrefFor: (chain: Chain) => string; label: string }) => (
-  <nav aria-label={label} className="flex flex-wrap gap-2">
-    {CHAINS.map((chain) => (
-      <a
-        key={chain.slug}
-        href={hrefFor(chain)}
-        aria-current={chain.id === current.id ? "page" : undefined}
-        className={`rounded-full border px-3 py-1 text-xs ${
-          chain.id === current.id ? "border-accent text-accent" : "border-border text-muted hover:text-foreground"
-        }`}
-      >
-        {chain.name}
-      </a>
-    ))}
-  </nav>
-);
-
 export function MostTradedPools({
   data,
   chain = ETHEREUM,
@@ -146,11 +126,7 @@ export function MostTradedPools({
 
   return (
     <>
-      <ChainTabs
-        current={chain}
-        label={networkLabel}
-        hrefFor={(each) => (each.id === ETHEREUM.id ? pageHref : `${pageHref}?chain=${each.slug}`)}
-      />
+      <ChainTabs current={chain} label={networkLabel} pageHref={pageHref} />
       <p className="max-w-2xl text-sm leading-relaxed text-muted">{copy.intro(chain.name)}</p>
       <Half heading={t.feeTiers.onV3} list={data.v3} shared={shared} />
       {data.v4 === null ? null : <Half heading={t.feeTiers.onV4} list={data.v4} shared={shared} />}
