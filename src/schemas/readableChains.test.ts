@@ -12,10 +12,11 @@ describe("the chains a figure may describe", () => {
     expect([...READABLE_CHAIN_IDS.v4]).toEqual(V4_CHAINS.map(({ id }) => id));
   });
 
-  it("take mainnet and Arbitrum for v4, and refuse Base, where no v4 subgraph answers", () => {
+  it("take all three chains for v4, and refuse a chain nothing reads", () => {
     expect(isReadableChain(1, "v4")).toBe(true);
+    expect(isReadableChain(8453, "v4")).toBe(true);
     expect(isReadableChain(42161, "v4")).toBe(true);
-    expect(isReadableChain(8453, "v4")).toBe(false);
+    expect(isReadableChain(10, "v4")).toBe(false);
   });
 
   it("take Base and Arbitrum for v3, and refuse a chain nothing reads", () => {

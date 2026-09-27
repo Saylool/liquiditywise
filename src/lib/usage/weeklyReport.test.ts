@@ -64,6 +64,23 @@ describe("the weekly report", () => {
     expect(text).toContain("Most: USDC/WETH (v3, 0x88e6…5640) 1, USDC/WETH (v3, 0x8ad5…e6d8) 1");
   });
 
+  it("counts the chains pages were opened on, most first, leaving out bots and older lines", () => {
+    const text = report([
+      opened("2026-09-18", { chain: "ethereum" }),
+      opened("2026-09-18", { chain: "base" }),
+      opened("2026-09-19", { chain: "base" }),
+      opened("2026-09-19", { chain: "arbitrum", bot: true }),
+      opened("2026-09-19", { page: "/", pool: null }),
+    ]);
+
+    expect(text).toContain("Chains: base 2 · ethereum 1");
+    expect(text).not.toContain("arbitrum");
+  });
+
+  it("says nothing about chains in a week of lines that name none", () => {
+    expect(report([opened("2026-09-18")])).not.toContain("Chains:");
+  });
+
   it("counts searches without saying what was searched, and not as a pool", () => {
     const text = report([opened("2026-09-18", { pool: "search" })]);
 

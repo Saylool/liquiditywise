@@ -25,8 +25,27 @@ describe("what a visit line records", () => {
   it("never records the address on the holdings page", () => {
     const line = visitLine(visit(`/holdings?address=${ADDRESS}`) ?? (null as never));
 
-    expect(line).toBe("[visit] page=/holdings pool=- locale=tr bot=0 outcome=served");
+    expect(line).toBe("[visit] page=/holdings pool=- locale=tr bot=0 outcome=served chain=ethereum");
     expect(line.toLowerCase()).not.toContain(ADDRESS.toLowerCase().slice(2));
+  });
+
+  it("records the chain a page that reads one was opened on, and none for a page that reads none", () => {
+    expect(visit("/most-traded?chain=base")?.chain).toBe("base");
+    expect(visit(`/v4?chain=arbitrum&id=${POOL_ID}`)?.chain).toBe("arbitrum");
+    expect(visit("/compare?chain=solana")?.chain).toBe("unknown");
+    expect(visit("/pool?q=weth")?.chain).toBe("ethereum");
+    expect(visit("/hooks?chain=base")?.chain).toBeNull();
+    expect(visitLine(visit("/") ?? (null as never))).toBe("[visit] page=/ pool=- locale=tr bot=0 outcome=served");
+  });
+
+  it("reads the chain back from a line, and a line written before it was kept as naming none", () => {
+    const parsed = parseUsageLine("[visit] page=/holdings pool=- locale=tr bot=0 outcome=served chain=base");
+    const old = parseUsageLine("[visit] page=/holdings pool=- locale=tr bot=0 outcome=served");
+    const odd = parseUsageLine("[visit] page=/holdings pool=- locale=tr bot=0 outcome=served chain=BASE;rm");
+
+    expect(parsed?.kind === "visit" && parsed.visit.chain).toBe("base");
+    expect(old?.kind === "visit" && old.visit.chain).toBeNull();
+    expect(odd?.kind === "visit" && odd.visit.chain).toBeNull();
   });
 
   it("records that a search happened, never what was searched for", () => {

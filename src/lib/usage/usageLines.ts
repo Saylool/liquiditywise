@@ -28,6 +28,22 @@ export type Visit = {
   readonly locale: string;
   readonly bot: boolean;
   readonly outcome: Outcome;
+  /**
+   * The chain a page that reads one was opened on — `ethereum` when its
+   * address names none, `unknown` for one nothing reads — and `null` on a
+   * page that reads no chain. Absent from lines written before it was kept.
+   */
+  readonly chain?: string | null;
+};
+
+/** The pages whose address carries `?chain=`. */
+const CHAIN_PAGES: readonly Page[] = ["/pool", "/v4", "/compare", "/holdings", "/most-traded"];
+
+const chainOfVisit = (page: Page, parameters: URLSearchParams): string | null => {
+  if (!CHAIN_PAGES.includes(page)) return null;
+  const slug = parameters.get("chain");
+  if (slug === null) return "ethereum";
+  return chainBySlug(slug)?.slug ?? "unknown";
 };
 
 export type Spend = {
@@ -107,11 +123,14 @@ export const visitFrom = (
     locale,
     bot: looksLikeBot(headers.get("user-agent")),
     outcome,
+    chain: chainOfVisit(url.pathname, url.searchParams),
   };
 };
 
 export const visitLine = (visit: Visit): string =>
-  `[visit] page=${visit.page} pool=${visit.pool ?? "-"} locale=${visit.locale} bot=${visit.bot ? 1 : 0} outcome=${visit.outcome}`;
+  `[visit] page=${visit.page} pool=${visit.pool ?? "-"} locale=${visit.locale} bot=${visit.bot ? 1 : 0} outcome=${visit.outcome}${
+    visit.chain == null ? "" : ` chain=${visit.chain}`
+  }`;
 
 /** A token symbol, reduced to what cannot break the line it sits in. */
 const symbol = (value: string): string => value.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 20) || "?";
@@ -157,7 +176,8 @@ export const parseUsageLine = (line: string): UsageLine | null => {
     const outcome = f.outcome === "refused" ? "refused" : f.outcome === "served" ? "served" : null;
     if (outcome === null || (f.bot !== "0" && f.bot !== "1") || f.locale === undefined) return null;
     const pool = f.pool === undefined || f.pool === "-" ? null : f.pool;
-    return { kind: "visit", at, visit: { page, pool, locale: f.locale, bot: f.bot === "1", outcome } };
+    const chain = f.chain !== undefined && /^[a-z]{1,20}$/.test(f.chain) ? f.chain : null;
+    return { kind: "visit", at, visit: { page, pool, locale: f.locale, bot: f.bot === "1", outcome, chain } };
   }
 
   const spent = /\[interpretation\] spent (.*)$/.exec(line)?.[1];

@@ -120,6 +120,14 @@ export const weeklyReport = (input: WeekInput): string => {
       .join(", ");
     out.push(`Pools opened: ${number(pools.length)} different. Most: ${named}`);
   }
+  /*
+   * Which chain the pages that read one were opened on. Lines written before
+   * the chain was kept carry none and are left out rather than counted as
+   * mainnet, so the first weeks undercount and never misattribute.
+   */
+  const chains = ranked(tally(served.flatMap((visit) => (visit.chain == null ? [] : [visit.chain]))));
+  if (chains.length > 0) out.push(`Chains: ${chains.map(([chain, n]) => `${chain} ${number(n)}`).join(" · ")}`);
+
   const searches = served.filter((visit) => visit.pool === "search").length;
   if (searches > 0) out.push(`Searches: ${number(searches)}`);
 

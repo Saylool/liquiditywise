@@ -29,7 +29,7 @@ describe("which source serves which chain", () => {
     ]);
   });
 
-  it("gives each v4 chain its own v4 subgraph, and Base none rather than mainnet's", () => {
+  it("gives each chain its own v4 subgraph", () => {
     vi.stubEnv("UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", "mainnet-v4");
     vi.stubEnv("UNISWAP_V4_ARBITRUM_SUBGRAPH_ID", "arbitrum-v4");
     vi.stubEnv("UNISWAP_V4_BASE_SUBGRAPH_ID", "base-v4");
@@ -38,7 +38,7 @@ describe("which source serves which chain", () => {
     expect(subgraphIdFor("v4", 1)).toBe("mainnet-v4");
     expect(subgraphIdFor("v4", 42161)).toBe("arbitrum-v4");
     expect(v4SubgraphIdFor(42161)).toBe("arbitrum-v4");
-    expect(subgraphIdFor("v4", 8453)).toBeUndefined();
+    expect(subgraphIdFor("v4", 8453)).toBe("base-v4");
     expect(subgraphIdFor("v3", 8453)).toBe("base-v3");
   });
 });

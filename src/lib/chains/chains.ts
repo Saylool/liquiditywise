@@ -19,12 +19,16 @@ export const CHAINS = [
    * pools, as the v4 search does on mainnet for the same reason.
    */
   /*
-   * `v4: false`: both public v4 subgraphs for Base answered every query with
-   * "database unavailable" from the one indexer serving them, measured on
-   * 2026-09-26. Arbitrum's answered the week's day table in 0.7 s, one block
-   * behind the chain, with the PoolManager Uniswap publishes for it.
+   * v4 on both, from the subgraphs .env.example names. Base's was chosen on
+   * 2026-09-27 after failing the day before: of its two public v4 subgraphs,
+   * one still answered with an indexing error and the other answered the
+   * week's day table in 3–4 s, seconds behind the chain, with the PoolManager
+   * Uniswap publishes for Base. The health check asks every subgraph hourly
+   * (subgraphProbe.ts), because this one has already been down once.
+   * A chain marked `v4: false` would have every v4 read refused, never
+   * looked up on mainnet.
    */
-  { id: 8453, slug: "base", name: "Base", v3Search: "days", v4: false },
+  { id: 8453, slug: "base", name: "Base", v3Search: "days", v4: true },
   { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v4: true },
 ] as const;
 

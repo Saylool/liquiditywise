@@ -20,6 +20,7 @@ const V3_SUBGRAPH = {
 
 const V4_SUBGRAPH = {
   1: () => process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID,
+  8453: () => process.env.UNISWAP_V4_BASE_SUBGRAPH_ID,
   42161: () => process.env.UNISWAP_V4_ARBITRUM_SUBGRAPH_ID,
 } as const satisfies Record<V4ChainId, () => string | undefined>;
 

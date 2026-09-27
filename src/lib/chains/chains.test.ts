@@ -57,9 +57,9 @@ describe("a link to a pool's analysis", () => {
 });
 
 describe("the chains v4 is read on", () => {
-  it("are Ethereum and Arbitrum One, and not Base, whose v4 subgraphs did not answer", () => {
-    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "arbitrum"]);
-    expect([readsV4(1), readsV4(8453), readsV4(42161)]).toEqual([true, false, true]);
+  it("are all three chains", () => {
+    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum"]);
+    expect([readsV4(1), readsV4(8453), readsV4(42161)]).toEqual([true, true, true]);
   });
 });
 
@@ -87,12 +87,9 @@ describe("a pool id asked about on a chain", () => {
     expect(poolIdentityFor("v3", POOL, 8453)?.chainId).toBe(8453);
   });
 
-  it("refuses a v4 id on a chain v4 is not read on, rather than looking it up on mainnet", () => {
-    expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 8453)).toBeNull();
+  it("takes a v4 id on the chain it was asked about, and mainnet when not said", () => {
     expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`)?.chainId).toBe(1);
-  });
-
-  it("takes a v4 id on Arbitrum, on Arbitrum", () => {
+    expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 8453)?.chainId).toBe(8453);
     expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 42161)?.chainId).toBe(42161);
   });
 });

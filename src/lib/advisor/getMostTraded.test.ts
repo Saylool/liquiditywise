@@ -56,19 +56,18 @@ beforeEach(async () => {
 });
 
 describe("the most-traded figures kept for thirty minutes", () => {
-  it("reads once per chain, v4 only where it is read, each on its own chain's endpoint", async () => {
+  it("reads once per chain, v4 included, each on its own chain's endpoint", async () => {
     const { getMostTraded } = await import("./getMostTraded");
 
     await getMostTraded(1);
     await getMostTraded(1);
-    const base = await getMostTraded(8453);
+    await getMostTraded(8453);
     await getMostTraded(42161);
 
     expect(calls.reads).toBe(3);
     expect(calls.v3.map(({ chainId }) => chainId)).toEqual([1, 8453, 42161]);
-    expect(calls.v4Chains).toEqual([1, 42161]);
+    expect(calls.v4Chains).toEqual([1, 8453, 42161]);
     expect(calls.rpcUrls).toEqual(["rpc-1", "rpc-8453", "rpc-42161"]);
-    expect(base.v4).toBeNull();
   });
 
   it("reads anew, day tables included, when asked to refresh", async () => {

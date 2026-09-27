@@ -47,6 +47,51 @@ export const PROBE_INTERVAL_MS = 60 * 60 * 1_000;
 export const OTHER_CHAINS = ["base", "arbitrum"] as const;
 export type OtherChain = (typeof OTHER_CHAINS)[number];
 
+/**
+ * Every subgraph the pages read, each asked whether it still answers.
+ *
+ * A key probe cannot see this. The gateway answers 200 for a subgraph whose
+ * only indexer has broken — with "bad indexers" in the body instead of data —
+ * and every page reading it then says it cannot, while the key is fine. Base's
+ * v4 subgraph did exactly that for a day, and nothing would have said so.
+ */
+export const SUBGRAPHS = ["v3-ethereum", "v3-base", "v3-arbitrum", "v4-ethereum", "v4-base", "v4-arbitrum"] as const;
+export type SubgraphName = (typeof SUBGRAPHS)[number];
+
+/**
+ * What a subgraph's own health field said. "unanswered" is a status other
+ * than 200 — the key, a rate limit or the gateway, which the key probe
+ * already covers — and is never reported here, so one refused key is one
+ * message and not seven.
+ */
+export type SubgraphStatus = "ok" | "errors" | "indexing-errors" | "behind" | "unanswered";
+
+/** An hour behind the chain is a subgraph that has stopped, not one that is slow. */
+export const SUBGRAPH_LAG_LIMIT_MS = 60 * 60 * 1_000;
+
+/** Reads one answer to `{ _meta { hasIndexingErrors block { timestamp } } }`. Pure. */
+export const classifySubgraphAnswer = (httpStatus: number, body: unknown, nowMs: number): SubgraphStatus => {
+  if (httpStatus !== 200 || typeof body !== "object" || body === null) return "unanswered";
+  const { data, errors } = body as { data?: unknown; errors?: unknown };
+  if (Array.isArray(errors) && errors.length > 0) return "errors";
+
+  const meta = (data as { _meta?: { hasIndexingErrors?: unknown; block?: { timestamp?: unknown } } } | null | undefined)
+    ?._meta;
+  if (meta === undefined || meta === null) return "errors";
+  if (meta.hasIndexingErrors === true) return "indexing-errors";
+
+  const timestamp = meta.block?.timestamp;
+  if (typeof timestamp === "number" && nowMs - timestamp * 1_000 > SUBGRAPH_LAG_LIMIT_MS) return "behind";
+
+  return "ok";
+};
+
+/** One subgraph's reading, and since when it has been failing, carried from probe to probe. */
+export type SubgraphReading = { readonly status: SubgraphStatus; readonly failingSinceMs: number | null };
+
+const isFailing = (status: SubgraphStatus): boolean =>
+  status === "errors" || status === "indexing-errors" || status === "behind";
+
 export type UpstreamReport = {
   readonly marketData: UpstreamStatus;
   readonly chainData: UpstreamStatus;
@@ -56,6 +101,8 @@ export type UpstreamReport = {
    * provider's app refuses that network alone — so each is asked on its own.
    */
   readonly otherChains?: Partial<Record<OtherChain, UpstreamStatus>>;
+  /** What each configured subgraph said, and since when it has been failing. */
+  readonly subgraphs?: Partial<Record<SubgraphName, SubgraphReading>>;
   /** When these were taken, so a stale report can be told from a fresh one. */
   readonly atMs: number;
 };
@@ -65,7 +112,7 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { marketData, chainData, atMs, otherChains } = parsed as Partial<UpstreamReport>;
+    const { marketData, chainData, atMs, otherChains, subgraphs } = parsed as Partial<UpstreamReport>;
     const known = (value: unknown): value is UpstreamStatus =>
       value === "ok" || value === "credentials-rejected" || value === "rate-limited" || value === "unreachable";
 
@@ -76,8 +123,22 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
       if (known(status)) others[chain] = status;
     }
 
+    /* Likewise a report stored before subgraphs were asked about. */
+    const readings: Partial<Record<SubgraphName, SubgraphReading>> = {};
+    for (const name of SUBGRAPHS) {
+      const reading = (subgraphs as Record<string, Partial<SubgraphReading>> | undefined)?.[name];
+      const status = reading?.status;
+      const since = reading?.failingSinceMs;
+      if (
+        (status === "ok" || status === "unanswered" || (status !== undefined && isFailing(status))) &&
+        (since === null || typeof since === "number")
+      ) {
+        readings[name] = { status, failingSinceMs: since };
+      }
+    }
+
     return known(marketData) && known(chainData) && typeof atMs === "number"
-      ? { marketData, chainData, otherChains: others, atMs }
+      ? { marketData, chainData, otherChains: others, subgraphs: readings, atMs }
       : null;
   } catch {
     return null;
@@ -95,6 +156,8 @@ export type ProbeDependencies = {
   readonly probeChainData: () => Promise<number>;
   /** One probe per other chain with an endpoint configured; the rest are simply not asked. */
   readonly probeOtherChains?: Partial<Record<OtherChain, () => Promise<number>>>;
+  /** One question per configured subgraph: its HTTP status and decoded body. */
+  readonly probeSubgraphs?: Partial<Record<SubgraphName, () => Promise<{ status: number; body: unknown }>>>;
   readonly now: () => Date;
 };
 
@@ -124,11 +187,28 @@ export const readUpstreamReport = async (
     const probe = dependencies.probeOtherChains?.[chain];
     return probe === undefined ? [] : [{ chain, probe }];
   });
-  const [marketStatus, chainStatus, ...otherStatuses] = await Promise.all([
-    dependencies.probeMarketData().catch(() => 0),
-    dependencies.probeChainData().catch(() => 0),
-    ...others.map(({ probe }) => probe().catch(() => 0)),
+  const asked = SUBGRAPHS.flatMap((name) => {
+    const probe = dependencies.probeSubgraphs?.[name];
+    return probe === undefined ? [] : [{ name, probe }];
+  });
+  const [[marketStatus, chainStatus, ...otherStatuses], answers] = await Promise.all([
+    Promise.all([
+      dependencies.probeMarketData().catch(() => 0),
+      dependencies.probeChainData().catch(() => 0),
+      ...others.map(({ probe }) => probe().catch(() => 0)),
+    ]),
+    Promise.all(asked.map(({ probe }) => probe().catch(() => ({ status: 0, body: null })))),
   ]);
+
+  /* A failure keeps the moment it began, so a problem can wait for a second probe that agrees. */
+  const subgraphs = Object.fromEntries(
+    asked.map(({ name }, index) => {
+      const answer = answers[index] ?? { status: 0, body: null };
+      const status = classifySubgraphAnswer(answer.status, answer.body, nowMs);
+      const failingSinceMs = isFailing(status) ? (previous?.subgraphs?.[name]?.failingSinceMs ?? nowMs) : null;
+      return [name, { status, failingSinceMs }];
+    }),
+  );
 
   const report: UpstreamReport = {
     marketData: classifyProbeStatus(marketStatus),
@@ -136,6 +216,7 @@ export const readUpstreamReport = async (
     otherChains: Object.fromEntries(
       others.map(({ chain }, index) => [chain, classifyProbeStatus(otherStatuses[index] ?? 0)]),
     ),
+    subgraphs,
     atMs: nowMs,
   };
 
@@ -145,3 +226,19 @@ export const readUpstreamReport = async (
 
   return report;
 };
+
+/**
+ * The subgraphs failing in a report, and for how long by its own clock. What
+ * counts as long enough to tell somebody is problems.ts's to decide.
+ */
+export const subgraphFailures = (
+  report: UpstreamReport,
+): Partial<Record<SubgraphName, { readonly status: SubgraphStatus; readonly forMs: number }>> =>
+  Object.fromEntries(
+    SUBGRAPHS.flatMap((name) => {
+      const reading = report.subgraphs?.[name];
+      return reading === undefined || reading.failingSinceMs === null
+        ? []
+        : [[name, { status: reading.status, forMs: report.atMs - reading.failingSinceMs }]];
+    }),
+  );

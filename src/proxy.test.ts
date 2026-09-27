@@ -162,7 +162,7 @@ describe("counting visits for the weekly report", () => {
 
     await proxy(browsing(`/pool?address=${POOL}`, "198.51.100.201"));
 
-    expect(lines()).toEqual([`[visit] page=/pool pool=v3:${POOL} locale=tr bot=0 outcome=served`]);
+    expect(lines()).toEqual([`[visit] page=/pool pool=v3:${POOL} locale=tr bot=0 outcome=served chain=ethereum`]);
   });
 
   it("counts a request the limit turned away as turned away", async () => {
@@ -175,7 +175,7 @@ describe("counting visits for the weekly report", () => {
     const response = await proxy(browsing(`/pool?address=${POOL}`, client));
 
     expect(response.status).toBe(429);
-    expect(lines()).toEqual([`[visit] page=/pool pool=v3:${POOL} locale=tr bot=0 outcome=refused`]);
+    expect(lines()).toEqual([`[visit] page=/pool pool=v3:${POOL} locale=tr bot=0 outcome=refused chain=ethereum`]);
   });
 
   it("never writes down the wallet a holdings page was opened for", async () => {
@@ -183,7 +183,7 @@ describe("counting visits for the weekly report", () => {
 
     await proxy(browsing(`/holdings?address=${POOL}`, "198.51.100.203"));
 
-    expect(lines()).toEqual(["[visit] page=/holdings pool=- locale=tr bot=0 outcome=served"]);
+    expect(lines()).toEqual(["[visit] page=/holdings pool=- locale=tr bot=0 outcome=served chain=ethereum"]);
   });
 
   it("counts a page that spends nothing upstream, too", async () => {

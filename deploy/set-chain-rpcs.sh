@@ -59,7 +59,7 @@ set_one() {
   fi
 }
 
-# The Uniswap subgraphs of each chain: v3 on both, v4 on Arbitrum. Public ids, not credentials — the
+# The Uniswap subgraphs of each chain, v3 and v4. Public ids, not credentials — the
 # ones .env.example gives and says how they were chosen — written only where
 # the file has none, so an id set by hand is kept.
 set_public() {
@@ -79,4 +79,5 @@ set_one ARBITRUM_RPC_URL arb-mainnet 0xa4b1 || status=1
 set_public UNISWAP_V3_BASE_SUBGRAPH_ID 43Hwfi3dJSoGpyas9VwNoDAv55yjgGrPpNSmbQZArzMG
 set_public UNISWAP_V3_ARBITRUM_SUBGRAPH_ID FbCGRftH4a3yZugY7TnbYgPJVEv2LvMT6oF1fxPe9aJM
 set_public UNISWAP_V4_ARBITRUM_SUBGRAPH_ID D1VHPU6cXXSC8eaApWCjCnPcTZQFSYCpGoDAvt4ogDWh
+set_public UNISWAP_V4_BASE_SUBGRAPH_ID Gqm2b5J85n1bhCyDMpGbtbVn4935EvvdyHdHrx3dibyj
 exit "$status"

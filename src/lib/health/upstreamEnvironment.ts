@@ -1,6 +1,7 @@
 import "server-only";
 
-import type { OtherChain, ProbeDependencies } from "./upstreamProbe";
+import { v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
+import type { OtherChain, ProbeDependencies, SubgraphName } from "./upstreamProbe";
 
 /*
  * The cheapest question that still proves a credential.
@@ -59,6 +60,38 @@ const probeRpc = (url: string): Promise<number> =>
     ),
   );
 
+/** Which subgraph each name is, read from the same settings the pages read. */
+const SUBGRAPH_IDS: Record<SubgraphName, () => string | undefined> = {
+  "v3-ethereum": () => v3SubgraphIdFor(1),
+  "v3-base": () => v3SubgraphIdFor(8453),
+  "v3-arbitrum": () => v3SubgraphIdFor(42161),
+  "v4-ethereum": () => v4SubgraphIdFor(1),
+  "v4-base": () => v4SubgraphIdFor(8453),
+  "v4-arbitrum": () => v4SubgraphIdFor(42161),
+};
+
+/**
+ * Whether a subgraph still answers: its own health field and how far behind
+ * the chain it is, which touch no entity. The body comes back for the probe
+ * to read; it holds no credential, and nothing of it is logged.
+ */
+const probeSubgraph = (apiKey: string, subgraphId: string) => async (): Promise<{ status: number; body: unknown }> => {
+  try {
+    const response = await withTimeout((signal) =>
+      fetch(`${GATEWAY_SUBGRAPH_BASE_URL}/${subgraphId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ query: "{ _meta { hasIndexingErrors block { timestamp } } }" }),
+        signal,
+        cache: "no-store",
+      }),
+    );
+    return { status: response.status, body: await response.json().catch(() => null) };
+  } catch {
+    return { status: 0, body: null };
+  }
+};
+
 export const upstreamProbes = (): ProbeDependencies | null => {
   const apiKey = process.env.THE_GRAPH_API_KEY?.trim();
   const subgraphId = process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID?.trim();
@@ -89,6 +122,12 @@ export const upstreamProbes = (): ProbeDependencies | null => {
       )
         .filter((entry): entry is readonly [OtherChain, string] => Boolean(entry[1]))
         .map(([chain, url]) => [chain, () => probeRpc(url)]),
+    ),
+    probeSubgraphs: Object.fromEntries(
+      Object.entries(SUBGRAPH_IDS).flatMap(([name, idOf]) => {
+        const id = idOf()?.trim();
+        return id ? [[name, probeSubgraph(apiKey, id)]] : [];
+      }),
     ),
     now: () => new Date(),
   };

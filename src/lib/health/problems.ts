@@ -19,7 +19,15 @@
  * for readers.
  */
 
-import { OTHER_CHAINS, type OtherChain, type UpstreamStatus } from "./upstreamProbe";
+import {
+  OTHER_CHAINS,
+  type OtherChain,
+  PROBE_INTERVAL_MS,
+  SUBGRAPHS,
+  type SubgraphName,
+  type SubgraphStatus,
+  type UpstreamStatus,
+} from "./upstreamProbe";
 
 /** Each problem has a stable id, so the same fault is not reported twice. */
 export type ProblemId =
@@ -32,7 +40,8 @@ export type ProblemId =
   | "market-data-key-refused"
   | "chain-data-key-refused"
   | "base-rpc-key-refused"
-  | "arbitrum-rpc-key-refused";
+  | "arbitrum-rpc-key-refused"
+  | `${SubgraphName}-subgraph-failing`;
 
 export type Problem = { readonly id: ProblemId; readonly message: string };
 
@@ -60,6 +69,33 @@ export type Readings = {
   readonly chainDataStatus?: UpstreamStatus | undefined;
   /** What each other chain's RPC endpoint said, for the ones probed. */
   readonly otherChainStatus?: Partial<Record<OtherChain, UpstreamStatus>> | undefined;
+  /** The subgraphs that were failing when last asked, and for how long. */
+  readonly subgraphFailures?:
+    | Partial<Record<SubgraphName, { readonly status: SubgraphStatus; readonly forMs: number }>>
+    | undefined;
+};
+
+/**
+ * How long a subgraph must have been failing before that is a problem: two
+ * hourly probes in a row. One bad answer is an indexer having a moment, the
+ * kind of thing this file leaves out; the same answer an hour later is not.
+ */
+export const SUBGRAPH_FAILING_LIMIT_MS = PROBE_INTERVAL_MS;
+
+/** Which setting names each subgraph, and what the reader loses while it fails. */
+const SUBGRAPH_WORDS: Record<SubgraphName, { readonly variable: string; readonly loses: string }> = {
+  "v3-ethereum": { variable: "UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", loses: "Ethereum v3 pool pages, searches, holdings and most-traded" },
+  "v3-base": { variable: "UNISWAP_V3_BASE_SUBGRAPH_ID", loses: "Base v3 pool pages, searches, holdings and most-traded" },
+  "v3-arbitrum": { variable: "UNISWAP_V3_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v3 pool pages, searches, holdings and most-traded" },
+  "v4-ethereum": { variable: "UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", loses: "Ethereum v4 pool pages, searches, hooks and most-traded" },
+  "v4-base": { variable: "UNISWAP_V4_BASE_SUBGRAPH_ID", loses: "Base v4 pool pages, searches and most-traded" },
+  "v4-arbitrum": { variable: "UNISWAP_V4_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v4 pool pages, searches and most-traded" },
+};
+
+const SUBGRAPH_FAULT: Record<Exclude<SubgraphStatus, "ok" | "unanswered">, string> = {
+  errors: "errors instead of data (usually \"bad indexers\")",
+  "indexing-errors": "indexing errors",
+  behind: "data more than an hour behind the chain",
 };
 
 /**
@@ -186,6 +222,23 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
    */
   for (const chain of OTHER_CHAINS) {
     if (readings.otherChainStatus?.[chain] === "credentials-rejected") problems.push(OTHER_CHAIN_PROBLEMS[chain]);
+  }
+
+  /*
+   * A subgraph whose indexers broke. The key is fine and every page still
+   * renders, each saying it cannot read its source — the same silence a
+   * refused key makes, with a different fix: another deployment of the
+   * subgraph, found on the explorer.
+   */
+  for (const name of SUBGRAPHS) {
+    const failure = readings.subgraphFailures?.[name];
+    if (failure === undefined || failure.forMs < SUBGRAPH_FAILING_LIMIT_MS) continue;
+    if (failure.status === "ok" || failure.status === "unanswered") continue;
+    const { variable, loses } = SUBGRAPH_WORDS[name];
+    problems.push({
+      id: `${name}-subgraph-failing`,
+      message: `The ${name} subgraph (${variable}) has answered with ${SUBGRAPH_FAULT[failure.status]} for ${Math.round(failure.forMs / 60_000)} minutes. ${loses} say they cannot read it. Find another deployment on thegraph.com/explorer and set ${variable}.`,
+    });
   }
 
   const { diskPercent } = readings;
