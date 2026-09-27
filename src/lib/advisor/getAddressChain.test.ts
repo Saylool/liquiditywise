@@ -76,6 +76,8 @@ beforeEach(() => {
   vi.stubEnv("UNISWAP_V3_BASE_SUBGRAPH_ID", "base-v3");
   vi.stubEnv("UNISWAP_V4_BASE_SUBGRAPH_ID", "base-v4");
   vi.stubEnv("UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", "mainnet-v4");
+  vi.stubEnv("UNISWAP_V4_UNICHAIN_SUBGRAPH_ID", "unichain-v4");
+  vi.stubEnv("UNICHAIN_RPC_URL", "https://unichain.example");
   vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
   vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
   asked.positions = [];
@@ -139,5 +141,29 @@ describe("an address's holdings on a chain", () => {
     expect(asked.days).toEqual([]);
     expect(asked.v4Traded).toEqual([1]);
     expect(asked.balances[0]).toMatchObject({ rpcUrl: "https://mainnet.example" });
+  });
+});
+
+describe("an address on a v4-only chain", () => {
+  it("reads its v4 positions there and asks nothing of v3", async () => {
+    const { getAddressPositions } = await import("./getAddressPositions");
+
+    const result = await getAddressPositions(OWNER, 130);
+
+    expect(asked.positions).toEqual([]);
+    expect(asked.v4Ids[0]).toMatchObject({ subgraphId: "unichain-v4" });
+    expect(asked.v4Positions[0]).toMatchObject({ chainId: 130, rpcUrl: "https://unichain.example" });
+    /* Both halves unread: the v4 one failed, and it is v4's reason that is given. */
+    expect(result).toEqual({ status: "unavailable", notice: "market-data-timed-out" });
+  });
+
+  it("casts only the v4 net there, and asks for the chain's ether by name", async () => {
+    const { getAddressHoldings } = await import("./getAddressHoldings");
+
+    await getAddressHoldings(OWNER, 130);
+
+    expect(asked.days).toEqual([]);
+    expect(asked.tradedPools).toBe(0);
+    expect(asked.v4Traded).toEqual([130]);
   });
 });

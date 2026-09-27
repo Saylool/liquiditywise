@@ -15,7 +15,7 @@ import {
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
-import { ETHEREUM, readsV4 } from "@/lib/chains/chains";
+import { ETHEREUM, readsV3, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { getEthereumV3PairFeeTiers } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
@@ -76,6 +76,11 @@ export default async function ComparePage({
   /* A chain nobody reads is refused, never read as mainnet: the same address there is another pool. */
   if (chain === null) {
     return page(<p className="text-sm leading-relaxed text-muted">{getChainCopy(locale).unknown}</p>);
+  }
+
+  /* Every tier here is a v3 pool; a chain whose v3 pools are not read has none to set side by side. */
+  if (!readsV3(chain.id)) {
+    return page(<p className="text-sm leading-relaxed text-muted">{getChainCopy(locale).v3NotRead(chain.name)}</p>);
   }
 
   if (!address.success) {

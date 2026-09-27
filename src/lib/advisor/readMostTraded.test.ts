@@ -76,7 +76,7 @@ describe("reading the most-traded page", () => {
       fetchImpl,
     });
 
-    expect(read.v3.status === "listed" && read.v3.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([1000]);
+    expect(read.v3?.status === "listed" && read.v3.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([1000]);
     expect(read.v4?.status === "listed" && read.v4.pools.map(({ volumeUsd }) => volumeUsd)).toEqual([700]);
   });
 
@@ -89,7 +89,7 @@ describe("reading the most-traded page", () => {
       fetchImpl: vi.fn(),
     });
 
-    expect(read.v3.status === "listed" && read.v3.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
+    expect(read.v3?.status === "listed" && read.v3.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
     expect(read.v4?.status === "listed" && read.v4.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
   });
 
@@ -110,7 +110,7 @@ describe("reading the most-traded page", () => {
       rpcUrl: undefined,
       fetchImpl: vi.fn(),
     });
-    expect(other.v3.status).toBe("listed");
+    expect(other.v3?.status).toBe("listed");
     expect(other.v4).toEqual({ status: "unavailable", notice: "market-data-timed-out" });
   });
 
@@ -157,7 +157,22 @@ describe("the most-traded page off mainnet", () => {
     });
 
     expect(read.v4).toBeNull();
-    expect(read.v3.status === "listed" && read.v3.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
+    expect(read.v3?.status === "listed" && read.v3.pools.map(({ pool }) => pool.chainId)).toEqual([42161]);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe("the most-traded page on a v4-only chain", () => {
+  it("reads no v3, and lists v4", async () => {
+    const read = await readMostTraded({
+      chainId: 130,
+      readV3Days: null,
+      readV4Days: async () => v4Days,
+      rpcUrl: undefined,
+      fetchImpl: vi.fn(),
+    });
+
+    expect(read.v3).toBeNull();
+    expect(read.v4?.status).toBe("listed");
   });
 });

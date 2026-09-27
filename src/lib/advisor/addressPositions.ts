@@ -74,6 +74,8 @@ export type AddressPositionsInput = {
    * and a `null` side then means "not this chain", not "could not be read".
    */
   readonly v4Asked?: boolean;
+  /** Likewise for v3, which is not read on a v4-only chain (see chains.ts). */
+  readonly v3Asked?: boolean;
   readonly fetchedAt: string;
 };
 
@@ -218,6 +220,7 @@ export const composeAddressPositions = ({
   v3,
   v4,
   v4Asked = true,
+  v3Asked = true,
   fetchedAt,
 }: AddressPositionsInput): AddressPositionsResult => {
   /* Nothing read is not a partial answer, and the caller reports the failure. */
@@ -239,8 +242,8 @@ export const composeAddressPositions = ({
   sources.push("ethereum-rpc");
 
   const unread: ProtocolVersion[] = [];
-  if (v3 === null) unread.push("v3");
-  /* Unread is a failure; off mainnet v4 was never asked, and that is not one. */
+  /* Unread is a failure; a side never asked on this chain is not one. */
+  if (v3 === null && v3Asked) unread.push("v3");
   if (v4 === null && v4Asked) unread.push("v4");
 
   /** Both protocols' figures added together, counting a protocol that was not read as nothing. */

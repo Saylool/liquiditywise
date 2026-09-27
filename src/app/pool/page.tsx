@@ -21,7 +21,7 @@ import {
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
-import { type Chain, ETHEREUM, readsV4 } from "@/lib/chains/chains";
+import { type Chain, ETHEREUM, readsV3, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
@@ -119,6 +119,16 @@ export default async function PoolRangePage({
 
   const requestedAddress = params.address;
   const address = EvmAddressSchema.safeParse(single(requestedAddress));
+
+  /* A chain whose v3 pools are not read says so, rather than reading the address anywhere else. */
+  if (address.success && !readsV3(chain.id)) {
+    return (
+      <Shell locale={locale} t={t} chain={chain}>
+        <PoolLookupForm t={t} value={address.data} network={network} />
+        <p className="text-sm leading-relaxed text-muted">{chainCopy.v3NotRead(chain.name)}</p>
+      </Shell>
+    );
+  }
 
   if (address.success) {
     /*
@@ -276,9 +286,12 @@ export default async function PoolRangePage({
        * — the figure the order rests on — and that is several batched calls. The
        * box the reader just typed into should come back immediately either way.
        */}
-      <Suspense fallback={<PoolSearchPending t={t} />}>
-        <PoolSearchSection terms={input.terms} chainId={chain.id} locale={locale} t={t} />
-      </Suspense>
+      {/* Only on a chain v3 is read on (see chains.ts). */}
+      {!readsV3(chain.id) ? null : (
+        <Suspense fallback={<PoolSearchPending t={t} />}>
+          <PoolSearchSection terms={input.terms} chainId={chain.id} locale={locale} t={t} />
+        </Suspense>
+      )}
       {/*
        * The same terms against the v4 subgraph, in a boundary of its own. Two
        * lists rather than one, because they are ordered by different numbers —

@@ -44,7 +44,7 @@ const PROBE_KEY = "liquiditywise:health:upstream";
 export const PROBE_INTERVAL_MS = 60 * 60 * 1_000;
 
 /** The chains read beside mainnet, each probed on its own endpoint. */
-export const OTHER_CHAINS = ["base", "arbitrum"] as const;
+export const OTHER_CHAINS = ["base", "arbitrum", "unichain"] as const;
 export type OtherChain = (typeof OTHER_CHAINS)[number];
 
 /**
@@ -55,7 +55,15 @@ export type OtherChain = (typeof OTHER_CHAINS)[number];
  * and every page reading it then says it cannot, while the key is fine. Base's
  * v4 subgraph did exactly that for a day, and nothing would have said so.
  */
-export const SUBGRAPHS = ["v3-ethereum", "v3-base", "v3-arbitrum", "v4-ethereum", "v4-base", "v4-arbitrum"] as const;
+export const SUBGRAPHS = [
+  "v3-ethereum",
+  "v3-base",
+  "v3-arbitrum",
+  "v4-ethereum",
+  "v4-base",
+  "v4-arbitrum",
+  "v4-unichain",
+] as const;
 export type SubgraphName = (typeof SUBGRAPHS)[number];
 
 /**

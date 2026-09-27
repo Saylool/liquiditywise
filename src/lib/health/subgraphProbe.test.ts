@@ -193,3 +193,14 @@ describe("a subgraph that has stopped answering", () => {
     ).toEqual([]);
   });
 });
+
+describe("Unichain in the hourly check", () => {
+  it("names its own RPC setting when its endpoint refuses the key, and its v4 subgraph when that fails", () => {
+    const refused = problemsFrom({ otherChainStatus: { unichain: "credentials-rejected" } });
+    const failing = problemsFrom({ subgraphFailures: { "v4-unichain": { status: "errors", forMs: SUBGRAPH_FAILING_LIMIT_MS } } });
+
+    expect(refused.map(({ id }) => id)).toEqual(["unichain-rpc-key-refused"]);
+    expect(refused[0]?.message).toContain("UNICHAIN_RPC_URL");
+    expect(failing[0]?.message).toContain("UNISWAP_V4_UNICHAIN_SUBGRAPH_ID");
+  });
+});

@@ -5,7 +5,7 @@ import {
   nonZeroEvmAddress,
   type ProtocolVersion,
 } from "../../schemas";
-import { type ChainId, readsV4, type V4ChainId } from "../chains/chains";
+import { type ChainId, readsV3, readsV4, type V4ChainId } from "../chains/chains";
 
 /*
  * What a subgraph adapter needs to know about *which* pool it is reading, and
@@ -111,6 +111,6 @@ export const poolIdentityFor = (
   poolId: string,
   chainId: ChainId = 1,
 ): SubgraphPoolIdentity | null => {
-  if (protocolVersion === "v3") return v3PoolIdentity(poolId, chainId);
+  if (protocolVersion === "v3") return readsV3(chainId) ? v3PoolIdentity(poolId, chainId) : null;
   return readsV4(chainId) ? v4PoolIdentity(poolId, chainId) : null;
 };

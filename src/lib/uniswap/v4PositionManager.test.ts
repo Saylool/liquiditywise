@@ -177,8 +177,9 @@ describe("the manager on each chain", () => {
   it("has a different address and a different hash on every chain", () => {
     const managers = Object.values(V4_POSITION_MANAGERS);
 
-    expect(new Set(managers.map(({ address }) => address)).size).toBe(3);
-    expect(new Set(managers.map(({ codeHash }) => codeHash)).size).toBe(3);
+    expect(new Set(managers.map(({ address }) => address)).size).toBe(managers.length);
+    expect(new Set(managers.map(({ codeHash }) => codeHash)).size).toBe(managers.length);
+    expect(managers).toHaveLength(4);
     expect(V4_POSITION_MANAGERS[1].codeHash).toBe(V4_POSITION_MANAGER_CODE_HASH);
   });
 });

@@ -10,7 +10,7 @@ import { getEthereumV4TradedPools } from "../uniswap/getEthereumV4TradedPools";
 import { chainReadingFor } from "../uniswap/v4PoolChainReading";
 import { composeAddressHoldings, displayedV4Pools, withV4ChainReadings } from "./addressHoldings";
 import { rpcUrlFor } from "../chains/chainEnvironment";
-import { type ChainId, readsV4 } from "../chains/chains";
+import { type ChainId, readsV3, readsV4 } from "../chains/chains";
 import { getEthereumV3PoolDays } from "../uniswap/getEthereumV3PoolDays";
 import { normalizeV3TradedPoolsFromDays } from "../uniswap/v3TradedPoolsAdapter";
 import { type Token, ZERO_ADDRESS } from "../../schemas";
@@ -48,21 +48,25 @@ const nativeEtherOn = (chainId: ChainId): Token => ({
   decimals: 18,
 });
 
+/** A net this chain does not cast, which the page says rather than calling it unread. */
+const NOT_READ = {
+  status: "unavailable",
+  reason: "configuration-error",
+  notice: "market-data-not-configured",
+} as const;
+
 /**
  * The v3 net: mainnet's traded-pools list, and elsewhere the chain's week of
  * busiest pool-days, which is what those subgraphs can answer quickly.
  */
 const v3CandidatesOn = async (chainId: ChainId) => {
+  /* A v4-only chain casts no v3 net (see chains.ts). */
+  if (!readsV3(chainId)) return NOT_READ;
   if (chainId === 1) return getEthereumV3TradedPools();
   const days = await getEthereumV3PoolDays(chainId);
   return days.status === "unavailable" ? days : normalizeV3TradedPoolsFromDays({ ...days.data, chainId });
 };
 
-const V4_NOT_READ = {
-  status: "unavailable",
-  reason: "configuration-error",
-  notice: "market-data-not-configured",
-} as const;
 
 export const getAddressHoldings = async (
   address: string,
@@ -76,7 +80,7 @@ export const getAddressHoldings = async (
    */
   const [v3Candidates, v4Candidates] = await Promise.all([
     v3CandidatesOn(chainId),
-    readsV4(chainId) ? getEthereumV4TradedPools(chainId) : Promise.resolve(V4_NOT_READ),
+    readsV4(chainId) ? getEthereumV4TradedPools(chainId) : Promise.resolve(NOT_READ),
   ]);
   const rpcUrl = rpcUrlFor(chainId);
 

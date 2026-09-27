@@ -9804,7 +9804,7 @@ const zhHant: Dictionary = {
      * tokens, so the width of the search is part of the answer.
      */
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string) =>
-      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：${chain}上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 个 v4 资金池里的每一种货币，其中也包括链自己的以太币`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
+      `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：${chain}上成交最活躍的 ${v3Pools} 個 Uniswap v3 資金池裡的每一種代幣${v4Pools === null ? "" : `，以及最近七天成交最多的 ${v4Pools} 個 v4 資金池裡的每一種貨幣，其中也包括鏈自己的以太幣`}。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
     /*
      * Said out loud when the v4 net could not be cast, because a page that
      * listed only v3 pools and said nothing would read as "no v4 pool takes

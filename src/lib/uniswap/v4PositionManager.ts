@@ -62,6 +62,11 @@ export const V4_POSITION_MANAGERS: Readonly<Record<V4ChainId, { readonly address
     address: "0xd88f38f930b7952f2db2432cb002e7abbf3dd869",
     codeHash: "0x6156ddaa1c8cd2c26d37455a5dc57b1761dc2848856426c0ac261ae0c7fecd68",
   },
+  /* Read the same way on 2026-09-27: 23,877 bytes, the PositionManager Uniswap publishes for Unichain. */
+  130: {
+    address: "0x4529a01c7a0410167c5740c487a8de60232617bf",
+    codeHash: "0x9b8dd0bc00039cced1336c17f2933187219b9812e18b1310b688de7ae961b25f",
+  },
 };
 
 /**

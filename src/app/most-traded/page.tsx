@@ -7,7 +7,8 @@ import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
-import { readsV4 } from "@/lib/chains/chains";
+import { type ChainId, readsV3, readsV4 } from "@/lib/chains/chains";
+import type { ListedVersions } from "@/lib/i18n/mostTradedCopy";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -21,6 +22,9 @@ import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestL
  * limiter in `proxy.ts` for the same reason the hook directory is not.
  */
 
+const listedVersions = (chainId: ChainId): ListedVersions =>
+  readsV3(chainId) ? (readsV4(chainId) ? "both" : "v3") : "v4";
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -28,13 +32,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await getRequestDictionary();
   const copy = getMostTradedCopy(locale);
-  /* Off mainnet the title names the chain, and v4 only where it is listed there too. */
+  /* Off mainnet the title names the chain, and the protocols listed there. */
   const chain = readRequestedChain((await searchParams)[CHAIN_PARAMETER]);
   const onMainnet = chain === null || chain.id === 1;
 
   return {
-    title: `${onMainnet ? copy.title : copy.titleOn(chain.name, readsV4(chain.id))} · LiquidityWise`,
-    description: onMainnet ? copy.description : copy.descriptionOn(chain.name, readsV4(chain.id)),
+    title: `${onMainnet ? copy.title : copy.titleOn(chain.name, listedVersions(chain.id))} · LiquidityWise`,
+    description: onMainnet ? copy.description : copy.descriptionOn(chain.name, listedVersions(chain.id)),
     alternates: await getOpenPageAlternates("/most-traded"),
   };
 }

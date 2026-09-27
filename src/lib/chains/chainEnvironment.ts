@@ -1,6 +1,6 @@
 import "server-only";
 
-import { type ChainId, readsV4, type V4ChainId } from "./chains";
+import { type ChainId, readsV3, readsV4, type V3ChainId, type V4ChainId } from "./chains";
 
 /*
  * Which subgraph and which RPC endpoint serve each chain, read from the
@@ -16,21 +16,25 @@ const V3_SUBGRAPH = {
   1: () => process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
   8453: () => process.env.UNISWAP_V3_BASE_SUBGRAPH_ID,
   42161: () => process.env.UNISWAP_V3_ARBITRUM_SUBGRAPH_ID,
-} as const satisfies Record<ChainId, () => string | undefined>;
+} as const satisfies Record<V3ChainId, () => string | undefined>;
 
 const V4_SUBGRAPH = {
   1: () => process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID,
   8453: () => process.env.UNISWAP_V4_BASE_SUBGRAPH_ID,
   42161: () => process.env.UNISWAP_V4_ARBITRUM_SUBGRAPH_ID,
+  130: () => process.env.UNISWAP_V4_UNICHAIN_SUBGRAPH_ID,
 } as const satisfies Record<V4ChainId, () => string | undefined>;
 
 const RPC = {
   1: () => process.env.ETHEREUM_RPC_URL,
   8453: () => process.env.BASE_RPC_URL,
   42161: () => process.env.ARBITRUM_RPC_URL,
+  130: () => process.env.UNICHAIN_RPC_URL,
 } as const satisfies Record<ChainId, () => string | undefined>;
 
-export const v3SubgraphIdFor = (chainId: ChainId): string | undefined => V3_SUBGRAPH[chainId]();
+/** The v3 subgraph on a chain; on a chain v3 is not read on there is none, never mainnet's. */
+export const v3SubgraphIdFor = (chainId: ChainId): string | undefined =>
+  readsV3(chainId) ? V3_SUBGRAPH[chainId]() : undefined;
 
 /** The v4 subgraph on a chain; on a chain v4 is not read on there is none, never mainnet's. */
 export const v4SubgraphIdFor = (chainId: ChainId): string | undefined =>

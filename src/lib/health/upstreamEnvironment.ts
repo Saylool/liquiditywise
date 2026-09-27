@@ -68,6 +68,7 @@ const SUBGRAPH_IDS: Record<SubgraphName, () => string | undefined> = {
   "v4-ethereum": () => v4SubgraphIdFor(1),
   "v4-base": () => v4SubgraphIdFor(8453),
   "v4-arbitrum": () => v4SubgraphIdFor(42161),
+  "v4-unichain": () => v4SubgraphIdFor(130),
 };
 
 /**
@@ -118,6 +119,7 @@ export const upstreamProbes = (): ProbeDependencies | null => {
         [
           ["base", process.env.BASE_RPC_URL?.trim()],
           ["arbitrum", process.env.ARBITRUM_RPC_URL?.trim()],
+          ["unichain", process.env.UNICHAIN_RPC_URL?.trim()],
         ] as const
       )
         .filter((entry): entry is readonly [OtherChain, string] => Boolean(entry[1]))

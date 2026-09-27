@@ -410,3 +410,15 @@ describe("positions off mainnet", () => {
     expect(succeed({ v4: null }).unread).toEqual(["v4"]);
   });
 });
+
+describe("positions on a v4-only chain", () => {
+  const v4Only = { v3: null, v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees } };
+
+  it("does not call v3 unread where it was never asked", () => {
+    expect(succeed({ ...v4Only, v3Asked: false }).unread).toEqual([]);
+  });
+
+  it("still calls it unread where it was asked and did not answer", () => {
+    expect(succeed(v4Only).unread).toEqual(["v3"]);
+  });
+});

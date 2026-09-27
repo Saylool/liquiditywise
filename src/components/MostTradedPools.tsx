@@ -128,7 +128,7 @@ export function MostTradedPools({
     <>
       <ChainTabs current={chain} label={networkLabel} pageHref={pageHref} />
       <p className="max-w-2xl text-sm leading-relaxed text-muted">{copy.intro(chain.name)}</p>
-      <Half heading={t.feeTiers.onV3} list={data.v3} shared={shared} />
+      {data.v3 === null ? null : <Half heading={t.feeTiers.onV3} list={data.v3} shared={shared} />}
       {data.v4 === null ? null : <Half heading={t.feeTiers.onV4} list={data.v4} shared={shared} />}
     </>
   );

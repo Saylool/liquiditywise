@@ -28,17 +28,22 @@ vi.mock("../uniswap/getEthereumV4PoolDays", () => ({
 vi.mock("./readMostTraded", () => ({
   readMostTraded: async (request: {
     chainId: number;
-    readV3Days: () => Promise<unknown>;
+    readV3Days: (() => Promise<unknown>) | null;
     readV4Days: (() => Promise<unknown>) | null;
     rpcUrl: unknown;
   }) => {
     calls.reads += 1;
     calls.rpcUrls.push(request.rpcUrl);
-    await request.readV3Days();
+    await request.readV3Days?.();
     if (request.readV4Days !== null) await request.readV4Days();
     const listed = { status: "listed", pools: [], fetchedAt: String(calls.reads) };
     return {
-      v3: calls.v3Status === "listed" ? listed : { status: "unavailable", notice: "market-data-unavailable" },
+      v3:
+        request.readV3Days === null
+          ? null
+          : calls.v3Status === "listed"
+            ? listed
+            : { status: "unavailable", notice: "market-data-unavailable" },
       v4: request.readV4Days === null ? null : listed,
     };
   },
@@ -91,7 +96,7 @@ describe("the most-traded figures kept for thirty minutes", () => {
     const failed = await getMostTraded(8453, { refresh: true });
     const kept = await getMostTraded(8453);
 
-    expect(failed.v3.status).toBe("unavailable");
+    expect(failed.v3?.status).toBe("unavailable");
     expect(kept).toBe(first);
   });
 
@@ -121,5 +126,19 @@ describe("the most-traded figures kept for thirty minutes", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("the most-traded figures on a v4-only chain", () => {
+  it("read v4 alone there, and keep the read with no v3 half", async () => {
+    const { getMostTraded } = await import("./getMostTraded");
+
+    const unichain = await getMostTraded(130);
+    await getMostTraded(130);
+
+    expect(calls.v3).toEqual([]);
+    expect(calls.v4Chains).toEqual([130]);
+    expect(unichain.v3).toBeNull();
+    expect(calls.reads).toBe(1);
   });
 });

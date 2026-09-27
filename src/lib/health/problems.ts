@@ -41,6 +41,7 @@ export type ProblemId =
   | "chain-data-key-refused"
   | "base-rpc-key-refused"
   | "arbitrum-rpc-key-refused"
+  | "unichain-rpc-key-refused"
   | `${SubgraphName}-subgraph-failing`;
 
 export type Problem = { readonly id: ProblemId; readonly message: string };
@@ -90,6 +91,7 @@ const SUBGRAPH_WORDS: Record<SubgraphName, { readonly variable: string; readonly
   "v4-ethereum": { variable: "UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", loses: "Ethereum v4 pool pages, searches, hooks and most-traded" },
   "v4-base": { variable: "UNISWAP_V4_BASE_SUBGRAPH_ID", loses: "Base v4 pool pages, searches and most-traded" },
   "v4-arbitrum": { variable: "UNISWAP_V4_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v4 pool pages, searches and most-traded" },
+  "v4-unichain": { variable: "UNISWAP_V4_UNICHAIN_SUBGRAPH_ID", loses: "Every Unichain page" },
 };
 
 const SUBGRAPH_FAULT: Record<Exclude<SubgraphStatus, "ok" | "unanswered">, string> = {
@@ -118,6 +120,11 @@ const OTHER_CHAIN_PROBLEMS: Record<OtherChain, Problem> = {
     id: "arbitrum-rpc-key-refused",
     message:
       "The Arbitrum RPC endpoint is refusing ARBITRUM_RPC_URL (401/403). Arbitrum pool, holdings and alert reads fail. Check that Arbitrum is still enabled on the provider's app.",
+  },
+  unichain: {
+    id: "unichain-rpc-key-refused",
+    message:
+      "The Unichain RPC endpoint is refusing UNICHAIN_RPC_URL (401/403). Unichain v4 pool, holdings and alert reads fail. Check that Unichain is still enabled on the provider's app.",
   },
 };
 

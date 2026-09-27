@@ -10,7 +10,7 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
   /*
    * "days": Base's v3 subgraph answers no query that filters pools by a
    * token's symbol — measured on 2026-09-25, every shape of it failed at the
@@ -39,8 +39,16 @@ export const CHAINS = [
    * `v3Pairs: "days"` for the same reason: Base's v3 pair query answered in
    * 10.5 to 14.5 seconds on 2026-09-25, and still took ten on 2026-09-27.
    */
-  { id: 8453, slug: "base", name: "Base", v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
+  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
+  /*
+   * v4 alone. Uniswap's own chain, where the week's trading is v4's: its v4
+   * subgraph answered the day table in half a second, two seconds behind the
+   * chain, with the PoolManager Uniswap publishes for it (measured
+   * 2026-09-27). The one public v3 subgraph for it has no indexer serving it.
+   * `v3Search` and `v3Pairs` are never read where `v3` is false.
+   */
+  { id: 130, slug: "unichain", name: "Unichain", v3: false, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];
@@ -58,6 +66,14 @@ export const chainById = (id: ChainId): Chain => CHAINS.find((chain) => chain.id
 
 /** The chain a slug names, or `null` for any other text: an unknown chain is refused, never read as mainnet. */
 export const chainBySlug = (slug: string): Chain | null => CHAINS.find((chain) => chain.slug === slug) ?? null;
+
+/** The chains v3 pools are read on. */
+export const V3_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v3);
+
+export type V3ChainId = Extract<Chain, { v3: true }>["id"];
+
+/** Whether v3 pools are read on a chain; off it, a v3 page says so rather than asking mainnet. */
+export const readsV3 = (chainId: ChainId): chainId is V3ChainId => chainById(chainId).v3;
 
 /** The chains v4 pools are read on. */
 export const V4_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v4);

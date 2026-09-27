@@ -19,7 +19,7 @@ import {
   type V4Side,
 } from "./addressPositions";
 import { rpcUrlFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
-import { type ChainId, readsV4, type V4ChainId } from "../chains/chains";
+import { type ChainId, readsV3, readsV4, type V3ChainId, type V4ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "address-positions";
@@ -71,7 +71,7 @@ const orNothing = async (
  * the pair and the fee each one names. The last two both hang off the
  * positions, so they go out together.
  */
-const readV3 = async (address: string, chainId: ChainId): Promise<SideResult<V3Side>> => {
+const readV3 = async (address: string, chainId: V3ChainId): Promise<SideResult<V3Side>> => {
   const positions = await fetchEthereumV3Positions({
     owner: address,
     chainId,
@@ -177,8 +177,9 @@ const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V
  */
 export const getAddressPositions = async (address: string, chainId: ChainId = 1): Promise<AddressPositionsResult> => {
   const v4Asked = readsV4(chainId);
+  const v3Asked = readsV3(chainId);
   const [v3, v4] = await Promise.all([
-    readV3(address, chainId),
+    readsV3(chainId) ? readV3(address, chainId) : ({ ok: false, notice: "market-data-not-configured" } as const),
     readsV4(chainId) ? readV4(address, chainId) : ({ ok: false, notice: "market-data-not-configured" } as const),
   ]);
 
@@ -186,14 +187,16 @@ export const getAddressPositions = async (address: string, chainId: ChainId = 1)
    * Both failing is not a partial answer. The v3 notice is the one reported
    * because it is the read that needs nothing but the chain — if it failed, so
    * did the simpler half, and its reason is the more likely to be the real one.
+   * On a chain v3 is not read on, v4's is the only reason there is.
    */
-  if (!v3.ok && !v4.ok) return { status: "unavailable", notice: v3.notice };
+  if (!v3.ok && !v4.ok) return { status: "unavailable", notice: v3Asked ? v3.notice : v4.notice };
 
   return composeAddressPositions({
     address,
     v3: v3.ok ? v3.side : null,
     v4: v4.ok ? v4.side : null,
     v4Asked,
+    v3Asked,
     fetchedAt: new Date().toISOString(),
   });
 };

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { CHAINS, V4_CHAINS } from "../lib/chains/chains";
+import { V3_CHAINS, V4_CHAINS } from "../lib/chains/chains";
 import { isReadableChain, READABLE_CHAIN_IDS } from "./primitives";
 
 describe("the chains a figure may describe", () => {
   it("are, for v3, exactly the chains the application reads", () => {
-    expect([...READABLE_CHAIN_IDS.v3]).toEqual(CHAINS.map(({ id }) => id));
+    expect([...READABLE_CHAIN_IDS.v3]).toEqual(V3_CHAINS.map(({ id }) => id));
+    expect(isReadableChain(130, "v3")).toBe(false);
   });
 
   it("are, for v4, exactly the chains the application reads v4 on", () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gives the application an RPC endpoint on Base and on Arbitrum, made from the
+# Gives the application an RPC endpoint on Base, Arbitrum and Unichain, made from the
 # Ethereum one it already has, and the Uniswap subgraphs of each. Run as root:
 #
 #   bash /opt/liquiditywise/deploy/set-chain-rpcs.sh
@@ -76,8 +76,10 @@ set_public() {
 status=0
 set_one BASE_RPC_URL base-mainnet 0x2105 || status=1
 set_one ARBITRUM_RPC_URL arb-mainnet 0xa4b1 || status=1
+set_one UNICHAIN_RPC_URL unichain-mainnet 0x82 || status=1
 set_public UNISWAP_V3_BASE_SUBGRAPH_ID 43Hwfi3dJSoGpyas9VwNoDAv55yjgGrPpNSmbQZArzMG
 set_public UNISWAP_V3_ARBITRUM_SUBGRAPH_ID FbCGRftH4a3yZugY7TnbYgPJVEv2LvMT6oF1fxPe9aJM
 set_public UNISWAP_V4_ARBITRUM_SUBGRAPH_ID D1VHPU6cXXSC8eaApWCjCnPcTZQFSYCpGoDAvt4ogDWh
 set_public UNISWAP_V4_BASE_SUBGRAPH_ID Gqm2b5J85n1bhCyDMpGbtbVn4935EvvdyHdHrx3dibyj
+set_public UNISWAP_V4_UNICHAIN_SUBGRAPH_ID EoCvJ5tyMLMJcTnLQwWpjAtPdn74PcrZgzfcT5bYxNBH
 exit "$status"

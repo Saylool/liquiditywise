@@ -19,3 +19,18 @@ describe("a page's title on a chain", () => {
     expect(titleOnChain("Hooks", "Arbitrum One")).toBe("Hooks · Arbitrum One");
   });
 });
+
+describe("a chain whose v3 pools are not read", () => {
+  it("is named, in every language, with v4 read and v3 not", () => {
+    for (const locale of LOCALES) {
+      const line = getChainCopy(locale).v3NotRead("Unichain");
+      expect(line, locale).toContain("Unichain");
+      expect(line, locale).toContain("v3");
+      expect(line, locale).toContain("v4");
+    }
+  });
+
+  it("is among the chains the unknown-chain line names, in every language", () => {
+    for (const locale of LOCALES) expect(getChainCopy(locale).unknown, locale).toContain("Unichain");
+  });
+});

@@ -16,13 +16,14 @@ import type { ChainId } from "../chains/chains";
  * costs the v4 half its fees, which then read as unread, and never the list.
  */
 
-/** `v4` is `null` on a chain v4 is not read on (see chains.ts). */
-export type MostTraded = { readonly v3: MostTradedList; readonly v4: MostTradedList | null };
+/** Each half is `null` on a chain its protocol is not read on (see chains.ts). */
+export type MostTraded = { readonly v3: MostTradedList | null; readonly v4: MostTradedList | null };
 
 export type ReadDays = () => Promise<DataResult<V4PoolDays>>;
 
 export type ReadMostTradedRequest = {
-  readonly readV3Days: ReadDays;
+  /** `null` on a chain v3 is not read on. */
+  readonly readV3Days: ReadDays | null;
   /** `null` on a chain v4 is not read on. */
   readonly readV4Days: ReadDays | null;
   /** The chain the v3 day table is on; mainnet when not said. */
@@ -66,7 +67,7 @@ const readV4 = async (
 
 export const readMostTraded = async (request: ReadMostTradedRequest): Promise<MostTraded> => {
   const [v3, v4] = await Promise.all([
-    readV3(request.readV3Days, request.chainId ?? 1),
+    request.readV3Days === null ? null : readV3(request.readV3Days, request.chainId ?? 1),
     request.readV4Days === null ? null : readV4(request.readV4Days, request),
   ]);
 

@@ -22,6 +22,7 @@ import { V4PairPoolList } from "./V4PairPoolList";
 export function V4PairPanel({
   v4Result,
   v3Result,
+  v3NotRead,
   pair,
   token0Address,
   parameters,
@@ -32,6 +33,8 @@ export function V4PairPanel({
   v4Result: DataResult<V4PairPools>;
   /** `null` when the pair holds native ether and the question has no v3 form. */
   v3Result: DataResult<PairFeeTiers> | null;
+  /** Said in place of the v3 list on a chain whose v3 pools are not read. */
+  v3NotRead?: string | undefined;
   pair: string;
   token0Address: string;
   parameters: PriceBandParameters;
@@ -52,7 +55,9 @@ export function V4PairPanel({
       <h3 className="border-t border-border pt-4 text-xs uppercase tracking-widest text-muted">
         {t.feeTiers.onV3}
       </h3>
-      {v3Result === null || token0Address === ZERO_ADDRESS ? (
+      {v3NotRead !== undefined ? (
+        <p className="text-sm leading-relaxed text-muted">{v3NotRead}</p>
+      ) : v3Result === null || token0Address === ZERO_ADDRESS ? (
         <p className="text-sm leading-relaxed text-muted">{t.feeTiers.v3NoNative}</p>
       ) : (
         <V3PairPoolList result={v3Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />

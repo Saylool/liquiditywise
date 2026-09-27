@@ -14,7 +14,7 @@ import {
   type RawV3Position,
   tokenOfOwnerByIndexCalldata,
 } from "./v3PositionManager";
-import type { ChainId } from "../chains/chains";
+import type { V3ChainId } from "../chains/chains";
 
 /*
  * Which Uniswap v3 positions one address actually holds.
@@ -62,7 +62,7 @@ export type EthereumV3PositionsRequest = {
   /** Whose positions. Lower-cased and checked here before anything goes out. */
   readonly owner: string;
   /** The chain the endpoint serves, which decides whose manager is asked; mainnet when not said. */
-  readonly chainId?: ChainId;
+  readonly chainId?: V3ChainId;
   /** Raw environment value; validated here so the wrapper stays free of logic. */
   readonly rpcUrl: string | undefined;
   readonly fetchImpl: FetchLike;

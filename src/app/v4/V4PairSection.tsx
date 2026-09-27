@@ -1,5 +1,6 @@
 import { V4PairPanel } from "@/components/V4PairPanel";
-import { chainOf } from "@/lib/chains/chains";
+import { chainOf, readsV3 } from "@/lib/chains/chains";
+import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV3PoolsOfPair } from "@/lib/uniswap/getEthereumV3PairFeeTiers";
@@ -37,17 +38,21 @@ export async function V4PairSection({
     token0Address: pool.token0.address,
     token1Address: pool.token1.address,
   };
+  const chain = chainOf(pool.chainId);
+  /* A chain whose v3 pools are not read has no v3 side to ask about. */
+  const v3Read = readsV3(chain.id);
   const [v4Result, v3Result] = await Promise.all([
-    getEthereumV4PairPools({ analysedPoolId: pool.id, ...pair }, chainOf(pool.chainId).id),
-    pool.token0.address === ZERO_ADDRESS
+    getEthereumV4PairPools({ analysedPoolId: pool.id, ...pair }, chain.id),
+    !v3Read || pool.token0.address === ZERO_ADDRESS
       ? Promise.resolve(null)
-      : getEthereumV3PoolsOfPair({ analysedPoolId: null, ...pair, chainId: chainOf(pool.chainId).id }),
+      : getEthereumV3PoolsOfPair({ analysedPoolId: null, ...pair, chainId: chain.id }),
   ]);
 
   return (
     <V4PairPanel
       v4Result={v4Result}
       v3Result={v3Result}
+      v3NotRead={v3Read ? undefined : getChainCopy(locale).v3NotRead(chain.name)}
       pair={`${pool.token0.symbol} / ${pool.token1.symbol}`}
       token0Address={pool.token0.address}
       parameters={parameters}

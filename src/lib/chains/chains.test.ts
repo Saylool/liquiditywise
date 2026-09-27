@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { poolAnalysisHref, readRequestedChain, v4PoolAnalysisHref } from "../advisor/requestedParameters";
 import { chainLabel } from "./chainLabel";
-import { chainBySlug, chainOf, CHAINS, ETHEREUM, isSupportedChainId, readsV4, V4_CHAINS } from "./chains";
+import { chainBySlug, chainOf, CHAINS, ETHEREUM, isSupportedChainId, readsV3, readsV4, V3_CHAINS, V4_CHAINS } from "./chains";
 import { poolName } from "../usage/usageLines";
 import { poolIdentityFor } from "../uniswap/subgraphPoolIdentity";
 
@@ -10,11 +10,12 @@ const POOL = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640";
 const PARAMETERS = { horizonDays: 30, standardDeviationMultiplier: 1 } as const;
 
 describe("the chains", () => {
-  it("are Ethereum, Base and Arbitrum One, by their own ids", () => {
+  it("are Ethereum, Base, Arbitrum One and Unichain, by their own ids", () => {
     expect(CHAINS.map(({ id, slug }) => [id, slug])).toEqual([
       [1, "ethereum"],
       [8453, "base"],
       [42161, "arbitrum"],
+      [130, "unichain"],
     ]);
     expect(isSupportedChainId(10)).toBe(false);
   });
@@ -57,9 +58,16 @@ describe("a link to a pool's analysis", () => {
 });
 
 describe("the chains v4 is read on", () => {
-  it("are all three chains", () => {
-    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum"]);
-    expect([readsV4(1), readsV4(8453), readsV4(42161)]).toEqual([true, true, true]);
+  it("are every chain", () => {
+    expect(V4_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum", "unichain"]);
+    expect([readsV4(1), readsV4(8453), readsV4(42161), readsV4(130)]).toEqual([true, true, true, true]);
+  });
+
+  it("read v3 everywhere but Unichain, where no v3 source answers", () => {
+    expect(V3_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum"]);
+    expect([readsV3(1), readsV3(130)]).toEqual([true, false]);
+    expect(poolIdentityFor("v3", POOL, 130)).toBeNull();
+    expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 130)?.chainId).toBe(130);
   });
 });
 

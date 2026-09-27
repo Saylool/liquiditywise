@@ -12,7 +12,8 @@ import {
   type PriceBandParameters,
 } from "../schemas";
 import { chainLabel } from "../lib/chains/chainLabel";
-import { chainOf, readsV4 } from "../lib/chains/chains";
+import { chainOf, readsV3, readsV4 } from "../lib/chains/chains";
+import { getChainCopy } from "../lib/i18n/chainCopy";
 
 /**
  * What an address holds, and the pools that opens.
@@ -198,12 +199,19 @@ export function AddressHoldings({
         )}
 
         <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
-          {t.holdings.howItLooked(
-            formatWhole(tokensChecked, locale),
-            formatWhole(poolsSearched.v3 ?? 0, locale),
-            poolsSearched.v4 === null ? null : formatWhole(poolsSearched.v4, locale),
-            chainLabel(chainId, locale),
-          )}
+          {/* A v4-only chain casts no v3 net, and the sentence says what was asked instead. */}
+          {!readsV3(chainOf(chainId).id)
+            ? getChainCopy(locale).holdingsV4Only(
+                formatWhole(tokensChecked, locale),
+                formatWhole(poolsSearched.v4 ?? 0, locale),
+                chainLabel(chainId, locale),
+              )
+            : t.holdings.howItLooked(
+                formatWhole(tokensChecked, locale),
+                formatWhole(poolsSearched.v3 ?? 0, locale),
+                poolsSearched.v4 === null ? null : formatWhole(poolsSearched.v4, locale),
+                chainLabel(chainId, locale),
+              )}
         </p>
         {/* Said out loud, so a v3-only list cannot read as "no v4 pool takes this". */}
         {/* On a chain v4 is not read on, that is not the net failing to be cast. */}

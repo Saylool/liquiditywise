@@ -1,6 +1,6 @@
 import "server-only";
 
-import { type ChainId, readsV4 } from "../chains/chains";
+import { type ChainId, readsV3, readsV4 } from "../chains/chains";
 import { rpcUrlFor } from "../chains/chainEnvironment";
 import { processShared } from "../cache/processShared";
 import { loggingFetch } from "../observability/serverDiagnostics";
@@ -28,7 +28,7 @@ export const forgetMostTraded = (): void => {
  * One chain's page figures, read at most once every thirty minutes, and
  * anew every twenty-five by the warmer, so a reader never waits on the read. Only a read
  * in which every half listed is kept: a half that failed is an outage, and
- * keeping it would extend it. v4 is read only where chains.ts says it is.
+ * keeping it would extend it. Each protocol is read only where chains.ts says it is.
  *
  * `refresh` reads anew, day tables included, whatever is kept; a read that
  * fails then leaves the kept one to serve until it runs out.
@@ -43,13 +43,13 @@ export const getMostTraded = async (
 
   const value = await readMostTraded({
     chainId,
-    readV3Days: () => getEthereumV3PoolDays(chainId, { refresh }),
+    readV3Days: readsV3(chainId) ? () => getEthereumV3PoolDays(chainId, { refresh }) : null,
     readV4Days: readsV4(chainId) ? () => getEthereumV4PoolDays(chainId, { refresh }) : null,
     rpcUrl: rpcUrlFor(chainId),
     fetchImpl: loggingFetch(LABEL),
   });
 
-  if (value.v3.status === "listed" && (value.v4 === null || value.v4.status === "listed")) {
+  if ((value.v3 === null || value.v3.status === "listed") && (value.v4 === null || value.v4.status === "listed")) {
     cached.set(chainId, { value, writtenAt: now });
   }
 

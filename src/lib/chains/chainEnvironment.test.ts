@@ -42,3 +42,16 @@ describe("which source serves which chain", () => {
     expect(subgraphIdFor("v3", 8453)).toBe("base-v3");
   });
 });
+
+describe("a chain whose v3 pools are not read", () => {
+  it("has no v3 subgraph, rather than another chain's, and its own endpoint and v4 subgraph", () => {
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("UNISWAP_V4_UNICHAIN_SUBGRAPH_ID", "unichain-v4");
+    vi.stubEnv("UNICHAIN_RPC_URL", "https://unichain.example");
+
+    expect(v3SubgraphIdFor(130)).toBeUndefined();
+    expect(subgraphIdFor("v3", 130)).toBeUndefined();
+    expect(v4SubgraphIdFor(130)).toBe("unichain-v4");
+    expect(rpcUrlFor(130)).toBe("https://unichain.example");
+  });
+});

@@ -1,5 +1,5 @@
 import { argumentWord, decodeAddress, decodeInt24, decodeUint, words } from "./abiWords";
-import type { ChainId } from "../chains/chains";
+import type { V3ChainId } from "../chains/chains";
 
 /*
  * The contract that holds Uniswap v3 positions, and how to ask it what an
@@ -44,7 +44,7 @@ export const POSITION_MANAGER_CODE_HASH =
  * and the factories they name were read from the managers themselves:
  * 0x33128a8f…6fdfd on Base, and mainnet's own 0x1f98431c…1f984 on Arbitrum.
  */
-export const V3_POSITION_MANAGERS: Readonly<Record<ChainId, { readonly address: string; readonly codeHash: string }>> = {
+export const V3_POSITION_MANAGERS: Readonly<Record<V3ChainId, { readonly address: string; readonly codeHash: string }>> = {
   1: { address: POSITION_MANAGER_ADDRESS, codeHash: POSITION_MANAGER_CODE_HASH },
   8453: {
     address: "0x03a520b32c04bf3beef7beb72e919cf822ed34f1",
@@ -73,7 +73,7 @@ const ADDRESS = /^0x[0-9a-f]{40}$/;
 export const isPositionManagerCode = (
   code: unknown,
   hashOf: (hex: string) => string | null,
-  chainId: ChainId = 1,
+  chainId: V3ChainId = 1,
 ): boolean => typeof code === "string" && hashOf(code) === V3_POSITION_MANAGERS[chainId].codeHash;
 
 /** `balanceOf(owner)`: how many position tokens an address holds. */
