@@ -1,4 +1,5 @@
 import { type FeeDisclosure, feeDisclosureFor } from "../lib/advisor/feeDisclosure";
+import type { RangeBacktest } from "../lib/analytics/rangeBacktest";
 import type {
   PoolRangeAnalysisResult,
   PoolRangeAnalysisStep,
@@ -109,6 +110,7 @@ const PANELS = [
   "deposit",
   "realizedFee",
   "outOfSample",
+  "backtest",
   "divergence",
   "rangeOrder",
   "swapDepth",
@@ -125,6 +127,7 @@ const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
   deposit: t.deposit.heading,
   realizedFee: t.realizedFee.heading,
   outOfSample: t.outOfSample.heading,
+  backtest: t.backtest.heading,
   divergence: t.divergence.heading,
   rangeOrder: t.rangeOrder.heading,
   swapDepth: t.swapDepth.heading,
@@ -143,14 +146,15 @@ const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
  * a list of contents standing in front of it would make them read an index
  * before an answer.
  */
-function Contents({ t }: { t: Dictionary }) {
+/** Every panel is always there but one: the month replayed needs a history long enough to draw a range before it. */
+function Contents({ t, absent = [] }: { t: Dictionary; absent?: readonly PanelId[] }) {
   const titles = panelTitles(t);
 
   return (
     <nav aria-label={t.report.contentsLabel} className="flex flex-col gap-2">
       <h2 className="text-xs uppercase tracking-widest text-muted">{t.report.contentsHeading}</h2>
       <ul className="flex flex-wrap gap-x-4 gap-y-1">
-        {PANELS.map((id) => (
+        {PANELS.filter((id) => !absent.includes(id)).map((id) => (
           <li key={id}>
             <a href={`#${id}`} className="text-sm leading-relaxed text-accent underline">
               {titles[id]}
@@ -210,6 +214,86 @@ const formatProtocolFee = (fee: V4ProtocolFee, locale: Locale): string =>
 /** Whether the protocol takes anything at all, in either direction. */
 const takesProtocolFee = (fee: V4ProtocolFee | null): fee is V4ProtocolFee =>
   fee !== null && (fee.zeroForOnePpm > 0 || fee.oneForZeroPpm > 0);
+
+/**
+ * A position opened thirty days ago in the range drawn then, day by day.
+ * Figures only; the words around them say what each rests on.
+ */
+function BacktestPanel({
+  backtest,
+  depositUsd,
+  attributesFees,
+  inQuote,
+  t,
+  locale,
+}: {
+  backtest: RangeBacktest;
+  depositUsd: number;
+  /** False where a hook may change what swaps pay, as the deposit panel's gate says. */
+  attributesFees: boolean;
+  /** A range in the page's own quote. */
+  inQuote: (lower: number, upper: number) => string;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const whole = (value: number) => formatWhole(value, locale);
+  const percent = (ratio: number) => formatPercent(ratio, locale);
+  const place = { inside: t.backtest.placeInside, outside: t.backtest.placeOutside, undetermined: t.backtest.placeCrossed };
+
+  return (
+    <Panel id="backtest" title={t.backtest.heading}>
+      <p className="text-sm leading-relaxed">
+        {t.backtest.opened(formatUtcDate(backtest.openedAt), inQuote(backtest.lowerPrice, backtest.upperPrice))}
+      </p>
+      <p className="text-sm leading-relaxed text-muted">{t.backtest.intro}</p>
+
+      <dl className={FIGURE_GRID}>
+        <Figure label={t.outOfSample.fullyInside} value={whole(backtest.inside)} />
+        <Figure label={t.outOfSample.fullyOutside} value={whole(backtest.outside)} />
+        <Figure label={t.outOfSample.undetermined} value={whole(backtest.crossed)} />
+        <Figure label={t.backtest.worth} value={percent(backtest.endValueVsHold)} note={t.backtest.worthNote} />
+        {!attributesFees || backtest.fees === null ? null : (
+          <>
+            <Figure label={t.backtest.fees(formatUsd(depositUsd, locale))} value={formatUsd(backtest.fees.usd, locale)} />
+            <Figure label={t.backtest.feesOfDeposit} value={percent(backtest.fees.ofDeposit)} />
+          </>
+        )}
+      </dl>
+      {!attributesFees ? (
+        <p className="text-xs leading-relaxed text-muted">{t.backtest.feesWithheld}</p>
+      ) : backtest.fees === null ? (
+        <p className="text-xs leading-relaxed text-muted">{t.backtest.feesUnread}</p>
+      ) : null}
+
+      <details className="flex flex-col gap-2">
+        <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">{t.backtest.showDays}</summary>
+        <div className="scroll-hint mt-3 overflow-x-auto">
+          <table className="w-full min-w-max text-sm">
+            <caption className="sr-only">{t.backtest.daysCaption}</caption>
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                <th scope="col" className="pr-6 pb-1 font-normal">{t.backtest.dayDate}</th>
+                <th scope="col" className="pr-6 pb-1 font-normal">{t.backtest.dayPlace}</th>
+                <th scope="col" className="pb-1 font-normal">{t.backtest.dayWorth}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {backtest.days.map((day) => (
+                <tr key={day.timestamp} className="font-mono">
+                  <th scope="row" className="py-0.5 pr-6 text-left font-normal">{formatUtcDate(day.timestamp)}</th>
+                  <td className="py-0.5 pr-6 text-muted">{place[day.placement]}</td>
+                  <td className="py-0.5">{percent(day.valueVsHold)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <p className="text-xs leading-relaxed text-muted">{t.backtest.caveat}</p>
+    </Panel>
+  );
+}
 
 /**
  * What the pool actually charged, beside what it says it charges.
@@ -387,6 +471,7 @@ export function PoolRangeReport({
     depositFeeShare,
     rangeOrders,
     swapDepth,
+    backtest,
     parameters,
   } = result.data;
   const disclosure = feeDisclosureFor(pool);
@@ -586,7 +671,7 @@ export function PoolRangeReport({
        * knobs are the labels of the form below, so a reader changing one can
        * see which figure they are changing.
        */}
-      <Contents t={t} />
+      <Contents t={t} absent={backtest === null ? ["backtest"] : []} />
 
       <Panel id="basis" title={t.report.basisHeading}>
         <p className="text-sm leading-relaxed text-muted">
@@ -882,6 +967,25 @@ export function PoolRangeReport({
           <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notHeld}</p>
           <p className="text-xs leading-relaxed text-muted">{t.outOfSample.notIndependent}</p>
         </Panel>
+      )}
+
+      {/*
+       * The same method, replayed as if a position had been opened at the
+       * start of the last month — after the check that tests the method, and
+       * before the curve that explains the worth-against-holding figure in it.
+       */}
+      {backtest === null ? null : (
+        <BacktestPanel
+          backtest={backtest}
+          depositUsd={result.data.depositUsd}
+          attributesFees={disclosure.mayAttributeFeesToRange}
+          inQuote={(lower, upper) => {
+            const band = quotedInterval(quote, { lower, upper });
+            return t.report.rangeValue(price(band.lower), price(band.upper), counter, base);
+          }}
+          t={t}
+          locale={locale}
+        />
       )}
 
       <Panel id="divergence" title={t.divergence.heading}>

@@ -641,6 +641,28 @@ describe("what the pool actually charged", () => {
     expect(markup).not.toContain("Not shown for this pool");
   });
 
+  it("withholds the month replayed's fees too when the hook may take a share, and says why", () => {
+    const result = analyse(v4Parts(SWAP_HOOK, 600));
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    const backtest = {
+      openedAt: "2026-08-28T00:00:00.000Z",
+      openingPrice: 2500,
+      lowerPrice: 2000,
+      upperPrice: 3000,
+      days: [],
+      inside: 20,
+      outside: 6,
+      crossed: 4,
+      endValueVsHold: 0.987,
+      fees: { usd: 12.5, ofDeposit: 0.0125, daysCounted: 20, daysUnmeasurable: 0 },
+    };
+    const markup = render({ ...result, data: { ...result.data, backtest } } as ReturnType<typeof analysePoolRange>);
+
+    expect(markup).toContain('id="backtest"');
+    expect(markup).not.toContain("Those fees against the deposit");
+    expect(markup).toContain("so no fees are attributed to a range here");
+  });
+
   it("withholds the fees attributed to the range when the hook may take a share", () => {
     const markup = render(analyse(v4Parts(SWAP_HOOK, 600)));
 
@@ -813,7 +835,8 @@ describe("PoolRangeReport and its tables", () => {
 
   it("draws the widths and the divergence as tables, and the folds when there are any", () => {
     expect(tablesIn(render(analyse()))).toHaveLength(2);
-    expect(tablesIn(withFolds())).toHaveLength(3);
+    /* The folds, and the days of a position opened a month ago, need the long history. */
+    expect(tablesIn(withFolds())).toHaveLength(4);
   });
 
   it("gives every table a name of its own", () => {
@@ -850,6 +873,7 @@ describe("PoolRangeReport and its tables", () => {
     expect(captions).toEqual([
       "Diğer genişlikler",
       "Yöntemin sınandığı her aralık, en eskisi önce",
+      "Pencerenin her günü, en eskiden",
       "Sadece tutmaya kıyasla",
     ]);
   });
@@ -1160,6 +1184,14 @@ describe("the way into the page", () => {
     expect(linked.filter((id) => !present.has(id))).toEqual([]);
   });
 
+  it("links the month replayed too, when the history is long enough to draw it", () => {
+    const markup = render(analyse({ history: ok(history(121)) }));
+
+    expect(anchors(markup)).toContain("backtest");
+    expect(targets(markup)).toContain("backtest");
+    expect(anchors(render(analyse()))).not.toContain("backtest");
+  });
+
   it("names every panel on the page, including the one that opens closed", () => {
     const markup = render(analyse());
     const linked = new Set(anchors(markup));
@@ -1182,5 +1214,51 @@ describe("the way into the page", () => {
     expect(markup).toContain("Bu sayfada");
     expect(markup).toContain("Bu analizin bölümleri");
     expect(markup).not.toContain("On this page");
+  });
+});
+
+describe("a position opened thirty days ago", () => {
+  const withBacktest = (backtest: unknown, overrides: Parameters<typeof analyse>[0] = {}) => {
+    const result = analyse({ history: ok(history(121)), ...overrides });
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    return { ...result, data: { ...result.data, backtest } } as ReturnType<typeof analysePoolRange>;
+  };
+  const replayed = (fees: unknown) => ({
+    openedAt: "2026-08-28T00:00:00.000Z",
+    openingPrice: 2500,
+    lowerPrice: 2000,
+    upperPrice: 3000,
+    days: [
+      { timestamp: "2026-08-29T00:00:00.000Z", placement: "inside", valueVsHold: 0.999 },
+      { timestamp: "2026-08-30T00:00:00.000Z", placement: "undetermined", valueVsHold: 0.99 },
+    ],
+    inside: 20,
+    outside: 6,
+    crossed: 4,
+    endValueVsHold: 0.987,
+    fees,
+  });
+
+  it("says when and in what range it opened, how its days went, and its worth against holding", () => {
+    const markup = render(withBacktest(replayed({ usd: 12.5, ofDeposit: 0.0125, daysCounted: 20, daysUnmeasurable: 0 })));
+
+    expect(markup).toContain('id="backtest"');
+    expect(markup).toContain("Opened at the close of 2026-08-28, in");
+    expect(markup).toContain("98.70%");
+    expect(markup).toContain("$12.50");
+    expect(markup).toContain("1.25%");
+    expect(markup).toContain("across an edge");
+    expect(markup).toContain("99.90%");
+  });
+
+  it("says why there are no fees when the dollar rate could not be read", () => {
+    const markup = render(withBacktest(replayed(null)));
+
+    expect(markup).toContain("The fees could not be sized");
+    expect(markup).not.toContain("Those fees against the deposit");
+  });
+
+  it("is not on the page when the history is too short to draw a range before the window", () => {
+    expect(render(analyse())).not.toContain('id="backtest"');
   });
 });

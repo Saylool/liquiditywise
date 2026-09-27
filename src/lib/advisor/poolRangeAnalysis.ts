@@ -2,6 +2,7 @@ import {
   calculateDepositFeeShare,
   type DepositFeeShareResult,
 } from "../analytics/depositFeeShare";
+import { calculateRangeBacktest, type RangeBacktest } from "../analytics/rangeBacktest";
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
 import { calculateRangeOrders, type RangeOrdersResult } from "../analytics/rangeOrder";
 import { calculateSwapDepth, type SwapDepthResult } from "../analytics/swapDepth";
@@ -132,6 +133,12 @@ export type PoolRangeAnalysis = {
    * they do not.
    */
   readonly swapDepth: SwapDepthResult;
+  /**
+   * The last thirty days replayed: a position opened at their start in the
+   * range this site would have drawn then, and how it fared since. `null`
+   * when the history cannot hold a range drawn before the window.
+   */
+  readonly backtest: RangeBacktest | null;
   readonly parameters: PriceBandParameters;
   /** The size the figure above was worked out for. Printed wherever it is. */
   readonly depositUsd: number;
@@ -430,6 +437,15 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     depositUsd: input.depositUsd,
   });
 
+  const backtest = calculateRangeBacktest({
+    history: history.value,
+    snapshot: snapshot.value,
+    parameters: input.parameters,
+    depositUsd: input.depositUsd,
+    token0Decimals: pool.value.token0.decimals,
+    token1Decimals: pool.value.token1.decimals,
+  });
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -444,6 +460,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     depositFeeShare,
     rangeOrders,
     swapDepth,
+    backtest,
     parameters: input.parameters,
     depositUsd: input.depositUsd,
   };

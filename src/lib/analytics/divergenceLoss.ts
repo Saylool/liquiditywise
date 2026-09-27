@@ -28,7 +28,7 @@ import { DivergenceLossSchema } from "../../schemas";
  * entirely one token, which the clamp expresses: below it `s` sticks at `sa` and
  * `amount1` is zero; above it `s` sticks at `sb` and `amount0` is zero.
  */
-const amountsAt = (
+export const amountsAt = (
   price: number,
   lowerRoot: number,
   upperRoot: number,
@@ -39,7 +39,7 @@ const amountsAt = (
 };
 
 /** A holding of both tokens, priced in token1. */
-const valueInToken1 = (
+export const valueInToken1 = (
   amounts: { readonly amount0: number; readonly amount1: number },
   price: number,
 ): number => amounts.amount0 * price + amounts.amount1;
