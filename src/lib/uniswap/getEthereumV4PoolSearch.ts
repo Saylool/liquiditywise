@@ -6,6 +6,8 @@ import { fetchEthereumV4PoolSearch } from "./ethereumV4PoolSearch";
 import { getEthereumV4PoolDays } from "./getEthereumV4PoolDays";
 import { rpcUrlFor } from "../chains/chainEnvironment";
 import type { ChainId } from "../chains/chains";
+import { keptReads } from "../cache/keptReads";
+import { SEARCH_READ_TTL_MS } from "./pairReads";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v4-pool-search";
@@ -22,6 +24,19 @@ export const getEthereumV4PoolSearch = async (
   terms: readonly string[],
   chainId: ChainId = 1,
 ): Promise<DataResult<V4PoolSearchResults>> =>
+  kept.read(JSON.stringify([chainId, ...terms]), () => searchV4(terms, chainId));
+
+/* Kept ten minutes per chain and terms once answered, as the v3 search is (see there). */
+const kept = keptReads<DataResult<V4PoolSearchResults>>({
+  name: "v4-pool-search",
+  ttlMs: SEARCH_READ_TTL_MS,
+  keep: (result) => result.status === "success",
+});
+
+/** For tests. */
+export const forgetV4PoolSearch = (): void => kept.forget();
+
+const searchV4 = async (terms: readonly string[], chainId: ChainId): Promise<DataResult<V4PoolSearchResults>> =>
   logUnavailable(
     LABEL,
     await fetchEthereumV4PoolSearch({

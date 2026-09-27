@@ -1,7 +1,8 @@
 import { chainById, type ChainId } from "../chains/chains";
 
 /*
- * What the two pair readers — v3 fee tiers and v4 pools — share.
+ * What the pair and search readers share: how long a list is kept, and how
+ * a reader names itself in the log.
  */
 
 /**
@@ -11,6 +12,9 @@ import { chainById, type ChainId } from "../chains/chains";
  * the page's own figures for the pool being read are always read afresh.
  */
 export const PAIR_READ_TTL_MS = 10 * 60 * 1000;
+
+/** How long a search's results are kept once read: ten minutes, as a pair's pools. */
+export const SEARCH_READ_TTL_MS = PAIR_READ_TTL_MS;
 
 /** A reader's diagnostic label, with the chain named off mainnet so a slow line says where. */
 export const readerLabel = (label: string, chainId: ChainId): string =>

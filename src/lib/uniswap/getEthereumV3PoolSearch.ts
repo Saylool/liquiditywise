@@ -6,9 +6,27 @@ import { fetchEthereumV3PoolSearch, fetchV3PoolSearchFromDays } from "./ethereum
 import { getEthereumV3PoolDays } from "./getEthereumV3PoolDays";
 import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
 import { chainById, type ChainId } from "../chains/chains";
+import { keptReads } from "../cache/keptReads";
+import { SEARCH_READ_TTL_MS } from "./pairReads";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v3-pool-search";
+
+/*
+ * Kept ten minutes per chain and terms, once answered cleanly. The same
+ * search is typed again and again — a pair people come back to — and cost
+ * four seconds on mainnet and seven on Arbitrum every time, measured on
+ * 2026-09-27. The depths it orders by are then up to ten minutes old, as a
+ * pair list's are (see pairReads.ts).
+ */
+const kept = keptReads<DataResult<PoolSearchResults>>({
+  name: "v3-pool-search",
+  ttlMs: SEARCH_READ_TTL_MS,
+  keep: (result) => result.status === "success",
+});
+
+/** For tests. */
+export const forgetV3PoolSearch = (): void => kept.forget();
 
 /*
  * The server-only boundary for pool search.
@@ -38,6 +56,9 @@ export const getEthereumV3PoolSearch = async (
   terms: readonly string[],
   chainId: ChainId = 1,
 ): Promise<DataResult<PoolSearchResults>> =>
+  kept.read(JSON.stringify([chainId, ...terms]), () => searchV3(terms, chainId));
+
+const searchV3 = async (terms: readonly string[], chainId: ChainId): Promise<DataResult<PoolSearchResults>> =>
   logUnavailable(
     LABEL,
     chainById(chainId).v3Search === "days"
@@ -53,15 +74,15 @@ export const getEthereumV3PoolSearch = async (
           },
         })
       : await fetchEthereumV3PoolSearch({
-      terms,
-      chainId,
-      apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: v3SubgraphIdFor(chainId),
-      rpcUrl: rpcUrlFor(chainId),
-      fetchImpl: loggingFetch(LABEL),
-      now: () => new Date(),
-      onDiagnostic: (detail) => {
-        logDetail(LABEL, detail);
-      },
-    }),
+          terms,
+          chainId,
+          apiKey: process.env.THE_GRAPH_API_KEY,
+          subgraphId: v3SubgraphIdFor(chainId),
+          rpcUrl: rpcUrlFor(chainId),
+          fetchImpl: loggingFetch(LABEL),
+          now: () => new Date(),
+          onDiagnostic: (detail) => {
+            logDetail(LABEL, detail);
+          },
+        }),
   );
