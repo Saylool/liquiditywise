@@ -28,6 +28,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { readPoolSearchInput } from "@/lib/search/poolSearchInput";
 import { EvmAddressSchema } from "@/schemas/primitives";
+import { poolCardPath, poolShareMetadata } from "@/lib/og/poolCard";
 import { PoolExplanationSection } from "./PoolExplanationSection";
 import { PoolFeeTiersSection } from "./PoolFeeTiersSection";
 import { PoolSearchSection } from "./PoolSearchSection";
@@ -54,12 +55,23 @@ import { V4PoolSearchSection } from "./V4PoolSearchSection";
  * verify has no place in its UI.
  */
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
   const { t } = await getRequestDictionary();
+  const params = await searchParams;
+  const chain = readRequestedChain(params[CHAIN_PARAMETER]);
+  const address = EvmAddressSchema.safeParse(single(params.address));
 
   return {
     title: t.metadata.poolTitle,
     description: t.metadata.poolDescription,
+    /* A shared link to one pool unfurls into that pool's card (app/og/pool). */
+    ...(chain !== null && readsV3(chain.id) && address.success
+      ? poolShareMetadata(poolCardPath("v3", address.data, chain.slug), t.metadata.poolTitle, t.metadata.poolDescription)
+      : {}),
     /*
      * Every render of this page spends third-party API quota, and the result is
      * only meaningful for the moment it was fetched. Neither property suits a

@@ -20,6 +20,7 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { Bytes32HexSchema } from "@/schemas/primitives";
+import { poolCardPath, poolShareMetadata } from "@/lib/og/poolCard";
 import { V4PoolPending, V4PoolSection } from "./V4PoolSection";
 
 /*
@@ -38,12 +39,23 @@ import { V4PoolPending, V4PoolSection } from "./V4PoolSection";
  * that is measured rather than declared — see the panel that says so.
  */
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
   const { t } = await getRequestDictionary();
+  const params = await searchParams;
+  const chain = readRequestedChain(params[CHAIN_PARAMETER]);
+  const poolId = Bytes32HexSchema.safeParse(single(params.id));
 
   return {
     title: t.metadata.v4Title,
     description: t.metadata.v4Description,
+    /* A shared link to one pool unfurls into that pool's card (app/og/pool). */
+    ...(chain !== null && readsV4(chain.id) && poolId.success
+      ? poolShareMetadata(poolCardPath("v4", poolId.data, chain.slug), t.metadata.v4Title, t.metadata.v4Description)
+      : {}),
     robots: { index: false, follow: false },
   };
 }
