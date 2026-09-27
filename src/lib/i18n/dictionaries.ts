@@ -38,7 +38,7 @@ const en = {
     compareDescription: "Every Uniswap v3 fee tier of one pair, read with the same horizon, width and deposit.",
     poolTitle: "Pool range analysis · LiquidityWise",
     poolDescription:
-      "A price range for one Ethereum mainnet Uniswap v3 pool, drawn from how far its price has actually moved.",
+      "A price range for one Uniswap v3 pool, drawn from how far its price has actually moved.",
     hooksTitle: "The hooks on Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Every hook the week's busiest Uniswap v4 pools name, and what each one is permitted to do — read from its own address."
@@ -1230,7 +1230,7 @@ const tr: Dictionary = {
     compareDescription: "Bir çiftin bütün Uniswap v3 komisyon kademeleri, aynı ufuk, genişlik ve yatırım tutarıyla okunmuş halde.",
     poolTitle: "Havuz aralığı analizi · LiquidityWise",
     poolDescription:
-      "Bir Ethereum mainnet Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
+      "Bir Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
     hooksTitle: "Uniswap v4 kancaları · LiquidityWise",
     hooksDescription:
       "Haftanın en yoğun Uniswap v4 havuzlarının adını verdiği her kanca ve her birinin neye izinli olduğu — kendi adresinden okunmuş hâliyle."
@@ -2173,7 +2173,7 @@ const de: Dictionary = {
     compareDescription: "Alle Uniswap-v3-Gebührenstufen eines Paars, mit demselben Horizont, derselben Breite und derselben Einlage gelesen.",
     poolTitle: "Bereichsanalyse eines Pools · LiquidityWise",
     poolDescription:
-      "Ein Preisbereich für einen Uniswap-v3-Pool im Ethereum-Mainnet, hergeleitet daraus, wie weit sich sein Preis tatsächlich bewegt hat.",
+      "Ein Preisbereich für einen Uniswap-v3-Pool, hergeleitet daraus, wie weit sich sein Preis tatsächlich bewegt hat.",
     hooksTitle: "Die Hooks in Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Jeder Hook, den die meistgehandelten Uniswap-v4-Pools der Woche nennen, und was jeder von ihnen tun darf — aus seiner eigenen Adresse gelesen.",
@@ -3095,7 +3095,7 @@ const es: Dictionary = {
     compareDescription: "Todos los niveles de comisión de Uniswap v3 de un par, leídos con el mismo horizonte, amplitud y depósito.",
     poolTitle: "Análisis de rango de un pool · LiquidityWise",
     poolDescription:
-      "Un rango de precios para un pool de Uniswap v3 en la red principal de Ethereum, trazado a partir de cuánto se ha movido realmente su precio.",
+      "Un rango de precios para un pool de Uniswap v3, trazado a partir de cuánto se ha movido realmente su precio.",
     hooksTitle: "Los hooks de Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Todos los hooks que nombran los pools de Uniswap v4 más activos de la semana, y qué se le permite hacer a cada uno — leído de su propia dirección.",
@@ -4015,7 +4015,7 @@ const ar: Dictionary = {
     compareDescription: "كل مستويات رسوم Uniswap v3 لزوج واحد، مقروءة بالأفق والاتساع والإيداع نفسه.",
     poolTitle: "تحليل نطاق تجمّع · LiquidityWise",
     poolDescription:
-      "نطاق سعري لتجمّع Uniswap v3 على شبكة إيثيريوم الرئيسية، مرسوم من مدى تحرّك سعره فعلًا.",
+      "نطاق سعري لتجمّع Uniswap v3، مرسوم من مدى تحرّك سعره فعلًا.",
     hooksTitle: "خطّافات Uniswap v4 · LiquidityWise",
     hooksDescription:
       "كل hook تسمّيه أكثر تجمّعات Uniswap v4 نشاطًا هذا الأسبوع، وما المسموح لكلٍّ منها أن يفعله — مقروءًا من عنوانه نفسه.",
@@ -4918,7 +4918,7 @@ const hi: Dictionary = {
     compareDescription: "एक जोड़ी के सभी Uniswap v3 शुल्क स्तर, एक ही अवधि, चौड़ाई और जमा के साथ पढ़े गए।",
     poolTitle: "पूल के दायरे का विश्लेषण · LiquidityWise",
     poolDescription:
-      "Ethereum मेननेट के एक Uniswap v3 पूल के लिए कीमत का दायरा, इस आधार पर खींचा गया कि उसकी कीमत वास्तव में कितनी हिली है।",
+      "एक Uniswap v3 पूल के लिए कीमत का दायरा, इस आधार पर खींचा गया कि उसकी कीमत वास्तव में कितनी हिली है।",
     hooksTitle: "Uniswap v4 के hooks · LiquidityWise",
     hooksDescription:
       "इस हफ़्ते के सबसे व्यस्त Uniswap v4 पूल जिन hooks का नाम लेते हैं, और हर एक को क्या करने की अनुमति है — उसके अपने पते से पढ़ा गया।",
@@ -5834,7 +5834,7 @@ const zh: Dictionary = {
     compareDescription: "一个交易对的所有 Uniswap v3 费率档，用同样的时长、宽度和资金读取。",
     poolTitle: "资金池区间分析 · LiquidityWise",
     poolDescription:
-      "为某个以太坊主网 Uniswap v3 资金池给出的价格区间，由它的价格实际走了多远推算而来。",
+      "为某个 Uniswap v3 资金池给出的价格区间，由它的价格实际走了多远推算而来。",
     hooksTitle: "Uniswap v4 上的 hook · LiquidityWise",
     hooksDescription:
       "本周最活跃的 Uniswap v4 资金池所指定的每一个 hook，以及每一个被允许做什么——都从它自己的地址中读出。"
@@ -7001,7 +7001,7 @@ const ru: Dictionary = {
     compareDescription: "Все уровни комиссии Uniswap v3 одной пары, прочитанные с тем же горизонтом, шириной и вкладом.",
     poolTitle: "Анализ диапазона пула · LiquidityWise",
     poolDescription:
-      "Ценовой диапазон для одного пула Uniswap v3 в основной сети Ethereum, выведенный из того, насколько его цена действительно двигалась.",
+      "Ценовой диапазон для одного пула Uniswap v3, выведенный из того, насколько его цена действительно двигалась.",
     hooksTitle: "Hook’и в Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Каждый hook, который называют самые активные пулы Uniswap v4 недели, и что каждому из них разрешено делать — прочитано из его собственного адреса."
@@ -8184,7 +8184,7 @@ const pt: Dictionary = {
     compareDescription: "Todos os níveis de taxa do Uniswap v3 de um par, lidos com o mesmo horizonte, largura e depósito.",
     poolTitle: "Análise da faixa de um pool · LiquidityWise",
     poolDescription:
-      "Uma faixa de preço para um pool do Uniswap v3 na rede principal do Ethereum, tirada de quanto o preço dele realmente andou.",
+      "Uma faixa de preço para um pool do Uniswap v3, tirada de quanto o preço dele realmente andou.",
     hooksTitle: "Os hooks do Uniswap v4 · LiquidityWise",
     hooksDescription:
       "Cada hook citado pelos pools do Uniswap v4 mais movimentados da semana, e o que cada um tem permissão para fazer — lido do próprio endereço dele."
@@ -9368,7 +9368,7 @@ const zhHant: Dictionary = {
     compareDescription: "一個交易對的所有 Uniswap v3 費率檔，用同樣的時長、寬度和資金讀取。",
     poolTitle: "資金池區間分析 · LiquidityWise",
     poolDescription:
-      "為某個以太坊主網 Uniswap v3 資金池給出的價格區間，由它的價格實際走了多遠推算而來。",
+      "為某個 Uniswap v3 資金池給出的價格區間，由它的價格實際走了多遠推算而來。",
     hooksTitle: "Uniswap v4 上的 hook · LiquidityWise",
     hooksDescription:
       "本週最活躍的 Uniswap v4 資金池所指定的每一個 hook，以及每一個被允許做什麼——都從它自己的地址中讀出。"

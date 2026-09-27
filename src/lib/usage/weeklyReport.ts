@@ -113,7 +113,8 @@ export const weeklyReport = (input: WeekInput): string => {
       .filter(([, n]) => n >= BURST_MINIMUM)
       .map(([minute]) => minute),
   );
-  const inBurst = (visit: { readonly minute: string | null }) => visit.minute !== null && burstMinutes.has(visit.minute);
+  /* A visit with no minute is in no burst: no burst minute is the empty string. */
+  const inBurst = (visit: { readonly minute: string | null }) => burstMinutes.has(visit.minute ?? "");
   const servedAll = people.filter((visit) => visit.outcome === "served");
   const served = servedAll.filter((visit) => !inBurst(visit));
   const burstServed = servedAll.length - served.length;

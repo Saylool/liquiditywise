@@ -19,9 +19,15 @@ import { ETHEREUM } from "@/lib/chains/chains";
 
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
 
-/** Title and description come from the layout; this page adds where each language of it lives. */
+/**
+ * The description comes from the layout; this page adds its own title — the
+ * name and what the site is for, which is what a search result shows — and
+ * where each language of it lives.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  return { alternates: await getOpenPageAlternates("/") };
+  const { locale } = await getRequestDictionary();
+
+  return { title: getInterfaceCopy(locale).homeTitle, alternates: await getOpenPageAlternates("/") };
 }
 
 export default async function Home() {

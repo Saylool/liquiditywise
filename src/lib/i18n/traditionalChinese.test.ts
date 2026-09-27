@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { getLearnCopy } from "../learn/briefs";
+import { getTopicCopy } from "../learn/topics";
+import { getChainCopy } from "./chainCopy";
 import { getDictionary } from "./dictionaries";
+import { getInterfaceCopy } from "./interface";
+import { getMostTradedCopy } from "./mostTradedCopy";
 
 /*
  * Traditional Chinese, held to the one thing its neighbour cannot check.
@@ -30,9 +35,17 @@ import { getDictionary } from "./dictionaries";
 const SIMPLIFIED_ONLY =
   "与东两个为么义书买产仅从仓们优会侧储兑关内写决况减凭则创删别办务动势区协单卖却历参双发变叠号响围图场块声处复够头学实宽对导尝尽层币带帮并应开弃张强归当录径态总恒户执扩报担拟拥择损换摆摊撑数断无时显术机权条来构标样档检横没浅测浏涨点状独现画盖盘码础离称笔签紧约纯纳纸线组细终经绑结绕给绝统继续编缘网脚节获补装见观规览计订认让议记讲许论设访证识诉词译试话询该语误说请诺读谁调谓谢财败账货贴贵费资赚赠跃转轮较辅输边达过迈运还这进远连选邻释针钟钥钮钱铺链锁错长门闭问间队阴际险随页项顺须顾预频题额风验齐";
 
-/** Every string in a dictionary, by the path it sits at. */
+/**
+ * Every string in a dictionary, by the path it sits at — the templates too,
+ * called with placeholder arguments. A test that read only plain strings let
+ * half a Simplified sentence sit inside a Traditional template for a week.
+ */
 const strings = (value: unknown, path = ""): readonly (readonly [string, string])[] => {
   if (typeof value === "string") return [[path, value]];
+  if (typeof value === "function") {
+    const args = Array.from({ length: Math.max(value.length, 1) }, () => "1");
+    return strings((value as (...parts: string[]) => unknown)(...args), `${path}()`);
+  }
   if (Array.isArray(value)) return value.flatMap((item, index) => strings(item, `${path}[${index}]`));
   if (typeof value === "object" && value !== null) {
     return Object.entries(value).flatMap(([key, item]) => strings(item, `${path}.${key}`));
@@ -107,5 +120,26 @@ describe("the Traditional Chinese dictionary", () => {
     expect(all).not.toContain("\u201c");
     expect(all).not.toContain("\u201d");
     expect(all).toContain("\u300c");
+  });
+});
+
+describe("the rest of the Traditional Chinese copy", () => {
+  const modules = {
+    chainCopy: getChainCopy,
+    interface: getInterfaceCopy,
+    learn: getLearnCopy,
+    topics: getTopicCopy,
+    mostTraded: getMostTradedCopy,
+  } as const;
+
+  it("carries no character that only exists in the Simplified script, in any copy module", () => {
+    const simplifiedOnly = new Set([...SIMPLIFIED_ONLY]);
+    const leaks = Object.entries(modules).flatMap(([name, get]) =>
+      strings(get("zh-Hant"), name)
+        .filter(([, value]) => [...value].some((character) => simplifiedOnly.has(character)))
+        .map(([path, value]) => `${path}: ${value.slice(0, 40)}`),
+    );
+
+    expect(leaks).toEqual([]);
   });
 });

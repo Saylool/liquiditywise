@@ -1,6 +1,8 @@
 import type { Locale } from "./locales";
 
 const en = {
+  /** The front page's title, which is what a search result shows: the name and what it is for. */
+  homeTitle: "LiquidityWise — Uniswap v3 & v4 liquidity ranges, explained",
   pools: "Explore pools",
   positions: "Your positions",
   hooks: "v4 hooks",
@@ -44,6 +46,7 @@ export type InterfaceCopy = { [K in keyof typeof en]: string };
 const copy: Record<Locale, InterfaceCopy> = {
   en,
   tr: {
+    homeTitle: "LiquidityWise — Uniswap v3 ve v4 likidite aralığı analizi",
     pools: "Havuzları keşfet",
     positions: "Pozisyonların",
     hooks: "v4 hook’ları",
@@ -82,6 +85,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "Aralığın",
   },
   de: {
+    homeTitle: "LiquidityWise — Liquiditätsbereiche für Uniswap v3 und v4, erklärt",
     pools: "Pools entdecken",
     positions: "Deine Positionen",
     hooks: "v4-Hooks",
@@ -120,6 +124,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "Deine Spanne",
   },
   es: {
+    homeTitle: "LiquidityWise — rangos de liquidez de Uniswap v3 y v4, explicados",
     pools: "Explorar pools",
     positions: "Tus posiciones",
     hooks: "Hooks de v4",
@@ -158,6 +163,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "Tu rango",
   },
   ar: {
+    homeTitle: "LiquidityWise — تحليل نطاقات السيولة في Uniswap v3 وv4",
     pools: "استكشف المجمعات",
     positions: "مراكزك",
     hooks: "خطافات v4",
@@ -194,6 +200,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "نطاقك",
   },
   hi: {
+    homeTitle: "LiquidityWise — Uniswap v3 और v4 तरलता दायरों का विश्लेषण",
     pools: "पूल खोजें",
     positions: "आपकी पोज़िशन",
     hooks: "v4 हुक",
@@ -231,6 +238,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "आपकी सीमा",
   },
   zh: {
+    homeTitle: "LiquidityWise — Uniswap v3 与 v4 流动性区间分析",
     pools: "探索资金池",
     positions: "你的仓位",
     hooks: "v4 钩子",
@@ -266,6 +274,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "你的区间",
   },
   ru: {
+    homeTitle: "LiquidityWise — диапазоны ликвидности Uniswap v3 и v4 с объяснениями",
     pools: "Изучить пулы",
     positions: "Ваши позиции",
     hooks: "Hook’и v4",
@@ -304,6 +313,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "Ваш диапазон",
   },
   pt: {
+    homeTitle: "LiquidityWise — faixas de liquidez da Uniswap v3 e v4, explicadas",
     pools: "Explorar pools",
     positions: "Suas posições",
     hooks: "Hooks do v4",
@@ -342,6 +352,7 @@ const copy: Record<Locale, InterfaceCopy> = {
     range: "Sua faixa",
   },
   "zh-Hant": {
+    homeTitle: "LiquidityWise — Uniswap v3 與 v4 流動性區間分析",
     pools: "探索資金池",
     positions: "你的倉位",
     hooks: "v4 鉤子",
