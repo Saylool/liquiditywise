@@ -85,14 +85,16 @@ describe("what a visit line records", () => {
 });
 
 describe("reading the journal back", () => {
-  it("reads back every visit exactly as it was written, with the journal's day", () => {
+  it("reads back every visit exactly as it was written, with the journal's day and minute", () => {
     const written = visit(`/pool?address=${ADDRESS}`) ?? (null as never);
 
     expect(parseUsageLine(`2026-09-24T06:43:44+0000 srv npm[1]: ${visitLine(written)}`)).toEqual({
       kind: "visit",
       at: "2026-09-24",
+      minute: "2026-09-24T06:43",
       visit: written,
     });
+    expect(parseUsageLine(visitLine(written))).toMatchObject({ at: null, minute: null });
   });
 
   it("reads back what an explanation spent, with a pair that cannot break the line", () => {

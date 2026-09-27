@@ -116,6 +116,29 @@ describe("the weekly report", () => {
     expect(text).toContain("Telegram: the store could not be asked");
   });
 
+  it("says when the refusals were one burst, and not when they were spread out", () => {
+    const refusedAt = (minute: string) =>
+      at(minute.slice(0, 10), visitLine({ page: "/pool", pool: USDC_WETH, locale: "en", bot: false, outcome: "refused" }));
+    const lineAt = (stamp: string) => {
+      const parsed = parseUsageLine(`${stamp}:12+0000 srv npm[1]: ${visitLine({ page: "/pool", pool: USDC_WETH, locale: "en", bot: false, outcome: "refused" })}`);
+      if (parsed === null) throw new Error("not a line");
+      return parsed;
+    };
+
+    const times = (count: number, stamp: string) => Array.from({ length: count }, () => lineAt(stamp));
+    const burst = report(times(12, "2026-09-20T05:05"));
+    const mostly = report([...times(12, "2026-09-20T05:05"), ...times(3, "2026-09-21T10:00")]);
+    const spread = report([...times(12, "2026-09-20T05:05"), ...times(12, "2026-09-21T10:00")]);
+    const few = report(times(9, "2026-09-20T05:05"));
+    const undated = report(Array.from({ length: 12 }, () => refusedAt("2026-09-20")).map((line) => ({ ...line, minute: null })));
+
+    expect(burst).toContain("Turned away by the rate limit: 12 — all of them within one minute (Sun 20 Sep, 05:05 UTC), a burst rather than readers");
+    expect(mostly).toContain("Turned away by the rate limit: 15 — 12 of them within one minute (Sun 20 Sep, 05:05 UTC)");
+    expect(spread).toContain("Turned away by the rate limit: 24\n");
+    expect(few).toContain("Turned away by the rate limit: 9\n");
+    expect(undated).not.toContain("within one minute");
+  });
+
   it("names the busiest day, and languages most first", () => {
     const text = report([
       opened("2026-09-18", { locale: "tr" }),

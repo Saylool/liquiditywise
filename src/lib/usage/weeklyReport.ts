@@ -75,14 +75,33 @@ const shortId = (pool: string): string => {
 
 const protocolOf = (pool: string): string => pool.split(":")[0] ?? "";
 
+/** The limit a reader has in a minute (poolAnalysisRateLimiter.ts); fewer refusals than that in one are not a burst. */
+const BURST_MINIMUM = 10;
+
+/**
+ * Whether the week's refusals were one burst: most of them inside a single
+ * minute, which is a client going faster than any reader, not readers being
+ * turned away. The first week's 227 were all one minute's.
+ */
+const burst = (refused: readonly { readonly minute: string | null }[], total: number): string => {
+  const [busiest] = ranked(tally(refused.flatMap(({ minute }) => (minute === null ? [] : [minute]))));
+  if (busiest === undefined || busiest[1] < BURST_MINIMUM || busiest[1] * 2 <= total) return "";
+  const [date, time] = busiest[0].split("T");
+
+  return ` — ${busiest[1] === total ? "all" : number(busiest[1])} of them within one minute (${day(date ?? "", true)}, ${time} UTC), a burst rather than readers`;
+};
+
 export const weeklyReport = (input: WeekInput): string => {
-  const visits = input.lines.flatMap((line) => (line.kind === "visit" ? [{ ...line.visit, at: line.at }] : []));
+  const visits = input.lines.flatMap((line) =>
+    line.kind === "visit" ? [{ ...line.visit, at: line.at, minute: line.minute ?? null }] : [],
+  );
   const spends = input.lines.flatMap((line) => (line.kind === "spend" ? [line.spend] : []));
   const rejected = input.lines.filter((line) => line.kind === "rejected").length;
 
   const people = visits.filter((visit) => !visit.bot);
   const served = people.filter((visit) => visit.outcome === "served");
-  const refused = people.filter((visit) => visit.outcome === "refused").length;
+  const refusedVisits = people.filter((visit) => visit.outcome === "refused");
+  const refused = refusedVisits.length;
   const bots = visits.length - people.length;
 
   const out: string[] = [`📊 LiquidityWise · the week of ${day(input.from)} – ${day(input.to)}`];
@@ -93,7 +112,7 @@ export const weeklyReport = (input: WeekInput): string => {
     out.push(`Pages opened by people: ${number(served.length)}${bots > 0 ? ` (and ${number(bots)} by bots)` : ""}`);
     const byPage = ranked(tally(served.map((visit) => PAGE_NAMES[visit.page])));
     if (byPage.length > 0) out.push(`  ${byPage.map(([name, n]) => `${name} ${number(n)}`).join(" · ")}`);
-    if (refused > 0) out.push(`Turned away by the rate limit: ${number(refused)}`);
+    if (refused > 0) out.push(`Turned away by the rate limit: ${number(refused)}${burst(refusedVisits, refused)}`);
   }
 
   // Pair names are known for every pool an explanation was written for.

@@ -156,7 +156,13 @@ export const spendLine = (spend: Spend): string =>
 export const cappedLine = (pool: string): string => `[interpretation] capped pool=${pool}`;
 
 export type UsageLine =
-  | { readonly kind: "visit"; readonly at: string | null; readonly visit: Visit }
+  | {
+      readonly kind: "visit";
+      readonly at: string | null;
+      /** The journal's minute, as YYYY-MM-DDTHH:MM in UTC, when it has one: what tells a burst from a week. */
+      readonly minute?: string | null;
+      readonly visit: Visit;
+    }
   | { readonly kind: "spend"; readonly at: string | null; readonly spend: Spend }
   | { readonly kind: "rejected"; readonly at: string | null }
   | { readonly kind: "capped"; readonly at: string | null };
@@ -178,6 +184,7 @@ const count = (value: string | undefined): number | null =>
  */
 export const parseUsageLine = (line: string): UsageLine | null => {
   const at = /^(\d{4}-\d{2}-\d{2})T/.exec(line)?.[1] ?? null;
+  const minute = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/.exec(line)?.[1] ?? null;
 
   const visit = /\[visit\] (.*)$/.exec(line)?.[1];
   if (visit !== undefined) {
@@ -188,7 +195,7 @@ export const parseUsageLine = (line: string): UsageLine | null => {
     if (outcome === null || (f.bot !== "0" && f.bot !== "1") || f.locale === undefined) return null;
     const pool = f.pool === undefined || f.pool === "-" ? null : f.pool;
     const chain = f.chain !== undefined && /^[a-z]{1,20}$/.test(f.chain) ? f.chain : null;
-    return { kind: "visit", at, visit: { page, pool, locale: f.locale, bot: f.bot === "1", outcome, chain } };
+    return { kind: "visit", at, minute, visit: { page, pool, locale: f.locale, bot: f.bot === "1", outcome, chain } };
   }
 
   const spent = /\[interpretation\] spent (.*)$/.exec(line)?.[1];
