@@ -6,9 +6,21 @@ import { fetchEthereumV3PairFeeTiers } from "./ethereumV3PairFeeTiers";
 import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
 import { type ChainId, isSupportedChainId } from "../chains/chains";
 import { SEARCH_SUBGRAPH_TIMEOUT_MS } from "./v3SubgraphTransport";
+import { keptReads } from "../cache/keptReads";
+import { PAIR_READ_TTL_MS, readerLabel } from "./pairReads";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "v3-pair-fee-tiers";
+
+/* Kept for ten minutes per pair once answered, as the v4 pair reader's (see there). */
+const kept = keptReads<DataResult<PairFeeTiers>>({
+  name: "v3-pair-fee-tiers",
+  ttlMs: PAIR_READ_TTL_MS,
+  keep: (result) => result.status === "success",
+});
+
+/** For tests. */
+export const forgetV3PairFeeTiers = (): void => kept.forget();
 
 /*
  * The server-only boundary for the fee tiers of one pair.
@@ -54,29 +66,41 @@ export const getEthereumV3PoolsOfPair = async (pair: {
   readonly token1Address: string;
   /** The chain to look on; mainnet when not said, as from a v4 page. */
   readonly chainId?: ChainId;
-}): Promise<DataResult<PairFeeTiers>> =>
-  logUnavailable(
-    LABEL,
-    await fetchEthereumV3PairFeeTiers({
-      poolAddress: pair.analysedPoolId,
-      chainId: pair.chainId ?? 1,
-      token0Address: pair.token0Address,
-      token1Address: pair.token1Address,
-      apiKey: process.env.THE_GRAPH_API_KEY,
-      subgraphId: v3SubgraphIdFor(pair.chainId ?? 1),
-      rpcUrl: rpcUrlFor(pair.chainId ?? 1),
-      /*
-       * Off mainnet the search timeout rather than the default ten seconds.
-       * Measured on 2026-09-25 against the Base subgraph: this pair query
-       * answered in 10.5 to 14.5 seconds every time, whatever the ordering or
-       * the fields, and so was cut off at ten on every page. It is its own
-       * panel, streamed after the analysis, so the wait delays nothing else.
-       */
-      ...((pair.chainId ?? 1) === 1 ? {} : { timeoutMs: SEARCH_SUBGRAPH_TIMEOUT_MS }),
-      fetchImpl: loggingFetch(LABEL),
-      now: () => new Date(),
-      onDiagnostic: (detail) => {
-        logDetail(LABEL, detail);
-      },
-    }),
+}): Promise<DataResult<PairFeeTiers>> => {
+  const chainId = pair.chainId ?? 1;
+  const label = readerLabel(LABEL, chainId);
+  const key = JSON.stringify([
+    chainId,
+    pair.analysedPoolId,
+    pair.token0Address.toLowerCase(),
+    pair.token1Address.toLowerCase(),
+  ]);
+
+  return kept.read(key, async () =>
+    logUnavailable(
+      label,
+      await fetchEthereumV3PairFeeTiers({
+        poolAddress: pair.analysedPoolId,
+        chainId,
+        token0Address: pair.token0Address,
+        token1Address: pair.token1Address,
+        apiKey: process.env.THE_GRAPH_API_KEY,
+        subgraphId: v3SubgraphIdFor(chainId),
+        rpcUrl: rpcUrlFor(chainId),
+        /*
+         * Off mainnet the search timeout rather than the default ten seconds.
+         * Measured on 2026-09-25 against the Base subgraph: this pair query
+         * answered in 10.5 to 14.5 seconds every time, whatever the ordering or
+         * the fields, and so was cut off at ten on every page. It is its own
+         * panel, streamed after the analysis, so the wait delays nothing else.
+         */
+        ...(chainId === 1 ? {} : { timeoutMs: SEARCH_SUBGRAPH_TIMEOUT_MS }),
+        fetchImpl: loggingFetch(label),
+        now: () => new Date(),
+        onDiagnostic: (detail) => {
+          logDetail(label, detail);
+        },
+      }),
+    ),
   );
+};

@@ -10,7 +10,7 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools", v4: true },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3Search: "pools", v4: true, v4Pairs: "pools" },
   /*
    * "days": Base's v3 subgraph answers no query that filters pools by a
    * token's symbol — measured on 2026-09-25, every shape of it failed at the
@@ -28,8 +28,15 @@ export const CHAINS = [
    * A chain marked `v4: false` would have every v4 read refused, never
    * looked up on mainnet.
    */
-  { id: 8453, slug: "base", name: "Base", v3Search: "days", v4: true },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v4: true },
+  /*
+   * `v4Pairs: "days"`: Base's v4 subgraph answers the pair query ordered by
+   * volume, liquidity or trade count with "bad indexers" after fifteen seconds,
+   * and unordered in one to eight — measured on 2026-09-27, the day its pair
+   * panel was found timing out on every page. So a v4 page there lists the
+   * pair's pools from the week's busiest pool-days, which the warmer keeps.
+   */
+  { id: 8453, slug: "base", name: "Base", v3Search: "days", v4: true, v4Pairs: "days" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3Search: "pools", v4: true, v4Pairs: "pools" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];

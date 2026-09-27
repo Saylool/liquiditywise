@@ -9,7 +9,8 @@ import {
 import { fetchEthereumV4PoolKeys } from "./ethereumV4PoolKeys";
 import { fetchEthereumV4PoolStates } from "./ethereumV4PoolState";
 import { V4_POOL_CARD_FRAGMENT } from "./v4PoolCardRawResponse";
-import { normalizeV4PairPools, readV4PairPools } from "./v4PairPoolsAdapter";
+import { normalizeV4PairPools, readV4PairPools, v4PairPayloadFromDays } from "./v4PairPoolsAdapter";
+import type { ReadV4PoolDays } from "./ethereumV4PoolDays";
 import { hookedRefs } from "./v4PoolSearchAdapter";
 import type { PairFeeTiersDiagnostic } from "./v3PairFeeTiersAdapter";
 import {
@@ -62,6 +63,12 @@ export type EthereumV4PairPoolsRequest = {
   readonly timeoutMs?: number;
   /** The chain the subgraph and the endpoint are on; mainnet when not said. */
   readonly chainId?: ChainId;
+  /**
+   * The week's pool-days, for a chain whose subgraph cannot answer the pair
+   * query: the pair's pools are then the ones that traded this week, and the
+   * query is asked only when the analysed pool is not among them.
+   */
+  readonly readDays?: ReadV4PoolDays;
   readonly onDiagnostic?: PairFeeTiersDiagnostic | undefined;
 };
 
@@ -73,6 +80,30 @@ export type EthereumV4PairPoolsRequest = {
  * configuration, and neither reaches the network. A deployment with no v4
  * subgraph gets the same not-configured answer the v4 search gets.
  */
+/**
+ * The pair's pools from the week's day table, or `null` to ask the pair query
+ * instead: when there is no day table to read, when it could not be read, or
+ * when the pool being read is not among the week's — a quiet pool's page must
+ * still find its own pool, which the schema requires to be listed.
+ */
+const pairFromDays = async (
+  readDays: ReadV4PoolDays | undefined,
+  token0: string,
+  token1: string,
+  analysedPoolId: string | null,
+): Promise<{ readonly ok: true; readonly payload: unknown } | null> => {
+  if (readDays === undefined) return null;
+  const days = await readDays();
+  if (days.status === "unavailable") return null;
+
+  const payload = v4PairPayloadFromDays(days.data.payload, token0, token1);
+  const { pools } = readV4PairPools(payload);
+  if (pools.length === 0) return null;
+  if (analysedPoolId !== null && !pools.some((pool) => pool.id === analysedPoolId)) return null;
+
+  return { ok: true, payload };
+};
+
 export const fetchEthereumV4PairPools = async (
   request: EthereumV4PairPoolsRequest,
 ): Promise<DataResult<V4PairPools>> => {
@@ -92,14 +123,17 @@ export const fetchEthereumV4PairPools = async (
     return { status: "unavailable", reason: "configuration-error", notice: NOT_CONFIGURED };
   }
 
-  const transport = await postV3SubgraphQuery({
-    apiKey,
-    subgraphId,
-    query: V4_PAIR_POOLS_QUERY,
-    variables: { token0: token0.data, token1: token1.data, limit: V4_PAIR_POOL_FETCH_LIMIT },
-    fetchImpl: request.fetchImpl,
-    timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
-  });
+  const fromDays = await pairFromDays(request.readDays, token0.data, token1.data, analysed.data);
+  const transport =
+    fromDays ??
+    (await postV3SubgraphQuery({
+      apiKey,
+      subgraphId,
+      query: V4_PAIR_POOLS_QUERY,
+      variables: { token0: token0.data, token1: token1.data, limit: V4_PAIR_POOL_FETCH_LIMIT },
+      fetchImpl: request.fetchImpl,
+      timeoutMs: request.timeoutMs ?? DEFAULT_SUBGRAPH_TIMEOUT_MS,
+    }));
 
   if (!transport.ok) {
     return { status: "unavailable", reason: transport.reason, notice: transport.notice };

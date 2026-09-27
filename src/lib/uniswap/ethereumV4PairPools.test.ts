@@ -160,3 +160,54 @@ describe("fetchEthereumV4PairPools", () => {
     expect(result.status === "unavailable" && result.notice).toBe("market-data-not-configured");
   });
 });
+
+describe("the pair from the week's day table", () => {
+  const OTHER_ID = `0x${"4f".repeat(32)}`;
+  const card = subgraphBody.data.pools[0]!;
+  const daysPayload = (cards: readonly (typeof card)[]) => ({
+    data: {
+      poolDayDatas: cards.map((pool) => ({ date: 1, volumeUSD: "1", feesUSD: "0", pool })),
+      poolManagers: [{ id: POOL_MANAGER }],
+      _meta: { hasIndexingErrors: false },
+    },
+  });
+  const days = (payload: unknown) => async () => ({ status: "success" as const, data: { payload, fetchedAt: NOW.toISOString() } });
+  const subgraphAsked = (fetchImpl: FetchLike) => vi.mocked(fetchImpl).mock.calls.filter(([url]) => url !== RPC_URL).length;
+
+  it("lists the pair's pools from it, and asks the subgraph nothing", async () => {
+    const fetchImpl = bothEndpoints();
+    const other = { ...card, id: OTHER_ID, token0: { ...card.token0, id: "0x1111111111111111111111111111111111111111" } };
+    const result = await run({ fetchImpl, readDays: days(daysPayload([card, card, other])) });
+
+    expect(result.status === "success" && result.data.pools.map(({ pool }) => pool.id)).toEqual([POOL_ID]);
+    expect(subgraphAsked(fetchImpl)).toBe(0);
+  });
+
+  it("asks the pair query when the pool being read did not trade this week, since the page must list it", async () => {
+    const fetchImpl = bothEndpoints();
+    const result = await run({ fetchImpl, readDays: days(daysPayload([{ ...card, id: OTHER_ID }])) });
+
+    expect(result.status).toBe("success");
+    expect(subgraphAsked(fetchImpl)).toBe(1);
+  });
+
+  it("asks the pair query when the week holds none of the pair's pools, or could not be read", async () => {
+    const quiet = bothEndpoints();
+    await run({ fetchImpl: quiet, analysedPoolId: null, readDays: days(daysPayload([])) });
+    const down = bothEndpoints();
+    await run({
+      fetchImpl: down,
+      readDays: async () => ({ status: "unavailable", reason: "timeout", notice: "market-data-timed-out" }),
+    });
+
+    expect([subgraphAsked(quiet), subgraphAsked(down)]).toEqual([1, 1]);
+  });
+
+  it("serves a page with no pool of its own from the week too", async () => {
+    const fetchImpl = bothEndpoints();
+    const result = await run({ fetchImpl, analysedPoolId: null, readDays: days(daysPayload([card])) });
+
+    expect(result.status === "success" && result.data.pools).toHaveLength(1);
+    expect(subgraphAsked(fetchImpl)).toBe(0);
+  });
+});

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { V4PoolState } from "./ethereumV4PoolState";
 import type { V4PoolKey } from "./v4PoolKey";
-import { normalizeV4PairPools, readV4PairPools } from "./v4PairPoolsAdapter";
+import { normalizeV4PairPools, readV4PairPools, v4PairPayloadFromDays } from "./v4PairPoolsAdapter";
+import { V4_PAIR_POOL_FETCH_LIMIT } from "../../schemas";
 
 const FETCHED_AT = "2026-09-15T12:00:00.000Z";
 const POOL_MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
@@ -164,5 +165,47 @@ describe("readV4PairPools", () => {
     ["a manager that is not an address", [{ id: "0x1234" }]],
   ])("names no manager for %s", (_label, poolManagers) => {
     expect(readV4PairPools(payload([rawPool(1)], poolManagers)).poolManager).toBeNull();
+  });
+});
+
+describe("a pair payload made from the week's pool-days", () => {
+  const USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+  const WETH_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+  const cardOf = (index: number, token0 = USDC_ADDRESS, token1 = WETH_ADDRESS) => ({
+    ...rawPool(index),
+    token0: { ...rawPool(index).token0, id: token0.toUpperCase().replace("0X", "0x") },
+    token1: { ...rawPool(index).token1, id: token1 },
+  });
+  const days = (cards: readonly unknown[], extra: Record<string, unknown> = {}) => ({
+    data: { poolDayDatas: cards.map((pool) => ({ pool })), poolManagers: [{ id: "0xpm" }], _meta: { hasIndexingErrors: false } },
+    ...extra,
+  });
+
+  it("keeps the pair's pools, each once, in the order they first appear, with the manager and health", () => {
+    const made = v4PairPayloadFromDays(
+      days([cardOf(2), cardOf(1), cardOf(2), cardOf(3, WETH_ADDRESS, USDC_ADDRESS), cardOf(4, USDC_ADDRESS, `0x${"9".repeat(40)}`)]),
+      USDC_ADDRESS,
+      WETH_ADDRESS,
+    ) as { data: { pools: { id: string }[]; poolManagers: unknown; _meta: unknown } };
+
+    expect(made.data.pools.map(({ id }) => id)).toEqual([poolId(2), poolId(1)]);
+    expect(made.data.poolManagers).toEqual([{ id: "0xpm" }]);
+    expect(made.data._meta).toEqual({ hasIndexingErrors: false });
+  });
+
+  it("keeps no more than the pair query would have fetched", () => {
+    const cards = Array.from({ length: V4_PAIR_POOL_FETCH_LIMIT + 5 }, (_, index) => cardOf(index + 1));
+    const made = v4PairPayloadFromDays(days(cards), USDC_ADDRESS, WETH_ADDRESS) as { data: { pools: unknown[] } };
+
+    expect(made.data.pools).toHaveLength(V4_PAIR_POOL_FETCH_LIMIT);
+  });
+
+  it("carries the source's errors and missing data through, for the pair reader to refuse", () => {
+    const withErrors = v4PairPayloadFromDays(days([cardOf(1)], { errors: ["x"] }), USDC_ADDRESS, WETH_ADDRESS);
+    const noData = v4PairPayloadFromDays({ data: null, errors: ["x"] }, USDC_ADDRESS, WETH_ADDRESS);
+
+    expect(normalize(withErrors).status).toBe("unavailable");
+    expect(noData).toEqual({ data: null, errors: ["x"] });
+    expect(v4PairPayloadFromDays("nonsense", USDC_ADDRESS, WETH_ADDRESS)).toBe("nonsense");
   });
 });

@@ -6,6 +6,7 @@ import {
   type DataResult,
   type V4PairPool,
   type V4PairPools,
+  V4_PAIR_POOL_FETCH_LIMIT,
   V4PairPoolsSchema,
 } from "../../schemas";
 
@@ -13,8 +14,8 @@ import type { V4PoolState } from "./ethereumV4PoolState";
 import { normalizeV4PoolCard } from "./v4PoolCardAdapter";
 import { chainReadingFor } from "./v4PoolChainReading";
 import type { V4PoolKey } from "./v4PoolKey";
-import { V4PairPoolsResponseSchema } from "./v4PoolCardRawResponse";
-import { poolRefs, readPoolManager, type V4PoolRef } from "./v4PoolSearchAdapter";
+import { V4PairPoolsResponseSchema, V4PoolDaysResponseSchema } from "./v4PoolCardRawResponse";
+import { distinctCards, poolRefs, readPoolManager, type V4PoolRef } from "./v4PoolSearchAdapter";
 import type { PairFeeTiersDiagnostic } from "./v3PairFeeTiersAdapter";
 
 const MALFORMED = "market-data-malformed";
@@ -117,4 +118,27 @@ export const normalizeV4PairPools = ({
   if (!result.success) return unavailable(MALFORMED);
 
   return { status: "success", data: result.data };
+};
+
+/**
+ * A pair payload made from the week's busiest pool-days: every pool of the
+ * pair that traded, once, in the order it first appears — the source's
+ * busiest-day order — with the day table's manager and health. For a chain
+ * whose subgraph cannot answer the pair query (see chains.ts). Pure.
+ *
+ * A pair that is quiet this week has no pools here, which is not the same as
+ * having none, so a caller must not treat an absent pool as an answer.
+ */
+export const v4PairPayloadFromDays = (payload: unknown, token0: string, token1: string): unknown => {
+  const parsed = V4PoolDaysResponseSchema.safeParse(payload);
+  if (!parsed.success) return payload;
+  const { data, errors } = parsed.data;
+  if (data == null) return { data, errors };
+
+  /* No more than the pair query would have fetched, which is as many as the schema admits. */
+  const pools = distinctCards(data.poolDayDatas)
+    .filter((card) => card.token0.id.toLowerCase() === token0 && card.token1.id.toLowerCase() === token1)
+    .slice(0, V4_PAIR_POOL_FETCH_LIMIT);
+
+  return { data: { pools, poolManagers: data.poolManagers, _meta: data._meta }, errors };
 };
