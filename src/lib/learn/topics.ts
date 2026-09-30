@@ -5,7 +5,7 @@ import type { BriefId } from "./briefs";
  * Each brief's own page: the three sentences of the quick guide, then three
  * more that say where the idea leads and where the site shows it on real
  * data. One address per topic, per language, so somebody searching for one
- * idea in their own language lands on that idea rather than on six.
+ * idea in their own language lands on that idea rather than on seven.
  *
  * Held to the guide's vocabulary for each language, as briefs.ts is, and to
  * its rules: no figure about any pool, and every trade-off stated as one.
@@ -14,9 +14,9 @@ import type { BriefId } from "./briefs";
 export type TopicCopy = {
   /** Three more sentences per brief, after the guide's own three. */
   readonly more: Readonly<Record<BriefId, readonly [string, string, string]>>;
-  /** Above the links to the other five briefs. */
+  /** Above the links to the other six briefs. */
   readonly otherTopics: string;
-  /** Back to the guide with all six. */
+  /** Back to the guide with all seven. */
   readonly backToGuide: string;
 };
 
@@ -52,9 +52,14 @@ const en: TopicCopy = {
       "What a hook does with a permission is in its code, which this site does not read and does not vouch for.",
       "The hook directory here lists the hooks behind the week's busiest v4 pools, with what each is permitted to do.",
     ],
+    "smart-money": [
+      "A position changed only recently has no window to measure yet, so it is left out until it has one.",
+      "Very small positions are left out too, because a few cents of fees on a few dollars of liquidity says more about rounding than about skill.",
+      "The smart-money page here ranks the week's busiest pools this way and shows the pair and the range that those positions share.",
+    ],
   },
   otherTopics: "Other topics",
-  backToGuide: "All six on one page",
+  backToGuide: "All seven on one page",
 };
 
 const tr: TopicCopy = {
@@ -89,9 +94,14 @@ const tr: TopicCopy = {
       "Bir hook'un bu izinlerle ne yaptığı kodundadır; bu site kodu okumaz ve hiçbir hook için kefil olmaz.",
       "Buradaki hook listesi, haftanın en işlek v4 havuzlarının arkasındaki hook'ları, her birinin ne yapmasına izin verildiğiyle birlikte gösterir.",
     ],
+    "smart-money": [
+      "Yakın zamanda değiştirilmiş bir pozisyonun henüz ölçülecek bir süresi yoktur; bu yüzden süresi oluşana kadar dışarıda bırakılır.",
+      "Çok küçük pozisyonlar da dışarıda kalır, çünkü birkaç dolarlık likiditede birkaç kuruş komisyon, beceriden çok yuvarlamayı anlatır.",
+      "Buradaki akıllı para sayfası haftanın en işlek havuzlarını bu şekilde sıralar ve o pozisyonların paylaştığı pariteyi ve aralığı gösterir.",
+    ],
   },
   otherTopics: "Diğer konular",
-  backToGuide: "Altısı bir arada",
+  backToGuide: "Yedisi bir arada",
 };
 
 const de: TopicCopy = {
@@ -126,9 +136,14 @@ const de: TopicCopy = {
       "Was ein Hook mit einer Berechtigung tut, steht in seinem Code, den diese Seite nicht liest und für den sie nicht bürgt.",
       "Das Hook-Verzeichnis hier listet die Hooks hinter den meistgehandelten v4-Pools der Woche auf, mit dem, was jeder tun darf.",
     ],
+    "smart-money": [
+      "Eine erst kürzlich geänderte Position hat noch kein Zeitfenster zum Messen und bleibt außen vor, bis sie eines hat.",
+      "Sehr kleine Positionen bleiben ebenfalls außen vor, denn ein paar Cent Gebühren auf ein paar Dollar Liquidität sagen mehr über Rundung als über Geschick.",
+      "Die Seite zur klugen Liquidität hier reiht die meistgehandelten Pools der Woche so ein und zeigt das Paar und den Bereich, den diese Positionen teilen.",
+    ],
   },
   otherTopics: "Weitere Themen",
-  backToGuide: "Alle sechs auf einer Seite",
+  backToGuide: "Alle sieben auf einer Seite",
 };
 
 const es: TopicCopy = {
@@ -163,9 +178,14 @@ const es: TopicCopy = {
       "Lo que un hook hace con un permiso está en su código, que este sitio no lee y del que no responde.",
       "El directorio de hooks de este sitio lista los hooks de los pools v4 más activos de la semana, con lo que cada uno tiene permitido hacer.",
     ],
+    "smart-money": [
+      "Una posición cambiada hace poco aún no tiene una ventana que medir, así que se deja fuera hasta que la tenga.",
+      "Las posiciones muy pequeñas también se dejan fuera, porque unos centavos de comisiones sobre unos dólares de liquidez dicen más del redondeo que de la habilidad.",
+      "La página de liquidez inteligente de aquí ordena así los pools más negociados de la semana y muestra el par y el rango que comparten esas posiciones.",
+    ],
   },
   otherTopics: "Otros temas",
-  backToGuide: "Los seis en una página",
+  backToGuide: "Los siete en una página",
 };
 
 const ar: TopicCopy = {
@@ -200,9 +220,14 @@ const ar: TopicCopy = {
       "ما يفعله الخطاف بصلاحية ما موجود في شيفرته، وهذا الموقع لا يقرأ الشيفرة ولا يكفلها.",
       "يسرد دليل الخطافات هنا الخطافات التي تقف وراء أنشط تجمّعات v4 هذا الأسبوع، مع ما يُسمح لكل منها بفعله.",
     ],
+    "smart-money": [
+      "المركز الذي تغيّر حديثًا ليس له بعدُ مدة تُقاس، فيُستبعد إلى أن تصير له.",
+      "وتُستبعد المراكز الصغيرة جدًّا كذلك، لأن بضعة سنتات من الرسوم على بضعة دولارات من السيولة تقول عن التقريب أكثر مما تقول عن المهارة.",
+      "وتُرتّب صفحة السيولة الذكية هنا أنشط تجمّعات الأسبوع بهذه الطريقة، وتعرض الزوج والنطاق اللذين تشترك فيهما تلك المراكز.",
+    ],
   },
   otherTopics: "مواضيع أخرى",
-  backToGuide: "الستة في صفحة واحدة",
+  backToGuide: "السبعة في صفحة واحدة",
 };
 
 const hi: TopicCopy = {
@@ -237,9 +262,14 @@ const hi: TopicCopy = {
       "hook किसी अनुमति के साथ क्या करता है, यह उसके कोड में है, जिसे यह साइट न पढ़ती है और न ही उसकी ज़मानत देती है।",
       "यहाँ की hook सूची इस हफ़्ते के सबसे व्यस्त v4 पूलों के पीछे के hook दिखाती है, हर एक को क्या करने की अनुमति है उसके साथ।",
     ],
+    "smart-money": [
+      "हाल ही में बदली गई पोज़िशन के पास मापने के लिए अभी कोई अवधि नहीं होती, इसलिए अवधि बनने तक उसे बाहर रखा जाता है।",
+      "बहुत छोटी पोज़िशनें भी बाहर रखी जाती हैं, क्योंकि कुछ डॉलर की तरलता पर कुछ पैसे का शुल्क हुनर से ज़्यादा पूर्णांकन के बारे में बताता है।",
+      "यहाँ का स्मार्ट लिक्विडिटी पृष्ठ हफ़्ते के सबसे व्यस्त पूलों को इसी तरह क्रम देता है और वह जोड़ी व दायरा दिखाता है जो उन पोज़िशनों में साझा है।",
+    ],
   },
   otherTopics: "दूसरे विषय",
-  backToGuide: "छहों एक पन्ने पर",
+  backToGuide: "सातों एक पन्ने पर",
 };
 
 const zh: TopicCopy = {
@@ -274,9 +304,14 @@ const zh: TopicCopy = {
       "hook 用这些权限做什么写在它的代码里，本站不读取代码，也不为任何 hook 担保。",
       "本站的 hook 目录列出本周最活跃的 v4 资金池背后的 hook，以及每个 hook 被允许做什么。",
     ],
+    "smart-money": [
+      "刚刚变动过的仓位还没有可以测量的时间窗口，所以在有窗口之前会被排除在外。",
+      "非常小的仓位也会被排除，因为几美元的流动性上几分钱的手续费，说明的更多是舍入，而不是水平。",
+      "这里的聪明流动性页面用这种方式给本周最活跃的池子排序，并显示这些仓位共同所在的交易对和区间。",
+    ],
   },
   otherTopics: "其他主题",
-  backToGuide: "六条合在一页",
+  backToGuide: "七条合在一页",
 };
 
 const ru: TopicCopy = {
@@ -311,9 +346,14 @@ const ru: TopicCopy = {
       "Что hook делает с разрешением, записано в его коде, который этот сайт не читает и за который не ручается.",
       "Каталог hook’ов на этом сайте перечисляет hook’и самых активных пулов v4 за неделю вместе с тем, что каждому разрешено делать.",
     ],
+    "smart-money": [
+      "У недавно изменённой позиции ещё нет окна для измерения, поэтому её не учитывают, пока оно не появится.",
+      "Совсем маленькие позиции тоже не учитываются: несколько центов комиссий на несколько долларов ликвидности говорят больше об округлении, чем об умении.",
+      "Страница умной ликвидности на этом сайте так ранжирует самые торгуемые пулы недели и показывает пару и диапазон, общие для этих позиций.",
+    ],
   },
   otherTopics: "Другие темы",
-  backToGuide: "Все шесть на одной странице",
+  backToGuide: "Все семь на одной странице",
 };
 
 const pt: TopicCopy = {
@@ -348,9 +388,14 @@ const pt: TopicCopy = {
       "O que um hook faz com uma permissão está no código dele, que este site não lê e pelo qual não responde.",
       "O diretório de hooks deste site lista os hooks dos pools v4 mais movimentados da semana, com o que cada um tem permissão de fazer.",
     ],
+    "smart-money": [
+      "Uma posição alterada há pouco ainda não tem uma janela para medir, então fica de fora até ter uma.",
+      "Posições muito pequenas também ficam de fora, porque alguns centavos de taxas sobre alguns dólares de liquidez dizem mais sobre arredondamento do que sobre habilidade.",
+      "A página de liquidez inteligente daqui ordena assim os pools mais negociados da semana e mostra o par e a faixa que essas posições compartilham.",
+    ],
   },
   otherTopics: "Outros temas",
-  backToGuide: "Os seis em uma página",
+  backToGuide: "Os sete em uma página",
 };
 
 const zhHant: TopicCopy = {
@@ -385,9 +430,14 @@ const zhHant: TopicCopy = {
       "hook 用這些權限做什麼寫在它的程式碼裡，本站不讀取程式碼，也不為任何 hook 擔保。",
       "本站的 hook 目錄列出本週最活躍的 v4 資金池背後的 hook，以及每個 hook 被允許做什麼。",
     ],
+    "smart-money": [
+      "剛剛變動過的倉位還沒有可以測量的時間視窗，所以在有視窗之前會被排除在外。",
+      "非常小的倉位也會被排除，因為幾美元的流動性上幾分錢的手續費，說明的更多是捨入，而不是水準。",
+      "這裡的聰明流動性頁面用這種方式給本週最活躍的資金池排序，並顯示這些倉位共同所在的交易對和區間。",
+    ],
   },
   otherTopics: "其他主題",
-  backToGuide: "六條合在一頁",
+  backToGuide: "七條合在一頁",
 };
 
 const COPY: Record<Locale, TopicCopy> = { en, tr, de, es, ar, hi, zh, ru, pt, "zh-Hant": zhHant };

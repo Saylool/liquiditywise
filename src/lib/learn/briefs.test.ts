@@ -90,4 +90,52 @@ describe("the quick guide", () => {
       expect(description.length, locale).toBeLessThanOrEqual(200);
     }
   });
+
+  /*
+   * The smart-money brief makes two limits part of the idea: it counts fees
+   * only, and it looks back. Its third sentence carries the first in every
+   * language, in that language's own word for fees.
+   */
+  it("says the smart-money measure is fees only, in each language's own word for them", () => {
+    const FEES: Record<Locale, string> = {
+      en: "fees",
+      tr: "komisyon",
+      de: "Gebühren",
+      es: "comisiones",
+      ar: "رسوم",
+      hi: "शुल्क",
+      zh: "手续费",
+      ru: "комисси",
+      pt: "taxas",
+      "zh-Hant": "手續費",
+    };
+
+    for (const locale of LOCALES) {
+      const brief = getLearnCopy(locale).briefs.find(({ id }) => id === "smart-money")!;
+      expect(brief.points[2], locale).toContain(FEES[locale]);
+      expect(brief.points.join(" "), locale).not.toMatch(/[0-9]/);
+    }
+  });
+
+  it("counts seven in every language's description and introduction, as many as there are briefs", () => {
+    expect(BRIEF_IDS).toHaveLength(7);
+    const SEVEN: Record<Locale, string> = {
+      en: "Seven",
+      tr: "yedi",
+      de: "Sieben",
+      es: "Siete",
+      ar: "سبعة",
+      hi: "सात",
+      zh: "七",
+      ru: "Семь",
+      pt: "Sete",
+      "zh-Hant": "七",
+    };
+
+    for (const locale of LOCALES) {
+      const { description, intro } = getLearnCopy(locale);
+      expect(description, locale).toContain(SEVEN[locale]);
+      expect(intro, locale).toContain(SEVEN[locale]);
+    }
+  });
 });

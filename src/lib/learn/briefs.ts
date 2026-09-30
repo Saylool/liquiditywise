@@ -1,7 +1,7 @@
 import type { Locale } from "../i18n/locales";
 
 /*
- * The quick guide: six things worth knowing before providing liquidity, each
+ * The quick guide: seven things worth knowing before providing liquidity, each
  * in three sentences. Short on purpose — the pool pages show every one of
  * them on real data, and this page is where somebody who has not yet looked
  * at a pool can start.
@@ -16,7 +16,7 @@ import type { Locale } from "../i18n/locales";
  * tiers are the protocol's, and every trade-off is stated as a trade-off.
  */
 
-export const BRIEF_IDS = ["concentrated", "in-range", "divergence", "width", "fee-tiers", "hooks"] as const;
+export const BRIEF_IDS = ["concentrated", "in-range", "divergence", "width", "fee-tiers", "hooks", "smart-money"] as const;
 
 export type BriefId = (typeof BRIEF_IDS)[number];
 
@@ -42,10 +42,10 @@ const en: LearnCopy = {
   link: "Quick guide",
   title: "Uniswap liquidity in brief: ranges, fees, impermanent loss",
   description:
-    "Six things worth knowing before providing liquidity on Uniswap v3 and v4: ranges, fee tiers, impermanent loss and v4 hooks, briefly.",
+    "Seven things worth knowing before providing liquidity on Uniswap v3 and v4: ranges, fee tiers, impermanent loss and v4 hooks, briefly.",
   heading: "Quick guide",
   intro:
-    "Six things worth knowing before you provide liquidity on Uniswap. Short on purpose; the pool pages show each of them on real data.",
+    "Seven things worth knowing before you provide liquidity on Uniswap. Short on purpose; the pool pages show each of them on real data.",
   briefs: [
     brief("concentrated", "Liquidity in a range", [
       "In Uniswap v3 and v4 you choose a price range, and your liquidity works only inside it.",
@@ -77,6 +77,11 @@ const en: LearnCopy = {
       "Which moments is written into the hook's address, and the protocol enforces it.",
       "A hook allowed to act on swaps can change what they cost, so figures read from the curve alone may not hold for that pool.",
     ]),
+    brief("smart-money", "Where the best earners sit", [
+      "Positions in the same pool earn very different amounts of fees for their size, and that can be measured.",
+      "Measured over the days since each was last changed, the top fifth show which pairs and which ranges have been earning.",
+      "It is fees only, and it looks back: it says where liquidity earned, not where it will earn next.",
+    ]),
   ],
 };
 
@@ -84,10 +89,10 @@ const tr: LearnCopy = {
   link: "Kısa bilgiler",
   title: "Uniswap likiditesi kısaca: aralık, komisyon, geçici kayıp",
   description:
-    "Uniswap v3 ve v4'te likidite sağlamadan önce bilmeye değer altı şey: aralık, komisyon kademeleri, geçici kayıp ve v4 hook'ları, kısaca.",
+    "Uniswap v3 ve v4'te likidite sağlamadan önce bilmeye değer yedi şey: aralık, komisyon kademeleri, geçici kayıp ve v4 hook'ları, kısaca.",
   heading: "Kısa bilgiler",
   intro:
-    "Uniswap'te likidite sağlamadan önce bilmeye değer altı şey. Bilerek kısa tutuldu; havuz sayfaları her birini gerçek veriyle gösteriyor.",
+    "Uniswap'te likidite sağlamadan önce bilmeye değer yedi şey. Bilerek kısa tutuldu; havuz sayfaları her birini gerçek veriyle gösteriyor.",
   briefs: [
     brief("concentrated", "Bir aralıkta likidite", [
       "Uniswap v3 ve v4'te bir fiyat aralığı seçersin; likiditen yalnızca bu aralığın içinde çalışır.",
@@ -119,6 +124,11 @@ const tr: LearnCopy = {
       "Hangi anlarda çağrılacağı hook'un adresine yazılıdır ve protokol buna uyulmasını zorunlu kılar.",
       "Takasa müdahale edebilen bir hook takasın maliyetini değiştirebilir; bu yüzden yalnızca eğriden okunan rakamlar o havuz için geçerli olmayabilir.",
     ]),
+    brief("smart-money", "En çok kazananlar nerede duruyor", [
+      "Aynı havuzdaki pozisyonlar büyüklüklerine göre çok farklı komisyon kazanır ve bu ölçülebilir.",
+      "Her pozisyonun son değiştirildiğinden beri geçen günlerde ölçülünce, üst beşte biri hangi paritelerin ve hangi aralıkların kazandırdığını gösterir.",
+      "Bu yalnızca komisyondur ve geriye bakar: likiditenin nerede kazandığını söyler, bundan sonra nerede kazanacağını değil.",
+    ]),
   ],
 };
 
@@ -126,10 +136,10 @@ const de: LearnCopy = {
   link: "Kurz erklärt",
   title: "Uniswap-Liquidität kurz erklärt: Bereiche, Gebühren, Impermanent Loss",
   description:
-    "Sechs Dinge, die man vor dem Bereitstellen von Liquidität auf Uniswap v3 und v4 wissen sollte: Bereiche, Gebührenstufen, Impermanent Loss und v4-Hooks, kurz erklärt.",
+    "Sieben Dinge, die man vor dem Bereitstellen von Liquidität auf Uniswap v3 und v4 wissen sollte: Bereiche, Gebührenstufen, Impermanent Loss und v4-Hooks, kurz erklärt.",
   heading: "Kurz erklärt",
   intro:
-    "Sechs Dinge, die man wissen sollte, bevor man auf Uniswap Liquidität bereitstellt. Mit Absicht kurz; die Pool-Seiten zeigen jedes davon an echten Daten.",
+    "Sieben Dinge, die man wissen sollte, bevor man auf Uniswap Liquidität bereitstellt. Mit Absicht kurz; die Pool-Seiten zeigen jedes davon an echten Daten.",
   briefs: [
     brief("concentrated", "Liquidität in einem Bereich", [
       "In Uniswap v3 und v4 wählst du einen Preisbereich, und deine Liquidität arbeitet nur darin.",
@@ -161,6 +171,11 @@ const de: LearnCopy = {
       "Welche Zeitpunkte das sind, steht in der Adresse des Hooks, und das Protokoll setzt es durch.",
       "Ein Hook, der in Tausche eingreifen darf, kann ihre Kosten ändern – Zahlen, die nur aus der Kurve gelesen werden, gelten für diesen Pool dann womöglich nicht.",
     ]),
+    brief("smart-money", "Wo die besten Verdiener liegen", [
+      "Positionen im selben Pool verdienen im Verhältnis zu ihrer Größe sehr unterschiedlich viele Gebühren, und das lässt sich messen.",
+      "An den Tagen seit der letzten Änderung jeder Position gemessen, zeigt das obere Fünftel, welche Paare und welche Bereiche verdient haben.",
+      "Es sind nur Gebühren, und es blickt zurück: Es sagt, wo Liquidität verdient hat, nicht, wo sie künftig verdienen wird.",
+    ]),
   ],
 };
 
@@ -168,10 +183,10 @@ const es: LearnCopy = {
   link: "En breve",
   title: "La liquidez en Uniswap en breve: rangos, comisiones, pérdida impermanente",
   description:
-    "Seis cosas que conviene saber antes de aportar liquidez en Uniswap v3 y v4: rangos, niveles de comisión, pérdida impermanente y hooks de v4, en pocas palabras.",
+    "Siete cosas que conviene saber antes de aportar liquidez en Uniswap v3 y v4: rangos, niveles de comisión, pérdida impermanente y hooks de v4, en pocas palabras.",
   heading: "En breve",
   intro:
-    "Seis cosas que conviene saber antes de aportar liquidez en Uniswap. Breves a propósito; las páginas de pools muestran cada una con datos reales.",
+    "Siete cosas que conviene saber antes de aportar liquidez en Uniswap. Breves a propósito; las páginas de pools muestran cada una con datos reales.",
   briefs: [
     brief("concentrated", "Liquidez en un rango", [
       "En Uniswap v3 y v4 eliges un rango de precios, y tu liquidez solo trabaja dentro de él.",
@@ -203,6 +218,11 @@ const es: LearnCopy = {
       "Qué momentos son está escrito en la dirección del hook, y el protocolo lo hace cumplir.",
       "Un hook que puede intervenir en los intercambios puede cambiar lo que cuestan, así que las cifras leídas solo de la curva pueden no valer para ese pool.",
     ]),
+    brief("smart-money", "Dónde están los que más ganan", [
+      "Las posiciones de un mismo pool ganan cantidades muy distintas de comisiones para su tamaño, y eso se puede medir.",
+      "Medido en los días desde el último cambio de cada una, el quinto superior muestra qué pares y qué rangos han estado ganando.",
+      "Son solo comisiones y mira hacia atrás: dice dónde ganó la liquidez, no dónde ganará después.",
+    ]),
   ],
 };
 
@@ -210,10 +230,10 @@ const ar: LearnCopy = {
   link: "باختصار",
   title: "السيولة في Uniswap باختصار: النطاقات والرسوم والخسارة غير الدائمة",
   description:
-    "ستة أمور تستحق المعرفة قبل توفير السيولة في Uniswap v3 وv4: النطاقات ومستويات الرسوم والخسارة غير الدائمة وخطافات v4، باختصار.",
+    "سبعة أمور تستحق المعرفة قبل توفير السيولة في Uniswap v3 وv4: النطاقات ومستويات الرسوم والخسارة غير الدائمة وخطافات v4، باختصار.",
   heading: "باختصار",
   intro:
-    "ستة أمور تستحق المعرفة قبل توفير السيولة في Uniswap. مختصرة عن قصد؛ وصفحات التجمّعات تعرض كلًّا منها على بيانات حقيقية.",
+    "سبعة أمور تستحق المعرفة قبل توفير السيولة في Uniswap. مختصرة عن قصد؛ وصفحات التجمّعات تعرض كلًّا منها على بيانات حقيقية.",
   briefs: [
     brief("concentrated", "السيولة داخل نطاق", [
       "في Uniswap v3 وv4 تختار نطاقًا سعريًا، ولا تعمل سيولتك إلا داخله.",
@@ -245,6 +265,11 @@ const ar: LearnCopy = {
       "وأيّ اللحظات هي مكتوب في عنوان الخطاف، والبروتوكول يفرض ذلك.",
       "والخطاف المسموح له بالتدخل في التبادلات قد يغيّر كلفتها، لذا قد لا تصحّ لذلك التجمّع الأرقام المقروءة من المنحنى وحده.",
     ]),
+    brief("smart-money", "أين يقع الأعلى ربحًا", [
+      "تكسب المراكز في التجمّع الواحد مقادير مختلفة جدًّا من الرسوم قياسًا إلى حجمها، وهذا يمكن قياسه.",
+      "وحين يُقاس ذلك على الأيام منذ آخر تغيير لكل مركز، يُظهر الخمس الأعلى أي الأزواج وأي النطاقات كانت تكسب.",
+      "هذه رسوم فقط، وهي تنظر إلى الوراء: تقول أين كسبت السيولة، لا أين ستكسب بعد ذلك.",
+    ]),
   ],
 };
 
@@ -252,10 +277,10 @@ const hi: LearnCopy = {
   link: "संक्षेप में",
   title: "Uniswap में तरलता संक्षेप में: दायरे, शुल्क, अस्थायी हानि",
   description:
-    "Uniswap v3 और v4 पर तरलता देने से पहले जानने लायक छह बातें: दायरे, शुल्क स्तर, अस्थायी हानि और v4 हुक, संक्षेप में।",
+    "Uniswap v3 और v4 पर तरलता देने से पहले जानने लायक सात बातें: दायरे, शुल्क स्तर, अस्थायी हानि और v4 हुक, संक्षेप में।",
   heading: "संक्षेप में",
   intro:
-    "Uniswap पर तरलता देने से पहले जानने लायक छह बातें। जान-बूझकर छोटी रखी गई हैं; पूल वाले पन्ने इनमें से हर एक को असली आँकड़ों पर दिखाते हैं।",
+    "Uniswap पर तरलता देने से पहले जानने लायक सात बातें। जान-बूझकर छोटी रखी गई हैं; पूल वाले पन्ने इनमें से हर एक को असली आँकड़ों पर दिखाते हैं।",
   briefs: [
     brief("concentrated", "एक दायरे में तरलता", [
       "Uniswap v3 और v4 में आप एक कीमत-दायरा चुनते हैं, और आपकी तरलता केवल उसी के भीतर काम करती है।",
@@ -287,15 +312,20 @@ const hi: LearnCopy = {
       "कौन-से क्षण, यह hook के पते में लिखा होता है, और प्रोटोकॉल इसे लागू करता है।",
       "जिस hook को स्वैप में दख़ल की अनुमति है वह उनकी लागत बदल सकता है, इसलिए केवल वक्र से पढ़े गए आँकड़े उस पूल पर शायद लागू न हों।",
     ]),
+    brief("smart-money", "सबसे ज़्यादा कमाने वाले कहाँ हैं", [
+      "एक ही पूल की पोज़िशनें अपने आकार के हिसाब से बहुत अलग-अलग शुल्क कमाती हैं, और इसे मापा जा सकता है।",
+      "हर पोज़िशन के आख़िरी बदलाव के बाद के दिनों पर मापने पर, ऊपरी पाँचवाँ हिस्सा दिखाता है कि किन जोड़ियों और किन दायरों ने कमाया है।",
+      "यह केवल शुल्क है और पीछे देखता है: यह बताता है कि तरलता ने कहाँ कमाया, यह नहीं कि आगे कहाँ कमाएगी।",
+    ]),
   ],
 };
 
 const zh: LearnCopy = {
   link: "简明要点",
   title: "Uniswap 流动性要点：区间、手续费、无常损失",
-  description: "在 Uniswap v3 和 v4 提供流动性之前值得知道的六件事：区间、费率档、无常损失和 v4 钩子，简明扼要。",
+  description: "在 Uniswap v3 和 v4 提供流动性之前值得知道的七件事：区间、费率档、无常损失和 v4 钩子，简明扼要。",
   heading: "简明要点",
-  intro: "在 Uniswap 提供流动性之前值得知道的六件事。刻意写得很短；资金池页面会用真实数据展示每一条。",
+  intro: "在 Uniswap 提供流动性之前值得知道的七件事。刻意写得很短；资金池页面会用真实数据展示每一条。",
   briefs: [
     brief("concentrated", "区间里的流动性", [
       "在 Uniswap v3 和 v4 中，你选择一个价格区间，你的流动性只在这个区间内起作用。",
@@ -327,6 +357,11 @@ const zh: LearnCopy = {
       "是哪些时刻写在 hook 的地址里，并由协议强制执行。",
       "被允许介入兑换的 hook 可以改变兑换的成本，所以仅从曲线读出的数字对那个资金池未必成立。",
     ]),
+    brief("smart-money", "收益最高的仓位在哪里", [
+      "同一个池子里的仓位，按规模计赚取的手续费差别很大，而这是可以测量的。",
+      "按每个仓位上次变动以来的天数来测量，排在前五分之一的仓位显示了哪些交易对和哪些区间一直在赚钱。",
+      "这只有手续费，而且是回头看：它说的是流动性在哪里赚过钱，而不是接下来会在哪里赚钱。",
+    ]),
   ],
 };
 
@@ -334,10 +369,10 @@ const ru: LearnCopy = {
   link: "Коротко",
   title: "Ликвидность в Uniswap коротко: диапазоны, комиссии, непостоянные потери",
   description:
-    "Шесть вещей, которые стоит знать, прежде чем предоставлять ликвидность в Uniswap v3 и v4: диапазоны, уровни комиссии, непостоянные потери и hook’и v4, коротко.",
+    "Семь вещей, которые стоит знать, прежде чем предоставлять ликвидность в Uniswap v3 и v4: диапазоны, уровни комиссии, непостоянные потери и hook’и v4, коротко.",
   heading: "Коротко",
   intro:
-    "Шесть вещей, которые стоит знать, прежде чем предоставлять ликвидность в Uniswap. Коротко намеренно; страницы пулов показывают каждую на реальных данных.",
+    "Семь вещей, которые стоит знать, прежде чем предоставлять ликвидность в Uniswap. Коротко намеренно; страницы пулов показывают каждую на реальных данных.",
   briefs: [
     brief("concentrated", "Ликвидность в диапазоне", [
       "В Uniswap v3 и v4 вы выбираете ценовой диапазон, и ваша ликвидность работает только внутри него.",
@@ -369,6 +404,11 @@ const ru: LearnCopy = {
       "Какие это моменты, записано в адресе hook’а, и протокол обеспечивает это сам.",
       "Hook, которому разрешено вмешиваться в свопы, может менять их стоимость, поэтому цифры, прочитанные только по кривой, для такого пула могут не выполняться.",
     ]),
+    brief("smart-money", "Где стоят самые доходные", [
+      "Позиции одного и того же пула зарабатывают для своего размера очень разные комиссии, и это можно измерить.",
+      "Если измерять за дни с последнего изменения каждой позиции, верхняя пятая часть показывает, какие пары и какие диапазоны зарабатывали.",
+      "Это только комиссии, и это взгляд назад: он говорит, где ликвидность зарабатывала, а не где заработает дальше.",
+    ]),
   ],
 };
 
@@ -376,10 +416,10 @@ const pt: LearnCopy = {
   link: "Em resumo",
   title: "Liquidez na Uniswap em resumo: faixas, taxas, perda impermanente",
   description:
-    "Seis coisas para saber antes de fornecer liquidez na Uniswap v3 e v4: faixas, níveis de taxa, perda impermanente e hooks do v4, em poucas palavras.",
+    "Sete coisas para saber antes de fornecer liquidez na Uniswap v3 e v4: faixas, níveis de taxa, perda impermanente e hooks do v4, em poucas palavras.",
   heading: "Em resumo",
   intro:
-    "Seis coisas que vale saber antes de fornecer liquidez na Uniswap. Curtas de propósito; as páginas de pools mostram cada uma com dados reais.",
+    "Sete coisas que vale saber antes de fornecer liquidez na Uniswap. Curtas de propósito; as páginas de pools mostram cada uma com dados reais.",
   briefs: [
     brief("concentrated", "Liquidez em uma faixa", [
       "Na Uniswap v3 e v4 você escolhe uma faixa de preço, e sua liquidez só trabalha dentro dela.",
@@ -411,15 +451,20 @@ const pt: LearnCopy = {
       "Quais momentos são está gravado no endereço do hook, e o protocolo garante isso.",
       "Um hook que pode agir nos swaps pode mudar o custo deles, então números lidos apenas da curva podem não valer para aquele pool.",
     ]),
+    brief("smart-money", "Onde estão os que mais ganham", [
+      "Posições do mesmo pool ganham quantias de taxas muito diferentes para o seu tamanho, e isso pode ser medido.",
+      "Medido nos dias desde a última alteração de cada uma, o quinto superior mostra quais pares e quais faixas vêm ganhando.",
+      "São só taxas e olha para trás: diz onde a liquidez ganhou, não onde vai ganhar depois.",
+    ]),
   ],
 };
 
 const zhHant: LearnCopy = {
   link: "簡明要點",
   title: "Uniswap 流動性要點：區間、手續費、無常損失",
-  description: "在 Uniswap v3 和 v4 提供流動性之前值得知道的六件事：區間、費率檔、無常損失和 v4 鉤子，簡明扼要。",
+  description: "在 Uniswap v3 和 v4 提供流動性之前值得知道的七件事：區間、費率檔、無常損失和 v4 鉤子，簡明扼要。",
   heading: "簡明要點",
-  intro: "在 Uniswap 提供流動性之前值得知道的六件事。刻意寫得很短；資金池頁面會用真實資料展示每一條。",
+  intro: "在 Uniswap 提供流動性之前值得知道的七件事。刻意寫得很短；資金池頁面會用真實資料展示每一條。",
   briefs: [
     brief("concentrated", "區間裡的流動性", [
       "在 Uniswap v3 和 v4 中，你選擇一個價格區間，你的流動性只在這個區間內發揮作用。",
@@ -450,6 +495,11 @@ const zhHant: LearnCopy = {
       "v4 資金池可以指定一個 hook：一個在兌換、存入或取出的固定時刻被呼叫的合約。",
       "是哪些時刻寫在 hook 的位址裡，並由協議強制執行。",
       "被允許介入兌換的 hook 可以改變兌換的成本，所以僅從曲線讀出的數字對那個資金池未必成立。",
+    ]),
+    brief("smart-money", "收益最高的倉位在哪裡", [
+      "同一個池子裡的倉位，按規模計賺取的手續費差別很大，而這是可以測量的。",
+      "按每個倉位上次變動以來的天數來測量，排在前五分之一的倉位顯示了哪些交易對和哪些區間一直在賺錢。",
+      "這只有手續費，而且是回頭看：它說的是流動性在哪裡賺過錢，而不是接下來會在哪裡賺錢。",
     ]),
   ],
 };

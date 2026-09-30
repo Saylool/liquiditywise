@@ -26,6 +26,7 @@ export const LEARN_TOPIC_PAGES = [
   "/learn/width",
   "/learn/fee-tiers",
   "/learn/hooks",
+  "/learn/smart-money",
 ] as const;
 
 export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", "/smart-money", ...LEARN_TOPIC_PAGES] as const;

@@ -26,7 +26,7 @@ vi.mock("./readSmartLiquidity", () => ({
   },
 }));
 
-import { forgetSmartLiquidity, getSmartLiquidity, SMART_LIQUIDITY_TTL_MS } from "./getSmartLiquidity";
+import { forgetSmartLiquidity, getSmartLiquidity, peekSmartLiquidity, SMART_LIQUIDITY_TTL_MS } from "./getSmartLiquidity";
 
 beforeEach(() => {
   forgetSmartLiquidity();
@@ -86,5 +86,20 @@ describe("the smart-money figures, kept", () => {
     /* Not kept: the next visit reads again rather than being served the failure. */
     expect(await getSmartLiquidity(1)).toMatchObject({ status: "unavailable" });
     expect(state.reads).toBe(4);
+  });
+
+  it("can be looked at without being read: nothing until a read has kept something, and nothing once it runs out", async () => {
+    vi.useFakeTimers();
+    expect(peekSmartLiquidity(1)).toBeNull();
+    expect(state.reads).toBe(0);
+
+    const measured = await getSmartLiquidity(1);
+    expect(peekSmartLiquidity(1)).toBe(measured);
+    expect(peekSmartLiquidity(137)).toBeNull();
+    expect(peekSmartLiquidity(42161)).toBeNull();
+
+    vi.advanceTimersByTime(SMART_LIQUIDITY_TTL_MS);
+    expect(peekSmartLiquidity(1)).toBeNull();
+    expect(state.reads).toBe(1);
   });
 });

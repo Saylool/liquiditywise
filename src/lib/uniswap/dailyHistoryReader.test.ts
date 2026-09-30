@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { DataFailureReason, DataResult, PoolDailyPriceHistory } from "../../schemas";
 import {
@@ -223,5 +223,26 @@ describe("one more try after a timeout", () => {
     await read("v3", POOL);
 
     expect(timeouts).toEqual([FIRST_TIMEOUT_MS]);
+  });
+
+  it("share what they keep when they are handed the same stores, as the warmer's bundle and the pages' are", async () => {
+    const stores = { kept: new Map(), asking: new Map() };
+    const fetchHistory = vi.fn<HistoryFetch>(async () => ok());
+    const warmer = createDailyHistoryReader(fetchHistory, () => NOON, undefined, stores);
+    const pages = createDailyHistoryReader(fetchHistory, () => NOON, undefined, stores);
+
+    await warmer.read("v3", POOL, 1);
+    await pages.read("v3", POOL, 1);
+
+    expect(fetchHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("keep nothing between readers that are not handed the same stores", async () => {
+    const fetchHistory = vi.fn<HistoryFetch>(async () => ok());
+
+    await createDailyHistoryReader(fetchHistory, () => NOON).read("v3", POOL, 1);
+    await createDailyHistoryReader(fetchHistory, () => NOON).read("v3", POOL, 1);
+
+    expect(fetchHistory).toHaveBeenCalledTimes(2);
   });
 });

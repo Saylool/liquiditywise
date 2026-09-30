@@ -22,4 +22,16 @@ describe("the smart-money page's title", () => {
     expect(await titleOn("arbitrum")).not.toContain("Arbitrum");
     expect(await titleOn("solana")).not.toContain("solana");
   });
+
+  it("carries a share card where it reads positions, drawn for that chain, and none elsewhere", async () => {
+    const cards = async (chain?: string) => {
+      const metadata = await generateMetadata({ searchParams: Promise.resolve(chain === undefined ? {} : { chain }) });
+      return (metadata.openGraph?.images as { url: string }[] | undefined)?.map(({ url }) => url);
+    };
+
+    expect(await cards()).toEqual(["/og/smart"]);
+    expect(await cards("polygon")).toEqual(["/og/smart?chain=polygon"]);
+    expect(await cards("arbitrum")).toBeUndefined();
+    expect(await cards("solana")).toBeUndefined();
+  });
 });

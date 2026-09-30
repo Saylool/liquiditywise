@@ -1,5 +1,8 @@
 import type { AddressPositionsResult } from "../lib/advisor/addressPositions";
 import type { PositionOutlook } from "../lib/advisor/positionOutlook";
+import { type SmartRange, smartRangeKey } from "../lib/advisor/smartRanges";
+import { type RangeAround, rangeAroundInverted, signedPercent } from "../lib/format/rangeAround";
+import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
 import { getPositionOutlookCopy } from "../lib/i18n/positionOutlookCopy";
 import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import {
@@ -75,6 +78,7 @@ const earningFirst = (positions: readonly Position[]): readonly Position[] =>
 const PositionRow = ({
   position,
   outlook,
+  smartRange,
   parameters,
   t,
   locale,
@@ -82,6 +86,8 @@ const PositionRow = ({
   position: Position;
   /** How it has fared against its pool's last days, when the pool's history could be read. */
   outlook: PositionOutlook | undefined;
+  /** Where the pool's best-earning liquidity sits, when the pool is one that was measured. */
+  smartRange: SmartRange | undefined;
   parameters: PriceBandParameters;
   t: Dictionary;
   locale: Locale;
@@ -94,6 +100,26 @@ const PositionRow = ({
     const band = quotedInterval(quote, { lower, upper });
     return t.report.rangeValue(formatPrice(band.lower, locale), formatPrice(band.upper, locale), quote.quote.symbol, quote.base.symbol);
   };
+  /*
+   * The two ranges as distances from the price now, in this row's own quote:
+   * the smart one was measured as ratios to the price then, and this
+   * position's edges are ticks against the tick now.
+   */
+  const around = (range: RangeAround) => `${signedPercent(range.below, locale)} … ${signedPercent(range.above, locale)}`;
+  const smartLine =
+    smartRange === undefined || position.currentTick === null
+      ? null
+      : getSmartLiquidityCopy(locale).alongside(
+          around(rangeAroundInverted(quote.inverted, smartRange.lowerRatio, smartRange.upperRatio)),
+          around(
+            rangeAroundInverted(
+              quote.inverted,
+              1.0001 ** (position.tickLower - position.currentTick),
+              1.0001 ** (position.tickUpper - position.currentTick),
+            ),
+          ),
+          formatWhole(smartRange.positions, locale),
+        );
   const href =
     pool.protocolVersion === "v3"
       ? poolAnalysisHref(pool.id, parameters, undefined, chainOf(pool.chainId))
@@ -191,6 +217,7 @@ const PositionRow = ({
             )}
           </div>
         )}
+        {smartLine === null ? null : <p className="text-xs leading-relaxed text-muted">{smartLine}</p>}
         <p className="text-xs text-accent">{t.positions.analyse}</p>
       </GuardedLink>
     </li>
@@ -200,6 +227,7 @@ const PositionRow = ({
 export function AddressPositions({
   result,
   outlooks = new Map(),
+  smartRanges = new Map(),
   parameters,
   t,
   locale,
@@ -207,6 +235,8 @@ export function AddressPositions({
   result: AddressPositionsResult;
   /** Each open position's outlook, keyed as getPositionOutlooks.ts keys it; none when not read. */
   outlooks?: ReadonlyMap<string, PositionOutlook>;
+  /** Where each measured pool's best-earning liquidity sits, keyed as smartRanges.ts keys it; none when not measured. */
+  smartRanges?: ReadonlyMap<string, SmartRange>;
   /** Carried into the links out, so a chosen band survives leaving this page. */
   parameters: PriceBandParameters;
   t: Dictionary;
@@ -263,6 +293,11 @@ export function AddressPositions({
                   key={`${position.pool.protocolVersion}-${position.tokenId}`}
                   position={position}
                   outlook={outlooks.get(`${position.pool.protocolVersion}-${position.tokenId}`)}
+                  smartRange={
+                    position.pool.protocolVersion === "v3"
+                      ? smartRanges.get(smartRangeKey(position.pool.chainId, position.pool.id))
+                      : undefined
+                  }
                   parameters={parameters}
                   t={t}
                   locale={locale}

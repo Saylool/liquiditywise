@@ -1,6 +1,8 @@
 import { AddressPositions } from "@/components/AddressPositions";
 import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
 import { getPositionOutlooks } from "@/lib/advisor/getPositionOutlooks";
+import { peekSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
+import { smartRangesByPool } from "@/lib/advisor/smartRanges";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import type { EvmAddress, PriceBandParameters } from "@/schemas";
@@ -34,7 +36,19 @@ export async function PositionsSection({
   /* Each open position against its pool's last days, from the histories the pool pages already read. */
   const outlooks = result.status === "success" ? await getPositionOutlooks(result.data.positions, parameters) : new Map();
 
-  return <AddressPositions result={result} outlooks={outlooks} parameters={parameters} t={t} locale={locale} />;
+  /* Only what the six-hourly measurement has already kept: this page never waits for it. */
+  const smartRanges = smartRangesByPool(peekSmartLiquidity(chainId));
+
+  return (
+    <AddressPositions
+      result={result}
+      outlooks={outlooks}
+      smartRanges={smartRanges}
+      parameters={parameters}
+      t={t}
+      locale={locale}
+    />
+  );
 }
 
 /** The panel's shape while the contract is being asked. */

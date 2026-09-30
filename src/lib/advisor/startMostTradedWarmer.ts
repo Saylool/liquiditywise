@@ -8,15 +8,22 @@ import {
 } from "./getSmartLiquidity";
 import { getMostTraded } from "./getMostTraded";
 import { startWarming } from "./warmMostTraded";
+import { HISTORY_FIRST_WARM_AFTER_MS, HISTORY_WARM_EVERY_MS, warmPoolHistories } from "./warmPoolHistories";
 import {
   EXPLANATION_FIRST_WARM_AFTER_MS,
   EXPLANATION_WARM_EVERY_MS,
   warmFrontPageExplanations,
 } from "./warmExplanations";
 
-/** Started once per server, from instrumentation.ts: the most-traded reads, the front page's explanations, and the smart-money figures. */
+/** Started once per server, from instrumentation.ts: the most-traded reads, the listed pools' price histories, the front page's explanations, and the smart-money figures. */
 export const startMostTradedWarmer = (): (() => void) => {
   const stopLists = startWarming({ chains: CHAINS, warm: (chain) => getMostTraded(chain.id, { refresh: true }) });
+  const stopHistories = startWarming({
+    chains: CHAINS,
+    warm: warmPoolHistories,
+    everyMs: HISTORY_WARM_EVERY_MS,
+    firstAfterMs: HISTORY_FIRST_WARM_AFTER_MS,
+  });
   const stopExplanations = startWarming({
     chains: ["front page"],
     warm: warmFrontPageExplanations,
@@ -33,6 +40,7 @@ export const startMostTradedWarmer = (): (() => void) => {
 
   return () => {
     stopLists();
+    stopHistories();
     stopExplanations();
     stopSmart();
   };

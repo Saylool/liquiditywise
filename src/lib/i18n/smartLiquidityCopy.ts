@@ -38,6 +38,8 @@ export type SmartLiquidityCopy = {
   readonly ownerPositions: string;
   readonly measuredAt: (time: string) => string;
   /** On a chain whose source keeps no positions. */
+  /** Under an open position: where the pool's best-earning liquidity sits, beside where this position does. */
+  readonly alongside: (smart: string, yours: string, count: string) => string;
   readonly notRead: (chain: string, chains: string) => string;
   readonly unavailable: string;
   readonly empty: string;
@@ -72,6 +74,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "a year",
     ownerPositions: "This address's positions",
     measuredAt: (time) => `Measured ${time}.`,
+    alongside: (smart, yours, count) => `Where the best-earning liquidity in this pool sits (median of ${count}): ${smart} · this position: ${yours}`,
     notRead: (chain, chains) =>
       `Positions cannot be listed on ${chain}: its data source keeps none. This page reads ${chains}.`,
     unavailable: "The positions could not be measured just now.",
@@ -105,6 +108,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "yıllık",
     ownerPositions: "Bu adresin pozisyonları",
     measuredAt: (time) => `Ölçüm: ${time}.`,
+    alongside: (smart, yours, count) => `Bu havuzda en çok kazanan likiditenin durduğu yer (${count} pozisyonun medyanı): ${smart} · bu pozisyon: ${yours}`,
     notRead: (chain, chains) =>
       `${chain} üzerinde pozisyonlar listelenemiyor: veri kaynağı hiç pozisyon tutmuyor. Bu sayfa ${chains} ağlarını okuyor.`,
     unavailable: "Pozisyonlar şu an ölçülemedi.",
@@ -138,6 +142,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "pro Jahr",
     ownerPositions: "Positionen dieser Adresse",
     measuredAt: (time) => `Gemessen ${time}.`,
+    alongside: (smart, yours, count) => `Wo die bestverdienende Liquidität in diesem Pool liegt (Median aus ${count}): ${smart} · diese Position: ${yours}`,
     notRead: (chain, chains) =>
       `Auf ${chain} lassen sich keine Positionen auflisten: ihre Datenquelle führt keine. Diese Seite liest ${chains}.`,
     unavailable: "Die Positionen ließen sich gerade nicht messen.",
@@ -171,6 +176,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "al año",
     ownerPositions: "Posiciones de esta dirección",
     measuredAt: (time) => `Medido ${time}.`,
+    alongside: (smart, yours, count) => `Dónde está la liquidez que más gana en este pool (mediana de ${count}): ${smart} · esta posición: ${yours}`,
     notRead: (chain, chains) =>
       `No se pueden listar posiciones en ${chain}: su fuente de datos no guarda ninguna. Esta página lee ${chains}.`,
     unavailable: "No se pudieron medir las posiciones en este momento.",
@@ -204,6 +210,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "سنويًا",
     ownerPositions: "مراكز هذا العنوان",
     measuredAt: (time) => `قيس في ${time}.`,
+    alongside: (smart, yours, count) => `أين تقع السيولة الأعلى ربحًا في هذا التجمّع (وسيط ${count}): ${smart} · هذا المركز: ${yours}`,
     notRead: (chain, chains) =>
       `لا يمكن سرد المراكز على ${chain}: مصدر بياناتها لا يحتفظ بأي منها. تقرأ هذه الصفحة ${chains}.`,
     unavailable: "تعذّر قياس المراكز الآن.",
@@ -237,6 +244,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "सालाना",
     ownerPositions: "इस पते की पोज़िशनें",
     measuredAt: (time) => `मापा गया ${time}.`,
+    alongside: (smart, yours, count) => `इस पूल में सबसे ज़्यादा कमाने वाली लिक्विडिटी कहाँ है (${count} की माध्यिका): ${smart} · यह पोज़िशन: ${yours}`,
     notRead: (chain, chains) =>
       `${chain} पर पोज़िशनें सूचीबद्ध नहीं की जा सकतीं: उसका डेटा स्रोत कोई पोज़िशन नहीं रखता। यह पृष्ठ ${chains} पढ़ता है।`,
     unavailable: "इस समय पोज़िशनें मापी नहीं जा सकीं।",
@@ -269,6 +277,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "年化",
     ownerPositions: "该地址的仓位",
     measuredAt: (time) => `测量时间 ${time}。`,
+    alongside: (smart, yours, count) => `这个资金池中收益最高的流动性所在的区间（${count} 个仓位的中位数）：${smart} · 这个仓位：${yours}`,
     notRead: (chain, chains) => `${chain} 上无法列出仓位：它的数据源不保存任何仓位。本页读取 ${chains}。`,
     unavailable: "现在无法测量这些仓位。",
     empty: "这次没有仓位达到门槛。",
@@ -301,6 +310,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "в год",
     ownerPositions: "Позиции этого адреса",
     measuredAt: (time) => `Измерено ${time}.`,
+    alongside: (smart, yours, count) => `Где стоит самая доходная ликвидность этого пула (медиана по ${count}): ${smart} · эта позиция: ${yours}`,
     notRead: (chain, chains) =>
       `В ${chain} позиции нельзя перечислить: её источник данных их не хранит. Эта страница читает ${chains}.`,
     unavailable: "Сейчас позиции измерить не удалось.",
@@ -334,6 +344,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "por ano",
     ownerPositions: "Posições deste endereço",
     measuredAt: (time) => `Medido ${time}.`,
+    alongside: (smart, yours, count) => `Onde está a liquidez que mais ganha neste pool (mediana de ${count}): ${smart} · esta posição: ${yours}`,
     notRead: (chain, chains) =>
       `Não é possível listar posições na ${chain}: a fonte de dados dela não guarda nenhuma. Esta página lê ${chains}.`,
     unavailable: "Não foi possível medir as posições agora.",
@@ -366,6 +377,7 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     yearly: "年化",
     ownerPositions: "該地址的倉位",
     measuredAt: (time) => `測量時間 ${time}。`,
+    alongside: (smart, yours, count) => `這個資金池中收益最高的流動性所在的區間（${count} 個倉位的中位數）：${smart} · 這個倉位：${yours}`,
     notRead: (chain, chains) => `${chain} 上無法列出倉位：它的資料來源不保存任何倉位。本頁讀取 ${chains}。`,
     unavailable: "現在無法測量這些倉位。",
     empty: "這次沒有倉位達到門檻。",

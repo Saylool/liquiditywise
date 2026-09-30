@@ -4,7 +4,7 @@ import type { BriefId, LearnCopy } from "../lib/learn/briefs";
 import { ArrowIcon } from "./BrandMark";
 
 /**
- * The quick guide's six briefs, each a card with its three sentences, and the
+ * The quick guide's seven briefs, each a card with its three sentences, and the
  * two ways on from it: a real pool, where every brief can be seen on data, and
  * the hook directory.
  *

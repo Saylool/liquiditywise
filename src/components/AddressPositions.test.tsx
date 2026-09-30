@@ -380,3 +380,41 @@ describe("how each position has fared", () => {
     expect(render(answer())).not.toContain("wholly inside this range");
   });
 });
+
+describe("beside where the pool's best-earning liquidity sits", () => {
+  /* A pair quoted WETH per XOR, so both ranges are inverted; the position is 600 ticks either side of the price. */
+  const narrow = (overrides: Record<string, unknown> = {}) =>
+    position({ tickLower: -200_600, tickUpper: -199_400, lowerPrice: 1e-9, upperPrice: 3e-9, currentTick: -200_000, ...overrides });
+  const SMART = { lowerRatio: 0.97, upperRatio: 1.05, positions: 7 };
+  const keyed = (chainId = 1, id = POOL) => new Map([[`${chainId}|${id}`, SMART]]);
+  const withSmart = (result: AddressPositionsResult, smartRanges: ReadonlyMap<string, typeof SMART>, locale: Locale = "en") =>
+    renderToStaticMarkup(
+      <AddressPositions result={result} smartRanges={smartRanges} parameters={PARAMETERS} t={getDictionary(locale)} locale={locale} />,
+    );
+
+  it("states both as distances from the price now, in the row's own quote", () => {
+    const own = 1.0001 ** 600;
+    const markup = withSmart(answer({ positions: [narrow()] }), keyed());
+
+    expect(markup).toContain("Where the best-earning liquidity in this pool sits (median of 7)");
+    expect(markup).toContain(`${((1 / 1.05 - 1) * 100).toFixed(2)}% … +${((1 / 0.97 - 1) * 100).toFixed(2)}%`);
+    expect(markup).toContain(`this position: ${((1 / own - 1) * 100).toFixed(2)}% … +${((own - 1) * 100).toFixed(2)}%`);
+  });
+
+  it("says nothing for a pool that was not measured, on another chain, or whose price is unread", () => {
+    expect(withSmart(answer({ positions: [narrow()] }), new Map())).not.toContain("best-earning");
+    expect(withSmart(answer({ positions: [narrow()] }), keyed(8453))).not.toContain("best-earning");
+    expect(withSmart(answer({ positions: [narrow({ currentTick: null, inRange: null })] }), keyed())).not.toContain("best-earning");
+    expect(render(answer({ positions: [narrow()] }))).not.toContain("best-earning");
+  });
+
+  it("is only for v3 positions, whose pools were the ones measured", () => {
+    const markup = withSmart(answer({ positions: [v4Position()] }), keyed(1, V4_POOL));
+
+    expect(markup).not.toContain("best-earning");
+  });
+
+  it("speaks the reader's language", () => {
+    expect(withSmart(answer({ positions: [narrow()] }), keyed(), "tr")).toContain("Bu havuzda en çok kazanan likiditenin durduğu yer (7 pozisyonun medyanı)");
+  });
+});

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { DataResult, PoolDailyPriceHistory, ProtocolVersion } from "../../schemas";
 import { logDetail, loggingFetch, logUnavailable } from "../observability/serverDiagnostics";
+import { processShared } from "../cache/processShared";
 import { createDailyHistoryReader } from "./dailyHistoryReader";
 import { fetchEthereumDailyPriceHistory } from "./ethereumDailyPriceHistory";
 import { subgraphIdFor } from "../chains/chainEnvironment";
@@ -54,6 +55,10 @@ const reader = createDailyHistoryReader(
     ),
   Date.now,
   (protocolVersion) => logDetail(labelOf(protocolVersion), "timed out; asking once more"),
+  {
+    kept: processShared("daily-history.kept", () => new Map()),
+    asking: processShared("daily-history.asking", () => new Map()),
+  },
 );
 
 /**

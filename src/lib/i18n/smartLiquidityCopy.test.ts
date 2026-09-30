@@ -69,6 +69,7 @@ describe("the smart-money page's words", () => {
         [copy.earned("$508", "9"), ["$508", "9"]],
         [copy.measuredAt("2026-09-30 12:00"), ["2026-09-30 12:00"]],
         [copy.notRead("Base", "Ethereum, Polygon"), ["Base", "Ethereum, Polygon"]],
+        [copy.alongside("-5% … +3%", "-2% … +2%", "7"), ["-5% … +3%", "-2% … +2%", "7"]],
       ] as const) {
         for (const figure of figures) expect(line, locale).toContain(figure);
       }

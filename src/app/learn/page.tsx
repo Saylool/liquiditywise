@@ -8,7 +8,7 @@ import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestL
 import { getLearnCopy } from "@/lib/learn/briefs";
 
 /*
- * Six things worth knowing before providing liquidity, in every language.
+ * Seven things worth knowing before providing liquidity, in every language.
  *
  * It reads nothing — no pool, no source, no model — so it is the same page for
  * everybody, costs nothing to render, and is open to search engines: it is the

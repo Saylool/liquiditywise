@@ -58,6 +58,17 @@ const readNow = (chainId: ChainId): Promise<SmartLiquidityRead> => {
 };
 
 /**
+ * What is kept for a chain, and never a read: for the pages that show the
+ * smart-money range beside something else and must not wait tens of seconds
+ * for it. `null` until the warmer's first round has run, or where positions
+ * cannot be listed.
+ */
+export const peekSmartLiquidity = (chainId: ChainId): SmartLiquidityRead | null => {
+  const hit = cached.get(chainId);
+  return hit !== undefined && Date.now() - hit.writtenAt < SMART_LIQUIDITY_TTL_MS ? hit.value : null;
+};
+
+/**
  * `null` on a chain whose positions cannot be listed (see chains.ts); the page
  * says so. `refresh` reads anew, for the warmer; a read that fails then leaves
  * the kept one to serve until it runs out.

@@ -71,6 +71,7 @@ export const config = {
     "/learn/width",
     "/learn/fee-tiers",
     "/learn/hooks",
+    "/learn/smart-money",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn",
@@ -82,6 +83,7 @@ export const config = {
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn/width",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn/fee-tiers",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn/hooks",
+    "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn/smart-money",
   ],
 };
 

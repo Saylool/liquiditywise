@@ -56,15 +56,24 @@ const complete = (history: PoolDailyPriceHistory): boolean =>
   history.sourceBlockTimestamp !== null &&
   Date.parse(history.sourceBlockTimestamp) >= Date.parse(history.rangeEndExclusive);
 
+/**
+ * Where a reader keeps its histories and the asks in flight. A reader made
+ * without them keeps its own; the server's is handed process-wide ones, because
+ * the warmer runs in a bundle of its own and its reads would otherwise fill a
+ * copy no page ever looks at (see processShared.ts).
+ */
+export type HistoryStores = {
+  readonly kept: Map<string, DataResult<PoolDailyPriceHistory>>;
+  readonly asking: Map<string, Promise<DataResult<PoolDailyPriceHistory>>>;
+};
+
 export const createDailyHistoryReader = (
   fetchHistory: HistoryFetch,
   now: () => number = Date.now,
   /** Told when a first ask timed out and a second is being made, so a log can say the first was not the end of it. */
   onRetry: (protocolVersion: ProtocolVersion) => void = () => undefined,
+  { kept, asking }: HistoryStores = { kept: new Map(), asking: new Map() },
 ) => {
-  const kept = new Map<string, DataResult<PoolDailyPriceHistory>>();
-  const asking = new Map<string, Promise<DataResult<PoolDailyPriceHistory>>>();
-
   const ask = async (protocolVersion: ProtocolVersion, poolId: string, chainId: ChainId) => {
     const first = await fetchHistory(protocolVersion, poolId, FIRST_TIMEOUT_MS, chainId);
     if (first.status !== "unavailable" || first.reason !== "timeout") return first;

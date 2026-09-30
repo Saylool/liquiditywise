@@ -5,7 +5,7 @@ import { ArrowIcon } from "./BrandMark";
 
 /**
  * One quick-guide topic: the guide's three sentences, three more, the way on
- * to where the site shows it on real data, and the other five topics.
+ * to where the site shows it on real data, and the other six topics.
  */
 export function LearnTopic({
   brief,

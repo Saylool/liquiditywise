@@ -9,6 +9,8 @@ import { chainLabel } from "@/lib/chains/chainLabel";
 import { readsV3Positions, V3_POSITION_CHAINS } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { localePath } from "@/lib/i18n/localePath";
+import { poolShareMetadata } from "@/lib/og/poolCard";
+import { smartCardPath } from "@/lib/og/smartCard";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { getSmartLiquidityCopy } from "@/lib/i18n/smartLiquidityCopy";
 
@@ -31,10 +33,14 @@ export async function generateMetadata({
   /* A chain's own title only where its positions are read; elsewhere the page says it cannot. */
   const named = chain !== null && chain.id !== 1 && readsV3Positions(chain.id);
 
+  const title = `${named ? copy.titleOn(chain.name) : copy.title} · LiquidityWise`;
+
   return {
-    title: `${named ? copy.titleOn(chain.name) : copy.title} · LiquidityWise`,
+    title,
     description: copy.description,
     alternates: await getOpenPageAlternates("/smart-money"),
+    /* A card only where there is something to draw; elsewhere the site's own stands. */
+    ...(chain !== null && readsV3Positions(chain.id) ? poolShareMetadata(smartCardPath(chain.slug), title, copy.description) : {}),
   };
 }
 

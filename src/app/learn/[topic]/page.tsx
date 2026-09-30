@@ -7,6 +7,7 @@ import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { getSmartLiquidityCopy } from "@/lib/i18n/smartLiquidityCopy";
 import { type BriefId, BRIEF_IDS, getLearnCopy } from "@/lib/learn/briefs";
 import { getTopicCopy } from "@/lib/learn/topics";
 
@@ -53,7 +54,9 @@ export default async function LearnTopicPage({ params }: { params: Promise<{ top
         onward={
           topic === "hooks"
             ? { href: localePath(locale, "/hooks"), label: t.hooks.fromHome }
-            : { href: "/pool", label: getInterfaceCopy(locale).pools }
+            : topic === "smart-money"
+              ? { href: localePath(locale, "/smart-money"), label: getSmartLiquidityCopy(locale).link }
+              : { href: "/pool", label: getInterfaceCopy(locale).pools }
         }
       />
       <p>

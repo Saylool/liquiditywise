@@ -12,6 +12,7 @@ import {
   formatWholePercent,
 } from "../lib/format/displayFormats";
 import { choosePriceQuote } from "../lib/format/priceQuote";
+import { type RangeAround, rangeAroundInverted, signedPercent } from "../lib/format/rangeAround";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { SmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
@@ -49,15 +50,11 @@ export const rangeAround = (
   currentPrice: number,
   lowerRatio: number,
   upperRatio: number,
-): { readonly below: number; readonly above: number } =>
-  choosePriceQuote({ token0: pool.token0, token1: pool.token1 }, currentPrice).inverted
-    ? { below: 1 / upperRatio - 1, above: 1 / lowerRatio - 1 }
-    : { below: lowerRatio - 1, above: upperRatio - 1 };
+): RangeAround =>
+  rangeAroundInverted(choosePriceQuote({ token0: pool.token0, token1: pool.token1 }, currentPrice).inverted, lowerRatio, upperRatio);
 
-const signed = (ratio: number, locale: Locale): string => `${ratio > 0 ? "+" : ""}${formatPercent(ratio, locale)}`;
-
-const rangeText = (range: { below: number; above: number }, { copy, locale }: Shared): string =>
-  copy.rangeValue(signed(range.below, locale), signed(range.above, locale));
+const rangeText = (range: RangeAround, { copy, locale }: Shared): string =>
+  copy.rangeValue(signedPercent(range.below, locale), signedPercent(range.above, locale));
 
 const pairName = (pool: V3PoolMetadata, locale: Locale): string =>
   `${pool.token0.symbol} / ${pool.token1.symbol} · ${formatFeePpm(pool.feePpm, locale)}`;
