@@ -147,7 +147,9 @@ describe("the smart-money page", () => {
     const html = render(null, 42161);
 
     expect(html).toContain("Positions cannot be listed on Arbitrum One");
-    expect(html).toContain("This page reads Ethereum, Polygon.");
+    expect(html).toContain("This page reads Ethereum, Base, OP Mainnet, Polygon.");
+    expect(html).toContain('href="/smart-money?chain=base"');
+    expect(html).toContain('href="/smart-money?chain=optimism"');
     expect(html).toContain('href="/smart-money?chain=polygon"');
     expect(html).not.toContain("?chain=arbitrum");
     expect(ETHEREUM.v3Positions).toBe(true);

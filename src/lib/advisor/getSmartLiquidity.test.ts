@@ -3,9 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("../chains/chainEnvironment", () => ({
   rpcUrlFor: (chainId: number) => `rpc-${chainId}`,
-  v3SubgraphIdFor: (chainId: number) => `v3-${chainId}`,
+  v3PositionsSubgraphIdFor: (chainId: number) => `v3-${chainId}`,
 }));
 vi.mock("./getMostTraded", () => ({ getMostTraded: async () => ({ v3: null, v4: null }) }));
+vi.mock("../uniswap/ethereumV3InRangePositions", () => ({
+  fetchEthereumV3InRangePositions: async (_pool: string, source: unknown) => {
+    state.sources.push(source);
+    return { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" };
+  },
+  fetchEthereumV3LastChanges: async (_ids: string[], source: unknown) => {
+    state.sources.push(source);
+    return { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" };
+  },
+}));
 
 const state = vi.hoisted(() => ({
   reads: 0,
@@ -13,12 +23,19 @@ const state = vi.hoisted(() => ({
   release: null as (() => void) | null,
   hold: false,
   asked: [] as { readEarnings: unknown }[],
+  sources: [] as unknown[],
 }));
 
 vi.mock("./readSmartLiquidity", () => ({
-  readSmartLiquidity: async (sources: { readEarnings: unknown }) => {
+  readSmartLiquidity: async (sources: {
+    readEarnings: unknown;
+    readPool: (id: string) => Promise<unknown>;
+    readLastChanges: (ids: string[]) => Promise<unknown>;
+  }) => {
     state.reads += 1;
     state.asked.push(sources);
+    await sources.readPool("0x1");
+    await sources.readLastChanges(["1"]);
     if (state.hold) await new Promise<void>((resolve) => (state.release = resolve));
     return state.outcome === "measured"
       ? { status: "measured", data: { measured: state.reads, smart: [] }, poolsAsked: 12, poolsRead: 12, measuredAt: "t" }
@@ -30,7 +47,7 @@ import { forgetSmartLiquidity, getSmartLiquidity, peekSmartLiquidity, SMART_LIQU
 
 beforeEach(() => {
   forgetSmartLiquidity();
-  Object.assign(state, { reads: 0, outcome: "measured", release: null, hold: false, asked: [] });
+  Object.assign(state, { reads: 0, outcome: "measured", release: null, hold: false, asked: [], sources: [] });
   vi.spyOn(console, "info").mockImplementation(() => undefined);
 });
 
@@ -42,7 +59,7 @@ afterEach(() => {
 describe("the smart-money figures, kept", () => {
   it("are read nowhere positions cannot be listed", async () => {
     expect(await getSmartLiquidity(42161)).toBeNull();
-    expect(await getSmartLiquidity(8453)).toBeNull();
+    expect(await getSmartLiquidity(130)).toBeNull();
     expect(state.reads).toBe(0);
   });
 
@@ -101,5 +118,17 @@ describe("the smart-money figures, kept", () => {
     vi.advanceTimersByTime(SMART_LIQUIDITY_TTL_MS);
     expect(peekSmartLiquidity(1)).toBeNull();
     expect(state.reads).toBe(1);
+  });
+
+  it("reads positions from the subgraph the chain names for them, on the chain asked about, allowing a slow one time to answer", async () => {
+    await getSmartLiquidity(8453);
+    await getSmartLiquidity(10);
+
+    expect(state.sources).toMatchObject([
+      { chainId: 8453, subgraphId: "v3-8453", timeoutMs: 45_000 },
+      { chainId: 8453, subgraphId: "v3-8453" },
+      { chainId: 10, subgraphId: "v3-10", timeoutMs: 45_000 },
+      { chainId: 10, subgraphId: "v3-10" },
+    ]);
   });
 });

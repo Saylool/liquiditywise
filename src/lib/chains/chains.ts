@@ -39,7 +39,7 @@ export const CHAINS = [
    * `v3Pairs: "days"` for the same reason: Base's v3 pair query answered in
    * 10.5 to 14.5 seconds on 2026-09-25, and still took ten on 2026-09-27.
    */
-  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days", v3Positions: false, native: "ETH" },
+  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days", v3Positions: true, native: "ETH" },
   { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
   /*
    * v4 alone. Uniswap's own chain, where the week's trading is v4's: its v4
@@ -54,7 +54,7 @@ export const CHAINS = [
    * 2026-09-27: the week's day table in about a second on each, seconds behind
    * the chain, with the factory and PoolManager Uniswap publishes for it).
    */
-  { id: 10, slug: "optimism", name: "OP Mainnet", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
+  { id: 10, slug: "optimism", name: "OP Mainnet", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: true, native: "ETH" },
   /*
    * Polygon PoS. Its own currency is POL, not ether: a v4 pool's zero address
    * is POL there, and its subgraphs price every token in POL where the others
@@ -94,13 +94,18 @@ export const readsV3 = (chainId: ChainId): chainId is V3ChainId => chainById(cha
 
 /**
  * Where the positions inside v3 pools can be listed — which the smart-money
- * page needs and nothing else does. Only mainnet's and Polygon's v3 subgraphs
- * keep positions (measured 2026-09-30): Arbitrum's and OP Mainnet's have no
- * such entity, and Base's refused the query with "bad indexers".
+ * page needs and nothing else does. Measured 2026-09-30: mainnet's and
+ * Polygon's v3 subgraphs keep positions, and so does a second, separate
+ * subgraph on Base and on OP Mainnet — the ones the pool pages read there
+ * have no such entity, or refuse the query on a busy pool with "bad
+ * indexers". Arbitrum has none that answers: two subgraphs have the entity
+ * and reject its filters.
  */
-export const readsV3Positions = (chainId: ChainId): boolean => chainById(chainId).v3Positions;
+export const readsV3Positions = (chainId: ChainId): chainId is V3PositionChainId => chainById(chainId).v3Positions;
 
 export const V3_POSITION_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v3Positions);
+
+export type V3PositionChainId = Extract<Chain, { v3Positions: true }>["id"];
 
 /** The chains v4 pools are read on. */
 export const V4_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v4);

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("../chains/chainEnvironment", () => ({
   rpcUrlFor: () => "https://rpc.example",
-  v3SubgraphIdFor: () => "sub",
+  v3PositionsSubgraphIdFor: () => "sub",
 }));
 vi.mock("./getMostTraded", () => ({ getMostTraded: async () => ({ v3: null, v4: null }) }));
 

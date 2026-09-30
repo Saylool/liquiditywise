@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { rpcUrlFor, subgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "./chainEnvironment";
+import { rpcUrlFor, subgraphIdFor, v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "./chainEnvironment";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -78,5 +78,31 @@ describe("a chain whose v3 pools are not read", () => {
     expect(subgraphIdFor("v3", 130)).toBeUndefined();
     expect(v4SubgraphIdFor(130)).toBe("unichain-v4");
     expect(rpcUrlFor(130)).toBe("https://unichain.example");
+  });
+});
+
+describe("where positions are listed", () => {
+  it("is the pool pages' own subgraph on mainnet and Polygon, and a separate one on Base and OP Mainnet", () => {
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("UNISWAP_V3_POLYGON_SUBGRAPH_ID", "polygon-v3");
+    vi.stubEnv("UNISWAP_V3_BASE_SUBGRAPH_ID", "base-v3");
+    vi.stubEnv("UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", "base-positions");
+    vi.stubEnv("UNISWAP_V3_OPTIMISM_SUBGRAPH_ID", "optimism-v3");
+    vi.stubEnv("UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID", "optimism-positions");
+
+    expect([1, 137, 8453, 10].map((id) => v3PositionsSubgraphIdFor(id as 1))).toEqual([
+      "mainnet-v3",
+      "polygon-v3",
+      "base-positions",
+      "optimism-positions",
+    ]);
+  });
+
+  it("is none where positions cannot be listed, never another chain's", () => {
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("UNISWAP_V3_ARBITRUM_SUBGRAPH_ID", "arbitrum-v3");
+
+    expect(v3PositionsSubgraphIdFor(42161)).toBeUndefined();
+    expect(v3PositionsSubgraphIdFor(130)).toBeUndefined();
   });
 });

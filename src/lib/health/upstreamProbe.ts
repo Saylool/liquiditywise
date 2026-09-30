@@ -67,6 +67,8 @@ export const SUBGRAPHS = [
   "v4-unichain",
   "v4-optimism",
   "v4-polygon",
+  "v3-base-positions",
+  "v3-optimism-positions",
 ] as const;
 export type SubgraphName = (typeof SUBGRAPHS)[number];
 

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
+import { v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
 import type { OtherChain, ProbeDependencies, SubgraphName } from "./upstreamProbe";
 
 /*
@@ -73,6 +73,8 @@ const SUBGRAPH_IDS: Record<SubgraphName, () => string | undefined> = {
   "v4-unichain": () => v4SubgraphIdFor(130),
   "v4-optimism": () => v4SubgraphIdFor(10),
   "v4-polygon": () => v4SubgraphIdFor(137),
+  "v3-base-positions": () => v3PositionsSubgraphIdFor(8453),
+  "v3-optimism-positions": () => v3PositionsSubgraphIdFor(10),
 };
 
 /**

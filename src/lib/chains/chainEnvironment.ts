@@ -1,6 +1,6 @@
 import "server-only";
 
-import { type ChainId, readsV3, readsV4, type V3ChainId, type V4ChainId } from "./chains";
+import { type ChainId, readsV3, readsV3Positions, readsV4, type V3ChainId, type V3PositionChainId, type V4ChainId } from "./chains";
 
 /*
  * Which subgraph and which RPC endpoint serve each chain, read from the
@@ -19,6 +19,19 @@ const V3_SUBGRAPH = {
   10: () => process.env.UNISWAP_V3_OPTIMISM_SUBGRAPH_ID,
   137: () => process.env.UNISWAP_V3_POLYGON_SUBGRAPH_ID,
 } as const satisfies Record<V3ChainId, () => string | undefined>;
+
+/*
+ * The subgraph that lists a chain's positions. Mainnet's and Polygon's are the
+ * ones the pool pages read; Base's and OP Mainnet's are separate, because the
+ * ones the pool pages read there keep no positions or cannot answer for a busy
+ * pool.
+ */
+const V3_POSITIONS_SUBGRAPH = {
+  1: () => process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
+  137: () => process.env.UNISWAP_V3_POLYGON_SUBGRAPH_ID,
+  8453: () => process.env.UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID,
+  10: () => process.env.UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID,
+} as const satisfies Record<V3PositionChainId, () => string | undefined>;
 
 const V4_SUBGRAPH = {
   1: () => process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID,
@@ -41,6 +54,10 @@ const RPC = {
 /** The v3 subgraph on a chain; on a chain v3 is not read on there is none, never mainnet's. */
 export const v3SubgraphIdFor = (chainId: ChainId): string | undefined =>
   readsV3(chainId) ? V3_SUBGRAPH[chainId]() : undefined;
+
+/** The subgraph that lists positions on a chain, or none where they cannot be listed — never another chain's. */
+export const v3PositionsSubgraphIdFor = (chainId: ChainId): string | undefined =>
+  readsV3Positions(chainId) ? V3_POSITIONS_SUBGRAPH[chainId]() : undefined;
 
 /** The v4 subgraph on a chain; on a chain v4 is not read on there is none, never mainnet's. */
 export const v4SubgraphIdFor = (chainId: ChainId): string | undefined =>

@@ -66,6 +66,25 @@ describe("what the hourly check asks", () => {
     ]);
   });
 
+  it("asks the two positions subgraphs under their own names, and the pool pages' Base and OP Mainnet ones apart from them", async () => {
+    vi.stubEnv("THE_GRAPH_API_KEY", "key");
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
+    vi.stubEnv("UNISWAP_V3_BASE_SUBGRAPH_ID", "base-v3");
+    vi.stubEnv("UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", "base-positions");
+    vi.stubEnv("UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID", "optimism-positions");
+    const asked: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (asked.push(url), new Response("{}", { status: 200 }))));
+
+    const probes = upstreamProbes();
+    await probes?.probeSubgraphs?.["v3-base"]?.();
+    await probes?.probeSubgraphs?.["v3-base-positions"]?.();
+    await probes?.probeSubgraphs?.["v3-optimism-positions"]?.();
+    vi.unstubAllGlobals();
+
+    expect(asked.map((url) => url.split("/").pop())).toEqual(["base-v3", "base-positions", "optimism-positions"]);
+  });
+
   it("asks nothing when the key or mainnet's settings are missing", () => {
     vi.stubEnv("THE_GRAPH_API_KEY", "");
 
