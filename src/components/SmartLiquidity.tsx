@@ -1,3 +1,5 @@
+import type { SmartHistory } from "../lib/advisor/getSmartHistory";
+import { currentHoldings, type Mover, type PairTrend, type PersistentHolder } from "../lib/analytics/smartHistory";
 import { MIN_POSITION_USD, MIN_WINDOW_DAYS, SMART_SHARE } from "../lib/analytics/smartLiquidity";
 import type { MeasuredPosition, SmartPair } from "../lib/analytics/smartLiquidity";
 import type { SmartLiquidityRead } from "../lib/advisor/readSmartLiquidity";
@@ -11,7 +13,7 @@ import {
   formatWhole,
   formatWholePercent,
 } from "../lib/format/displayFormats";
-import { choosePriceQuote } from "../lib/format/priceQuote";
+import { choosePriceQuote, isInverted } from "../lib/format/priceQuote";
 import { type RangeAround, rangeAroundInverted, signedPercent } from "../lib/format/rangeAround";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -19,6 +21,7 @@ import type { SmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
 import type { PriceBandParameters, V3PoolMetadata } from "../schemas";
 import { ChainTabs } from "./ChainTabs";
 import { GuardedLink } from "./GuardedLink";
+import { Sparkline } from "./Sparkline";
 
 /*
  * Where the best-earning liquidity sits: the pairs first, as the question
@@ -123,8 +126,158 @@ const PositionRow = ({ position, shared }: { position: MeasuredPosition; shared:
   );
 };
 
+/** A range's edges as ratios, quoted the way the pair is at its price now. */
+const ratiosText = (
+  ratios: { readonly lowerRatio: number; readonly upperRatio: number },
+  price: number,
+  { copy, locale }: Shared,
+): string => {
+  const range = rangeAroundInverted(isInverted(price), ratios.lowerRatio, ratios.upperRatio);
+  return copy.rangeValue(signedPercent(range.below, locale), signedPercent(range.above, locale));
+};
+
+const named = (pair: string, feePpm: number, locale: Locale): string => `${pair} · ${formatFeePpm(feePpm, locale)}`;
+
+const TrendCard = ({ trend, shared }: { trend: PairTrend; shared: Shared }) => {
+  const { copy, locale } = shared;
+  const first = trend.widths[0];
+  const last = trend.widths[trend.widths.length - 1];
+
+  return (
+    <li className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-surface p-5">
+      <h3 className="truncate text-base font-semibold">{named(trend.pair, trend.feePpm, locale)}</h3>
+      {first === undefined || last === undefined ? null : (
+        <Sparkline
+          values={trend.widths}
+          label={copy.trend.widthLabel(formatPercent(first, locale), formatPercent(last, locale))}
+        />
+      )}
+      <p className="text-xs leading-relaxed text-muted">
+        {trend.then === null
+          ? copy.trend.rangeNew(ratiosText(trend.now, trend.currentPrice, shared))
+          : copy.trend.range(ratiosText(trend.then, trend.currentPrice, shared), ratiosText(trend.now, trend.currentPrice, shared))}
+      </p>
+      <p className="text-xs leading-relaxed text-muted">
+        {trend.shareThen === null
+          ? copy.trend.shareNew(formatPercent(trend.shareNow, locale))
+          : copy.trend.share(formatPercent(trend.shareThen, locale), formatPercent(trend.shareNow, locale))}
+      </p>
+    </li>
+  );
+};
+
+const Movers = ({ heading, movers, locale, copy }: { heading: string; movers: readonly Mover[]; locale: Locale; copy: SmartLiquidityCopy }) =>
+  movers.length === 0 ? null : (
+    <div className="flex min-w-0 flex-col gap-1">
+      <h3 className="text-xs uppercase tracking-widest text-muted">{heading}</h3>
+      <ul className="flex flex-col gap-1 text-sm">
+        {movers.map(({ pool, pair, feePpm, from, to }) => (
+          <li key={pool}>{copy.trend.mover(named(pair, feePpm, locale), formatPercent(from, locale), formatPercent(to, locale))}</li>
+        ))}
+      </ul>
+    </div>
+  );
+
+const TrendSection = ({ history, shared }: { history: SmartHistory; shared: Shared }) => {
+  const { copy, locale } = shared;
+  const { trend } = history;
+
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="text-lg font-medium tracking-tight">
+        {copy.trend.heading(formatWhole(trend === null ? 7 : Math.round(trend.days), locale))}
+      </h2>
+      {trend === null ? (
+        <p className="text-sm leading-relaxed text-muted">{copy.trend.notYet}</p>
+      ) : (
+        <>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted">{copy.trend.intro}</p>
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {trend.pairs.map((pair) => (
+              <TrendCard key={pair.pool} trend={pair} shared={shared} />
+            ))}
+          </ol>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Movers heading={copy.trend.gaining} movers={trend.gaining} locale={locale} copy={copy} />
+            <Movers heading={copy.trend.losing} movers={trend.losing} locale={locale} copy={copy} />
+          </div>
+        </>
+      )}
+    </section>
+  );
+};
+
+const HolderRow = ({
+  holder,
+  now,
+  shared,
+}: {
+  holder: PersistentHolder;
+  now: { readonly positions: number; readonly valueUsd: number } | undefined;
+  shared: Shared;
+}) => {
+  const { chain, copy, locale } = shared;
+
+  return (
+    <li className="flex min-w-0 flex-col gap-1 border-t border-border pt-3">
+      <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+        <span className="break-all font-mono text-sm">{holder.address}</span>
+        <span className="text-xs uppercase tracking-widest text-muted">{holder.contract ? copy.holders.contract : copy.holders.wallet}</span>
+      </p>
+      <p className="text-xs text-muted">{copy.holders.seen(formatWhole(holder.appeared, locale), formatWhole(holder.of, locale))}</p>
+      <p className="text-xs text-muted">
+        {now === undefined
+          ? copy.holders.gone
+          : copy.holders.now(formatWhole(now.positions, locale), formatUsd(now.valueUsd, locale))}
+      </p>
+      <p className="text-xs">
+        <GuardedLink className="text-link" href={holdingsHref(holder.address, chain)}>
+          {copy.ownerPositions}
+        </GuardedLink>
+      </p>
+    </li>
+  );
+};
+
+const HoldersSection = ({
+  history,
+  smart,
+  shared,
+}: {
+  history: SmartHistory;
+  smart: readonly MeasuredPosition[];
+  shared: Shared;
+}) => {
+  const { copy, locale } = shared;
+  const { holders } = history;
+  const holdings = currentHoldings(smart);
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-lg font-medium tracking-tight">{copy.holders.heading}</h2>
+      {holders === null ? (
+        <p className="text-sm leading-relaxed text-muted">{copy.holders.notYet}</p>
+      ) : holders.length === 0 ? null : (
+        <>
+          <p className="max-w-2xl text-sm leading-relaxed text-muted">{copy.holders.intro(formatWhole(holders[0]?.of ?? 0, locale))}</p>
+          <ol className="flex flex-col gap-3">
+            {holders.map((holder) => (
+              <HolderRow key={holder.address} holder={holder} now={holdings.get(holder.address)} shared={shared} />
+            ))}
+          </ol>
+          {holders.some(({ contract }) => contract) ? (
+            <p className="max-w-2xl text-xs leading-relaxed text-muted">{copy.holders.contractNote}</p>
+          ) : null}
+        </>
+      )}
+      <p className="max-w-2xl text-xs leading-relaxed text-muted">{copy.holders.kept}</p>
+    </section>
+  );
+};
+
 export function SmartLiquidity({
   read,
+  history = null,
   chain,
   chains,
   pageHref,
@@ -136,6 +289,8 @@ export function SmartLiquidity({
 }: {
   /** `null` on a chain whose positions cannot be listed. */
   read: SmartLiquidityRead | null;
+  /** What the kept measurements say over the last days; `null` where the deployment keeps none. */
+  history?: SmartHistory | null;
   chain: Chain;
   /** The chains the page is read on, for the tabs and for saying which they are. */
   chains: readonly Chain[];
@@ -202,6 +357,8 @@ export function SmartLiquidity({
               ))}
             </ol>
           </section>
+          {history === null ? null : <TrendSection history={history} shared={shared} />}
+          {history === null ? null : <HoldersSection history={history} smart={data.smart} shared={shared} />}
           <section className="flex flex-col gap-3">
             <h2 className="text-lg font-medium tracking-tight">{copy.topHeading}</h2>
             <ol className="flex flex-col gap-3">

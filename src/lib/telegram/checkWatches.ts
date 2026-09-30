@@ -2,9 +2,11 @@ import type { AddressPositionsResult } from "../advisor/addressPositions";
 import type { Dictionary } from "../i18n/dictionaries";
 import type { Locale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
+import type { SmartPair } from "../analytics/smartLiquidity";
 import { listWatches, recordSnapshot } from "./links";
-import { alertText } from "./messages";
+import { alertText, smartShiftText } from "./messages";
 import { positionChanges, snapshotOf } from "./positionChanges";
+import { smartShifts } from "./smartShift";
 import type { KeyValueStore } from "../store/keyValueStore";
 import type { ChainId } from "../chains/chains";
 
@@ -39,6 +41,11 @@ export type WatchChecking = {
   /** One address's positions on one chain; a link with no chain in it is mainnet. */
   readonly readPositions: (address: string, chainId: ChainId) => Promise<AddressPositionsResult>;
   readonly dictionary: (locale: Locale) => Dictionary;
+  /**
+   * Where each pool's best-earning liquidity sat at the last measurement, by
+   * pool, on one chain — only what is kept, never a measurement made here.
+   */
+  readonly readSmartPairs: (chainId: ChainId) => ReadonlyMap<string, SmartPair>;
 };
 
 export const checkWatches = async ({
@@ -46,6 +53,7 @@ export const checkWatches = async ({
   bot,
   readPositions,
   dictionary,
+  readSmartPairs,
 }: WatchChecking): Promise<CheckSummary> => {
   const watches = await listWatches(store);
   if (watches === null) {
@@ -73,7 +81,20 @@ export const checkWatches = async ({
       if (await bot.sendMessage(link.chatId, alertText(change, t, link.locale, link.chainId ?? 1))) sent += 1;
     }
 
-    await recordSnapshot(store, token, link, snapshotOf(result.data.positions, link.snapshot));
+    /*
+     * Only for a chat that asked. The first reading of a pool is a baseline and
+     * says nothing; what is kept is replaced only when it is told again.
+     */
+    const smart =
+      link.smart === undefined
+        ? null
+        : smartShifts(link.smart.ranges, result.data.positions, readSmartPairs(link.chainId ?? 1));
+    for (const shift of smart?.shifts ?? []) {
+      alerts += 1;
+      if (await bot.sendMessage(link.chatId, smartShiftText(shift, t, link.locale, link.chainId ?? 1))) sent += 1;
+    }
+
+    await recordSnapshot(store, token, link, snapshotOf(result.data.positions, link.snapshot), smart?.ranges);
   }
 
   return { watches: watches.length, checked, unreadable, alerts, sent, storeUnavailable: false };

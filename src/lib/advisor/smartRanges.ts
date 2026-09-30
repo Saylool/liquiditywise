@@ -1,3 +1,4 @@
+import type { SmartPair } from "../analytics/smartLiquidity";
 import type { SmartLiquidityRead } from "./readSmartLiquidity";
 
 /*
@@ -27,3 +28,10 @@ export const smartRangesByPool = (read: SmartLiquidityRead | null): ReadonlyMap<
           { lowerRatio: medianLowerRatio, upperRatio: medianUpperRatio, positions },
         ]),
   );
+
+/**
+ * The measured pairs of one chain by pool address, lower-cased — what the
+ * alert pass looks a held pool up in. Empty where nothing is measured.
+ */
+export const smartPairsByPool = (read: SmartLiquidityRead | null): ReadonlyMap<string, SmartPair> =>
+  new Map(read === null || read.status !== "measured" ? [] : read.data.pairs.map((pair) => [pair.pool.id.toLowerCase(), pair]));

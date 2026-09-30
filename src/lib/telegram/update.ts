@@ -27,6 +27,8 @@ export type TelegramUpdate = z.infer<typeof TelegramUpdateSchema>;
 export type BotCommand =
   | { readonly kind: "start"; readonly argument: string | null }
   | { readonly kind: "stop" }
+  /** Turns the smart-money alerts on for the chat's link, or off if they are on. */
+  | { readonly kind: "smart" }
   | { readonly kind: "other" };
 
 /**
@@ -48,6 +50,8 @@ export const readCommand = (text: string | undefined): BotCommand | null => {
       return { kind: "start", argument: argument ?? null };
     case "stop":
       return { kind: "stop" };
+    case "smart":
+      return { kind: "smart" };
     default:
       return { kind: "other" };
   }

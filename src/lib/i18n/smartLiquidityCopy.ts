@@ -41,6 +41,35 @@ export type SmartLiquidityCopy = {
   /** Under an open position: where the pool's best-earning liquidity sits, beside where this position does. */
   readonly alongside: (smart: string, yours: string, count: string) => string;
   readonly notRead: (chain: string, chains: string) => string;
+  /** How the smart liquidity moved over the last days, from the measurements kept. */
+  readonly trend: {
+    readonly heading: (days: string) => string;
+    readonly intro: string;
+    readonly notYet: string;
+    readonly range: (then: string, now: string) => string;
+    readonly rangeNew: (now: string) => string;
+    readonly share: (then: string, now: string) => string;
+    readonly shareNew: (now: string) => string;
+    /** For a screen reader: what the little chart of a range's width shows. */
+    readonly widthLabel: (from: string, to: string) => string;
+    readonly gaining: string;
+    readonly losing: string;
+    readonly mover: (pair: string, from: string, to: string) => string;
+  };
+  /** The holders that keep turning up in the smart fifth. */
+  readonly holders: {
+    readonly heading: string;
+    readonly intro: (of: string) => string;
+    readonly notYet: string;
+    readonly seen: (appeared: string, of: string) => string;
+    readonly wallet: string;
+    readonly contract: string;
+    readonly contractNote: string;
+    readonly now: (positions: string, value: string) => string;
+    readonly gone: string;
+    /** What is kept about them, and what is not. */
+    readonly kept: string;
+  };
   readonly unavailable: string;
   readonly empty: string;
   readonly loading: string;
@@ -77,6 +106,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `Where the best-earning liquidity in this pool sits (median of ${count}): ${smart} · this position: ${yours}`,
     notRead: (chain, chains) =>
       `Positions cannot be listed on ${chain}: its data source keeps none. This page reads ${chains}.`,
+    trend: {
+      heading: (days) => `How it moved over the last ${days} days`,
+      intro:
+        "The smart positions' median range and their share of the smart money at the first measurement of the period and at the latest. Ranges are compared as prices, so the price moving alone does not show as a shift.",
+      notYet: "Trends appear once a day of measurements has been kept.",
+      range: (then, now) => `Range: ${then} → ${now}`,
+      rangeNew: (now) => `Range: ${now} · not among the top pairs at the start`,
+      share: (then, now) => `Share of the smart money: ${then} → ${now}`,
+      shareNew: (now) => `Share of the smart money: ${now}`,
+      widthLabel: (from, to) => `Range width, from ${from} to ${to}`,
+      gaining: "Gaining smart money",
+      losing: "Losing smart money",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "Holders that keep showing up",
+      intro: (of) => `Addresses in the smart fifth in at least half of the last ${of} measurements. One measurement's fifth is partly luck; being in it again and again is less so.`,
+      notYet: "Needs about two days of measurements before it can say who keeps showing up.",
+      seen: (n, of) => `In ${n} of ${of} measurements`,
+      wallet: "Wallet",
+      contract: "Contract",
+      contractNote:
+        "A contract: a vault, a bot or another program holds these positions, not one person's own wallet. The yield is that program's.",
+      now: (positions, value) => `${positions} smart positions now, worth ${value}`,
+      gone: "None among the smart positions in the latest measurement",
+      kept:
+        "These addresses are read from the chain and kept for a week to see which stay on the list. Nothing about who reads this page is kept.",
+    },
     unavailable: "The positions could not be measured just now.",
     empty: "No position met the floors this time.",
     loading: "Measuring what each position has earned…",
@@ -111,6 +168,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `Bu havuzda en çok kazanan likiditenin durduğu yer (${count} pozisyonun medyanı): ${smart} · bu pozisyon: ${yours}`,
     notRead: (chain, chains) =>
       `${chain} üzerinde pozisyonlar listelenemiyor: veri kaynağı hiç pozisyon tutmuyor. Bu sayfa ${chains} ağlarını okuyor.`,
+    trend: {
+      heading: (days) => `Son ${days} günde nasıl kaydı`,
+      intro:
+        "Akıllı pozisyonların medyan aralığı ve akıllı paradaki payları: dönemin ilk ölçümünde ve en son ölçümde. Aralıklar fiyat olarak karşılaştırılır; yani yalnızca fiyatın hareket etmesi bir kayma olarak görünmez.",
+      notYet: "Bir günlük ölçüm saklanınca eğilimler görünür.",
+      range: (then, now) => `Aralık: ${then} → ${now}`,
+      rangeNew: (now) => `Aralık: ${now} · başlangıçta en çok para tutan paritelerde yoktu`,
+      share: (then, now) => `Akıllı paradaki payı: ${then} → ${now}`,
+      shareNew: (now) => `Akıllı paradaki payı: ${now}`,
+      widthLabel: (from, to) => `Aralık genişliği, ${from} değerinden ${to} değerine`,
+      gaining: "Akıllı para kazananlar",
+      losing: "Akıllı para kaybedenler",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "Listede sürekli görünen sahipler",
+      intro: (of) => `Son ${of} ölçümün en az yarısında akıllı beşte birde olan adresler. Tek bir ölçümün beşte biri kısmen şanstır; tekrar tekrar orada olmak o kadar değil.`,
+      notYet: "Kimin sürekli göründüğünü söyleyebilmesi için yaklaşık iki günlük ölçüm gerekir.",
+      seen: (n, of) => `${of} ölçümün ${n} tanesinde`,
+      wallet: "Cüzdan",
+      contract: "Sözleşme",
+      contractNote:
+        "Bir sözleşme: bu pozisyonları tek bir kişinin kendi cüzdanı değil, bir kasa, bir bot ya da başka bir program tutuyor. Verim o programın verimidir.",
+      now: (positions, value) => `Şu an ${positions} akıllı pozisyon, değeri ${value}`,
+      gone: "En son ölçümde akıllı pozisyonlar arasında yok",
+      kept:
+        "Bu adresler zincirden okunur ve hangilerinin listede kaldığını görmek için bir hafta saklanır. Bu sayfayı kimin okuduğuna dair hiçbir şey saklanmaz.",
+    },
     unavailable: "Pozisyonlar şu an ölçülemedi.",
     empty: "Bu sefer hiçbir pozisyon eşikleri geçmedi.",
     loading: "Her pozisyonun kazancı ölçülüyor…",
@@ -145,6 +230,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `Wo die bestverdienende Liquidität in diesem Pool liegt (Median aus ${count}): ${smart} · diese Position: ${yours}`,
     notRead: (chain, chains) =>
       `Auf ${chain} lassen sich keine Positionen auflisten: ihre Datenquelle führt keine. Diese Seite liest ${chains}.`,
+    trend: {
+      heading: (days) => `Wie sie sich in den letzten ${days} Tagen bewegt hat`,
+      intro:
+        "Der mediane Bereich der klugen Positionen und ihr Anteil am klugen Geld bei der ersten Messung des Zeitraums und bei der letzten. Bereiche werden als Preise verglichen; eine bloße Preisbewegung erscheint also nicht als Verschiebung.",
+      notYet: "Trends erscheinen, sobald ein Tag an Messungen gespeichert ist.",
+      range: (then, now) => `Bereich: ${then} → ${now}`,
+      rangeNew: (now) => `Bereich: ${now} · anfangs nicht unter den größten Paaren`,
+      share: (then, now) => `Anteil am klugen Geld: ${then} → ${now}`,
+      shareNew: (now) => `Anteil am klugen Geld: ${now}`,
+      widthLabel: (from, to) => `Breite des Bereichs, von ${from} auf ${to}`,
+      gaining: "Gewinnt kluges Geld",
+      losing: "Verliert kluges Geld",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "Halter, die immer wieder auftauchen",
+      intro: (of) => `Adressen, die in mindestens der Hälfte der letzten ${of} Messungen im klugen Fünftel waren. Das Fünftel einer Messung ist zum Teil Glück; immer wieder darin zu sein, weniger.`,
+      notYet: "Es braucht etwa zwei Tage an Messungen, bevor sich sagen lässt, wer immer wieder auftaucht.",
+      seen: (n, of) => `In ${n} von ${of} Messungen`,
+      wallet: "Wallet",
+      contract: "Vertrag",
+      contractNote:
+        "Ein Vertrag: Ein Tresor, ein Bot oder ein anderes Programm hält diese Positionen, nicht die eigene Wallet einer Person. Die Rendite ist die dieses Programms.",
+      now: (positions, value) => `Jetzt ${positions} kluge Positionen, wert ${value}`,
+      gone: "Keine unter den klugen Positionen der letzten Messung",
+      kept:
+        "Diese Adressen werden von der Chain gelesen und eine Woche lang gespeichert, um zu sehen, welche auf der Liste bleiben. Nichts darüber, wer diese Seite liest, wird gespeichert.",
+    },
     unavailable: "Die Positionen ließen sich gerade nicht messen.",
     empty: "Diesmal hat keine Position die Schwellen erreicht.",
     loading: "Was jede Position verdient hat, wird gemessen…",
@@ -179,6 +292,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `Dónde está la liquidez que más gana en este pool (mediana de ${count}): ${smart} · esta posición: ${yours}`,
     notRead: (chain, chains) =>
       `No se pueden listar posiciones en ${chain}: su fuente de datos no guarda ninguna. Esta página lee ${chains}.`,
+    trend: {
+      heading: (days) => `Cómo se movió en los últimos ${days} días`,
+      intro:
+        "El rango mediano de las posiciones inteligentes y su parte del dinero inteligente en la primera medición del periodo y en la última. Los rangos se comparan como precios, así que el mero movimiento del precio no aparece como un desplazamiento.",
+      notYet: "Las tendencias aparecen cuando se ha guardado un día de mediciones.",
+      range: (then, now) => `Rango: ${then} → ${now}`,
+      rangeNew: (now) => `Rango: ${now} · no estaba entre los pares principales al principio`,
+      share: (then, now) => `Parte del dinero inteligente: ${then} → ${now}`,
+      shareNew: (now) => `Parte del dinero inteligente: ${now}`,
+      widthLabel: (from, to) => `Ancho del rango, de ${from} a ${to}`,
+      gaining: "Gana dinero inteligente",
+      losing: "Pierde dinero inteligente",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "Titulares que siguen apareciendo",
+      intro: (of) => `Direcciones que estuvieron en el quinto inteligente en al menos la mitad de las últimas ${of} mediciones. El quinto de una medición es en parte suerte; estar en él una y otra vez lo es menos.`,
+      notYet: "Hacen falta unos dos días de mediciones para poder decir quién sigue apareciendo.",
+      seen: (n, of) => `En ${n} de ${of} mediciones`,
+      wallet: "Billetera",
+      contract: "Contrato",
+      contractNote:
+        "Un contrato: una bóveda, un bot u otro programa tiene estas posiciones, no la billetera propia de una persona. El rendimiento es el de ese programa.",
+      now: (positions, value) => `Ahora ${positions} posiciones inteligentes, valen ${value}`,
+      gone: "Ninguna entre las posiciones inteligentes de la última medición",
+      kept:
+        "Estas direcciones se leen de la cadena y se guardan una semana para ver cuáles siguen en la lista. No se guarda nada sobre quién lee esta página.",
+    },
     unavailable: "No se pudieron medir las posiciones en este momento.",
     empty: "Esta vez ninguna posición superó los umbrales.",
     loading: "Midiendo lo que ha ganado cada posición…",
@@ -213,6 +354,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `أين تقع السيولة الأعلى ربحًا في هذا التجمّع (وسيط ${count}): ${smart} · هذا المركز: ${yours}`,
     notRead: (chain, chains) =>
       `لا يمكن سرد المراكز على ${chain}: مصدر بياناتها لا يحتفظ بأي منها. تقرأ هذه الصفحة ${chains}.`,
+    trend: {
+      heading: (days) => `كيف تحرّكت خلال آخر ${days} أيام`,
+      intro:
+        "النطاق الوسيط للمراكز الذكية وحصتها من المال الذكي عند أول قياس في الفترة وعند آخر قياس. تُقارَن النطاقات أسعارًا، فلا يظهر تحرّك السعر وحده على أنه انزياح.",
+      notYet: "تظهر الاتجاهات متى حُفظ يوم من القياسات.",
+      range: (then, now) => `النطاق: ${then} ← ${now}`,
+      rangeNew: (now) => `النطاق: ${now} · لم يكن بين أبرز الأزواج في البداية`,
+      share: (then, now) => `حصته من المال الذكي: ${then} ← ${now}`,
+      shareNew: (now) => `حصته من المال الذكي: ${now}`,
+      widthLabel: (from, to) => `اتساع النطاق، من ${from} إلى ${to}`,
+      gaining: "يكسب مالًا ذكيًا",
+      losing: "يفقد مالًا ذكيًا",
+      mover: (pair, from, to) => `${pair}: ${from} ← ${to}`,
+    },
+    holders: {
+      heading: "حائزون يظهرون باستمرار",
+      intro: (of) => `عناوين كانت في الخمس الذكي في نصف آخر ${of} قياسات على الأقل. الخمس في قياس واحد فيه شيء من الحظ؛ أما البقاء فيه مرة بعد مرة فأقل.`,
+      notYet: "يلزم نحو يومين من القياسات قبل أن يمكن القول من الذي يظهر باستمرار.",
+      seen: (n, of) => `في ${n} من ${of} قياسات`,
+      wallet: "محفظة",
+      contract: "عقد",
+      contractNote:
+        "عقد: خزنة أو بوت أو برنامج آخر يحمل هذه المراكز، لا محفظة شخص بعينه. والعائد عائد ذلك البرنامج.",
+      now: (positions, value) => `${positions} مراكز ذكية الآن، قيمتها ${value}`,
+      gone: "لا شيء بين المراكز الذكية في آخر قياس",
+      kept:
+        "تُقرأ هذه العناوين من السلسلة وتُحفظ أسبوعًا لمعرفة أيها يبقى في القائمة. ولا يُحفظ شيء عمّن يقرأ هذه الصفحة.",
+    },
     unavailable: "تعذّر قياس المراكز الآن.",
     empty: "لم يتجاوز أي مركز الحدود هذه المرة.",
     loading: "جارٍ قياس ما ربحه كل مركز…",
@@ -247,6 +416,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `इस पूल में सबसे ज़्यादा कमाने वाली लिक्विडिटी कहाँ है (${count} की माध्यिका): ${smart} · यह पोज़िशन: ${yours}`,
     notRead: (chain, chains) =>
       `${chain} पर पोज़िशनें सूचीबद्ध नहीं की जा सकतीं: उसका डेटा स्रोत कोई पोज़िशन नहीं रखता। यह पृष्ठ ${chains} पढ़ता है।`,
+    trend: {
+      heading: (days) => `पिछले ${days} दिनों में यह कैसे खिसकी`,
+      intro:
+        "स्मार्ट पोज़िशनों की माध्यिका सीमा और स्मार्ट पैसे में उनका हिस्सा: अवधि के पहले माप पर और सबसे ताज़ा पर। सीमाओं की तुलना कीमतों के रूप में होती है, इसलिए केवल कीमत के हिलने से कोई खिसकाव नहीं दिखता।",
+      notYet: "एक दिन के माप जमा होने पर रुझान दिखने लगते हैं।",
+      range: (then, now) => `दायरा: ${then} → ${now}`,
+      rangeNew: (now) => `दायरा: ${now} · शुरुआत में शीर्ष जोड़ियों में नहीं थी`,
+      share: (then, now) => `स्मार्ट पैसे में हिस्सा: ${then} → ${now}`,
+      shareNew: (now) => `स्मार्ट पैसे में हिस्सा: ${now}`,
+      widthLabel: (from, to) => `दायरे की चौड़ाई, ${from} से ${to}`,
+      gaining: "स्मार्ट पैसा पा रही हैं",
+      losing: "स्मार्ट पैसा खो रही हैं",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "जो धारक बार-बार दिखते हैं",
+      intro: (of) => `वे पते जो पिछले ${of} मापों में से कम से कम आधे में स्मार्ट पाँचवें हिस्से में रहे। एक माप का पाँचवाँ हिस्सा कुछ हद तक क़िस्मत है; बार-बार उसमें होना उतना नहीं।`,
+      notYet: "कौन बार-बार दिख रहा है यह कहने के लिए लगभग दो दिन के माप चाहिए।",
+      seen: (n, of) => `${of} में से ${n} मापों में`,
+      wallet: "वॉलेट",
+      contract: "कॉन्ट्रैक्ट",
+      contractNote:
+        "एक कॉन्ट्रैक्ट: ये पोज़िशनें किसी एक व्यक्ति के अपने वॉलेट की नहीं, बल्कि किसी वॉल्ट, बॉट या अन्य प्रोग्राम की हैं। आय उसी प्रोग्राम की है।",
+      now: (positions, value) => `अभी ${positions} स्मार्ट पोज़िशनें, मूल्य ${value}`,
+      gone: "ताज़ा माप की स्मार्ट पोज़िशनों में कोई नहीं",
+      kept:
+        "ये पते चेन से पढ़े जाते हैं और यह देखने के लिए एक हफ़्ते रखे जाते हैं कि कौन-से सूची में बने रहते हैं। इस पृष्ठ को कौन पढ़ता है, इसकी कोई बात नहीं रखी जाती।",
+    },
     unavailable: "इस समय पोज़िशनें मापी नहीं जा सकीं।",
     empty: "इस बार कोई पोज़िशन सीमाएँ पार नहीं कर सकी।",
     loading: "हर पोज़िशन की कमाई मापी जा रही है…",
@@ -279,6 +476,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     measuredAt: (time) => `测量时间 ${time}。`,
     alongside: (smart, yours, count) => `这个资金池中收益最高的流动性所在的区间（${count} 个仓位的中位数）：${smart} · 这个仓位：${yours}`,
     notRead: (chain, chains) => `${chain} 上无法列出仓位：它的数据源不保存任何仓位。本页读取 ${chains}。`,
+    trend: {
+      heading: (days) => `过去 ${days} 天里它是怎么移动的`,
+      intro:
+        "聪明仓位的中位区间及其在聪明资金中的占比：本期第一次测量时和最近一次。区间按价格来比较，所以仅仅价格在变，不会显示成区间移动。",
+      notYet: "保存满一天的测量后，趋势才会出现。",
+      range: (then, now) => `区间：${then} → ${now}`,
+      rangeNew: (now) => `区间：${now} · 一开始不在最大的交易对之列`,
+      share: (then, now) => `占聪明资金的比例：${then} → ${now}`,
+      shareNew: (now) => `占聪明资金的比例：${now}`,
+      widthLabel: (from, to) => `区间宽度，从 ${from} 到 ${to}`,
+      gaining: "聪明资金在流入",
+      losing: "聪明资金在流出",
+      mover: (pair, from, to) => `${pair}：${from} → ${to}`,
+    },
+    holders: {
+      heading: "一再出现的持有者",
+      intro: (of) => `在最近 ${of} 次测量中至少一半的次数里都处于聪明的前五分之一的地址。一次测量的前五分之一多少有运气成分；一再出现在其中，运气的成分就小得多。`,
+      notYet: "要有大约两天的测量，才能说出谁一再出现。",
+      seen: (n, of) => `${of} 次测量中出现 ${n} 次`,
+      wallet: "钱包",
+      contract: "合约",
+      contractNote:
+        "合约：持有这些仓位的是金库、机器人或别的程序，而不是某个人自己的钱包。收益是那个程序的收益。",
+      now: (positions, value) => `现有 ${positions} 个聪明仓位，价值 ${value}`,
+      gone: "最近一次测量的聪明仓位中没有它",
+      kept:
+        "这些地址是从链上读取的，保存一周，用来看哪些会一直留在名单上。没有保存任何关于谁在阅读本页的信息。",
+    },
     unavailable: "现在无法测量这些仓位。",
     empty: "这次没有仓位达到门槛。",
     loading: "正在测量每个仓位赚了多少…",
@@ -313,6 +538,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `Где стоит самая доходная ликвидность этого пула (медиана по ${count}): ${smart} · эта позиция: ${yours}`,
     notRead: (chain, chains) =>
       `В ${chain} позиции нельзя перечислить: её источник данных их не хранит. Эта страница читает ${chains}.`,
+    trend: {
+      heading: (days) => `Как она двигалась за последние ${days} дн.`,
+      intro:
+        "Медианный диапазон умных позиций и их доля в умных деньгах при первом измерении периода и при последнем. Диапазоны сравниваются как цены, так что одно лишь движение цены не выглядит сдвигом.",
+      notYet: "Тенденции появятся, когда накопится день измерений.",
+      range: (then, now) => `Диапазон: ${then} → ${now}`,
+      rangeNew: (now) => `Диапазон: ${now} · вначале не входила в число главных пар`,
+      share: (then, now) => `Доля умных денег: ${then} → ${now}`,
+      shareNew: (now) => `Доля умных денег: ${now}`,
+      widthLabel: (from, to) => `Ширина диапазона, от ${from} до ${to}`,
+      gaining: "Умных денег прибывает",
+      losing: "Умных денег убывает",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "Держатели, которые появляются снова и снова",
+      intro: (of) => `Адреса, которые были в умной пятой части не менее чем в половине последних ${of} измерений. Пятая часть одного измерения — отчасти удача; попадать в неё снова и снова — уже меньше.`,
+      notYet: "Нужно около двух дней измерений, чтобы можно было сказать, кто появляется снова и снова.",
+      seen: (n, of) => `В ${n} из ${of} измерений`,
+      wallet: "Кошелёк",
+      contract: "Контракт",
+      contractNote:
+        "Контракт: этими позициями владеет хранилище, бот или другая программа, а не собственный кошелёк одного человека. Доходность — этой программы.",
+      now: (positions, value) => `Сейчас умных позиций: ${positions}, стоимость ${value}`,
+      gone: "Среди умных позиций последнего измерения нет",
+      kept:
+        "Эти адреса читаются из сети и хранятся неделю, чтобы видеть, какие остаются в списке. Ничего о том, кто читает эту страницу, не хранится.",
+    },
     unavailable: "Сейчас позиции измерить не удалось.",
     empty: "На этот раз ни одна позиция не прошла пороги.",
     loading: "Измеряем, сколько заработала каждая позиция…",
@@ -347,6 +600,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     alongside: (smart, yours, count) => `Onde está a liquidez que mais ganha neste pool (mediana de ${count}): ${smart} · esta posição: ${yours}`,
     notRead: (chain, chains) =>
       `Não é possível listar posições na ${chain}: a fonte de dados dela não guarda nenhuma. Esta página lê ${chains}.`,
+    trend: {
+      heading: (days) => `Como ela se moveu nos últimos ${days} dias`,
+      intro:
+        "A faixa mediana das posições inteligentes e a parte delas no dinheiro inteligente na primeira medição do período e na última. As faixas são comparadas como preços, então só o preço se mover não aparece como um deslocamento.",
+      notYet: "As tendências aparecem quando um dia de medições foi guardado.",
+      range: (then, now) => `Faixa: ${then} → ${now}`,
+      rangeNew: (now) => `Faixa: ${now} · não estava entre os pares principais no começo`,
+      share: (then, now) => `Parte do dinheiro inteligente: ${then} → ${now}`,
+      shareNew: (now) => `Parte do dinheiro inteligente: ${now}`,
+      widthLabel: (from, to) => `Largura da faixa, de ${from} a ${to}`,
+      gaining: "Ganhando dinheiro inteligente",
+      losing: "Perdendo dinheiro inteligente",
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
+    },
+    holders: {
+      heading: "Titulares que continuam aparecendo",
+      intro: (of) => `Endereços que estiveram no quinto inteligente em pelo menos metade das últimas ${of} medições. O quinto de uma medição é em parte sorte; estar nele várias vezes é menos.`,
+      notYet: "São necessários uns dois dias de medições para dizer quem continua aparecendo.",
+      seen: (n, of) => `Em ${n} de ${of} medições`,
+      wallet: "Carteira",
+      contract: "Contrato",
+      contractNote:
+        "Um contrato: um cofre, um bot ou outro programa detém essas posições, não a carteira própria de uma pessoa. O rendimento é o desse programa.",
+      now: (positions, value) => `Agora ${positions} posições inteligentes, valendo ${value}`,
+      gone: "Nenhuma entre as posições inteligentes da última medição",
+      kept:
+        "Esses endereços são lidos da rede e guardados por uma semana para ver quais continuam na lista. Nada sobre quem lê esta página é guardado.",
+    },
     unavailable: "Não foi possível medir as posições agora.",
     empty: "Desta vez nenhuma posição passou dos limites.",
     loading: "Medindo o que cada posição ganhou…",
@@ -379,6 +660,34 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
     measuredAt: (time) => `測量時間 ${time}。`,
     alongside: (smart, yours, count) => `這個資金池中收益最高的流動性所在的區間（${count} 個倉位的中位數）：${smart} · 這個倉位：${yours}`,
     notRead: (chain, chains) => `${chain} 上無法列出倉位：它的資料來源不保存任何倉位。本頁讀取 ${chains}。`,
+    trend: {
+      heading: (days) => `過去 ${days} 天裡它是怎麼移動的`,
+      intro:
+        "聰明倉位的中位區間及其在聰明資金中的占比：本期第一次測量時和最近一次。區間按價格來比較，所以僅僅價格在變，不會顯示成區間移動。",
+      notYet: "儲存滿一天的測量後，趨勢才會出現。",
+      range: (then, now) => `區間：${then} → ${now}`,
+      rangeNew: (now) => `區間：${now} · 一開始不在最大的交易對之列`,
+      share: (then, now) => `占聰明資金的比例：${then} → ${now}`,
+      shareNew: (now) => `占聰明資金的比例：${now}`,
+      widthLabel: (from, to) => `區間寬度，從 ${from} 到 ${to}`,
+      gaining: "聰明資金在流入",
+      losing: "聰明資金在流出",
+      mover: (pair, from, to) => `${pair}：${from} → ${to}`,
+    },
+    holders: {
+      heading: "一再出現的持有者",
+      intro: (of) => `在最近 ${of} 次測量中至少一半的次數裡都處於聰明的前五分之一的地址。一次測量的前五分之一多少有運氣成分；一再出現在其中，運氣的成分就小得多。`,
+      notYet: "要有大約兩天的測量，才能說出誰一再出現。",
+      seen: (n, of) => `${of} 次測量中出現 ${n} 次`,
+      wallet: "錢包",
+      contract: "合約",
+      contractNote:
+        "合約：持有這些倉位的是金庫、機器人或別的程式，而不是某個人自己的錢包。收益是那個程式的收益。",
+      now: (positions, value) => `現有 ${positions} 個聰明倉位，價值 ${value}`,
+      gone: "最近一次測量的聰明倉位中沒有它",
+      kept:
+        "這些地址是從鏈上讀取的，儲存一週，用來看哪些會一直留在名單上。沒有儲存任何關於誰在閱讀本頁的資訊。",
+    },
     unavailable: "現在無法測量這些倉位。",
     empty: "這次沒有倉位達到門檻。",
     loading: "正在測量每個倉位賺了多少…",

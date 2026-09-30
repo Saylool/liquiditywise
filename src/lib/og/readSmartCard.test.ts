@@ -36,6 +36,8 @@ const measured = {
         valueUsd: 1,
         medianLowerRatio: 0.9,
         medianUpperRatio: 1.1,
+        medianLowerPrice: 2250,
+        medianUpperPrice: 2750,
         medianYearlyYield: 0.3,
         currentPrice: 2500,
       },

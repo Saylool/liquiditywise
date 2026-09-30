@@ -1,12 +1,8 @@
 import "server-only";
 
-import { chooseStore } from "../store/chooseStore";
 import type { KeyValueStore } from "../store/keyValueStore";
-import { nodeRedisConnect } from "../store/nodeRedisSocket";
-import { createRedisClient } from "../store/redisClient";
-import { createRedisKeyValueStore } from "../store/redisKeyValueStore";
+import { openStore } from "../store/openStore";
 import { createBotClient, type BotClient } from "./botApi";
-import { createUpstashKeyValueStore } from "./upstashKeyValue";
 
 /*
  * What a deployment needs for Telegram alerts, read from the environment.
@@ -28,20 +24,6 @@ export type TelegramEnvironment = {
   readonly UPSTASH_REDIS_REST_TOKEN?: string | undefined;
 };
 
-/** Opens whichever store this deployment named. Nothing is connected until used. */
-const buildStore = (environment: TelegramEnvironment): KeyValueStore | null => {
-  const choice = chooseStore(environment);
-  if (choice === null) return null;
-
-  return choice.kind === "redis"
-    ? createRedisKeyValueStore(createRedisClient({
-        connect: nodeRedisConnect(choice.address),
-        password: choice.address.password,
-        database: choice.address.database,
-      }))
-    : createUpstashKeyValueStore({ url: choice.url, token: choice.token });
-};
-
 export type TelegramSetup = {
   readonly store: KeyValueStore;
   readonly bot: BotClient;
@@ -56,13 +38,23 @@ const present = (value: string | undefined): string | null => {
   return trimmed === undefined || trimmed === "" ? null : trimmed;
 };
 
+/**
+ * The bot's public handle, for a link to it on the site — or `null` when alerts
+ * are not set up here, which is every reason [telegramSetupFrom] has to say so.
+ * A handle alone would advertise a bot that cannot store a link or answer.
+ */
+export const publicBotFrom = (environment: TelegramEnvironment): { readonly username: string; readonly url: string } | null => {
+  const setup = telegramSetupFrom(environment);
+  return setup === null ? null : { username: setup.username, url: `https://t.me/${setup.username}` };
+};
+
 /** Every piece, or `null`: a half-configured setup must not look like a working one. */
 export const telegramSetupFrom = (environment: TelegramEnvironment): TelegramSetup | null => {
   const token = present(environment.TELEGRAM_BOT_TOKEN);
   const username = present(environment.TELEGRAM_BOT_USERNAME)?.replace(/^@/, "") ?? null;
   const webhookSecret = present(environment.TELEGRAM_WEBHOOK_SECRET);
   const cronSecret = present(environment.CRON_SECRET);
-  const store = buildStore(environment);
+  const store = openStore(environment);
 
   if (!token || !username || !webhookSecret || !cronSecret || store === null) return null;
 
@@ -77,6 +69,18 @@ export const telegramSetupFrom = (environment: TelegramEnvironment): TelegramSet
 
 export const telegramSetup = (): TelegramSetup | null =>
   telegramSetupFrom({
+    TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME,
+    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
+    CRON_SECRET: process.env.CRON_SECRET,
+    REDIS_URL: process.env.REDIS_URL,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+
+/** The bot as the site's own settings name it, for the front page. Read per call, like every setting. */
+export const publicBot = (): { readonly username: string; readonly url: string } | null =>
+  publicBotFrom({
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME,
     TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,

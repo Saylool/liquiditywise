@@ -181,6 +181,9 @@ describe("the smart fifth", () => {
     expect(pair?.valueUsd).toBeCloseTo(result.smart.reduce((sum, { valueUsd }) => sum + valueUsd, 0), 6);
     expect(pair?.medianLowerRatio).toBeCloseTo(1.0001 ** -400, 12);
     expect(pair?.medianUpperRatio).toBeCloseTo(1.0001 ** 400, 12);
+    /* The same median edges as prices, which do not move when the price does. */
+    expect(pair?.medianLowerPrice).toBeCloseTo(1.0001 ** (TICK - 400) * 1e-12, 15);
+    expect(pair?.medianUpperPrice).toBeCloseTo(1.0001 ** (TICK + 400) * 1e-12, 15);
   });
 
   it("orders the pairs by the smart money in them", () => {

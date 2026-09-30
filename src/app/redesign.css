@@ -465,6 +465,13 @@ main:focus {
 .most-traded-section .section-description {
   max-width: 62ch;
 }
+/* Where the smart money sits and the Telegram bot, under the week's busiest pools. */
+.alerts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-block: 0 78px;
+}
 .pool-lookup {
   display: flex;
   flex-direction: column;

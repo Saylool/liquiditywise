@@ -4,14 +4,16 @@ import { EvmAddressSchema, IsoTimestampSchema } from "../../schemas/primitives";
 import { isLocale, type Locale } from "../i18n/locales";
 import { isLinkToken } from "./linkToken";
 import type { PositionSnapshot } from "./positionChanges";
+import type { SmartRangeBaselines } from "./smartShift";
 import type { KeyValueStore } from "../store/keyValueStore";
 import { type ChainId, isSupportedChainId } from "../chains/chains";
 
 /*
  * What this application keeps about a Telegram link, and for how long.
  *
- * It is the one thing this application stores about anybody, so it is worth
- * saying exactly: an Ethereum address the reader typed, the language they
+ * It is the one thing this application stores about a reader (the smart-money
+ * measurements beside it are public chain data, and say nothing of who reads
+ * a page), so it is worth saying exactly: an Ethereum address the reader typed, the language they
  * were reading in, the numeric id of the Telegram chat that presented the
  * token, and — once the checker has run — whether each of the address's
  * positions was inside its range last time. No name, no username, no message.
@@ -50,6 +52,18 @@ const LinkSchema = z.object({
    */
   chainId: z.number().int().refine(isSupportedChainId).optional(),
   snapshot: z.record(z.string(), z.union([z.boolean(), z.literal("near")]).nullable()).nullable(),
+  /*
+   * Present only for a chat that asked for smart-money alerts with /smart, and
+   * holding only where the best-earning liquidity of each pool the address
+   * holds a position in sat when the chat was last told. Absent on every link
+   * made before, and on every link that never asked, so those store exactly
+   * what they always did.
+   */
+  smart: z
+    .object({ ranges: z.record(z.string(), z.tuple([z.number(), z.number()])) })
+    .optional()
+    /* A record this cannot read is a chat that has not asked, not a link that has gone. */
+    .catch(undefined),
 });
 
 export type TelegramLink = {
@@ -62,6 +76,8 @@ export type TelegramLink = {
   readonly chainId?: ChainId;
   /** What the checker saw last time, or `null` before its first run. */
   readonly snapshot: PositionSnapshot | null;
+  /** Set once the chat has asked for smart-money alerts; `ranges` is what it was last told, by pool. */
+  readonly smart?: { readonly ranges: SmartRangeBaselines };
 };
 
 /** A read that could not be made, as distinct from a link that is not there. */
@@ -136,13 +152,40 @@ export const claimLink = async (
   return "claimed";
 };
 
-/** Records what the checker saw, so the next run has something to compare with. */
+/**
+ * Records what the checker saw, so the next run has something to compare with.
+ * `smartRanges` replaces what a chat that asked for smart-money alerts was last
+ * told; a chat that did not ask has none, whatever is passed.
+ */
 export const recordSnapshot = async (
   store: KeyValueStore,
   token: string,
   link: TelegramLink,
   snapshot: PositionSnapshot,
-): Promise<boolean> => writeLink(store, token, { ...link, snapshot });
+  smartRanges?: SmartRangeBaselines,
+): Promise<boolean> =>
+  writeLink(store, token, {
+    ...link,
+    snapshot,
+    ...(link.smart === undefined ? {} : { smart: { ranges: smartRanges ?? link.smart.ranges } }),
+  });
+
+/**
+ * Turns smart-money alerts on for a link, with nothing told yet, or off, which
+ * deletes what was kept for them. `false` when the write did not take.
+ */
+export const setSmartAlerts = async (
+  store: KeyValueStore,
+  token: string,
+  link: TelegramLink,
+  on: boolean,
+): Promise<boolean> => {
+  /* Rebuilt without the field rather than set to nothing, so what was kept is not written back. */
+  const rest: Record<string, unknown> = { ...link };
+  delete rest.smart;
+  const base = rest as unknown as TelegramLink;
+  return writeLink(store, token, on ? { ...base, smart: { ranges: {} } } : base);
+};
 
 /** Removes a link and takes it out of the checker's set, whichever side asked. */
 export const forgetLink = async (store: KeyValueStore, token: string): Promise<void> => {

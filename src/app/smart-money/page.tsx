@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SmartLiquidity } from "@/components/SmartLiquidity";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
+import { getSmartHistory } from "@/lib/advisor/getSmartHistory";
 import { getSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
@@ -62,12 +63,17 @@ export default async function SmartMoneyPage({
     );
   }
 
-  const read = await getSmartLiquidity(chain.id);
+  /* Nothing is measured where positions cannot be listed, so nothing is kept to look at either. */
+  const [read, history] = await Promise.all([
+    getSmartLiquidity(chain.id),
+    readsV3Positions(chain.id) ? getSmartHistory(chain.id) : null,
+  ]);
 
   return (
     <WorkspaceShell locale={locale} t={t} heading={copy.heading} network={chainLabel(chain.id, locale)}>
       <SmartLiquidity
         read={read}
+        history={history}
         chain={chain}
         chains={V3_POSITION_CHAINS}
         pageHref={localePath(locale, "/smart-money")}

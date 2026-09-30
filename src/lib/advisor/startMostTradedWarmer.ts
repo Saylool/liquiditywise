@@ -3,6 +3,7 @@ import "server-only";
 import { CHAINS, V3_POSITION_CHAINS } from "../chains/chains";
 import {
   getSmartLiquidity,
+  hydrateSmartLiquidity,
   SMART_LIQUIDITY_FIRST_WARM_AFTER_MS,
   SMART_LIQUIDITY_WARM_EVERY_MS,
 } from "./getSmartLiquidity";
@@ -31,6 +32,8 @@ export const startMostTradedWarmer = (): (() => void) => {
     firstAfterMs: EXPLANATION_FIRST_WARM_AFTER_MS,
   });
 
+  /* A restart finds the last measurement in the store, so no reader waits for a new one. */
+  for (const chain of V3_POSITION_CHAINS) void hydrateSmartLiquidity(chain.id);
   const stopSmart = startWarming({
     chains: V3_POSITION_CHAINS,
     warm: (chain) => getSmartLiquidity(chain.id, { refresh: true }),

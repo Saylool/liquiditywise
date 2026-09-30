@@ -9,6 +9,7 @@ import {
   listWatches,
   readLink,
   recordSnapshot,
+  setSmartAlerts,
   WATCHES_KEY,
 } from "./links";
 
@@ -159,5 +160,65 @@ describe("a link on a chain", () => {
     );
 
     expect(await readLink(store, TOKEN)).toBeNull();
+  });
+});
+
+describe("smart-money alerts on a link", () => {
+  const claimed = async () => {
+    const store = await pending();
+    await claimLink(store, TOKEN, 42);
+    return store;
+  };
+  const link = async (store: ReturnType<typeof fakeStore>) => (await readLink(store, TOKEN)) as NonNullable<Awaited<ReturnType<typeof readLink>>>;
+
+  it("are off on a link that never asked, and store nothing about them, whatever the checker passes", async () => {
+    const store = await claimed();
+    await recordSnapshot(store, TOKEN, await link(store), { "v3:1": true }, { "0xpool": [1, 2] });
+
+    const read = await link(store);
+    expect(read.smart).toBeUndefined();
+    expect(JSON.parse(store.data.get(`liquiditywise:telegram:link:${TOKEN}`) ?? "{}")).not.toHaveProperty("smart");
+  });
+
+  it("turn on with nothing told yet, keep what the checker records, and keep the record through a snapshot that passes none", async () => {
+    const store = await claimed();
+    expect(await setSmartAlerts(store, TOKEN, await link(store), true)).toBe(true);
+    expect((await link(store)).smart).toEqual({ ranges: {} });
+
+    await recordSnapshot(store, TOKEN, await link(store), { "v3:1": true }, { "0xpool": [100, 200] });
+    expect((await link(store)).smart).toEqual({ ranges: { "0xpool": [100, 200] } });
+
+    await recordSnapshot(store, TOKEN, await link(store), { "v3:1": false });
+    expect((await link(store)).smart).toEqual({ ranges: { "0xpool": [100, 200] } });
+    expect((await link(store)).snapshot).toEqual({ "v3:1": false });
+  });
+
+  it("turn off by deleting what was kept for them, and leave the rest of the link alone", async () => {
+    const store = await claimed();
+    await setSmartAlerts(store, TOKEN, await link(store), true);
+    await recordSnapshot(store, TOKEN, await link(store), { "v3:1": true }, { "0xpool": [100, 200] });
+    await setSmartAlerts(store, TOKEN, await link(store), false);
+
+    const read = await link(store);
+    expect(read.smart).toBeUndefined();
+    expect(read).toMatchObject({ address: ADDRESS, chatId: 42, snapshot: { "v3:1": true } });
+    expect(store.data.get(`liquiditywise:telegram:link:${TOKEN}`)).not.toContain("0xpool");
+  });
+
+  it("say whether the write took", async () => {
+    const store = await claimed();
+    const before = await link(store);
+    store.down = true;
+
+    expect(await setSmartAlerts(store, TOKEN, before, true)).toBe(false);
+  });
+
+  it("are read as not asked for, rather than losing the link, when what is kept for them cannot be read", async () => {
+    const store = await claimed();
+    const raw = JSON.parse(store.data.get(`liquiditywise:telegram:link:${TOKEN}`) ?? "{}");
+    store.data.set(`liquiditywise:telegram:link:${TOKEN}`, JSON.stringify({ ...raw, smart: { ranges: { "0xpool": "nope" } } }));
+
+    expect(await readLink(store, TOKEN)).toMatchObject({ address: ADDRESS, chatId: 42 });
+    expect((await link(store)).smart).toBeUndefined();
   });
 });

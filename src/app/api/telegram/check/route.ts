@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
+import { peekSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
+import { smartPairsByPool } from "@/lib/advisor/smartRanges";
 import { recordAlertRun } from "@/lib/health/appReadings";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { checkWatches } from "@/lib/telegram/checkWatches";
@@ -39,6 +41,8 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
     bot: setup.bot,
     readPositions: getAddressPositions,
     dictionary: getDictionary,
+    /* Only what the six-hourly measurement has kept: this pass never starts one. */
+    readSmartPairs: (chainId) => smartPairsByPool(peekSmartLiquidity(chainId)),
   });
 
   /*

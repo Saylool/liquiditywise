@@ -15,6 +15,13 @@ describe("readCommand", () => {
     expect(readCommand("  /start  ")).toEqual({ kind: "start", argument: null });
   });
 
+  it("reads /smart, with or without the bot's name, and not as a longer word", () => {
+    expect(readCommand("/smart")).toEqual({ kind: "smart" });
+    expect(readCommand("/smart@SomeBot")).toEqual({ kind: "smart" });
+    expect(readCommand("/SMART")).toEqual({ kind: "smart" });
+    expect(readCommand("/smartmoney")).toEqual({ kind: "other" });
+  });
+
   it("reads /stop, with or without the bot's name", () => {
     expect(readCommand("/stop")).toEqual({ kind: "stop" });
     expect(readCommand("/stop@SomeBot")).toEqual({ kind: "stop" });

@@ -2,12 +2,15 @@ import "server-only";
 
 import { processShared } from "../cache/processShared";
 import { rpcUrlFor, v3SubgraphIdFor } from "../chains/chainEnvironment";
-import { type ChainId, readsV3, readsV3Positions } from "../chains/chains";
+import { type ChainId, chainOf, readsV3, readsV3Positions } from "../chains/chains";
 import { loggingFetch } from "../observability/serverDiagnostics";
+import { openConfiguredStore } from "../store/openStore";
+import { fetchAddressKinds } from "../uniswap/ethereumAddressKinds";
 import { fetchEthereumV3InRangePositions, fetchEthereumV3LastChanges } from "../uniswap/ethereumV3InRangePositions";
 import { fetchEthereumV3PositionEarnings } from "../uniswap/ethereumV3PositionEarnings";
 import { getMostTraded } from "./getMostTraded";
 import { readSmartLiquidity, type SmartLiquidityRead } from "./readSmartLiquidity";
+import { readLatest, recordMeasurement } from "./smartStore";
 
 const LABEL = "smart-liquidity";
 
@@ -58,6 +61,58 @@ const readNow = (chainId: ChainId): Promise<SmartLiquidityRead> => {
 };
 
 /**
+ * Keeps a measurement past this process, and dates its holders' kinds. Never
+ * waited for and never throws: a store that is down costs a chart a point.
+ */
+const persist = async (chainId: ChainId, read: Extract<SmartLiquidityRead, { status: "measured" }>): Promise<void> => {
+  const store = openConfiguredStore();
+  if (store === null) return;
+
+  try {
+    const kinds = await fetchAddressKinds({
+      addresses: read.data.smart.map(({ owner }) => owner),
+      rpcUrl: rpcUrlFor(chainId),
+      fetchImpl: loggingFetch(LABEL),
+    });
+    const kept = await recordMeasurement({
+      store,
+      chain: chainOf(chainId).slug,
+      read,
+      kinds: kinds.status === "success" ? kinds.data : null,
+    });
+    console.info(
+      `[${LABEL}] kept chain=${chainId} latest=${kept.latest} series=${kept.series} holders=${kept.owners}${kinds.status === "success" ? "" : " (kinds unread)"}`,
+    );
+  } catch {
+    console.warn(`[${LABEL}] kept chain=${chainId} failed`);
+  }
+};
+
+/**
+ * Puts the measurement kept in the store back in the cache, when there is one
+ * that is still good and nothing newer: what makes a restart cost readers
+ * nothing. `true` when it did.
+ */
+export const hydrateSmartLiquidity = async (chainId: ChainId): Promise<boolean> => {
+  if (!readsV3Positions(chainId) || cached.has(chainId)) return false;
+  const store = openConfiguredStore();
+  if (store === null) return false;
+
+  try {
+    const kept = await readLatest(store, chainOf(chainId).slug);
+    if (kept === null) return false;
+    const measuredAt = Date.parse(kept.measuredAt);
+    if (!(Date.now() - measuredAt < SMART_LIQUIDITY_TTL_MS && measuredAt <= Date.now())) return false;
+    if (cached.has(chainId)) return false;
+
+    cached.set(chainId, { value: kept, writtenAt: measuredAt });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * What is kept for a chain, and never a read: for the pages that show the
  * smart-money range beside something else and must not wait tens of seconds
  * for it. `null` until the warmer's first round has run, or where positions
@@ -88,7 +143,10 @@ export const getSmartLiquidity = async (
   const started = Date.now();
   const reading = readNow(chainId)
     .then((value) => {
-      if (value.status === "measured") cached.set(chainId, { value, writtenAt: Date.now() });
+      if (value.status === "measured") {
+        cached.set(chainId, { value, writtenAt: Date.now() });
+        void persist(chainId, value);
+      }
       console.info(
         value.status === "measured"
           ? `[${LABEL}] chain=${chainId} pools=${value.poolsRead}/${value.poolsAsked} measured=${value.data.measured} smart=${value.data.smart.length} ${Date.now() - started}ms`

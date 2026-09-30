@@ -43,15 +43,22 @@ export type QuotedPair = {
 };
 
 /**
+ * Whether a price is written the other way round: when the token0 price is
+ * under one, which is when its reciprocal is the figure a reader expects. The
+ * rule itself, for a caller that has no tokens to hand the chooser.
+ */
+export const isInverted = (token0PriceInToken1: number): boolean => !(token0PriceInToken1 >= 1);
+
+/**
  * Chooses the direction from the current price alone.
  *
  * At exactly one the pool's own direction stands, so a pair at parity is not
  * flipped for nothing.
  */
 export const choosePriceQuote = (pair: QuotedPair, token0PriceInToken1: number): PriceQuote =>
-  token0PriceInToken1 >= 1
-    ? { base: pair.token0, quote: pair.token1, inverted: false }
-    : { base: pair.token1, quote: pair.token0, inverted: true };
+  isInverted(token0PriceInToken1)
+    ? { base: pair.token1, quote: pair.token0, inverted: true }
+    : { base: pair.token0, quote: pair.token1, inverted: false };
 
 /** One computed `token0PriceInToken1` figure, as the quote writes it. */
 export const quotedPrice = (quote: PriceQuote, token0PriceInToken1: number): number =>

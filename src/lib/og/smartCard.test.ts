@@ -20,6 +20,8 @@ const pair = (symbols: [string, string], currentPrice: number): SmartPair => ({
   valueUsd: 1,
   medianLowerRatio: 0.95,
   medianUpperRatio: 1.02,
+  medianLowerPrice: 0.95,
+  medianUpperPrice: 1.02,
   medianYearlyYield: 0.3,
   currentPrice,
 });

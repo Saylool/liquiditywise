@@ -6,6 +6,7 @@ import {
   edgeDistances,
   heldAboveRange,
   heldBelowRange,
+  isInverted,
   quotedEnds,
   quotedInterval,
   quotedPrice,
@@ -14,6 +15,18 @@ import {
 const USDC: Token = { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 };
 const WETH: Token = { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 };
 const pair = { token0: USDC, token1: WETH };
+
+describe("whether a price is written the other way round", () => {
+  it("is when the token0 price is under one, and not at one or over it, as the chooser decides", () => {
+    expect([0.0004, 0.999].map(isInverted)).toEqual([true, true]);
+    expect([1, 1.0001, 2500].map(isInverted)).toEqual([false, false, false]);
+    for (const price of [0.0004, 1, 2500]) expect(choosePriceQuote({ token0: USDC, token1: WETH }, price).inverted).toBe(isInverted(price));
+  });
+
+  it("is not for a price that is not a number, which no quote should be built from", () => {
+    expect(isInverted(Number.NaN)).toBe(true);
+  });
+});
 
 describe("choosePriceQuote", () => {
   /* The pool quotes ether in dollars: 0.000293 WETH per USDC. A reader is told the reverse. */

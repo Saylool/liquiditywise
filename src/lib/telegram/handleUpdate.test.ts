@@ -100,3 +100,45 @@ describe("handleUpdate", () => {
     expect(sent.map((item) => item.text)).toEqual(Array(2).fill(getDictionary("en").telegram.storeDown));
   });
 });
+
+describe("handleUpdate and /smart", () => {
+  it("turns the alerts on for the chat's link, says so in the link's language, and off again on the next ask", async () => {
+    const { handling, sent, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+
+    await handleUpdate(message("/smart", 42, "en"), handling);
+    expect((await readLink(store, TOKEN))?.smart).toEqual({ ranges: {} });
+    await handleUpdate(message("/smart", 42, "en"), handling);
+    expect((await readLink(store, TOKEN))?.smart).toBeUndefined();
+
+    expect(sent).toEqual([
+      { chatId: 42, text: getDictionary("de").telegram.smartOn },
+      { chatId: 42, text: getDictionary("de").telegram.smartOff },
+    ]);
+  });
+
+  it("tells a chat that follows nothing to connect first, in the sender's language, and changes nothing", async () => {
+    const { handling, sent, store } = await setup();
+    await handleUpdate(message("/smart", 99, "es"), handling);
+
+    expect(sent).toEqual([{ chatId: 99, text: getDictionary("es").telegram.smartNoLink }]);
+    expect((await readLink(store, TOKEN))?.smart).toBeUndefined();
+  });
+
+  it("says the store is down when it is, and when it did not take the change", async () => {
+    const { handling, sent, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+    store.down = true;
+    await handleUpdate(message("/smart", 42, "tr"), handling);
+
+    expect(sent[0]?.text).toBe(getDictionary("tr").telegram.storeDown);
+  });
+
+  it("does not leave the link's other fields behind when it turns on", async () => {
+    const { handling, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+    await handleUpdate(message("/smart", 42, "en"), handling);
+
+    expect(await readLink(store, TOKEN)).toMatchObject({ address: ADDRESS, chatId: 42, locale: "de" });
+  });
+});

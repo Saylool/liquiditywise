@@ -65,6 +65,13 @@ export type SmartPair = {
   /** The middle smart position's range edges, each as a ratio to the price now. */
   readonly medianLowerRatio: number;
   readonly medianUpperRatio: number;
+  /**
+   * The same edges as prices in the pool's own direction. Ratios move when the
+   * price does even if nobody moves their range; these move only when the
+   * liquidity itself does, which is what a change over time has to compare.
+   */
+  readonly medianLowerPrice: number;
+  readonly medianUpperPrice: number;
   readonly medianYearlyYield: number;
   readonly currentPrice: number;
 };
@@ -186,6 +193,8 @@ export const composeSmartLiquidity = (readings: readonly PoolReading[], nowSecon
       valueUsd: positions.reduce((sum, position) => sum + position.valueUsd, 0),
       medianLowerRatio: median(positions.map((position) => position.lowerPrice / position.currentPrice)) as number,
       medianUpperRatio: median(positions.map((position) => position.upperPrice / position.currentPrice)) as number,
+      medianLowerPrice: median(positions.map((position) => position.lowerPrice)) as number,
+      medianUpperPrice: median(positions.map((position) => position.upperPrice)) as number,
       medianYearlyYield: median(positions.map((position) => position.yearlyYield)) as number,
       currentPrice: first.currentPrice,
     };

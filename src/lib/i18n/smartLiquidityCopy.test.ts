@@ -75,4 +75,57 @@ describe("the smart-money page's words", () => {
       }
     }
   });
+
+  it("carries the trend and holder words in every language, none left in English or empty", () => {
+    const english = getSmartLiquidityCopy("en");
+    const words = (locale: (typeof LOCALES)[number]) => {
+      const { trend, holders } = getSmartLiquidityCopy(locale);
+      return {
+        trendIntro: trend.intro,
+        trendNotYet: trend.notYet,
+        gaining: trend.gaining,
+        losing: trend.losing,
+        holdersHeading: holders.heading,
+        holdersNotYet: holders.notYet,
+        wallet: holders.wallet,
+        contract: holders.contract,
+        contractNote: holders.contractNote,
+        gone: holders.gone,
+        kept: holders.kept,
+      };
+    };
+
+    for (const locale of LOCALES.filter((locale) => locale !== "en")) {
+      for (const [key, value] of Object.entries(words(locale))) {
+        expect(value.trim(), `${locale} ${key}`).not.toBe("");
+        /* German writes "Wallet" as English does; every other word is its own. */
+        if (!(locale === "de" && key === "wallet")) expect(value, `${locale} ${key}`).not.toBe(words("en")[key as keyof ReturnType<typeof words>]);
+      }
+    }
+    expect(english.trend.heading("7")).toContain("7");
+  });
+
+  it("put every figure into the trend and holder sentences, in every language", () => {
+    for (const locale of LOCALES) {
+      const { trend, holders } = getSmartLiquidityCopy(locale);
+      for (const [line, figures] of [
+        [trend.heading("6"), ["6"]],
+        [trend.range("-5%", "+7%"), ["-5%", "+7%"]],
+        [trend.rangeNew("+7%"), ["+7%"]],
+        [trend.share("20%", "31%"), ["20%", "31%"]],
+        [trend.shareNew("10%"), ["10%"]],
+        [trend.widthLabel("16%", "8%"), ["16%", "8%"]],
+        [trend.mover("USDC / WETH", "20%", "31%"), ["USDC / WETH", "20%", "31%"]],
+        [holders.intro("28"), ["28"]],
+        [holders.seen("27", "28"), ["27", "28"]],
+        [holders.now("3", "$50,000"), ["3", "$50,000"]],
+      ] as const) {
+        for (const figure of figures) expect(line, locale).toContain(figure);
+      }
+    }
+  });
+
+  it("says, in every language, that nothing is kept about who reads the page", () => {
+    for (const locale of LOCALES) expect(getSmartLiquidityCopy(locale).holders.kept.length, locale).toBeGreaterThan(40);
+  });
 });

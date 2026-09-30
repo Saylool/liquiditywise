@@ -4,7 +4,8 @@ import type { Position } from "../../schemas";
 import { formatPrice } from "../format/displayFormats";
 import { getDictionary } from "../i18n/dictionaries";
 import { LOCALES } from "../i18n/locales";
-import { alertText } from "./messages";
+import type { SmartPair } from "../analytics/smartLiquidity";
+import { alertText, smartShiftText } from "./messages";
 
 /*
  * USDC/WETH with USDC as token0, so the pool's own prices are WETH per USDC —
@@ -73,5 +74,73 @@ describe("an alert about a position off mainnet", () => {
 
   it("says nothing extra on mainnet", () => {
     expect(alertText({ kind: "left", position }, getDictionary("en"), "en")).toContain("(Uniswap v3)");
+  });
+});
+
+describe("the alert that the best-earning liquidity has moved", () => {
+  /* WETH per USDC 0.0003 to 0.0005 then, 0.0004 to 0.0006 now: quoted USDC per WETH, they invert and swap ends. */
+  const shift = {
+    pair: {
+      pool: { ...position.pool, feePpm: 500, token0: { chainId: 1, address: "0xa", symbol: "USDC", decimals: 6 }, token1: { chainId: 1, address: "0xb", symbol: "WETH", decimals: 18 } },
+      positions: 6,
+      valueUsd: 1,
+      medianLowerRatio: 1,
+      medianUpperRatio: 1,
+      medianLowerPrice: 0.0004,
+      medianUpperPrice: 0.0006,
+      medianYearlyYield: 0.3,
+      currentPrice: 0.0005,
+    } as unknown as SmartPair,
+    then: [0.0003, 0.0005] as const,
+    now: [0.0004, 0.0006] as const,
+  };
+
+  it("gives where it sat and where it sits as prices in the pair's quote, and the pair and the protocol", () => {
+    const text = smartShiftText(shift, getDictionary("en"), "en");
+
+    expect(text.startsWith("🔀 The best-earning liquidity in USDC/WETH (Uniswap v3) has moved.")).toBe(true);
+    expect(text).toContain(`${formatPrice(1 / 0.0005, "en")} – ${formatPrice(1 / 0.0003, "en")} USDC/WETH`);
+    expect(text).toContain(`${formatPrice(1 / 0.0006, "en")} – ${formatPrice(1 / 0.0004, "en")} USDC/WETH`);
+    expect(text).toContain(getDictionary("en").telegram.footer);
+  });
+
+  it("says where it sat before where it sits, not the other way round", () => {
+    const text = smartShiftText(shift, getDictionary("en"), "en");
+    const then = `${formatPrice(1 / 0.0005, "en")} – ${formatPrice(1 / 0.0003, "en")}`;
+    const now = `${formatPrice(1 / 0.0006, "en")} – ${formatPrice(1 / 0.0004, "en")}`;
+
+    expect(text.indexOf(then)).toBeGreaterThan(-1);
+    expect(text.indexOf(then)).toBeLessThan(text.indexOf(now));
+  });
+
+  it("names the chain beside the protocol off mainnet, and speaks the link's language", () => {
+    expect(smartShiftText(shift, getDictionary("en"), "en", 137)).toContain("(Uniswap v3 · Polygon)");
+    expect(smartShiftText(shift, getDictionary("tr"), "tr")).toContain("havuzunda en çok kazanan likidite");
+  });
+});
+
+describe("the smart-money alert's words", () => {
+  it("say, in every language, how to turn it on and off, that it is a chain measurement and not a suggestion, and where the button is", () => {
+    for (const locale of LOCALES) {
+      const { telegram } = getDictionary(locale);
+
+      expect(telegram.smartOn, locale).toContain("/smart");
+      expect(telegram.help, locale).toContain("/smart");
+      expect(telegram.intro, locale).toContain("/smart");
+      expect(telegram.smartNoLink, locale).toContain(telegram.connect);
+      expect(telegram.smartShift("A/B", "Uniswap v3", "1 – 2 X/Y", "3 – 4 X/Y"), locale).toMatch(/A\/B.*Uniswap v3.*1 – 2 X\/Y.*3 – 4 X\/Y/s);
+      expect(telegram.smartOff.trim().length, locale).toBeGreaterThan(10);
+    }
+  });
+
+  it("are not left in English", () => {
+    const english = getDictionary("en").telegram;
+
+    for (const locale of LOCALES.filter((locale) => locale !== "en")) {
+      const { telegram } = getDictionary(locale);
+      expect(telegram.smartOn, locale).not.toBe(english.smartOn);
+      expect(telegram.smartOff, locale).not.toBe(english.smartOff);
+      expect(telegram.smartNoLink, locale).not.toBe(english.smartNoLink);
+    }
   });
 });

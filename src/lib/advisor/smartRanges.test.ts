@@ -26,7 +26,7 @@ describe("the smart range of each pool", () => {
   it("is the pair's median edges and count, keyed by chain and lower-cased address", () => {
     const ranges = smartRangesByPool(
       measured([
-        { pool: pool(137, "0xABCD"), positions: 4, valueUsd: 1, medianLowerRatio: 0.9, medianUpperRatio: 1.1, medianYearlyYield: 0.3, currentPrice: 1 },
+        { pool: pool(137, "0xABCD"), positions: 4, valueUsd: 1, medianLowerRatio: 0.9, medianUpperRatio: 1.1, medianLowerPrice: 0.9, medianUpperPrice: 1.1, medianYearlyYield: 0.3, currentPrice: 1 },
       ]),
     );
 

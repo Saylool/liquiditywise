@@ -4,6 +4,7 @@ import { choosePriceQuote, quotedInterval, quotedPrice } from "../format/priceQu
 import type { Dictionary } from "../i18n/dictionaries";
 import type { Locale } from "../i18n/locales";
 import type { PositionChange } from "./positionChanges";
+import type { SmartShift } from "./smartShift";
 import { chainOf } from "../chains/chains";
 
 /*
@@ -50,6 +51,23 @@ const nearingPrices = (position: Position, edge: "lower" | "upper", locale: Loca
     price: formatPrice(quotedPrice(quote, current), locale),
     edge: formatPrice(quotedPrice(quote, edgePrice), locale),
   };
+};
+
+/**
+ * The alert for a pool whose best-earning liquidity has moved: where it sat and
+ * where it sits, as prices in the pair's own quote, like every other range
+ * here. Says whose measurement it is — the chain's — and that it is not advice
+ * for the reader's own position.
+ */
+export const smartShiftText = (shift: SmartShift, t: Dictionary, locale: Locale, chainId: number = 1): string => {
+  const { pool } = shift.pair;
+  const quote = choosePriceQuote(pool, shift.pair.currentPrice);
+  const range = (edges: readonly [number, number]): string => {
+    const quoted = quotedInterval(quote, { lower: edges[0], upper: edges[1] });
+    return `${formatPrice(quoted.lower, locale)} – ${formatPrice(quoted.upper, locale)} ${quote.quote.symbol}/${quote.base.symbol}`;
+  };
+
+  return `${t.telegram.smartShift(`${pool.token0.symbol}/${pool.token1.symbol}`, protocolOn(pool.protocolVersion, chainId), range(shift.then), range(shift.now))}\n\n${t.telegram.footer}`;
 };
 
 export const alertText = (change: PositionChange, t: Dictionary, locale: Locale, chainId: number = 1): string => {

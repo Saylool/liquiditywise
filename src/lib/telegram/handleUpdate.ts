@@ -1,17 +1,19 @@
 import type { Dictionary } from "../i18n/dictionaries";
 import { DEFAULT_LOCALE, type Locale, negotiateLocale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
-import { claimLink, findByChat, forgetLink } from "./links";
+import { claimLink, findByChat, forgetLink, setSmartAlerts } from "./links";
 import { readCommand, type TelegramUpdate } from "./update";
 import type { KeyValueStore } from "../store/keyValueStore";
 
 /*
  * What the bot does with one message.
  *
- * Two commands and a shrug. `/start <token>` ties this chat to the link the
+ * Three commands and a shrug. `/start <token>` ties this chat to the link the
  * token names and says so in the language the reader was using on the site.
- * `/stop` forgets whatever this chat was tied to. Anything else gets the
- * help line, in the language Telegram says the sender uses.
+ * `/stop` forgets whatever this chat was tied to. `/smart` turns the
+ * smart-money alerts on for the link, or off again: they are off until asked
+ * for, because the link was made for a narrower promise. Anything else gets
+ * the help line, in the language Telegram says the sender uses.
  *
  * Pure of the framework: the store and the bot are handed in, so a test can
  * watch what would have been sent without a network.
@@ -56,6 +58,28 @@ export const handleUpdate = async (
 
     await forgetLink(store, watch.token);
     await bot.sendMessage(chatId, dictionary(watch.link.locale).telegram.stopped);
+    return;
+  }
+
+  if (command.kind === "smart") {
+    const watch = await findByChat(store, chatId);
+    if (watch === undefined) {
+      await bot.sendMessage(chatId, fallback.telegram.storeDown);
+      return;
+    }
+    if (watch === null) {
+      await bot.sendMessage(chatId, fallback.telegram.smartNoLink);
+      return;
+    }
+
+    /* Turned on by the first ask, and off by the next: the same command, so there is one thing to remember. */
+    const turningOn = watch.link.smart === undefined;
+    const t = dictionary(watch.link.locale);
+    if (!(await setSmartAlerts(store, watch.token, watch.link, turningOn))) {
+      await bot.sendMessage(chatId, t.telegram.storeDown);
+      return;
+    }
+    await bot.sendMessage(chatId, turningOn ? t.telegram.smartOn : t.telegram.smartOff);
     return;
   }
 
