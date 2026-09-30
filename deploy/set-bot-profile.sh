@@ -27,7 +27,7 @@ api() {
 
 DESC_EN='This bot follows the Uniswap positions of one Ethereum address and tells you when one nears the edge of its price range, leaves it, or comes back.
 
-You link an address on liquiditywise.com; nothing is stored until you do, and then it is the address and this chat, plus, if you send /smart, where a pool's smart-money range sat. Send /stop and both are deleted at once, and from the encrypted backups within seven days.
+You link an address on liquiditywise.com; nothing is stored until you do, and then it is the address and this chat, plus, if you send /smart, where the smart-money range of a pool sat. Send /stop and both are deleted at once, and from the encrypted backups within seven days.
 
 Reads public on-chain data; cannot sign or send anything. Information only, not advice.'
 
