@@ -6,7 +6,7 @@ import { getSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
-import { V3_POSITION_CHAINS } from "@/lib/chains/chains";
+import { readsV3Positions, V3_POSITION_CHAINS } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -28,10 +28,11 @@ export async function generateMetadata({
   const { locale } = await getRequestDictionary();
   const copy = getSmartLiquidityCopy(locale);
   const chain = readRequestedChain((await searchParams)[CHAIN_PARAMETER]);
-  const onMainnet = chain === null || chain.id === 1;
+  /* A chain's own title only where its positions are read; elsewhere the page says it cannot. */
+  const named = chain !== null && chain.id !== 1 && readsV3Positions(chain.id);
 
   return {
-    title: `${onMainnet ? copy.title : copy.titleOn(chain.name)} · LiquidityWise`,
+    title: `${named ? copy.titleOn(chain.name) : copy.title} · LiquidityWise`,
     description: copy.description,
     alternates: await getOpenPageAlternates("/smart-money"),
   };
