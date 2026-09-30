@@ -6,6 +6,7 @@ import {
   formatMeasuredFeePpm,
   formatMultiplier,
   formatPercent,
+  formatWholePercent,
   formatPrice,
   formatTick,
   formatUsd,
@@ -49,6 +50,15 @@ describe("formatPrice", () => {
     for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
       expect(formatPrice(value)).toBe(ABSENT);
     }
+  });
+});
+
+describe("formatWholePercent", () => {
+  it("states a chosen share as a round figure, in the reader's own way of writing it", () => {
+    expect(formatWholePercent(0.2)).toBe("20%");
+    expect(formatWholePercent(0.2, "tr")).toBe("%20");
+    expect(formatWholePercent(0.2, "de")).toBe("20\u00a0%");
+    expect(formatWholePercent(Number.NaN)).not.toContain("NaN");
   });
 });
 

@@ -10,8 +10,10 @@ import {
   isSupportedChainId,
   nativeSymbolOf,
   readsV3,
+  readsV3Positions,
   readsV4,
   V3_CHAINS,
+  V3_POSITION_CHAINS,
   V4_CHAINS,
 } from "./chains";
 import { poolName } from "../usage/usageLines";
@@ -99,6 +101,13 @@ describe("the chains v4 is read on", () => {
     expect([readsV3(1), readsV3(130)]).toEqual([true, false]);
     expect(poolIdentityFor("v3", POOL, 130)).toBeNull();
     expect(poolIdentityFor("v4", `0x${"e5".repeat(32)}`, 130)?.chainId).toBe(130);
+  });
+});
+
+describe("the chains positions can be listed on", () => {
+  it("are mainnet and Polygon, whose v3 sources keep positions, and no other", () => {
+    expect(V3_POSITION_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "polygon"]);
+    expect([1, 137, 8453, 42161, 130, 10].map((id) => readsV3Positions(id as 1))).toEqual([true, true, false, false, false, false]);
   });
 });
 

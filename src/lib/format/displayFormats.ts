@@ -76,6 +76,8 @@ const scientificPercent = byLocale(
     }),
 );
 
+const wholePercent = byLocale((tag) => new Intl.NumberFormat(tag, { style: "percent", maximumFractionDigits: 0 }));
+
 const wholeNumber = byLocale((tag) => new Intl.NumberFormat(tag, { maximumFractionDigits: 0 }));
 
 /** Enough places for the multipliers anyone would ask for, and no trailing zero. */
@@ -163,6 +165,10 @@ export const formatPercent = (ratio: number, locale: Locale = DEFAULT_FORMAT_LOC
 
   return standardPercent[locale].format(ratio);
 };
+
+/** A share stated as a round figure — "the top 20%" — where decimals would claim a precision nobody chose. */
+export const formatWholePercent = (ratio: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string =>
+  Number.isFinite(ratio) ? wholePercent[locale].format(ratio) : ABSENT;
 
 /** A plain count, grouped. Rounds nothing away: every caller passes an integer. */
 export const formatWhole = (value: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string =>

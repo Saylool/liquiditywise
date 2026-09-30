@@ -81,6 +81,7 @@ export const BALANCE_OF_SELECTOR = "0x70a08231";
 export const TOKEN_OF_OWNER_BY_INDEX_SELECTOR = "0x2f745c59";
 export const POSITIONS_SELECTOR = "0x99fbab88";
 export const SLOT0_SELECTOR = "0x3850c7bd";
+export const OWNER_OF_SELECTOR = "0x6352211e";
 
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 
@@ -101,6 +102,10 @@ export const tokenOfOwnerByIndexCalldata = (owner: string, index: number): strin
 
   return `${TOKEN_OF_OWNER_BY_INDEX_SELECTOR}${argumentWord(owner)}${argumentWord(index.toString(16))}`;
 };
+
+/** `ownerOf(tokenId)`: who holds a position now, which the chain says and a listing may not. */
+export const ownerOfCalldata = (tokenId: string): string | null =>
+  /^[0-9]+$/.test(tokenId) ? `${OWNER_OF_SELECTOR}${argumentWord(BigInt(tokenId).toString(16))}` : null;
 
 /** `positions(tokenId)`: everything the manager records about one position. */
 export const positionsCalldata = (tokenId: string): string | null =>

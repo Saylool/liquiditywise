@@ -7,6 +7,7 @@ import { getDictionary } from "./dictionaries";
 import { getInterfaceCopy } from "./interface";
 import { getMostTradedCopy } from "./mostTradedCopy";
 import { getPositionOutlookCopy } from "./positionOutlookCopy";
+import { getSmartLiquidityCopy } from "./smartLiquidityCopy";
 
 /*
  * Traditional Chinese, held to the one thing its neighbour cannot check.
@@ -132,6 +133,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     topics: getTopicCopy,
     mostTraded: getMostTradedCopy,
     positionOutlook: getPositionOutlookCopy,
+    smartLiquidity: getSmartLiquidityCopy,
   } as const;
 
   it("carries no character that only exists in the Simplified script, in any copy module", () => {

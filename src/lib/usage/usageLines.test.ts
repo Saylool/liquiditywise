@@ -35,6 +35,8 @@ describe("what a visit line records", () => {
     expect(visit("/compare?chain=solana")?.chain).toBe("unknown");
     expect(visit("/pool?q=weth")?.chain).toBe("ethereum");
     expect(visit("/hooks?chain=base")?.chain).toBe("base");
+    expect(visit("/smart-money?chain=polygon")?.chain).toBe("polygon");
+    expect(visit("/smart-money")?.page).toBe("/smart-money");
     expect(visit("/learn?chain=base")?.chain).toBeNull();
     expect(visitLine(visit("/") ?? (null as never))).toBe("[visit] page=/ pool=- locale=tr bot=0 outcome=served");
   });

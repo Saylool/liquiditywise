@@ -10,7 +10,7 @@
  */
 
 export const CHAINS = [
-  { id: 1, slug: "ethereum", name: "Ethereum", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
+  { id: 1, slug: "ethereum", name: "Ethereum", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: true, native: "ETH" },
   /*
    * "days": Base's v3 subgraph answers no query that filters pools by a
    * token's symbol — measured on 2026-09-25, every shape of it failed at the
@@ -39,8 +39,8 @@ export const CHAINS = [
    * `v3Pairs: "days"` for the same reason: Base's v3 pair query answered in
    * 10.5 to 14.5 seconds on 2026-09-25, and still took ten on 2026-09-27.
    */
-  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days", native: "ETH" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
+  { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days", v3Positions: false, native: "ETH" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
   /*
    * v4 alone. Uniswap's own chain, where the week's trading is v4's: its v4
    * subgraph answered the day table in half a second, two seconds behind the
@@ -48,13 +48,13 @@ export const CHAINS = [
    * 2026-09-27). The one public v3 subgraph for it has no indexer serving it.
    * `v3Search` and `v3Pairs` are never read where `v3` is false.
    */
-  { id: 130, slug: "unichain", name: "Unichain", v3: false, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
+  { id: 130, slug: "unichain", name: "Unichain", v3: false, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
   /*
    * OP Mainnet, v3 and v4, from the subgraphs .env.example names (measured
    * 2026-09-27: the week's day table in about a second on each, seconds behind
    * the chain, with the factory and PoolManager Uniswap publishes for it).
    */
-  { id: 10, slug: "optimism", name: "OP Mainnet", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", native: "ETH" },
+  { id: 10, slug: "optimism", name: "OP Mainnet", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
   /*
    * Polygon PoS. Its own currency is POL, not ether: a v4 pool's zero address
    * is POL there, and its subgraphs price every token in POL where the others
@@ -65,7 +65,7 @@ export const CHAINS = [
    * indexers" on 2026-09-27, fifteen seconds and more, while their day table
    * answered in three.
    */
-  { id: 137, slug: "polygon", name: "Polygon", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "pools", native: "POL" },
+  { id: 137, slug: "polygon", name: "Polygon", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "pools", v3Positions: true, native: "POL" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];
@@ -91,6 +91,16 @@ export type V3ChainId = Extract<Chain, { v3: true }>["id"];
 
 /** Whether v3 pools are read on a chain; off it, a v3 page says so rather than asking mainnet. */
 export const readsV3 = (chainId: ChainId): chainId is V3ChainId => chainById(chainId).v3;
+
+/**
+ * Where the positions inside v3 pools can be listed — which the smart-money
+ * page needs and nothing else does. Only mainnet's and Polygon's v3 subgraphs
+ * keep positions (measured 2026-09-30): Arbitrum's and OP Mainnet's have no
+ * such entity, and Base's refused the query with "bad indexers".
+ */
+export const readsV3Positions = (chainId: ChainId): boolean => chainById(chainId).v3Positions;
+
+export const V3_POSITION_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v3Positions);
 
 /** The chains v4 pools are read on. */
 export const V4_CHAINS: readonly Chain[] = CHAINS.filter((chain) => chain.v4);

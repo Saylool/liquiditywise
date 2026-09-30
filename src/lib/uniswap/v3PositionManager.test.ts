@@ -13,6 +13,8 @@ import {
   POSITIONS_SELECTOR,
   positionsCalldata,
   SLOT0_SELECTOR,
+  OWNER_OF_SELECTOR,
+  ownerOfCalldata,
   TOKEN_OF_OWNER_BY_INDEX_SELECTOR,
   tokenOfOwnerByIndexCalldata,
   POSITION_MANAGER_CODE_HASH,
@@ -48,6 +50,7 @@ describe("the selectors", () => {
     ["tokenOfOwnerByIndex(address,uint256)", TOKEN_OF_OWNER_BY_INDEX_SELECTOR],
     ["positions(uint256)", POSITIONS_SELECTOR],
     ["slot0()", SLOT0_SELECTOR],
+    ["ownerOf(uint256)", OWNER_OF_SELECTOR],
   ])("%s", (signature, selector) => {
     const digest = Array.from(keccak256(utf8Bytes(signature)).slice(0, 4), (byte) =>
       byte.toString(16).padStart(2, "0"),
@@ -71,6 +74,11 @@ describe("calldata", () => {
 
   it("asks about one token id, however large", () => {
     expect(positionsCalldata("1112391")?.endsWith("10f947")).toBe(true);
+  });
+
+  it("asks who holds one token id, as one word after the selector", () => {
+    expect(ownerOfCalldata("1112391")).toBe(`${OWNER_OF_SELECTOR}${"10f947".padStart(64, "0")}`);
+    expect(ownerOfCalldata("0x10fb87")).toBeNull();
   });
 
   it.each([
