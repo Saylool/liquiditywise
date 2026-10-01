@@ -1,0 +1,10 @@
+[
+  { "image": "home.jpg", "weight": 6.7, "lines": [{ "t": "LiquidityWise", "size": 110, "y": 800, "weight": 700 }, { "t": "Choose your range with facts, not guesses.", "size": 44, "y": 880, "weight": 400 }] },
+  { "image": "pool-chart.jpg", "weight": 13.1, "lines": [{ "t": "Too narrow, you stop earning.", "size": 64, "y": 800, "weight": 700 }, { "t": "Too wide, you earn very little.", "size": 64, "y": 880, "weight": 700 }] },
+  { "image": "pool-range.jpg", "weight": 7.4, "lines": [{ "t": "The range is worked out by code", "size": 64, "y": 800, "weight": 700 }, { "t": "from how far the pair really moved", "size": 44, "y": 880, "weight": 400 }] },
+  { "image": "pool-chart.jpg", "weight": 11.4, "lines": [{ "t": "AI explains. It never states a number.", "size": 64, "y": 800, "weight": 700 }, { "t": "Every figure is cross-checked first.", "size": 44, "y": 880, "weight": 400 }] },
+  { "image": "smart-summary.jpg", "weight": 5.25, "lines": [{ "t": "Where the best-earning liquidity sits", "size": 64, "y": 800, "weight": 700 }, { "t": "measured on chain", "size": 44, "y": 880, "weight": 400 }] },
+  { "image": "holdings.jpg", "weight": 8.75, "lines": [{ "t": "Track your positions from a public address", "size": 60, "y": 800, "weight": 700 }, { "t": "Read-only. Telegram alert when one leaves its range.", "size": 44, "y": 880, "weight": 400 }] },
+  { "image": "hero.jpg", "weight": 2.6, "lines": [{ "t": "10 languages · 6 networks", "size": 72, "y": 830, "weight": 700 }] },
+  { "image": "home.jpg", "weight": 6.2, "lines": [{ "t": "liquiditywise.com", "size": 96, "y": 770, "weight": 700 }, { "t": "Independent and educational. Not affiliated with Uniswap Labs.", "size": 38, "y": 840, "weight": 400 }, { "t": "Made with AI voice-over. Site footage is real.", "size": 32, "y": 895, "weight": 400 }] }
+]

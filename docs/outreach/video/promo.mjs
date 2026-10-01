@@ -1,12 +1,14 @@
-// The 30-second promo: the generated background, re-tinted for each caption,
-// the captions drawn here (so they are spelled right), and a voice-over.
+// The promo: real pictures of the site, moved slowly behind captions drawn
+// here (so they are spelled right), and a voice-over.
 //
-//   node docs/outreach/video/promo.mjs --bg assets/intro-bg.mp4 --voice voice.mp3 [--shots shots.json] [--out promo.mp4]
+//   node docs/outreach/video/promo.mjs --voice voice.mp3 --shots shots-site.json [--dir assets/shots] [--bg intro-bg.mp4] [--out promo.mp4]
 //
-// No footage of the site and no generated interface: only light, words and
-// the address. Run on the voice from Higgsfield, or any other.
+// A shot is { image, weight, lines } — an image from --dir, how long it stays
+// relative to the others, and its caption lines — or { hue, weight, lines }
+// over the generated --bg clip. The pictures are screenshots of the real
+// pages; nothing here draws an interface.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
@@ -17,12 +19,13 @@ const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
 };
-const bg = arg("bg");
 const voice = arg("voice");
+const shotsFile = arg("shots");
+const imageDir = arg("dir", "docs/outreach/video/assets/shots");
+const bg = arg("bg", "docs/outreach/video/assets/intro-bg.mp4");
 const out = arg("out", "liquiditywise-promo.mp4");
-const shotsFile = arg("shots", null);
-if (!bg || !voice) {
-  console.error("usage: promo.mjs --bg intro-bg.mp4 --voice voice.mp3 [--out out.mp4]");
+if (!voice || !shotsFile) {
+  console.error("usage: promo.mjs --voice voice.mp3 --shots shots.json [--dir DIR] [--bg clip.mp4] [--out out.mp4]");
   process.exit(1);
 }
 
@@ -35,31 +38,45 @@ const durationOf = (file) =>
 const LEAD = 1.5, TAIL = 4;
 const voiceLength = durationOf(voice);
 const total = LEAD + voiceLength + TAIL;
+const shots = JSON.parse(readFileSync(shotsFile, "utf8"));
+const sum = shots.reduce((s, { weight = 1 }) => s + weight, 0);
 
-const defaultShots = [
-  { hue: 0, lines: [{ t: "LiquidityWise", size: 150, y: 520, weight: 700 }, { t: "Every figure computed by code. Never guessed by AI.", size: 48, y: 620, weight: 400 }] },
-  { hue: 35, lines: [{ t: "Every figure computed by code", size: 90, y: 560, weight: 700 }] },
-  { hue: 80, lines: [{ t: "Explained in plain language", size: 90, y: 520, weight: 700 }, { t: "in 10 languages", size: 90, y: 630, weight: 700 }] },
-  { hue: -40, lines: [{ t: "Where the best-earning liquidity sits", size: 80, y: 520, weight: 700 }, { t: "measured on chain", size: 56, y: 620, weight: 400 }] },
-  { hue: 0, lines: [{ t: "liquiditywise.com", size: 120, y: 480, weight: 700 }, { t: "Independent and educational.", size: 48, y: 580, weight: 400 }, { t: "Not affiliated with Uniswap Labs. Not financial advice.", size: 40, y: 650, weight: 400 }, { t: "Made with AI: visuals and voice-over.", size: 34, y: 760, weight: 400 }] },
-];
-const shots = shotsFile === null ? defaultShots : JSON.parse((await import("node:fs")).readFileSync(shotsFile, "utf8"));
-const per = total / shots.length;
+const caption = async (png, shot) => {
+  const lines = shot.lines;
+  const panel =
+    shot.image === undefined
+      ? ""
+      : `<rect x="140" y="${lines[0].y - lines[0].size * 0.95}" width="1640" height="${lines.at(-1).y + 28 - (lines[0].y - lines[0].size * 0.95)}" rx="22" fill="rgba(8,8,12,0.78)"/>`;
+  const text = lines
+    .map(({ t, size, y, weight }) => `<text x="50%" y="${y}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${weight === 700 ? "#ffffff" : "#d6dcff"}">${t}</text>`)
+    .join("");
+  await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${panel}${text}</svg>`)).png().toFile(png);
+};
 
 const files = [];
 for (const [i, shot] of shots.entries()) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">${shot.lines
-    .map(({ t, size, y, weight }) => `<text x="50%" y="${y}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="${weight === 700 ? "#ffffff" : "#cfd8ff"}">${t}</text>`)
-    .join("")}</svg>`;
+  const seconds = (total * (shot.weight ?? 1)) / sum;
+  const frames = Math.round(seconds * FPS);
   const png = join(dir, `s${i}.png`);
-  await sharp(Buffer.from(svg)).png().toFile(png);
+  await caption(png, shot);
   const file = join(dir, `s${i}.mp4`);
-  run([
-    "-stream_loop", "-1", "-ss", String((i * 1.3) % 6), "-i", bg, "-loop", "1", "-i", png,
-    "-filter_complex",
-    `[0:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=${FPS},hue=h=${shot.hue},eq=brightness=-0.1[b];[b][1:v]overlay=0:0:format=auto,fade=t=in:d=0.5,fade=t=out:st=${(per - 0.5).toFixed(2)}:d=0.5[v]`,
-    "-map", "[v]", "-t", per.toFixed(3), "-pix_fmt", "yuv420p", "-an", file,
-  ]);
+  const fades = `fade=t=in:d=0.5,fade=t=out:st=${(seconds - 0.5).toFixed(2)}:d=0.5`;
+  if (shot.image !== undefined) {
+    /* A screenshot, cut to 16:9, upscaled, and moved slowly: a push-in that drifts down the page. */
+    run([
+      "-loop", "1", "-i", join(imageDir, shot.image), "-loop", "1", "-i", png,
+      "-filter_complex",
+      `[0:v]crop=800:450:0:25,scale=3840:2160:flags=lanczos,zoompan=z='1+0.10*on/${frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)+${i % 2 === 0 ? "" : "-"}20*on/${frames}':d=${frames}:s=${W}x${H}:fps=${FPS}[b];[b][1:v]overlay=0:0:format=auto,${fades}[v]`,
+      "-map", "[v]", "-t", seconds.toFixed(3), "-pix_fmt", "yuv420p", "-an", file,
+    ]);
+  } else {
+    run([
+      "-stream_loop", "-1", "-ss", String((i * 1.3) % 6), "-i", bg, "-loop", "1", "-i", png,
+      "-filter_complex",
+      `[0:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},fps=${FPS},hue=h=${shot.hue ?? 0},eq=brightness=-0.1[b];[b][1:v]overlay=0:0:format=auto,${fades}[v]`,
+      "-map", "[v]", "-t", seconds.toFixed(3), "-pix_fmt", "yuv420p", "-an", file,
+    ]);
+  }
   files.push(file);
 }
 
