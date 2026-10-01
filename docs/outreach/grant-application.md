@@ -1,6 +1,6 @@
 # Uniswap Foundation grant — application draft
 
-Adapt to the current form and scope before sending: the programme's categories, size limits and deadlines change, and this was written without access to the live application page. Fill in every `[…]` from facts, never from hopes.
+Form: https://share.hsforms.com/1fxQjPQTgTYmPwlYxxKlSGQsdca9 (Uniswap Foundation Grants, category: Ecosystem — tooling). Requirements stated on developers.uniswap.org: something deployed on Unichain and/or Uniswap v4 or a working prototype, documentation with setup and demo, and measurable impact. Check the form's own fields before sending. Fill in every `[…]` from facts, never from hopes.
 
 ## One-line summary
 LiquidityWise is an independent, educational advisor for Uniswap v3 and v4 liquidity providers, in ten languages, where every figure is computed by code and the language model is never allowed to state one.
@@ -25,7 +25,13 @@ Education and multilingual reach for Uniswap's own products, with an honesty rul
 ## Evidence
 - Live site and the 2-minute demo: [link]
 - Open methodology: the `/smart-money` page states how "smart" is decided and what the figure leaves out.
-- Usage, from the site's own weekly report (counts only, never who): [paste numbers, with dates]
+- Usage, from the site's own report (counts only, never who). First week measured, 25 Sep – 1 Oct 2026, seven days up to the moment of counting:
+  - 981 pages opened by people (1,779 more by bots, excluded); 32 different pools opened; 12 searches.
+  - Readers in ten languages; the largest were English (455) and Chinese (377), then Turkish (42).
+  - Six networks read; mostly Ethereum (72 pool opens), then Polygon (5), Base (3).
+  - About $1 of model spend for the week: the explanations cost almost nothing to run.
+  - Telegram: 0 chats following an address so far. The bot and the smart-money pages are new; do not claim adoption of them.
+  - Replace with the latest full-week figures when sending; keep the date range beside them.
 - Code: [link if the repository is made public; otherwise say it is available to reviewers on request].
 
 ## Milestones
