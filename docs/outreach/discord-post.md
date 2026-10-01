@@ -1,18 +1,11 @@
-# Uniswap Discord — short post for the developer / builder channel
+# Uniswap Discord — a question, not a pitch
 
-Check the server's rules and the channel's pinned message first; post once, in the channel meant for sharing projects or asking for feedback, not in several. Do not post a link in a channel that forbids links; ask a mod where it fits.
+The server's rules say "No advertising or spamming". So this is a question, asked once, in a channel that allows posts (`general`), after a few days of taking part. It names the site only because people asking "what is it?" need somewhere to look; leave the link out if a mod asks.
 
----
-
-Hi all — I built **LiquidityWise** (liquiditywise.com), an independent educational tool for v3/v4 liquidity providers. Not affiliated with Uniswap Labs or the Foundation.
-
-- Works out a price range from how far a pair has really moved; every figure is computed by code, and the explaining model is never allowed to state a number.
-- Shows where the best-earning liquidity sits, measured on chain from fees earned per position (liquiditywise.com/smart-money — it says what the figure leaves out).
-- v4 hook directory with each hook's permissions.
-- Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon · ten languages.
-
-I'd love feedback, mostly on whether the fee-yield measure is a fair way to read "smart" liquidity, and anything that reads like advice and shouldn't. Thanks!
+The Builder role is selected, but no extra channels opened for it (checked 2026-10-01). Look again in a few days and use any channel meant for builders or ecosystem projects instead of `general`.
 
 ---
 
-Then, if somebody replies, answer in the thread; do not DM anyone first.
+Quick question for LPs here. I'm measuring "where the best-earning v3 liquidity sits" by fee yield on chain: fees each in-range position earned since its last change, divided by its value now, annualised, taking the top fifth among positions unchanged for 3+ days. Is that a fair way to define "smart" liquidity, or does it mislead (e.g. it ignores what a position gave up against holding)? What would you change?
+
+(It's on liquiditywise.com/smart-money, an independent educational tool, not affiliated with Uniswap Labs.)
