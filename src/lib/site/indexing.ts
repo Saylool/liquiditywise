@@ -29,7 +29,7 @@ export const LEARN_TOPIC_PAGES = [
   "/learn/smart-money",
 ] as const;
 
-export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", "/smart-money", ...LEARN_TOPIC_PAGES] as const;
+export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", "/smart-money", "/about", ...LEARN_TOPIC_PAGES] as const;
 
 /** Pages that read live data per request, plus the routes that are not pages at all. */
 export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/holdings", "/api/", "/__backup/"] as const;
