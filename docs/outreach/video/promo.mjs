@@ -1,7 +1,7 @@
 // The 30-second promo: the generated background, re-tinted for each caption,
 // the captions drawn here (so they are spelled right), and a voice-over.
 //
-//   node docs/outreach/video/promo.mjs --bg assets/intro-bg.mp4 --voice voice.mp3 [--out promo.mp4]
+//   node docs/outreach/video/promo.mjs --bg assets/intro-bg.mp4 --voice voice.mp3 [--shots shots.json] [--out promo.mp4]
 //
 // No footage of the site and no generated interface: only light, words and
 // the address. Run on the voice from Higgsfield, or any other.
@@ -20,6 +20,7 @@ const arg = (name, fallback) => {
 const bg = arg("bg");
 const voice = arg("voice");
 const out = arg("out", "liquiditywise-promo.mp4");
+const shotsFile = arg("shots", null);
 if (!bg || !voice) {
   console.error("usage: promo.mjs --bg intro-bg.mp4 --voice voice.mp3 [--out out.mp4]");
   process.exit(1);
@@ -35,13 +36,14 @@ const LEAD = 1.5, TAIL = 4;
 const voiceLength = durationOf(voice);
 const total = LEAD + voiceLength + TAIL;
 
-const shots = [
+const defaultShots = [
   { hue: 0, lines: [{ t: "LiquidityWise", size: 150, y: 520, weight: 700 }, { t: "Every figure computed by code. Never guessed by AI.", size: 48, y: 620, weight: 400 }] },
   { hue: 35, lines: [{ t: "Every figure computed by code", size: 90, y: 560, weight: 700 }] },
   { hue: 80, lines: [{ t: "Explained in plain language", size: 90, y: 520, weight: 700 }, { t: "in 10 languages", size: 90, y: 630, weight: 700 }] },
   { hue: -40, lines: [{ t: "Where the best-earning liquidity sits", size: 80, y: 520, weight: 700 }, { t: "measured on chain", size: 56, y: 620, weight: 400 }] },
   { hue: 0, lines: [{ t: "liquiditywise.com", size: 120, y: 480, weight: 700 }, { t: "Independent and educational.", size: 48, y: 580, weight: 400 }, { t: "Not affiliated with Uniswap Labs. Not financial advice.", size: 40, y: 650, weight: 400 }, { t: "Made with AI: visuals and voice-over.", size: 34, y: 760, weight: 400 }] },
 ];
+const shots = shotsFile === null ? defaultShots : JSON.parse((await import("node:fs")).readFileSync(shotsFile, "utf8"));
 const per = total / shots.length;
 
 const files = [];

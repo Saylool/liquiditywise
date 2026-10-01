@@ -1,0 +1,10 @@
+[
+  { "hue": 0, "lines": [{ "t": "LiquidityWise", "size": 150, "y": 520, "weight": 700 }, { "t": "Choose your range with facts, not guesses.", "size": 48, "y": 620, "weight": 400 }] },
+  { "hue": 25, "lines": [{ "t": "Too narrow, you stop earning.", "size": 80, "y": 520, "weight": 700 }, { "t": "Too wide, you earn very little.", "size": 80, "y": 630, "weight": 700 }] },
+  { "hue": 60, "lines": [{ "t": "The range is worked out by code", "size": 80, "y": 520, "weight": 700 }, { "t": "from how far the pair really moved", "size": 56, "y": 620, "weight": 400 }] },
+  { "hue": 95, "lines": [{ "t": "AI explains.", "size": 100, "y": 520, "weight": 700 }, { "t": "It never states a number.", "size": 80, "y": 630, "weight": 700 }] },
+  { "hue": -40, "lines": [{ "t": "Where the best-earning liquidity sits", "size": 80, "y": 520, "weight": 700 }, { "t": "measured on chain", "size": 56, "y": 620, "weight": 400 }] },
+  { "hue": 130, "lines": [{ "t": "Track your positions from a public address", "size": 72, "y": 520, "weight": 700 }, { "t": "Telegram alert when one leaves its range", "size": 56, "y": 620, "weight": 400 }] },
+  { "hue": 0, "lines": [{ "t": "10 languages · 6 networks", "size": 90, "y": 560, "weight": 700 }] },
+  { "hue": 0, "lines": [{ "t": "liquiditywise.com", "size": 120, "y": 480, "weight": 700 }, { "t": "Independent and educational.", "size": 48, "y": 580, "weight": 400 }, { "t": "Not affiliated with Uniswap Labs. Not financial advice.", "size": 40, "y": 650, "weight": 400 }, { "t": "Made with AI: visuals and voice-over.", "size": 34, "y": 760, "weight": 400 }] }
+]
