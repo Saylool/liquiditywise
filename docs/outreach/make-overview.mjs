@@ -37,10 +37,10 @@ const sections = [
 const style = {
   h1: { font: "F2", size: 26, gap: 10, before: 0 },
   sub: { font: "F1", size: 12, gap: 6, before: 0 },
-  h2: { font: "F2", size: 14, gap: 4, before: 12 },
+  h2: { font: "F2", size: 13, gap: 3, before: 8 },
   p: { font: "F1", size: 10.5, gap: 4, before: 0 },
   b: { font: "F1", size: 10.5, gap: 2, before: 0, indent: 14 },
-  small: { font: "F1", size: 9, gap: 0, before: 14 },
+  small: { font: "F1", size: 9, gap: 0, before: 8 },
 };
 
 const widthOf = (text, size, bold) => {
@@ -76,7 +76,7 @@ for (const [kind, text] of sections) {
   const bold = s.font === "F2";
   const indent = s.indent ?? 0;
   const lines = wrap(kind === "b" ? text : text, s.size, bold, W - 2 * MARGIN - indent - 6);
-  const lead = s.size * 1.35;
+  const lead = s.size * 1.28;
   const needed = s.before + lines.length * lead + s.gap;
   if (y - needed < MARGIN) {
     pages.push([]);
