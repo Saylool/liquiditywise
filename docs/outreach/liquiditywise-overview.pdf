@@ -1,0 +1,99 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Length 4420 >>
+stream
+BT /F2 26 Tf 56 750.9 Td (LiquidityWise) Tj ET
+BT /F1 12 Tf 56 724.7 Td (Product overview - an independent, educational advisor for Uniswap v3 and v4 liquidity) Tj ET
+BT /F1 12 Tf 56 708.5 Td (providers) Tj ET
+BT /F1 10.5 Tf 56 688.3 Td (liquiditywise.com  |  github.com/Saylool/liquiditywise \(MIT\)  |  x.com/LiquidityWise) Tj ET
+BT /F2 14 Tf 56 653.4 Td (The problem) Tj ET
+BT /F1 10.5 Tf 56 635.3 Td (Providing liquidity on Uniswap means choosing a price range. Too narrow and a position stops) Tj ET
+BT /F1 10.5 Tf 56 621.1 Td (earning the moment the price moves; too wide and it earns very little. Most guides hand over a) Tj ET
+BT /F1 10.5 Tf 56 606.9 Td (number the reader cannot check, mostly in English, and a language model asked to explain it can) Tj ET
+BT /F1 10.5 Tf 56 592.7 Td (invent one.) Tj ET
+BT /F2 14 Tf 56 557.8 Td (What LiquidityWise does) Tj ET
+BT /F1 10.5 Tf 56 539.7 Td (-) Tj ET
+BT /F1 10.5 Tf 70 539.7 Td (Works out a suggested price range from how far a pair has actually moved, for v3 and v4 pools on) Tj ET
+BT /F1 10.5 Tf 70 525.5 Td (Ethereum, Base, Arbitrum, Unichain, OP Mainnet and Polygon.) Tj ET
+BT /F1 10.5 Tf 56 509.3 Td (-) Tj ET
+BT /F1 10.5 Tf 70 509.3 Td (Shows where the best-earning liquidity sits, measured on chain: the fees each position earned) Tj ET
+BT /F1 10.5 Tf 70 495.1 Td (since it last changed, over its value now. The page says what that figure leaves out.) Tj ET
+BT /F1 10.5 Tf 56 479.0 Td (-) Tj ET
+BT /F1 10.5 Tf 70 479.0 Td (Lists v4 hooks with the permissions each one has, and warns where a hook can alter a swap.) Tj ET
+BT /F1 10.5 Tf 56 462.8 Td (-) Tj ET
+BT /F1 10.5 Tf 70 462.8 Td (Shows the positions of any public address, with optional Telegram alerts when one leaves its) Tj ET
+BT /F1 10.5 Tf 70 448.6 Td (range.) Tj ET
+BT /F1 10.5 Tf 56 432.4 Td (-) Tj ET
+BT /F1 10.5 Tf 70 432.4 Td (Interface and explanations in ten languages: English, Turkish, German, Spanish, Arabic, Hindi,) Tj ET
+BT /F1 10.5 Tf 70 418.3 Td (Chinese \(simplified and traditional\), Russian, Portuguese.) Tj ET
+BT /F2 14 Tf 56 385.4 Td (Why it can be trusted) Tj ET
+BT /F1 10.5 Tf 56 367.2 Td (-) Tj ET
+BT /F1 10.5 Tf 70 367.2 Td (Every figure is computed by code from the pool's own data and cross-checked. The language) Tj ET
+BT /F1 10.5 Tf 70 353.0 Td (model only explains it and is never allowed to state a number.) Tj ET
+BT /F1 10.5 Tf 56 336.8 Td (-) Tj ET
+BT /F1 10.5 Tf 70 336.8 Td (It never asks a wallet for a signature or a transaction, and keeps nothing about who reads the site.) Tj ET
+BT /F1 10.5 Tf 56 320.7 Td (-) Tj ET
+BT /F1 10.5 Tf 70 320.7 Td (It is monitored \(data sources probed hourly, outages reported\) and covered by over 4,000) Tj ET
+BT /F1 10.5 Tf 70 306.5 Td (automated tests. The code is open under the MIT licence.) Tj ET
+BT /F2 14 Tf 56 273.6 Td (Use so far \(first week measured, 25 Sep - 1 Oct 2026\)) Tj ET
+BT /F1 10.5 Tf 56 255.4 Td (-) Tj ET
+BT /F1 10.5 Tf 70 255.4 Td (981 pages opened by people \(bots excluded\); 32 different pools opened; 12 searches.) Tj ET
+BT /F1 10.5 Tf 56 239.2 Td (-) Tj ET
+BT /F1 10.5 Tf 70 239.2 Td (Readers in all ten languages; the largest were English \(455\), Chinese \(377\) and Turkish \(42\).) Tj ET
+BT /F1 10.5 Tf 56 223.1 Td (-) Tj ET
+BT /F1 10.5 Tf 70 223.1 Td (Model cost for the week: about USD 1. Telegram alerts are new: 0 chats following an address so) Tj ET
+BT /F1 10.5 Tf 70 208.9 Td (far.) Tj ET
+BT /F1 10.5 Tf 56 192.7 Td (-) Tj ET
+BT /F1 10.5 Tf 70 192.7 Td (No TVL, volume or revenue: it is a read-only educational tool.) Tj ET
+BT /F2 14 Tf 56 159.8 Td (What the grant would pay for \(six months\)) Tj ET
+BT /F1 10.5 Tf 56 141.6 Td (-) Tj ET
+BT /F1 10.5 Tf 70 141.6 Td (Months 1-2: positions on Arbitrum \(no data source answers today\) and v4 positions.) Tj ET
+BT /F1 10.5 Tf 56 125.5 Td (-) Tj ET
+BT /F1 10.5 Tf 70 125.5 Td (Months 3-4: native-speaker review of the ten languages and a public methodology page.) Tj ET
+BT /F1 10.5 Tf 56 109.3 Td (-) Tj ET
+BT /F1 10.5 Tf 70 109.3 Td (Months 5-6: promote the Telegram alerts where the largest readers already are; publish the) Tj ET
+BT /F1 10.5 Tf 70 95.1 Td (weekly usage counts.) Tj ET
+BT /F1 10.5 Tf 56 78.9 Td (Requested: USD 25,400 = engineering 390 h x USD 50 \(19,500\) + language review \(3,000, estimate\) +) Tj ET
+BT /F1 10.5 Tf 56 64.8 Td (independent method review \(2,000, estimate\) + running costs 6 x USD 150 \(900\).) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 146 >>
+stream
+BT /F1 9 Tf 56 773.9 Td (Independent educational project. Not affiliated with Uniswap Labs or the Uniswap Foundation. Not financial advice.) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000320 00000 n 
+0000004792 00000 n 
+0000004928 00000 n 
+0000005125 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+5261
+%%EOF
