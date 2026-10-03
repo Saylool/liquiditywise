@@ -32,5 +32,13 @@ export const LEARN_TOPIC_PAGES = [
 
 export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", "/smart-money", "/about", "/method", ...LEARN_TOPIC_PAGES] as const;
 
+/**
+ * The pool card other sites frame, and the same figures as JSON. Served by
+ * route handlers rather than pages — the card is written by hand, with none of
+ * the site around it — and closed like every other address that reads one
+ * pool live: the card under `/embed/`, the figures under `/api/`.
+ */
+export const EMBED_PAGES = ["/embed/pool", "/api/embed/pool"] as const;
+
 /** Pages that read live data per request, plus the routes that are not pages at all. */
-export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/pair", "/holdings", "/api/", "/__backup/"] as const;
+export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/pair", "/holdings", "/embed/", "/api/", "/__backup/"] as const;

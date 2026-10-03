@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 
 import { localeRewrites } from "./src/lib/i18n/localePath";
-import { SECURITY_HEADERS } from "./src/lib/security/responseHeaders";
+import { HEADER_RULES } from "./src/lib/security/responseHeaders";
 
 const nextConfig: NextConfig = {
   // The framework's name on every response tells a scanner which advisories to try.
   poweredByHeader: false,
 
   async headers() {
-    return [{ source: "/:path*", headers: [...SECURITY_HEADERS] }];
+    /* Every path, and every path but the embeddable card (see responseHeaders.ts). */
+    return HEADER_RULES.map(({ source, headers }) => ({ source, headers: [...headers] }));
   },
 
   /*

@@ -81,6 +81,23 @@ describe("what a visit line records", () => {
     expect(visit(`/v4?id=${ADDRESS}`)?.pool).toBeNull();
   });
 
+  /* The embeddable card and its JSON name a pool as the pool pages do, under one path. */
+  it("names the pool an embedded card or its JSON was loaded for, and the chain", () => {
+    expect(visit(`/embed/pool?address=${ADDRESS}`)?.pool).toBe(`v3:${ADDRESS.toLowerCase()}`);
+    expect(visit(`/embed/pool?chain=base&id=${POOL_ID}`)?.pool).toBe(`v4@base:${POOL_ID}`);
+    expect(visit(`/api/embed/pool?chain=unichain&id=${POOL_ID}`)).toMatchObject({
+      page: "/api/embed/pool",
+      pool: `v4@unichain:${POOL_ID}`,
+      chain: "unichain",
+    });
+    expect(visit("/embed/pool?address=nope")).toMatchObject({ pool: null, chain: "ethereum" });
+    const line = visitLine(visit(`/embed/pool?address=${ADDRESS}`) ?? (null as never));
+    expect(parseUsageLine(`2026-10-05T08:00:00+0000 host app[1]: ${line}`)).toMatchObject({
+      kind: "visit",
+      visit: { page: "/embed/pool", pool: `v3:${ADDRESS.toLowerCase()}` },
+    });
+  });
+
   it("does not count a page the browser loaded ahead of a click", () => {
     expect(visit("/pool", { "user-agent": BROWSER, purpose: "prefetch" })).toBeNull();
     expect(visit("/pool", { "user-agent": BROWSER, "sec-purpose": "prefetch;prerender" })).toBeNull();

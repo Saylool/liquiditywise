@@ -320,3 +320,78 @@ describe("a page reached by its language's own address", () => {
     expect(await refused.text()).toContain('lang="de"');
   });
 });
+
+/*
+ * The embeddable card and its JSON: charged like the pool pages they stand
+ * for, counted in the card's own language, and the card — only the card —
+ * opened to framing by any site.
+ */
+describe("the embeddable pool card", () => {
+  const ID = `0x${"cd".repeat(32)}`;
+  const BROWSER = "Mozilla/5.0 (Macintosh) Safari/605.1.15";
+  const loading = (path: string, client: string) =>
+    new NextRequest(`http://localhost${path}`, {
+      headers: { "x-forwarded-for": client, "user-agent": BROWSER, "accept-language": "tr-TR,tr;q=0.9", cookie: "locale=de" },
+    });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("is charged against the reader's allowance, and refused past it", async () => {
+    const client = "198.51.100.240";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) {
+      expect((await proxy(loading(`/embed/pool?address=${POOL}`, client))).status).toBe(200);
+    }
+
+    const refused = await proxy(loading(`/embed/pool?address=${POOL}`, client));
+
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get("cache-control")).toBe("no-store");
+    /* In the card's own language, and still framable, so the site it sits on shows the refusal. */
+    expect(await refused.text()).toContain('lang="en"');
+    expect(refused.headers.get("content-security-policy")).toContain("frame-ancestors *");
+  });
+
+  it("answers its JSON's refusal in JSON, readable from any site", async () => {
+    const client = "198.51.100.241";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) await proxy(loading(`/api/embed/pool?chain=base&id=${ID}`, client));
+
+    const refused = await proxy(loading(`/api/embed/pool?chain=base&id=${ID}`, client));
+
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get("access-control-allow-origin")).toBe("*");
+    expect(refused.headers.get("cache-control")).toBe("no-store");
+    expect(await refused.json()).toMatchObject({ error: "rate-limited", retryAfterSeconds: expect.any(Number) });
+  });
+
+  it("charges nothing for an address that names no pool", async () => {
+    const client = "198.51.100.242";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT + 2; i += 1) {
+      expect((await proxy(loading("/embed/pool?address=nope", client))).status).toBe(200);
+    }
+  });
+
+  it("is opened to framing by any site, and nothing else is", async () => {
+    const card = await proxy(loading(`/embed/pool?address=${POOL}`, "198.51.100.243"));
+    expect(card.headers.get("content-security-policy")).toContain("frame-ancestors *");
+    expect(card.headers.get("content-security-policy")).toContain("default-src 'none'");
+
+    for (const path of ["/", "/pool", `/pool?address=${POOL}`, "/v4", "/hooks", "/tr/hooks", `/api/embed/pool?address=${POOL}`]) {
+      const response = await proxy(loading(path, "198.51.100.244"));
+      expect(response.headers.get("content-security-policy"), path).toBeNull();
+    }
+  });
+
+  it("is counted with its pool, in the language its address names rather than the reader's", async () => {
+    const lines = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    await proxy(loading(`/embed/pool?chain=base&address=${POOL}&lang=ru`, "198.51.100.245"));
+    await proxy(loading(`/api/embed/pool?chain=unichain&id=${ID}`, "198.51.100.245"));
+
+    expect(lines.mock.calls.map(([line]) => String(line)).filter((line) => line.startsWith("[visit]"))).toEqual([
+      `[visit] page=/embed/pool pool=v3@base:${POOL} locale=ru bot=0 outcome=served chain=base`,
+      `[visit] page=/api/embed/pool pool=v4@unichain:${ID} locale=en bot=0 outcome=served chain=unichain`,
+    ]);
+  });
+});

@@ -1,5 +1,5 @@
 import { chainBySlug, chainOf } from "../chains/chains.ts";
-import { LEARN_TOPIC_PAGES } from "../site/indexing.ts";
+import { EMBED_PAGES, LEARN_TOPIC_PAGES } from "../site/indexing.ts";
 
 /*
  * The two lines this application writes about its own use, and the reader of
@@ -31,6 +31,7 @@ export const PAGES = [
   "/about",
   "/method",
   ...LEARN_TOPIC_PAGES,
+  ...EMBED_PAGES,
 ] as const;
 export type Page = (typeof PAGES)[number];
 
@@ -52,7 +53,17 @@ export type Visit = {
 };
 
 /** The pages whose address carries `?chain=`. */
-const CHAIN_PAGES: readonly Page[] = ["/pool", "/v4", "/compare", "/holdings", "/most-traded", "/hooks", "/smart-money"];
+const CHAIN_PAGES: readonly Page[] = [
+  "/pool",
+  "/v4",
+  "/compare",
+  "/holdings",
+  "/most-traded",
+  "/hooks",
+  "/smart-money",
+  "/embed/pool",
+  "/api/embed/pool",
+];
 
 const chainOfVisit = (page: Page, parameters: URLSearchParams): string | null => {
   if (!CHAIN_PAGES.includes(page)) return null;
@@ -107,6 +118,17 @@ const poolOf = (page: Page, parameters: URLSearchParams): string | null => {
     const id = parameters.get("id")?.trim().toLowerCase() ?? "";
     const chain = chainBySlug(parameters.get("chain") ?? "ethereum");
     if (POOL_ID.test(id) && chain !== null) return poolName("v4", id, chain.id);
+  }
+  /*
+   * The embedded card and its JSON name a pool by the parameter the site's own
+   * pages do: `address` for v3, `id` for v4 (see lib/embed/embedRequest.ts).
+   */
+  if (page === "/embed/pool" || page === "/api/embed/pool") {
+    const chain = chainBySlug(parameters.get("chain") ?? "ethereum");
+    const address = parameters.get("address")?.trim().toLowerCase() ?? "";
+    const id = parameters.get("id")?.trim().toLowerCase() ?? "";
+    if (chain !== null && ADDRESS.test(address)) return poolName("v3", address, chain.id);
+    if (chain !== null && POOL_ID.test(id)) return poolName("v4", id, chain.id);
   }
   /* The pair page takes the search box's own `q`, and is a search across every network. */
   if ((page === "/pool" || page === "/v4" || page === "/pair") && parameters.get("q") !== null) return "search";

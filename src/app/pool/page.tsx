@@ -11,6 +11,7 @@ import { PoolSearchPending } from "@/components/PoolSearchResults";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { V4PoolSearchPending } from "@/components/V4PoolSearchResults";
 import { GuardedLink } from "@/components/GuardedLink";
+import { EmbedPoolSnippet } from "@/components/EmbedPoolSnippet";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import { pairPoolsHref } from "@/lib/advisor/pairPools";
 import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
@@ -245,6 +246,16 @@ export default async function PoolRangePage({
                 t={t}
               />
             </Suspense>
+
+            {/* Last: this pool's card for another site, folded away (app/embed/pool). */}
+            <EmbedPoolSnippet
+              protocol="v3"
+              poolId={address.data}
+              chain={chain}
+              pair={`${result.data.pool.token0.symbol} / ${result.data.pool.token1.symbol}`}
+              hookMayAlterSwaps={false}
+              locale={locale}
+            />
           </>
         )}
       </Shell>

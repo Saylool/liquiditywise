@@ -7,7 +7,7 @@ import sitemap from "../../app/sitemap";
 import { LOCALES } from "../i18n/locales";
 import { PAGES } from "../usage/usageLines";
 import { BRIEF_IDS } from "../learn/briefs";
-import { CLOSED_PATHS, INDEXED_PAGES, LEARN_TOPIC_PAGES, SITE_URL } from "./indexing";
+import { CLOSED_PATHS, EMBED_PAGES, INDEXED_PAGES, LEARN_TOPIC_PAGES, SITE_URL } from "./indexing";
 
 /*
  * Every page's own metadata, the robots file and the sitemap, held to one
@@ -42,7 +42,20 @@ describe("which pages a search engine may read", () => {
   it("finds the pages, so it is not passing on an empty list", () => {
     const served = pages.flatMap(({ route }) => DYNAMIC[route]?.pages ?? [route]);
 
-    expect(served.sort()).toEqual([...PAGES].sort());
+    expect([...served, ...EMBED_PAGES].sort()).toEqual([...PAGES].sort());
+  });
+
+  /*
+   * The embeddable card and its JSON are counted and charged like pages, and
+   * are route handlers: the card is written without the site's layout.
+   */
+  it("serves the embeddable card and its JSON from route handlers, both closed to crawlers", () => {
+    for (const page of EMBED_PAGES) {
+      expect(statSync(join(APP, ...page.split("/").filter(Boolean), "route.ts")).isFile(), page).toBe(true);
+      expect(CLOSED_PATHS.some((closed) => page.startsWith(closed)), page).toBe(true);
+      expect(INDEXED_PAGES as readonly string[], page).not.toContain(page);
+    }
+    expect(CLOSED_PATHS).toContain("/embed/");
   });
 
   it("closes every page that says it is closed, and lists every page that does not", () => {

@@ -43,6 +43,8 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/learn/fee-tiers": "guide: fee tiers",
   "/learn/hooks": "guide: hooks",
   "/learn/smart-money": "guide: smart liquidity",
+  "/embed/pool": "pool card on another site",
+  "/api/embed/pool": "pool card as JSON",
 };
 
 const number = (value: number): string => value.toLocaleString("en-US");

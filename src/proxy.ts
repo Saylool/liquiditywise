@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { readEmbedLocale } from "./lib/embed/embedRequest";
 import { getDictionary } from "./lib/i18n/dictionaries";
 import { LOCALE_HEADER, PATH_HEADER, splitLocalePath } from "./lib/i18n/localePath";
 import { LOCALE_COOKIE, localeCookie, type Locale, resolveLocale } from "./lib/i18n/locales";
@@ -11,6 +12,8 @@ import {
   POOL_ANALYSIS_REQUEST_LIMIT,
   poolAnalysisRateLimiter,
 } from "./lib/ratelimit/poolAnalysisRateLimiter";
+import { EMBED_CARD_HEADERS, EMBED_CARD_PATH } from "./lib/security/responseHeaders";
+import { EMBED_PAGES } from "./lib/site/indexing";
 import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
 
 /*
@@ -49,6 +52,9 @@ import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
  * counted for the weekly report, and a page is counted here once, before it
  * renders, however it was reached. Held to usageLines.ts's list by a test.
  *
+ * The embeddable pool card and its JSON are here for both reasons: each reads
+ * one pool like the page it stands for, and each is counted.
+ *
  * And every open page's language addresses, which exist only because this
  * turns them into the page itself (see localePath.ts). Written out rather than
  * built from LOCALES because Next reads this object without running the file;
@@ -75,6 +81,8 @@ export const config = {
     "/learn/fee-tiers",
     "/learn/hooks",
     "/learn/smart-money",
+    "/embed/pool",
+    "/api/embed/pool",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn",
@@ -138,16 +146,46 @@ const askedFor = (request: NextRequest): Locale =>
     acceptLanguage: request.headers.get("accept-language"),
   });
 
-const refuse = (retryAfterSeconds: number, locale: Locale): NextResponse => {
+/** Where the embeddable card's figures are served as JSON. */
+const EMBED_DATA_PATH: (typeof EMBED_PAGES)[number] = "/api/embed/pool";
+
+const refuse = (retryAfterSeconds: number, locale: Locale, page: URL): NextResponse => {
+  const headers = {
+    "Retry-After": String(retryAfterSeconds),
+    // Never let a shared cache serve one visitor's refusal to another.
+    "Cache-Control": "no-store",
+  };
+
+  /*
+   * A script reading the card's figures from another site is told in JSON,
+   * which it can read — and which it is allowed to read, or it would see a
+   * network error rather than the wait it is being asked for.
+   */
+  if (page.pathname === EMBED_DATA_PATH) {
+    return NextResponse.json(
+      { error: "rate-limited", retryAfterSeconds },
+      { status: 429, headers: { ...headers, "Access-Control-Allow-Origin": "*" } },
+    );
+  }
+
   return new NextResponse(tooManyRequestsPage(retryAfterSeconds, locale), {
     status: 429,
-    headers: {
-      "Retry-After": String(retryAfterSeconds),
-      "Content-Type": "text/html; charset=utf-8",
-      // Never let a shared cache serve one visitor's refusal to another.
-      "Cache-Control": "no-store",
-    },
+    headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
   });
+};
+
+/*
+ * The one address any site may frame, opened here and nowhere else (see
+ * security/responseHeaders.ts for both halves of why). Headers this sets
+ * replace next.config's, which have already been applied by the time it runs;
+ * the matcher it runs under reads the path exactly, as the app's routes do,
+ * so only the card itself — its refusal included — is opened.
+ */
+const openToFraming = (response: NextResponse, page: URL): NextResponse => {
+  if (page.pathname === EMBED_CARD_PATH) {
+    for (const { key, value } of EMBED_CARD_HEADERS) response.headers.set(key, value);
+  }
+  return response;
 };
 
 /**
@@ -174,7 +212,13 @@ const route = (request: NextRequest) => {
   if (addressed === null) {
     return {
       page: request.nextUrl,
-      locale: askedFor(request),
+      /*
+       * The embeddable card speaks the language its address names, whoever
+       * loads it (see embed/embedRequest.ts), and is counted in that one.
+       */
+      locale: (EMBED_PAGES as readonly string[]).includes(request.nextUrl.pathname)
+        ? readEmbedLocale(request.nextUrl.searchParams)
+        : askedFor(request),
       pass: () => NextResponse.next({ request: { headers } }),
     };
   }
@@ -209,10 +253,11 @@ const recordVisit = (
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const routed = route(request);
+  const answer = (response: NextResponse) => openToFraming(response, routed.page);
 
   if (!spendsUpstreamQuota(routed.page.searchParams)) {
     recordVisit(request, routed, "served");
-    return routed.pass();
+    return answer(routed.pass());
   }
 
   const clientKey = clientKeyFromHeaders(request.headers);
@@ -229,7 +274,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const local = poolAnalysisRateLimiter.check(clientKey);
   if (!local.allowed) {
     recordVisit(request, routed, "refused");
-    return refuse(local.retryAfterSeconds, routed.locale);
+    return answer(refuse(local.retryAfterSeconds, routed.locale, routed.page));
   }
 
   /*
@@ -241,9 +286,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const shared = await checkSharedPoolAnalysisLimit({ clientKey });
   if (shared !== null && !shared.allowed) {
     recordVisit(request, routed, "refused");
-    return refuse(shared.retryAfterSeconds, routed.locale);
+    return answer(refuse(shared.retryAfterSeconds, routed.locale, routed.page));
   }
 
   recordVisit(request, routed, "served");
-  return routed.pass();
+  return answer(routed.pass());
 }
