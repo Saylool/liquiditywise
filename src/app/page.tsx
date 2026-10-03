@@ -39,7 +39,7 @@ export default async function Home() {
   return (
     <main id="main" tabIndex={-1} className="landing">
       <PageMotion />
-      <LiquidityHero copy={copy} videoEnabled />
+      <LiquidityHero copy={copy} />
       <section
         id="explore"
         className="landing-section explore-section"
