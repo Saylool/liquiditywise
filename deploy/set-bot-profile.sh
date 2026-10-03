@@ -25,15 +25,15 @@ api() {
   printf '%s %s\n' "$method" "$(printf '%s' "$out" | grep -oE '"ok":(true|false)')"
 }
 
-DESC_EN='This bot follows the Uniswap positions of one Ethereum address and tells you when one nears the edge of its price range, leaves it, or comes back.
+DESC_EN='This bot follows the Uniswap positions of one address and tells you when one nears the edge of its range, leaves it, or comes back.
 
-You link an address on liquiditywise.com; nothing is stored until you do, and then it is the address and this chat, plus, if you send /smart, where the smart-money range of a pool sat. Send /stop and both are deleted at once, and from the encrypted backups within seven days.
+You link an address on liquiditywise.com; nothing is stored until you do, and then it is the address and this chat, plus a pool smart-money range with /smart and the last digest time with /weekly. /stop deletes all of it at once, and from the encrypted backups within seven days.
 
 Reads public on-chain data; cannot sign or send anything. Information only, not advice.'
 
-DESC_TR='Bu bot bir Ethereum adresinin Uniswap pozisyonlarını izler ve içlerinden biri fiyat aralığının sınırına yaklaştığında, çıktığında ya da geri girdiğinde sana haber verir.
+DESC_TR='Bu bot bir adresin Uniswap pozisyonlarını izler ve içlerinden biri aralığının sınırına yaklaştığında, çıktığında ya da geri girdiğinde haber verir.
 
-Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, saklanan adres ile bu sohbettir; /smart yazarsan bir de havuzun akıllı para aralığı. /stop yazarsan ikisi de hemen, şifreli yedeklerden de yedi günde silinir.
+Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, sonra adres ile bu sohbet saklanır; /smart ile havuzun akıllı para aralığı, /weekly ile son özetin zamanı. /stop yazarsan hepsi hemen, şifreli yedeklerden de yedi günde silinir.
 
 Herkese açık zincir verisini okur; imzalayamaz, işlem gönderemez. Yalnızca bilgi, tavsiye değil.'
 
@@ -52,7 +52,7 @@ api setMyShortDescription --data-urlencode "short_description=$SHORT_TR" --data-
 # Telegram shows it anyway; a menu offering something the bot ignores is
 # worse than a short menu.
 api setMyCommands \
-  --data-urlencode 'commands=[{"command":"start","description":"Link the address you chose on the site"},{"command":"smart","description":"Also alert when smart money moves (on/off)"},{"command":"stop","description":"Stop the alerts and forget the address"}]'
+  --data-urlencode 'commands=[{"command":"start","description":"Link the address you chose on the site"},{"command":"smart","description":"Also alert when smart money moves (on/off)"},{"command":"weekly","description":"Monday digest of where smart money moved (on/off)"},{"command":"stop","description":"Stop the alerts and forget the address"}]'
 api setMyCommands \
-  --data-urlencode 'commands=[{"command":"start","description":"Sitede seçtiğin adresi bağla"},{"command":"smart","description":"Akıllı para kayınca da haber ver (aç/kapat)"},{"command":"stop","description":"Bildirimleri durdur ve adresi unut"}]' \
+  --data-urlencode 'commands=[{"command":"start","description":"Sitede seçtiğin adresi bağla"},{"command":"smart","description":"Akıllı para kayınca da haber ver (aç/kapat)"},{"command":"weekly","description":"Akıllı paranın pazartesi haftalık özeti (aç/kapat)"},{"command":"stop","description":"Bildirimleri durdur ve adresi unut"}]' \
   --data-urlencode 'language_code=tr'

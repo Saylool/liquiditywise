@@ -1,10 +1,14 @@
 import type { Position } from "../../schemas";
-import { formatPrice } from "../format/displayFormats";
-import { choosePriceQuote, quotedInterval, quotedPrice } from "../format/priceQuote";
+import type { Mover } from "../analytics/smartHistory";
+import { formatFeePpm, formatPercent, formatPrice, formatWhole } from "../format/displayFormats";
+import { choosePriceQuote, isInverted, quotedInterval, quotedPrice } from "../format/priceQuote";
 import type { Dictionary } from "../i18n/dictionaries";
 import type { Locale } from "../i18n/locales";
+import { localePath } from "../i18n/localePath";
+import { SITE_URL } from "../site/indexing";
 import type { PositionChange } from "./positionChanges";
 import type { SmartShift } from "./smartShift";
+import type { RangeMove, WeeklyDigest } from "./weeklyDigest";
 import { chainOf } from "../chains/chains";
 
 /*
@@ -68,6 +72,76 @@ export const smartShiftText = (shift: SmartShift, t: Dictionary, locale: Locale,
   };
 
   return `${t.telegram.smartShift(`${pool.token0.symbol}/${pool.token1.symbol}`, protocolOn(pool.protocolVersion, chainId), range(shift.then), range(shift.now))}\n\n${t.telegram.footer}`;
+};
+
+/** A kept pair as the smart-money page names it: "USDC / WETH · 0.05%". */
+const keptPair = (pair: string, feePpm: number, locale: Locale): string => `${pair} · ${formatFeePpm(feePpm, locale)}`;
+
+/**
+ * A kept range, then and now, as prices quoted the way the pair is at its
+ * price now — both ends the same way round, so the two can be compared. The
+ * kept series has the pair's symbols ("USDC / WETH", token0 first) and not its
+ * tokens; where they cannot be told apart, the prices go without a unit
+ * rather than with a wrong one.
+ */
+const keptRanges = (range: RangeMove, locale: Locale): { readonly then: string; readonly now: string } => {
+  const quote = { inverted: isInverted(range.currentPrice) };
+  const symbols = range.pair.split(" / ");
+  const [token0, token1] = symbols;
+  const unit =
+    symbols.length === 2 && token0 !== undefined && token1 !== undefined
+      ? ` ${quote.inverted ? token0 : token1}/${quote.inverted ? token1 : token0}`
+      : "";
+  const text = (edges: readonly [number, number]): string => {
+    const quoted = quotedInterval(quote, { lower: edges[0], upper: edges[1] });
+    return `${formatPrice(quoted.lower, locale)} – ${formatPrice(quoted.upper, locale)}${unit}`;
+  };
+  return { then: text(range.then), now: text(range.now) };
+};
+
+/** The page the digest is a summary of, in the reader's language and on the digest's chain. */
+export const smartMoneyUrl = (locale: Locale, chainId: number): string =>
+  `${SITE_URL}${localePath(locale, "/smart-money")}?chain=${chainOf(chainId).slug}`;
+
+/**
+ * The Monday digest: the pairs gaining and losing a share of the smart money
+ * over the week, the pairs whose smart range moved — each as prices then and
+ * now — and the page it all comes from. Says, as the smart-money alert does,
+ * that it is a measurement and not a suggestion, and ends with the footer.
+ */
+export const weeklyDigestText = (digest: WeeklyDigest, t: Dictionary, locale: Locale, chainId: number): string => {
+  const movers = (heading: string, list: readonly Mover[]): string[] =>
+    list.length === 0
+      ? []
+      : [
+          [
+            heading,
+            ...list.map(({ pair, feePpm, from, to }) =>
+              `• ${t.telegram.weeklyMover(keptPair(pair, feePpm, locale), formatPercent(from, locale), formatPercent(to, locale))}`,
+            ),
+          ].join("\n"),
+        ];
+  const ranges =
+    digest.ranges.length === 0
+      ? []
+      : [
+          [
+            t.telegram.weeklyRanges,
+            ...digest.ranges.map((range) => {
+              const { then, now } = keptRanges(range, locale);
+              return `• ${t.telegram.weeklyRange(keptPair(range.pair, range.feePpm, locale), then, now)}`;
+            }),
+          ].join("\n"),
+        ];
+
+  return [
+    t.telegram.weeklyHeading(chainOf(chainId).name, formatWhole(Math.round(digest.days), locale)),
+    ...movers(t.telegram.weeklyGaining, digest.gaining),
+    ...movers(t.telegram.weeklyLosing, digest.losing),
+    ...ranges,
+    `${t.telegram.weeklyNote}\n${t.telegram.weeklyLink(smartMoneyUrl(locale, chainId))}`,
+    t.telegram.footer,
+  ].join("\n\n");
 };
 
 export const alertText = (change: PositionChange, t: Dictionary, locale: Locale, chainId: number = 1): string => {

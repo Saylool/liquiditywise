@@ -75,8 +75,11 @@ export type PriceInterval = {
  * Inverting swaps the ends: the reciprocal of the higher price is the lower one.
  * Written out rather than left to the caller, because "invert each end" is the
  * mistake that produces a range whose lower edge is above its upper.
+ *
+ * Only the direction is read, so a caller holding a pair's symbols but not its
+ * tokens — the kept smart-money series — can hand it `{ inverted }` alone.
  */
-export const quotedInterval = (quote: PriceQuote, interval: PriceInterval): PriceInterval =>
+export const quotedInterval =(quote: Pick<PriceQuote, "inverted">, interval: PriceInterval): PriceInterval =>
   quote.inverted
     ? { lower: 1 / interval.upper, upper: 1 / interval.lower }
     : { lower: interval.lower, upper: interval.upper };

@@ -8,8 +8,10 @@ import {
   forgetLink,
   listWatches,
   readLink,
+  recordDigestSent,
   recordSnapshot,
   setSmartAlerts,
+  setWeeklyDigest,
   WATCHES_KEY,
 } from "./links";
 
@@ -220,5 +222,88 @@ describe("smart-money alerts on a link", () => {
 
     expect(await readLink(store, TOKEN)).toMatchObject({ address: ADDRESS, chatId: 42 });
     expect((await link(store)).smart).toBeUndefined();
+  });
+});
+
+describe("the weekly digest on a link", () => {
+  const SENT = new Date("2026-10-05T08:00:00.000Z");
+  const KEY = `liquiditywise:telegram:link:${TOKEN}`;
+  const claimed = async () => {
+    const store = await pending();
+    await claimLink(store, TOKEN, 42);
+    return store;
+  };
+  const link = async (store: ReturnType<typeof fakeStore>) => (await readLink(store, TOKEN)) as NonNullable<Awaited<ReturnType<typeof readLink>>>;
+
+  it("is off on a link that never asked, and nothing about it is stored", async () => {
+    const store = await claimed();
+    await recordSnapshot(store, TOKEN, await link(store), { "v3:1": true });
+
+    expect((await link(store)).weekly).toBeUndefined();
+    expect(JSON.parse(store.data.get(KEY) ?? "{}")).not.toHaveProperty("weekly");
+  });
+
+  it("turns on with none sent yet, and keeps the time of the last one through the checker's snapshot", async () => {
+    const store = await claimed();
+    expect(await setWeeklyDigest(store, TOKEN, await link(store), true)).toBe(true);
+    expect((await link(store)).weekly).toEqual({ sentAt: null });
+
+    const sent = await recordDigestSent(store, TOKEN, await link(store), NOW);
+    expect(sent.weekly).toEqual({ sentAt: NOW.toISOString() });
+    expect((await link(store)).weekly).toEqual({ sentAt: NOW.toISOString() });
+
+    await recordSnapshot(store, TOKEN, sent, { "v3:1": true });
+    expect(await link(store)).toMatchObject({ weekly: { sentAt: NOW.toISOString() }, snapshot: { "v3:1": true } });
+  });
+
+  it("answers the link with the new time even when the store did not take it, for the pass to write again", async () => {
+    const store = await claimed();
+    await setWeeklyDigest(store, TOKEN, await link(store), true);
+    const before = await link(store);
+    store.down = true;
+
+    expect((await recordDigestSent(store, TOKEN, before, NOW)).weekly).toEqual({ sentAt: NOW.toISOString() });
+    store.down = false;
+    expect((await link(store)).weekly).toEqual({ sentAt: null });
+  });
+
+  it("turns off by deleting the time kept for it, and leaves /smart and the rest of the link alone", async () => {
+    const store = await claimed();
+    await setSmartAlerts(store, TOKEN, await link(store), true);
+    await setWeeklyDigest(store, TOKEN, await link(store), true);
+    await recordDigestSent(store, TOKEN, await link(store), SENT);
+    expect(await setWeeklyDigest(store, TOKEN, await link(store), false)).toBe(true);
+
+    const read = await link(store);
+    expect(read.weekly).toBeUndefined();
+    expect(read).toMatchObject({ address: ADDRESS, chatId: 42, smart: { ranges: {} } });
+    expect(JSON.parse(store.data.get(KEY) ?? "{}")).not.toHaveProperty("weekly");
+    expect(store.data.get(KEY)).not.toContain(SENT.toISOString());
+  });
+
+  it("is kept through /smart turning on and off", async () => {
+    const store = await claimed();
+    await setWeeklyDigest(store, TOKEN, await link(store), true);
+    await setSmartAlerts(store, TOKEN, await link(store), true);
+    await setSmartAlerts(store, TOKEN, await link(store), false);
+
+    expect((await link(store)).weekly).toEqual({ sentAt: null });
+  });
+
+  it("says whether the write took", async () => {
+    const store = await claimed();
+    const before = await link(store);
+    store.down = true;
+
+    expect(await setWeeklyDigest(store, TOKEN, before, true)).toBe(false);
+  });
+
+  it("is read as not asked for, rather than losing the link, when what is kept for it cannot be read", async () => {
+    const store = await claimed();
+    const raw = JSON.parse(store.data.get(KEY) ?? "{}");
+    store.data.set(KEY, JSON.stringify({ ...raw, weekly: { sentAt: "last monday" } }));
+
+    expect(await readLink(store, TOKEN)).toMatchObject({ address: ADDRESS, chatId: 42 });
+    expect((await link(store)).weekly).toBeUndefined();
   });
 });

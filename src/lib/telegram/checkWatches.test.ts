@@ -7,10 +7,15 @@ import type { BotClient } from "./botApi";
 import { checkWatches } from "./checkWatches";
 import { fakeStore } from "./fakeStore";
 import type { SmartPair } from "../analytics/smartLiquidity";
-import { claimLink, createPendingLink, readLink, setSmartAlerts } from "./links";
+import { claimLink, createPendingLink, readLink, setSmartAlerts, setWeeklyDigest } from "./links";
+import type { SmartSnapshot, SnapshotPair } from "../analytics/smartHistory";
+import type { ChainId } from "../chains/chains";
 
 /** No measurement kept: the position alerts under test are all these passes have to say. */
 const none = () => new Map<string, never>();
+
+/* No series kept, on a Tuesday: no digest is due or could be sent, whichever link asked. */
+const noDigest = { readSmartSeries: async () => null, now: () => new Date("2026-10-06T09:00:00.000Z") };
 
 const TOKEN = "abcDEF123456789012_-xy";
 const ADDRESS = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640";
@@ -65,12 +70,12 @@ describe("checkWatches", () => {
         asked.push(address);
         return answer([position("1", true)]);
       },
-      dictionary: getDictionary, readSmartPairs: none,
+      dictionary: getDictionary, ...noDigest, readSmartPairs: none,
     });
 
     expect(asked).toEqual([ADDRESS]);
     expect(sent).toEqual([]);
-    expect(summary).toEqual({ watches: 1, checked: 1, unreadable: 0, alerts: 0, sent: 0, storeUnavailable: false });
+    expect(summary).toEqual({ watches: 1, checked: 1, unreadable: 0, alerts: 0, sent: 0, digests: 0, storeUnavailable: false });
     expect((await readLink(store, TOKEN))?.snapshot).toEqual({ "v3:1": true });
   });
 
@@ -79,7 +84,7 @@ describe("checkWatches", () => {
     const { client, sent } = bot();
     const read = { positions: [position("1", true)] };
     const check = () =>
-      checkWatches({ store, bot: client, readPositions: async () => answer(read.positions), dictionary: getDictionary, readSmartPairs: none });
+      checkWatches({ store, bot: client, readPositions: async () => answer(read.positions), dictionary: getDictionary, ...noDigest, readSmartPairs: none });
 
     await check();
     read.positions = [position("1", false)];
@@ -103,13 +108,13 @@ describe("checkWatches", () => {
   it("leaves the snapshot alone when an address could not be read", async () => {
     const store = await linked();
     const { client, sent } = bot();
-    await checkWatches({ store, bot: client, readPositions: async () => answer([position("1", true)]), dictionary: getDictionary, readSmartPairs: none });
+    await checkWatches({ store, bot: client, readPositions: async () => answer([position("1", true)]), dictionary: getDictionary, ...noDigest, readSmartPairs: none });
 
     const summary = await checkWatches({
       store,
       bot: client,
       readPositions: async () => ({ status: "unavailable", notice: "positions-unreadable" }),
-      dictionary: getDictionary, readSmartPairs: none,
+      dictionary: getDictionary, ...noDigest, readSmartPairs: none,
     });
 
     expect(summary).toMatchObject({ checked: 0, unreadable: 1, alerts: 0 });
@@ -122,7 +127,7 @@ describe("checkWatches", () => {
     const read = { positions: [position("1", true)] };
     const failing: BotClient = { sendMessage: async () => false };
     const check = () =>
-      checkWatches({ store, bot: failing, readPositions: async () => answer(read.positions), dictionary: getDictionary, readSmartPairs: none });
+      checkWatches({ store, bot: failing, readPositions: async () => answer(read.positions), dictionary: getDictionary, ...noDigest, readSmartPairs: none });
 
     await check();
     read.positions = [];
@@ -140,7 +145,7 @@ describe("checkWatches", () => {
         asked += 1;
         return answer([]);
       },
-      dictionary: getDictionary, readSmartPairs: none,
+      dictionary: getDictionary, ...noDigest, readSmartPairs: none,
     });
     expect(asked).toBe(0);
     expect(summary.storeUnavailable).toBe(true);
@@ -169,7 +174,7 @@ describe("checkWatches, near an edge", () => {
     const store = await linked();
     const { client, sent } = bot();
     const pass = (tick: number) =>
-      checkWatches({ store, bot: client, readPositions: async () => answer([at(tick)]), dictionary: getDictionary, readSmartPairs: none });
+      checkWatches({ store, bot: client, readPositions: async () => answer([at(tick)]), dictionary: getDictionary, ...noDigest, readSmartPairs: none });
 
     await pass(2500);
     await pass(5000);
@@ -200,7 +205,7 @@ describe("checking a link on a chain", () => {
         asked.push([address, chain]);
         return answer([position("1", true)]);
       },
-      dictionary: getDictionary, readSmartPairs: none,
+      dictionary: getDictionary, ...noDigest, readSmartPairs: none,
     });
     return asked;
   };
@@ -221,7 +226,7 @@ describe("a closed position on a chain", () => {
     await claimLink(store, TOKEN, 42);
     const { client, sent } = bot();
     const check = (positions: readonly Position[]) =>
-      checkWatches({ store, bot: client, readPositions: async () => answer(positions), dictionary: getDictionary, readSmartPairs: none });
+      checkWatches({ store, bot: client, readPositions: async () => answer(positions), dictionary: getDictionary, ...noDigest, readSmartPairs: none });
 
     await check([position("5", true)]);
     await check([]);
@@ -252,7 +257,7 @@ describe("checkWatches and the smart-money alert", () => {
         store,
         bot: client,
         readPositions: async () => answer([position("1", true)]),
-        dictionary: getDictionary,
+        dictionary: getDictionary, ...noDigest,
         readSmartPairs: () => kept.pairs,
       });
     return { store, sent, kept, check };
@@ -298,7 +303,7 @@ describe("checkWatches and the smart-money alert", () => {
         store,
         bot: client,
         readPositions: async () => answer(state.positions),
-        dictionary: getDictionary,
+        dictionary: getDictionary, ...noDigest,
         readSmartPairs: () => state.pairs,
       });
 
@@ -319,7 +324,7 @@ describe("checkWatches and the smart-money alert", () => {
       store,
       bot: bot().client,
       readPositions: async () => answer([position("1", true)]),
-      dictionary: getDictionary,
+      dictionary: getDictionary, ...noDigest,
       readSmartPairs: (chainId) => {
         chains.push(chainId);
         return new Map();
@@ -339,7 +344,7 @@ describe("checkWatches and the smart-money alert", () => {
       store,
       bot: bot().client,
       readPositions: async () => answer([position("1", true)]),
-      dictionary: getDictionary,
+      dictionary: getDictionary, ...noDigest,
       readSmartPairs: (chainId) => {
         chains.push(chainId);
         return new Map();
@@ -357,10 +362,217 @@ describe("checkWatches and the smart-money alert", () => {
       store,
       bot: bot().client,
       readPositions: async () => ({ status: "unavailable", notice: "positions-unreadable" }),
-      dictionary: getDictionary,
+      dictionary: getDictionary, ...noDigest,
       readSmartPairs: () => kept.pairs,
     });
 
     expect((await readLink(store, TOKEN))?.smart?.ranges).toEqual({ [POOL]: [0.0003, 0.0005] });
+  });
+});
+
+describe("checkWatches and the Monday digest", () => {
+  const MONDAY_EIGHT = "2026-10-05T08:00:00.000Z";
+  const kept = (pool: string, valueUsd: number, lower: number, upper: number): SnapshotPair => ({
+    pool,
+    pair: "USDC / WETH",
+    feePpm: 500,
+    positions: 6,
+    valueUsd,
+    lowerPrice: lower,
+    upperPrice: upper,
+    currentPrice: (lower + upper) / 2,
+    yearlyYield: 0.2,
+  });
+  const measured = (at: string, pairs: readonly SnapshotPair[]): SmartSnapshot => ({
+    at,
+    measured: 100,
+    smart: 20,
+    medianYearlyYield: 0.1,
+    smartFrom: 0.2,
+    pairs: [...pairs],
+  });
+  /* A week in which 0xb gained a share and 0xa lost one, and 0xa's range moved up. */
+  const WEEK: readonly SmartSnapshot[] = [
+    measured("2026-09-28T09:00:00.000Z", [kept("0xa", 60, 0.0003, 0.0005), kept("0xb", 40, 1, 2)]),
+    measured("2026-10-05T06:00:00.000Z", [kept("0xa", 30, 0.0004, 0.0006), kept("0xb", 70, 1, 2)]),
+  ];
+
+  const subscribed = async ({ chainId, locale = "tr" }: { chainId?: ChainId; locale?: "tr" | "en" } = {}) => {
+    const store = fakeStore();
+    await createPendingLink(store, TOKEN, { address: ADDRESS, locale, now: new Date(), ...(chainId === undefined ? {} : { chainId }) });
+    await claimLink(store, TOKEN, 42);
+    await setWeeklyDigest(store, TOKEN, (await readLink(store, TOKEN)) as never, true);
+    return store;
+  };
+
+  const passes = (store: ReturnType<typeof fakeStore>, state: { series: readonly SmartSnapshot[] | null; time: string; delivers?: boolean; readable?: boolean }) => {
+    const sent: { chatId: number; text: string }[] = [];
+    const asked: number[] = [];
+    const pass = () =>
+      checkWatches({
+        store,
+        bot: {
+          sendMessage: async (chatId, text) => {
+            if (state.delivers === false) return false;
+            sent.push({ chatId, text });
+            return true;
+          },
+        },
+        readPositions: async () =>
+          state.readable === false ? { status: "unavailable", notice: "positions-unreadable" } : answer([position("1", true)]),
+        dictionary: getDictionary,
+        readSmartPairs: none,
+        readSmartSeries: async (chainId) => {
+          asked.push(chainId);
+          return state.series;
+        },
+        now: () => new Date(state.time),
+      });
+    return { sent, asked, pass };
+  };
+
+  it("sends the digest at eight on Monday, in the link's language, records it, and does not send it twice", async () => {
+    const store = await subscribed();
+    const state = { series: WEEK, time: "2026-10-05T07:55:00.000Z" };
+    const { sent, pass } = passes(store, state);
+
+    expect(await pass()).toMatchObject({ digests: 0 });
+    expect(sent).toEqual([]);
+
+    state.time = "2026-10-05T08:00:00.000Z";
+    expect(await pass()).toMatchObject({ digests: 1, alerts: 0 });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.chatId).toBe(42);
+    expect(sent[0]?.text.startsWith(getDictionary("tr").telegram.weeklyHeading("Ethereum", "7"))).toBe(true);
+    expect(sent[0]?.text).toContain(getDictionary("tr").telegram.weeklyGaining);
+    expect(sent[0]?.text).toContain("https://liquiditywise.com/tr/smart-money?chain=ethereum");
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: MONDAY_EIGHT });
+
+    state.time = "2026-10-05T08:05:00.000Z";
+    expect(await pass()).toMatchObject({ digests: 0 });
+    state.time = "2026-10-05T23:55:00.000Z";
+    await pass();
+    expect(sent).toHaveLength(1);
+  });
+
+  it("does not send it again after a restart, since the time is kept in the store and not the process", async () => {
+    const store = await subscribed();
+    await passes(store, { series: WEEK, time: "2026-10-05T08:00:00.000Z" }).pass();
+
+    const afterRestart = passes(store, { series: WEEK, time: "2026-10-05T09:00:00.000Z" });
+    await afterRestart.pass();
+
+    expect(afterRestart.sent).toEqual([]);
+    expect(afterRestart.asked).toEqual([]);
+  });
+
+  it("sends the next one the next Monday, and none on the days between", async () => {
+    const store = await subscribed();
+    const state = { series: WEEK, time: "2026-10-05T08:00:00.000Z" };
+    const { sent, pass } = passes(store, state);
+
+    await pass();
+    for (const time of ["2026-10-06T08:00:00.000Z", "2026-10-09T12:00:00.000Z", "2026-10-12T07:59:00.000Z"]) {
+      state.time = time;
+      await pass();
+    }
+    expect(sent).toHaveLength(1);
+
+    state.time = "2026-10-12T08:00:00.000Z";
+    await pass();
+    expect(sent).toHaveLength(2);
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: "2026-10-12T08:00:00.000Z" });
+  });
+
+  it("sends nothing, and records nothing, until a day of measurements is kept — and sends once there is, that Monday", async () => {
+    const store = await subscribed();
+    const state: { series: readonly SmartSnapshot[] | null; time: string } = {
+      series: [measured("2026-10-05T01:00:00.000Z", WEEK[0]!.pairs), measured("2026-10-05T06:00:00.000Z", WEEK[1]!.pairs)],
+      time: "2026-10-05T08:00:00.000Z",
+    };
+    const { sent, pass } = passes(store, state);
+
+    expect(await pass()).toMatchObject({ digests: 0 });
+    expect(sent).toEqual([]);
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: null });
+
+    state.series = [];
+    await pass();
+    state.series = null;
+    await pass();
+    expect(sent).toEqual([]);
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: null });
+
+    state.series = WEEK;
+    state.time = "2026-10-05T14:00:00.000Z";
+    await pass();
+    expect(sent).toHaveLength(1);
+  });
+
+  it("does not record a digest Telegram did not take, and sends it on the next pass", async () => {
+    const store = await subscribed();
+    const state = { series: WEEK, time: "2026-10-05T08:00:00.000Z", delivers: false };
+    const { sent, pass } = passes(store, state);
+
+    expect(await pass()).toMatchObject({ digests: 0 });
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: null });
+
+    state.delivers = true;
+    state.time = "2026-10-05T08:05:00.000Z";
+    expect(await pass()).toMatchObject({ digests: 1 });
+    expect(sent).toHaveLength(1);
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: "2026-10-05T08:05:00.000Z" });
+  });
+
+  it("sends it even when the address could not be read, since it is about the chain and not the address", async () => {
+    const store = await subscribed();
+    const { sent, pass } = passes(store, { series: WEEK, time: MONDAY_EIGHT, readable: false });
+
+    expect(await pass()).toMatchObject({ digests: 1, unreadable: 1 });
+    expect(sent).toHaveLength(1);
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: MONDAY_EIGHT });
+  });
+
+  it("keeps the time through the snapshot the same pass writes, and keeps the snapshot", async () => {
+    const store = await subscribed();
+    await passes(store, { series: WEEK, time: MONDAY_EIGHT }).pass();
+
+    expect(await readLink(store, TOKEN)).toMatchObject({ weekly: { sentAt: MONDAY_EIGHT }, snapshot: { "v3:1": true } });
+  });
+
+  it("sends nothing to a chat that did not ask, and does not read the series for it", async () => {
+    const store = await linked();
+    const { sent, asked, pass } = passes(store, { series: WEEK, time: MONDAY_EIGHT });
+
+    expect(await pass()).toMatchObject({ digests: 0 });
+    expect(sent).toEqual([]);
+    expect(asked).toEqual([]);
+    expect((await readLink(store, TOKEN))?.weekly).toBeUndefined();
+  });
+
+  it("reads the series of the link's chain, and Ethereum's for a chain where none is measured", async () => {
+    const onBase = passes(await subscribed({ chainId: 8453, locale: "en" }), { series: WEEK, time: MONDAY_EIGHT });
+    await onBase.pass();
+    expect(onBase.asked).toEqual([8453]);
+    expect(onBase.sent[0]?.text).toContain("https://liquiditywise.com/en/smart-money?chain=base");
+    expect(onBase.sent[0]?.text).toContain("· Base");
+
+    const onUnichain = passes(await subscribed({ chainId: 130, locale: "en" }), { series: WEEK, time: MONDAY_EIGHT });
+    await onUnichain.pass();
+    expect(onUnichain.asked).toEqual([1]);
+    expect(onUnichain.sent[0]?.text).toContain("?chain=ethereum");
+  });
+
+  it("reads each chain's series once a pass, however many chats are due on it", async () => {
+    const store = await subscribed();
+    const OTHER = "zyxWVU987654321098_-ab";
+    await createPendingLink(store, OTHER, { address: ADDRESS, locale: "en", now: new Date() });
+    await claimLink(store, OTHER, 43);
+    await setWeeklyDigest(store, OTHER, (await readLink(store, OTHER)) as never, true);
+    const { sent, asked, pass } = passes(store, { series: WEEK, time: MONDAY_EIGHT });
+
+    expect(await pass()).toMatchObject({ digests: 2 });
+    expect(asked).toEqual([1]);
+    expect(sent.map(({ chatId }) => chatId).sort()).toEqual([42, 43]);
   });
 });

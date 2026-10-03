@@ -4,7 +4,7 @@ import { getDictionary } from "../i18n/dictionaries";
 import type { BotClient } from "./botApi";
 import { fakeStore } from "./fakeStore";
 import { handleUpdate } from "./handleUpdate";
-import { claimLink, createPendingLink, readLink } from "./links";
+import { claimLink, createPendingLink, readLink, recordDigestSent, setSmartAlerts } from "./links";
 import type { TelegramUpdate } from "./update";
 
 const TOKEN = "abcDEF123456789012_-xy";
@@ -140,5 +140,63 @@ describe("handleUpdate and /smart", () => {
     await handleUpdate(message("/smart", 42, "en"), handling);
 
     expect(await readLink(store, TOKEN)).toMatchObject({ address: ADDRESS, chatId: 42, locale: "de" });
+  });
+});
+
+describe("handleUpdate and /weekly", () => {
+  it("turns the digest on for the chat's link, says so in the link's language, and off again on the next ask", async () => {
+    const { handling, sent, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+
+    await handleUpdate(message("/weekly", 42, "en"), handling);
+    expect((await readLink(store, TOKEN))?.weekly).toEqual({ sentAt: null });
+    await handleUpdate(message("/weekly", 42, "en"), handling);
+    expect((await readLink(store, TOKEN))?.weekly).toBeUndefined();
+
+    expect(sent).toEqual([
+      { chatId: 42, text: getDictionary("de").telegram.weeklyOn },
+      { chatId: 42, text: getDictionary("de").telegram.weeklyOff },
+    ]);
+  });
+
+  it("deletes the time of the last digest when turned off, and leaves /smart as it was", async () => {
+    const { handling, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+    await setSmartAlerts(store, TOKEN, (await readLink(store, TOKEN)) as never, true);
+    await handleUpdate(message("/weekly", 42, "en"), handling);
+    await recordDigestSent(store, TOKEN, (await readLink(store, TOKEN)) as never, new Date("2026-10-05T08:00:00.000Z"));
+    await handleUpdate(message("/weekly", 42, "en"), handling);
+
+    const raw = store.data.get(`liquiditywise:telegram:link:${TOKEN}`) ?? "";
+    expect(raw).not.toContain("weekly");
+    expect(raw).not.toContain("2026-10-05");
+    expect((await readLink(store, TOKEN))?.smart).toEqual({ ranges: {} });
+  });
+
+  it("tells a chat that follows nothing to connect first, in the sender's language, and stores nothing", async () => {
+    const { handling, sent, store } = await setup();
+    await handleUpdate(message("/weekly", 99, "ru"), handling);
+
+    expect(sent).toEqual([{ chatId: 99, text: getDictionary("ru").telegram.smartNoLink }]);
+    expect((await readLink(store, TOKEN))?.weekly).toBeUndefined();
+  });
+
+  it("says the store is down when it is", async () => {
+    const { handling, sent, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+    store.down = true;
+    await handleUpdate(message("/weekly", 42, "pt"), handling);
+
+    expect(sent).toEqual([{ chatId: 42, text: getDictionary("pt").telegram.storeDown }]);
+  });
+
+  it("says the store is down, in the link's language, when it did not take the change", async () => {
+    const { handling, sent, store } = await setup();
+    await claimLink(store, TOKEN, 42);
+    const failing = { ...store, set: async () => false };
+    await handleUpdate(message("/weekly", 42, "en"), { ...handling, store: failing });
+
+    expect(sent).toEqual([{ chatId: 42, text: getDictionary("de").telegram.storeDown }]);
+    expect((await readLink(store, TOKEN))?.weekly).toBeUndefined();
   });
 });

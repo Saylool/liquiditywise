@@ -17,6 +17,8 @@ import { type ChainId, isSupportedChainId } from "../chains/chains";
  * were reading in, the numeric id of the Telegram chat that presented the
  * token, and — once the checker has run — whether each of the address's
  * positions was inside its range last time. No name, no username, no message.
+ * A chat that asked for more (/smart, /weekly) adds only what that needs, in
+ * the same record, so `/stop` and the backup's seven days cover it too.
  *
  * A pending link — minted, not yet presented to the bot — lives half an hour.
  * A claimed one lives until `/stop`, or until the reader forgets it from the
@@ -64,6 +66,17 @@ const LinkSchema = z.object({
     .optional()
     /* A record this cannot read is a chat that has not asked, not a link that has gone. */
     .catch(undefined),
+  /*
+   * Present only for a chat that asked for the Monday digest with /weekly, and
+   * holding only when the last one went out — `null` until the first has. The
+   * digest is about public measurements, so nothing of the chat's own
+   * positions is kept for it.
+   */
+  weekly: z
+    .object({ sentAt: IsoTimestampSchema.nullable() })
+    .optional()
+    /* As with `smart`: unreadable is "did not ask", never "the link is gone". */
+    .catch(undefined),
 });
 
 export type TelegramLink = {
@@ -78,6 +91,8 @@ export type TelegramLink = {
   readonly snapshot: PositionSnapshot | null;
   /** Set once the chat has asked for smart-money alerts; `ranges` is what it was last told, by pool. */
   readonly smart?: { readonly ranges: SmartRangeBaselines };
+  /** Set once the chat has asked for the Monday digest; `sentAt` is when the last one went out. */
+  readonly weekly?: { readonly sentAt: string | null };
 };
 
 /** A read that could not be made, as distinct from a link that is not there. */
@@ -185,6 +200,42 @@ export const setSmartAlerts = async (
   delete rest.smart;
   const base = rest as unknown as TelegramLink;
   return writeLink(store, token, on ? { ...base, smart: { ranges: {} } } : base);
+};
+
+/**
+ * Turns the Monday digest on for a link, with none sent yet, or off, which
+ * deletes the one thing kept for it: when the last went out. `false` when the
+ * write did not take.
+ */
+export const setWeeklyDigest = async (
+  store: KeyValueStore,
+  token: string,
+  link: TelegramLink,
+  on: boolean,
+): Promise<boolean> => {
+  /* Rebuilt without the field, as with /smart, so turning it off leaves nothing of it behind. */
+  const rest: Record<string, unknown> = { ...link };
+  delete rest.weekly;
+  const base = rest as unknown as TelegramLink;
+  return writeLink(store, token, on ? { ...base, weekly: { sentAt: null } } : base);
+};
+
+/**
+ * Records that a digest went out, and answers the link as it now stands —
+ * what the rest of the pass writes from, so its own write does not put the
+ * old time back. Answered whether or not this write took: the snapshot the
+ * pass writes next carries the time too, so one failed write is a second
+ * chance to keep it rather than a second digest.
+ */
+export const recordDigestSent = async (
+  store: KeyValueStore,
+  token: string,
+  link: TelegramLink,
+  at: Date,
+): Promise<TelegramLink> => {
+  const next: TelegramLink = { ...link, weekly: { sentAt: at.toISOString() } };
+  await writeLink(store, token, next);
+  return next;
 };
 
 /** Removes a link and takes it out of the checker's set, whichever side asked. */

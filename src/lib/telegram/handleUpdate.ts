@@ -1,19 +1,29 @@
 import type { Dictionary } from "../i18n/dictionaries";
 import { DEFAULT_LOCALE, type Locale, negotiateLocale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
-import { claimLink, findByChat, forgetLink, setSmartAlerts } from "./links";
+import { claimLink, findByChat, forgetLink, setSmartAlerts, setWeeklyDigest } from "./links";
 import { readCommand, type TelegramUpdate } from "./update";
 import type { KeyValueStore } from "../store/keyValueStore";
 
 /*
  * What the bot does with one message.
  *
- * Three commands and a shrug. `/start <token>` ties this chat to the link the
+ * Four commands and a shrug. `/start <token>` ties this chat to the link the
  * token names and says so in the language the reader was using on the site.
  * `/stop` forgets whatever this chat was tied to. `/smart` turns the
  * smart-money alerts on for the link, or off again: they are off until asked
- * for, because the link was made for a narrower promise. Anything else gets
- * the help line, in the language Telegram says the sender uses.
+ * for, because the link was made for a narrower promise. `/weekly` does the
+ * same for the Monday digest of where the smart money moved. Anything else
+ * gets the help line, in the language Telegram says the sender uses.
+ *
+ * **The digest belongs to the link, as /smart does, though it is only
+ * about public measurements.** A chat that has no link could in principle be
+ * sent one, but the only record this bot keeps is a link: a second kind of
+ * record, keyed by chat id, would be a second thing `/stop` and "forget the
+ * link" on the site have to find and delete, and a promise — the address and
+ * the chat, nothing else — to rewrite in ten languages. Kept on the link, the
+ * digest goes when the link goes, the backup covers it as it covers the
+ * link, and it is sent in the language and for the chain the link was made in.
  *
  * Pure of the framework: the store and the bot are handed in, so a test can
  * watch what would have been sent without a network.
@@ -80,6 +90,28 @@ export const handleUpdate = async (
       return;
     }
     await bot.sendMessage(chatId, turningOn ? t.telegram.smartOn : t.telegram.smartOff);
+    return;
+  }
+
+  if (command.kind === "weekly") {
+    const watch = await findByChat(store, chatId);
+    if (watch === undefined) {
+      await bot.sendMessage(chatId, fallback.telegram.storeDown);
+      return;
+    }
+    if (watch === null) {
+      await bot.sendMessage(chatId, fallback.telegram.smartNoLink);
+      return;
+    }
+
+    /* The same toggle as /smart: one command to remember, and off deletes the one time kept for it. */
+    const turningOn = watch.link.weekly === undefined;
+    const t = dictionary(watch.link.locale);
+    if (!(await setWeeklyDigest(store, watch.token, watch.link, turningOn))) {
+      await bot.sendMessage(chatId, t.telegram.storeDown);
+      return;
+    }
+    await bot.sendMessage(chatId, turningOn ? t.telegram.weeklyOn : t.telegram.weeklyOff);
     return;
   }
 

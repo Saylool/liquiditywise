@@ -29,6 +29,8 @@ export type BotCommand =
   | { readonly kind: "stop" }
   /** Turns the smart-money alerts on for the chat's link, or off if they are on. */
   | { readonly kind: "smart" }
+  /** Turns the Monday digest of where the smart money moved on for the chat's link, or off if it is on. */
+  | { readonly kind: "weekly" }
   | { readonly kind: "other" };
 
 /**
@@ -52,6 +54,8 @@ export const readCommand = (text: string | undefined): BotCommand | null => {
       return { kind: "stop" };
     case "smart":
       return { kind: "smart" };
+    case "weekly":
+      return { kind: "weekly" };
     default:
       return { kind: "other" };
   }

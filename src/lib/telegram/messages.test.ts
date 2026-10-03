@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { Position } from "../../schemas";
-import { formatPrice } from "../format/displayFormats";
+import { formatFeePpm, formatPercent, formatPrice } from "../format/displayFormats";
 import { getDictionary } from "../i18n/dictionaries";
 import { LOCALES } from "../i18n/locales";
 import type { SmartPair } from "../analytics/smartLiquidity";
-import { alertText, smartShiftText } from "./messages";
+import { getSmartLiquidityCopy } from "../i18n/smartLiquidityCopy";
+import { alertText, smartMoneyUrl, smartShiftText, weeklyDigestText } from "./messages";
+import type { WeeklyDigest } from "./weeklyDigest";
 
 /*
  * USDC/WETH with USDC as token0, so the pool's own prices are WETH per USDC —
@@ -141,6 +143,105 @@ describe("the smart-money alert's words", () => {
       expect(telegram.smartOn, locale).not.toBe(english.smartOn);
       expect(telegram.smartOff, locale).not.toBe(english.smartOff);
       expect(telegram.smartNoLink, locale).not.toBe(english.smartNoLink);
+    }
+  });
+});
+
+describe("the Monday digest", () => {
+  /* USDC/WETH as token0/token1, so its prices are WETH per USDC and are quoted the other way up, as USDC per WETH. */
+  const digest: WeeklyDigest = {
+    days: 6.875,
+    gaining: [{ pool: "0xb", pair: "WETH / USDT", feePpm: 3000, from: 0.4, to: 0.7 }],
+    losing: [{ pool: "0xa", pair: "USDC / WETH", feePpm: 500, from: 0.6, to: 0.3 }],
+    ranges: [
+      { pool: "0xa", pair: "USDC / WETH", feePpm: 500, then: [0.0003, 0.0005], now: [0.0004, 0.0006], currentPrice: 0.0005 },
+      { pool: "0xb", pair: "WETH / USDT", feePpm: 3000, then: [2800, 3200], now: [3300, 3900], currentPrice: 3500 },
+    ],
+  };
+  const en = getDictionary("en");
+
+  it("opens with the chain and the days, and names the movers each way with their share then and now", () => {
+    const text = weeklyDigestText(digest, en, "en", 8453);
+
+    expect(text.startsWith(en.telegram.weeklyHeading("Base", "7"))).toBe(true);
+    expect(text).toContain(`${en.telegram.weeklyGaining}\n• WETH / USDT · ${formatFeePpm(3000, "en")}: ${formatPercent(0.4, "en")} → ${formatPercent(0.7, "en")}`);
+    expect(text).toContain(`${en.telegram.weeklyLosing}\n• USDC / WETH · ${formatFeePpm(500, "en")}: ${formatPercent(0.6, "en")} → ${formatPercent(0.3, "en")}`);
+    expect(text.indexOf(en.telegram.weeklyGaining)).toBeLessThan(text.indexOf(en.telegram.weeklyLosing));
+  });
+
+  it("gives each moved range as prices then → now, both quoted the way the pair is at its price now", () => {
+    const text = weeklyDigestText(digest, en, "en", 1);
+    const inverted = `${formatPrice(1 / 0.0005, "en")} – ${formatPrice(1 / 0.0003, "en")} USDC/WETH → ${formatPrice(1 / 0.0006, "en")} – ${formatPrice(1 / 0.0004, "en")} USDC/WETH`;
+    const asIs = `${formatPrice(2800, "en")} – ${formatPrice(3200, "en")} USDT/WETH → ${formatPrice(3300, "en")} – ${formatPrice(3900, "en")} USDT/WETH`;
+
+    expect(text).toContain(`${en.telegram.weeklyRanges}\n• USDC / WETH · ${formatFeePpm(500, "en")}: ${inverted}\n• WETH / USDT · ${formatFeePpm(3000, "en")}: ${asIs}`);
+  });
+
+  it("writes a range without a unit rather than with a wrong one when the pair's name cannot be split", () => {
+    const odd: WeeklyDigest = { ...digest, ranges: [{ ...digest.ranges[1]!, pair: "WETH-USDT" }] };
+    const text = weeklyDigestText(odd, en, "en", 1);
+
+    expect(text).toContain(`${formatPrice(2800, "en")} – ${formatPrice(3200, "en")} → ${formatPrice(3300, "en")} – ${formatPrice(3900, "en")}`);
+  });
+
+  it("links to the smart-money page in the reader's language and on the digest's chain", () => {
+    expect(smartMoneyUrl("tr", 8453)).toBe("https://liquiditywise.com/tr/smart-money?chain=base");
+    expect(smartMoneyUrl("en", 1)).toBe("https://liquiditywise.com/en/smart-money?chain=ethereum");
+    expect(weeklyDigestText(digest, getDictionary("tr"), "tr", 8453)).toContain(
+      getDictionary("tr").telegram.weeklyLink("https://liquiditywise.com/tr/smart-money?chain=base"),
+    );
+  });
+
+  it("says it is a measurement and not a suggestion, and ends with the footer", () => {
+    const text = weeklyDigestText(digest, en, "en", 1);
+
+    expect(text).toContain(en.telegram.weeklyNote);
+    expect(text.endsWith(`\n\n${en.telegram.footer}`)).toBe(true);
+  });
+
+  it("leaves out a part with nothing in it rather than a heading over nothing", () => {
+    const text = weeklyDigestText({ ...digest, gaining: [], ranges: [] }, en, "en", 1);
+
+    expect(text).not.toContain(en.telegram.weeklyGaining);
+    expect(text).not.toContain(en.telegram.weeklyRanges);
+    expect(text).toContain(en.telegram.weeklyLosing);
+  });
+
+  it("speaks the link's language", () => {
+    const text = weeklyDigestText(digest, getDictionary("de"), "de", 1);
+
+    expect(text).toContain(getDictionary("de").telegram.weeklyGaining);
+    expect(text).toContain(getDictionary("de").telegram.footer);
+  });
+});
+
+describe("the Monday digest's words", () => {
+  it.each(LOCALES)("in %s, say how to turn it on and off, and use the smart-money page's own words", (locale) => {
+    const { telegram } = getDictionary(locale);
+    const copy = getSmartLiquidityCopy(locale);
+
+    expect(telegram.weeklyOn).toContain("/weekly");
+    expect(telegram.help).toContain("/weekly");
+    expect(telegram.intro).toContain("/weekly");
+    expect(telegram.weeklyOff.trim().length).toBeGreaterThan(10);
+    expect(telegram.weeklyHeading("CHAIN", "7")).toBe(`📅 ${copy.heading} · CHAIN\n${copy.trend.heading("7")}`);
+    expect(telegram.weeklyGaining).toBe(copy.trend.gaining);
+    expect(telegram.weeklyLosing).toBe(copy.trend.losing);
+    expect(telegram.weeklyMover("PAIR", "FROM", "TO")).toBe(copy.trend.mover("PAIR", "FROM", "TO"));
+    expect(telegram.weeklyRange("PAIR", "THEN", "NOW")).toMatch(/PAIR.*THEN.*NOW/s);
+    expect(telegram.weeklyLink("URL")).toContain("URL");
+    expect(telegram.weeklyNote.trim().length).toBeGreaterThan(10);
+  });
+
+  it("are not left in English", () => {
+    const english = getDictionary("en").telegram;
+
+    for (const locale of LOCALES.filter((locale) => locale !== "en")) {
+      const { telegram } = getDictionary(locale);
+      for (const key of ["weeklyOn", "weeklyOff", "weeklyRanges", "weeklyNote"] as const) {
+        expect(telegram[key], `${locale} ${key}`).not.toBe(english[key]);
+      }
+      expect(telegram.weeklyLink("URL"), locale).not.toBe(english.weeklyLink("URL"));
     }
   });
 });

@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
 import { peekSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
 import { smartPairsByPool } from "@/lib/advisor/smartRanges";
+import { readSeries } from "@/lib/advisor/smartStore";
+import { chainOf } from "@/lib/chains/chains";
 import { recordAlertRun } from "@/lib/health/appReadings";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { checkWatches } from "@/lib/telegram/checkWatches";
@@ -15,7 +17,8 @@ import { sameSecret } from "@/lib/telegram/secrets";
  * Called by whatever schedules things where this runs — Vercel's cron with
  * its `Authorization: Bearer <CRON_SECRET>`, or a crontab's `curl` with the
  * same header at home. The answer is counts and nothing else: how many links,
- * how many read, how many alerts went out. No address leaves this route.
+ * how many read, how many alerts and Monday digests went out. No address
+ * leaves this route.
  */
 
 export const dynamic = "force-dynamic";
@@ -43,6 +46,9 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
     dictionary: getDictionary,
     /* Only what the six-hourly measurement has kept: this pass never starts one. */
     readSmartPairs: (chainId) => smartPairsByPool(peekSmartLiquidity(chainId)),
+    /* The Monday digest reads the series the measurement keeps beside the links, in the same store. */
+    readSmartSeries: (chainId) => readSeries(setup.store, chainOf(chainId).slug).catch(() => null),
+    now: () => new Date(),
   });
 
   /*

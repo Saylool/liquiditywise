@@ -29,4 +29,18 @@ describe("the bot's profile fits what Telegram accepts", () => {
     expect(text).toContain("/stop");
     expect(text).toMatch(/seven days|yedi gün/);
   });
+
+  it.each(["DESC_EN", "DESC_TR"])("%s says what /weekly keeps", (name) => {
+    expect(quoted(name)).toContain("/weekly");
+  });
+
+  it("lists /weekly among the commands, in every language the menu is set in", () => {
+    const menus = [...script.matchAll(/'commands=(\[[^']*\])'/g)].map((match) => JSON.parse(match[1] ?? "[]") as { command: string; description: string }[]);
+
+    expect(menus).toHaveLength(2);
+    for (const menu of menus) {
+      expect(menu.map(({ command }) => command)).toEqual(["start", "smart", "weekly", "stop"]);
+      for (const { description } of menu) expect(description.length).toBeLessThanOrEqual(256);
+    }
+  });
 });
