@@ -1,5 +1,5 @@
 /*
- * Whether to spend 3.2MB of somebody's connection on a decoration.
+ * Whether to spend 0.7MB of somebody's connection on a decoration.
  *
  * The hero's scroll effect is a video, and it is exactly that: an effect. The
  * page says everything it has to say without it, and the still image behind
@@ -24,10 +24,10 @@ export type ConnectionReading = {
 };
 
 /**
- * Connections too slow to spend three megabytes on.
+ * Connections too slow to spend most of a megabyte on.
  *
  * "3g" is included deliberately. The browser reports it for anything it
- * estimates under about 700kbps, where 3.2MB is the better part of a minute
+ * estimates under about 700kbps, where 0.7MB is several seconds
  * — long enough that the effect would arrive after the reader had scrolled
  * past the thing it decorates.
  */

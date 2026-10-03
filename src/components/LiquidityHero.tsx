@@ -117,14 +117,17 @@ export function LiquidityHero({
        * is not about the shape of the screen: it is about what the download
        * would cost this reader. A connection the browser calls slow, or a
        * data saver they turned on themselves, means the still image is the
-       * whole hero and nobody is charged three megabytes for a flourish.
+       * whole hero and nobody is charged most of a megabyte for a flourish.
        */
       if (!shouldLoadHeroVideo(readConnection(navigator))) {
         failed = true;
         return;
       }
       controller = new AbortController();
-      const timer = window.setTimeout(() => controller?.abort(), 20000);
+      /* A minute: at 1.5Mbps the 0.7MB file takes about four seconds, and a
+       * slower reader who waits should still get the effect, not a silent
+       * downgrade because the download ran past an impatient limit. */
+      const timer = window.setTimeout(() => controller?.abort(), 60000);
       try {
         const response = await fetch("/images/liquidity-scrub.mp4", {
           signal: controller.signal,
