@@ -41,7 +41,8 @@ export type PairPoolReaders = {
   readonly searchV4: (terms: PairTerms, chainId: ChainId) => Promise<DataResult<V4PoolSearchResults>>;
   readonly daysV3: (chainId: ChainId) => Promise<DataResult<V4PoolDays>>;
   readonly daysV4: (chainId: ChainId) => Promise<DataResult<V4PoolDays>>;
-  readonly nativeUsd: (chainId: ChainId) => Promise<DataResult<number>>;
+  /** The dollar price of the currency a protocol's own subgraph prices in, on one chain. */
+  readonly nativeUsd: (chainId: ChainId, protocol: "v3" | "v4") => Promise<DataResult<number>>;
   /** Told when a reader threw instead of answering; the page goes on without that read. */
   readonly onThrown?: (where: string) => void;
 };
@@ -111,8 +112,14 @@ export const readPairPools = async (
   const { onThrown } = readers;
 
   const perChain = chains.map((chain) => {
-    /* One price per chain, asked once and awaited by both halves. */
-    const price = settle(`${chain.slug} price`, () => readers.nativeUsd(chain.id), onThrown);
+    /*
+     * One price per protocol, not per chain: each subgraph prices in its own
+     * currency. Measured on Polygon on 2026-10-03, the v3 subgraph's bundle
+     * is ETH ($2,677) and the v4 one's is POL ($0.108) — one price for both
+     * put a v4 pool's depth in POL at ETH's price, six billion dollars.
+     */
+    const priceFor = (protocol: "v3" | "v4") =>
+      settle(`${chain.slug} ${protocol} price`, () => readers.nativeUsd(chain.id, protocol), onThrown);
 
     const v3 = !readsV3(chain.id)
       ? null
@@ -122,7 +129,7 @@ export const readPairPools = async (
           terms,
           search: settle(`${chain.slug} v3 search`, () => readers.searchV3(terms, chain.id), onThrown),
           days: settle(`${chain.slug} v3 days`, () => readers.daysV3(chain.id), onThrown),
-          price,
+          price: priceFor("v3"),
           /* What the token contracts hold for the pool, as the v3 search orders by. */
           toRow: (match: PoolSearchMatch, nativeUsd, weeks) =>
             composePairRow({ chain, pool: match.pool, liquidityInNative: heldInEth(match), nativeUsd, weeks }),
@@ -136,7 +143,7 @@ export const readPairPools = async (
           terms,
           search: settle(`${chain.slug} v4 search`, () => readers.searchV4(terms, chain.id), onThrown),
           days: settle(`${chain.slug} v4 days`, () => readers.daysV4(chain.id), onThrown),
-          price,
+          price: priceFor("v4"),
           /* Depth at the current price, as the v4 search orders by: nothing on chain says what one v4 pool holds. */
           toRow: (match: V4PoolSearchMatch, nativeUsd, weeks) =>
             composePairRow({ chain, pool: match.pool, liquidityInNative: depthInEth(match), nativeUsd, weeks }),

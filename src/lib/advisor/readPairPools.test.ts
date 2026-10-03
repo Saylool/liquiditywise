@@ -111,12 +111,27 @@ const readers = (overrides: Partial<PairPoolReaders> = {}): PairPoolReaders => (
 });
 
 describe("one pair on every network", () => {
-  it("asks every network at once: a search per protocol it reads, and one price", async () => {
+  it("prices each protocol's pools in that protocol's own subgraph's currency, never the other's", async () => {
+    /* Polygon as measured: v3 priced in ETH, v4 in POL. */
+    const pools = await readPairPools(
+      ["usdc", "weth"],
+      readers({ nativeUsd: async (_chainId, protocol) => ({ status: "success", data: protocol === "v3" ? 2_677 : 0.108 }) }),
+    );
+
+    const atOnePrice = await readPairPools(["usdc", "weth"], readers({ nativeUsd: async () => ({ status: "success", data: 1 }) }));
+
+    const polygon = (half: typeof pools.v3) =>
+      [...half.ranked, ...half.unranked].find(({ chain, liquidityUsd }) => chain.slug === "polygon" && liquidityUsd !== null)?.liquidityUsd;
+    expect(polygon(pools.v3)).toBeCloseTo((polygon(atOnePrice.v3) ?? NaN) * 2_677, 6);
+    expect(polygon(pools.v4)).toBeCloseTo((polygon(atOnePrice.v4) ?? NaN) * 0.108, 6);
+  });
+
+  it("asks every network at once: a search and a price per protocol it reads", async () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const asked = { v3: [] as number[], v4: [] as number[], price: [] as number[] };
+    const asked = { v3: [] as number[], v4: [] as number[], price: [] as string[] };
     const base = readers();
     const reading = readPairPools(["USDC", "WETH"], {
       ...base,
@@ -130,10 +145,10 @@ describe("one pair on every network", () => {
         await gate;
         return base.searchV4(terms, chainId);
       },
-      nativeUsd: async (chainId) => {
-        asked.price.push(chainId);
+      nativeUsd: async (chainId, protocol) => {
+        asked.price.push(`${chainId}:${protocol}`);
         await gate;
-        return base.nativeUsd(chainId);
+        return base.nativeUsd(chainId, protocol);
       },
     });
 
@@ -141,7 +156,9 @@ describe("one pair on every network", () => {
     /* Every read has started before any has answered: none waits on another network. */
     expect(asked.v3.sort((left, right) => left - right)).toEqual([1, 10, 137, 8453, 42161]);
     expect(asked.v4.sort((left, right) => left - right)).toEqual([1, 10, 130, 137, 8453, 42161]);
-    expect(asked.price.sort((left, right) => left - right)).toEqual([1, 10, 130, 137, 8453, 42161]);
+    expect(asked.price.sort()).toEqual(
+      ["1:v3", "1:v4", "10:v3", "10:v4", "130:v4", "137:v3", "137:v4", "42161:v3", "42161:v4", "8453:v3", "8453:v4"].sort(),
+    );
     release();
     await reading;
   });
@@ -193,14 +210,14 @@ describe("one pair on every network", () => {
           if (chainId === 130) throw new Error("boom");
           return searched<V4PoolSearchResults>([v4Match(chainId, 1)]);
         },
-        nativeUsd: async (chainId) => {
-          if (chainId === 10) throw new Error("boom");
+        nativeUsd: async (chainId, protocol) => {
+          if (chainId === 10 && protocol === "v3") throw new Error("boom");
           return { status: "success", data: 4_000 };
         },
       }),
     );
 
-    expect(onThrown.mock.calls.map(([where]) => where).sort()).toEqual(["optimism price", "unichain v4 search"]);
+    expect(onThrown.mock.calls.map(([where]) => where).sort()).toEqual(["optimism v3 price", "unichain v4 search"]);
     expect(pools.v4.chains.find(({ chain }) => chain.slug === "unichain")).toMatchObject({
       status: "unavailable",
       notice: "market-data-unreachable",

@@ -25,7 +25,7 @@ export const getPairPools = async (terms: PairTerms): Promise<PairPools> =>
     searchV4: (searched, chainId) => getEthereumV4PoolSearch(searched, chainId),
     daysV3: (chainId) => getEthereumV3PoolDays(chainId),
     daysV4: (chainId) => getEthereumV4PoolDays(chainId),
-    nativeUsd: (chainId) => getNativeUsdPrice(chainId),
+    nativeUsd: (chainId, protocol) => getNativeUsdPrice(chainId, protocol),
     onThrown: (where) => {
       logDetail(LABEL, `a read threw instead of answering: ${where}`);
     },
