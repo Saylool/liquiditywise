@@ -1,4 +1,5 @@
 import { PoolFeeTiers } from "@/components/PoolFeeTiers";
+import { everyNetworkLink } from "@/lib/advisor/pairPools";
 import { chainOf, readsV4 } from "@/lib/chains/chains";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
@@ -65,6 +66,7 @@ export async function PoolFeeTiersSection({
       pair={`${pool.token0.symbol} / ${pool.token1.symbol}`}
       parameters={parameters}
       depositUsd={depositUsd}
+      everyNetwork={everyNetworkLink(pool, locale)}
       t={t}
       locale={locale}
     />

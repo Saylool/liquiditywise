@@ -80,7 +80,7 @@ describe("which pages a search engine may read", () => {
     expect(urls).toContain("https://liquiditywise.com/tr");
     expect(urls).toContain("https://liquiditywise.com/zh-Hant/hooks");
     expect(urls.every((url) => url.startsWith(SITE_URL))).toBe(true);
-    expect(urls.some((url) => /\/(pool|v4|compare|holdings)/.test(url))).toBe(false);
+    expect(urls.some((url) => /\/(pool|v4|compare|pair|holdings)/.test(url))).toBe(false);
   });
 
   it("tells a crawler, beside each address, where the page is in every other language", () => {

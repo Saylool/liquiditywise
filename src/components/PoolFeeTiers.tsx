@@ -197,12 +197,24 @@ export function V3PairPoolList({
   );
 }
 
+/** The way out to the same pair on every network, when the pair's symbols can be searched for as typed. */
+export type EveryNetworkLink = { readonly href: string; readonly label: string };
+
+/** Under a pair's pools on one network: the same two symbols on all of them (see app/pair). */
+export const EveryNetwork = ({ link }: { link: EveryNetworkLink | null | undefined }) =>
+  link === null || link === undefined ? null : (
+    <GuardedLink className="text-link border-t border-border pt-4 text-sm" href={link.href}>
+      {link.label}
+    </GuardedLink>
+  );
+
 export function PoolFeeTiers({
   result,
   v4Result,
   pair,
   parameters,
   depositUsd,
+  everyNetwork,
   t,
   locale,
 }: {
@@ -215,6 +227,8 @@ export function PoolFeeTiers({
   parameters: PriceBandParameters;
   /** Carried into every link out, so a chosen size survives leaving this pool. */
   depositUsd: number;
+  /** The same pair on every network, or nothing where its symbols cannot be searched for. */
+  everyNetwork?: EveryNetworkLink | null;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -238,6 +252,8 @@ export function PoolFeeTiers({
           <V4PairPoolList result={v4Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
         </>
       )}
+
+      <EveryNetwork link={everyNetwork} />
     </section>
   );
 }

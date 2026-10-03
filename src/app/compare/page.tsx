@@ -4,6 +4,7 @@ import { GuardedLink } from "@/components/GuardedLink";
 import { PoolComparison, type ComparedTier, type ComparedV4 } from "@/components/PoolComparison";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
+import { everyNetworkLink } from "@/lib/advisor/pairPools";
 import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import {
   DEPOSIT_PARAMETER,
@@ -198,6 +199,7 @@ export default async function ComparePage({
       parameters={parameters}
       depositUsd={depositUsd}
       chain={chain}
+      everyNetwork={everyNetworkLink(pool, locale)}
       t={t}
       locale={locale}
     />,

@@ -22,6 +22,7 @@ export const PAGES = [
   "/pool",
   "/v4",
   "/compare",
+  "/pair",
   "/holdings",
   "/hooks",
   "/learn",
@@ -106,7 +107,8 @@ const poolOf = (page: Page, parameters: URLSearchParams): string | null => {
     const chain = chainBySlug(parameters.get("chain") ?? "ethereum");
     if (POOL_ID.test(id) && chain !== null) return poolName("v4", id, chain.id);
   }
-  if ((page === "/pool" || page === "/v4") && parameters.get("q") !== null) return "search";
+  /* The pair page takes the search box's own `q`, and is a search across every network. */
+  if ((page === "/pool" || page === "/v4" || page === "/pair") && parameters.get("q") !== null) return "search";
   return null;
 };
 

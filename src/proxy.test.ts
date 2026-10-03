@@ -210,6 +210,26 @@ describe("counting visits for the weekly report", () => {
     ]);
   });
 
+  /*
+   * The pair page reads every network for one request, so it is charged like
+   * the search it is — and counted as one, never with what was searched for.
+   */
+  it("counts the pair page as a search, and charges a pair against the limit", async () => {
+    const client = "198.51.100.207";
+    const lines = visits();
+
+    await proxy(browsing("/pair?q=USDC%2FWETH", client));
+    expect(lines()).toEqual(["[visit] page=/pair pool=search locale=tr bot=0 outcome=served"]);
+
+    for (let index = 1; index < POOL_ANALYSIS_REQUEST_LIMIT; index += 1) {
+      await proxy(browsing("/pair?q=USDC%2FWETH", client));
+    }
+    const refused = await proxy(browsing("/pair?q=USDC%2FWETH", client));
+    expect(refused.status).toBe(429);
+    /* The empty page — the box alone — spends nothing and is never refused. */
+    expect((await proxy(browsing("/pair", client))).status).toBe(200);
+  });
+
   it("does not count a page the browser loaded ahead of a click", async () => {
     const lines = visits();
 

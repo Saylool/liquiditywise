@@ -21,7 +21,8 @@ import { CHAINS, type ChainSlug } from "../lib/chains/chains";
 /** A v4 pool id is 66 characters; an address and a two-term search are shorter. */
 const MAX_LOOKUP_LENGTH = 66;
 
-const rejectionMessage = (reason: PoolSearchRejection, t: Dictionary): string => {
+/** Why a search could not be run, in the reader's words — shared with the pair page's box, which refuses the same terms. */
+export const rejectionMessage = (reason: PoolSearchRejection, t: Dictionary): string => {
   switch (reason) {
     case "empty":
       return t.search.rejected.empty;

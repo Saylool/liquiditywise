@@ -10,7 +10,9 @@ import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { PoolSearchPending } from "@/components/PoolSearchResults";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { V4PoolSearchPending } from "@/components/V4PoolSearchResults";
+import { GuardedLink } from "@/components/GuardedLink";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
+import { pairPoolsHref } from "@/lib/advisor/pairPools";
 import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import {
   HORIZON_PARAMETER,
@@ -26,6 +28,7 @@ import {
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { type Chain, ETHEREUM, readsV3, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
+import { getPairPoolsCopy } from "@/lib/i18n/pairPoolsCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -301,6 +304,9 @@ export default async function PoolRangePage({
   }
 
 
+  const [first, second] = input.terms;
+  const pairHref = second === undefined ? null : pairPoolsHref(first, second);
+
   return (
     <Shell locale={locale} t={t} chain={chain}>
       {/* The validated terms, not the raw string — which may have held a third. */}
@@ -327,6 +333,12 @@ export default async function PoolRangePage({
         <Suspense fallback={<V4PoolSearchPending t={t} />}>
           <V4PoolSearchSection terms={input.terms} chainId={chain.id} locale={locale} t={t} />
         </Suspense>
+      )}
+      {/* A pair typed here is one click from the same pair on every network (app/pair). */}
+      {pairHref === null ? null : (
+        <GuardedLink className="text-link text-sm" href={pairHref}>
+          {getPairPoolsCopy(locale).link}
+        </GuardedLink>
       )}
     </Shell>
   );

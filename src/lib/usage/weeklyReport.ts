@@ -28,6 +28,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/pool": "v3 pool",
   "/v4": "v4 pool",
   "/compare": "tiers side by side",
+  "/pair": "one pair, every network",
   "/holdings": "holdings",
   "/hooks": "hooks",
   "/learn": "quick guide",

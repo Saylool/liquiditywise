@@ -7,6 +7,7 @@ import { getDictionary } from "./dictionaries";
 import { getHomeAlertsCopy } from "./homeAlertsCopy";
 import { getInterfaceCopy } from "./interface";
 import { getMostTradedCopy } from "./mostTradedCopy";
+import { getPairPoolsCopy } from "./pairPoolsCopy";
 import { getPositionOutlookCopy } from "./positionOutlookCopy";
 import { getSmartLiquidityCopy } from "./smartLiquidityCopy";
 
@@ -133,6 +134,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     learn: getLearnCopy,
     topics: getTopicCopy,
     mostTraded: getMostTradedCopy,
+    pairPools: getPairPoolsCopy,
     positionOutlook: getPositionOutlookCopy,
     smartLiquidity: getSmartLiquidityCopy,
     homeAlerts: getHomeAlertsCopy,

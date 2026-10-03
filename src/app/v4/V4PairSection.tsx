@@ -1,4 +1,5 @@
 import { V4PairPanel } from "@/components/V4PairPanel";
+import { everyNetworkLink } from "@/lib/advisor/pairPools";
 import { chainOf, readsV3 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -58,6 +59,7 @@ export async function V4PairSection({
       chainId={chain.id}
       parameters={parameters}
       depositUsd={depositUsd}
+      everyNetwork={everyNetworkLink(pool, locale)}
       t={t}
       locale={locale}
     />

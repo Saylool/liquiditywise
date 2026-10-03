@@ -60,6 +60,7 @@ export const config = {
     "/pool",
     "/v4",
     "/compare",
+    "/pair",
     "/holdings",
     "/hooks",
     "/learn",

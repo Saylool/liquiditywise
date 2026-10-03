@@ -58,6 +58,14 @@ describe("what a visit line records", () => {
     expect(line).not.toContain("secret");
   });
 
+  it("counts the pair page as a search across every network, naming no one network", () => {
+    const line = visitLine(visit("/pair?q=secret%2Fwords") ?? (null as never));
+
+    expect(line).toBe("[visit] page=/pair pool=search locale=tr bot=0 outcome=served");
+    expect(visit("/pair")?.pool).toBeNull();
+    expect(parseUsageLine(line)).toMatchObject({ kind: "visit", visit: { page: "/pair", pool: "search", chain: null } });
+  });
+
   it("records no browser string and no address of the person", () => {
     const line = visitLine(
       visit("/", { "user-agent": BROWSER, "cf-connecting-ip": "203.0.113.7", "x-real-ip": "203.0.113.7" }) ?? (null as never),

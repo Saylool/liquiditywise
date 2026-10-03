@@ -7,6 +7,7 @@ import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { DataFailureNotice, PriceBandParameters, V4FeeConfiguration } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
+import { EveryNetwork, type EveryNetworkLink } from "./PoolFeeTiers";
 import { type Chain, ETHEREUM } from "../lib/chains/chains";
 
 /**
@@ -176,6 +177,7 @@ export function PoolComparison({
   parameters,
   depositUsd,
   chain = ETHEREUM,
+  everyNetwork,
   t,
   locale,
 }: {
@@ -187,6 +189,8 @@ export function PoolComparison({
   v4: ComparedV4;
   parameters: PriceBandParameters;
   depositUsd: number;
+  /** The same pair on every network, or nothing where its symbols cannot be searched for. */
+  everyNetwork?: EveryNetworkLink | null;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -235,6 +239,7 @@ export function PoolComparison({
       )}
 
       <p className="text-sm leading-relaxed">{t.compare.readTogether}</p>
+      <EveryNetwork link={everyNetwork} />
     </div>
   );
 }

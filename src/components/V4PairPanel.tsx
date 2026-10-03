@@ -8,7 +8,7 @@ import {
   type V4PairPools,
   ZERO_ADDRESS,
 } from "../schemas";
-import { V3PairPoolList } from "./PoolFeeTiers";
+import { EveryNetwork, type EveryNetworkLink, V3PairPoolList } from "./PoolFeeTiers";
 import { V4PairPoolList } from "./V4PairPoolList";
 
 /**
@@ -29,6 +29,7 @@ export function V4PairPanel({
   chainId = 1,
   parameters,
   depositUsd,
+  everyNetwork,
   t,
   locale,
 }: {
@@ -44,6 +45,8 @@ export function V4PairPanel({
   parameters: PriceBandParameters;
   /** Carried into every link out, so a chosen size survives leaving this pool. */
   depositUsd: number;
+  /** The same pair on every network, or nothing where its symbols cannot be searched for. */
+  everyNetwork?: EveryNetworkLink | null;
   t: Dictionary;
   locale: Locale;
 }) {
@@ -66,6 +69,8 @@ export function V4PairPanel({
       ) : (
         <V3PairPoolList result={v3Result} pair={pair} parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />
       )}
+
+      <EveryNetwork link={everyNetwork} />
     </section>
   );
 }

@@ -60,3 +60,29 @@ describe("the pair's other tiers, off mainnet", () => {
     expect(render(42161)).toContain(`/compare?chain=arbitrum&amp;address=${ANALYSED}`);
   });
 });
+
+describe("the way out to every network", () => {
+  const withLink = (everyNetwork: { href: string; label: string } | null) =>
+    renderToStaticMarkup(
+      <PoolFeeTiers
+        result={tiers(8453)}
+        v4Result={null}
+        pair="WETH / USDC"
+        parameters={{ horizonDays: 30, standardDeviationMultiplier: 1 }}
+        depositUsd={1_000}
+        everyNetwork={everyNetwork}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+  it("links the same pair on every network, when its symbols can be searched for", () => {
+    expect(withLink({ href: "/pair?q=WETH%2FUSDC", label: "This pair on every network" })).toContain(
+      'href="/pair?q=WETH%2FUSDC"',
+    );
+  });
+
+  it("says nothing where they cannot", () => {
+    expect(withLink(null)).not.toContain("/pair?");
+  });
+});
