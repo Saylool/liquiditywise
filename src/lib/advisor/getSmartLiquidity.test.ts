@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("../chains/chainEnvironment", () => ({
   rpcUrlFor: (chainId: number) => `rpc-${chainId}`,
   v3PositionsSubgraphIdFor: (chainId: number) => `v3-${chainId}`,
+  v3PositionTicksFor: (chainId: number) => (chainId === 42161 ? "scalar" : "entity"),
 }));
 vi.mock("./getMostTraded", () => ({ getMostTraded: async () => ({ v3: null, v4: null }) }));
 vi.mock("../uniswap/ethereumV3InRangePositions", () => ({
@@ -58,7 +59,7 @@ afterEach(() => {
 
 describe("the smart-money figures, kept", () => {
   it("are read nowhere positions cannot be listed", async () => {
-    expect(await getSmartLiquidity(42161)).toBeNull();
+    expect(await getSmartLiquidity(130)).toBeNull();
     expect(await getSmartLiquidity(130)).toBeNull();
     expect(state.reads).toBe(0);
   });
@@ -113,7 +114,7 @@ describe("the smart-money figures, kept", () => {
     const measured = await getSmartLiquidity(1);
     expect(peekSmartLiquidity(1)).toBe(measured);
     expect(peekSmartLiquidity(137)).toBeNull();
-    expect(peekSmartLiquidity(42161)).toBeNull();
+    expect(peekSmartLiquidity(130)).toBeNull();
 
     vi.advanceTimersByTime(SMART_LIQUIDITY_TTL_MS);
     expect(peekSmartLiquidity(1)).toBeNull();
@@ -123,12 +124,15 @@ describe("the smart-money figures, kept", () => {
   it("reads positions from the subgraph the chain names for them, on the chain asked about, allowing a slow one time to answer", async () => {
     await getSmartLiquidity(8453);
     await getSmartLiquidity(10);
+    await getSmartLiquidity(42161);
 
     expect(state.sources).toMatchObject([
-      { chainId: 8453, subgraphId: "v3-8453", timeoutMs: 45_000 },
+      { chainId: 8453, subgraphId: "v3-8453", timeoutMs: 45_000, ticks: "entity" },
       { chainId: 8453, subgraphId: "v3-8453" },
-      { chainId: 10, subgraphId: "v3-10", timeoutMs: 45_000 },
+      { chainId: 10, subgraphId: "v3-10", timeoutMs: 45_000, ticks: "entity" },
       { chainId: 10, subgraphId: "v3-10" },
+      { chainId: 42161, subgraphId: "v3-42161", timeoutMs: 45_000, ticks: "scalar" },
+      { chainId: 42161, subgraphId: "v3-42161" },
     ]);
   });
 });

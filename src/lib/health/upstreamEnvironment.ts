@@ -75,6 +75,7 @@ const SUBGRAPH_IDS: Record<SubgraphName, () => string | undefined> = {
   "v4-polygon": () => v4SubgraphIdFor(137),
   "v3-base-positions": () => v3PositionsSubgraphIdFor(8453),
   "v3-optimism-positions": () => v3PositionsSubgraphIdFor(10),
+  "v3-arbitrum-positions": () => v3PositionsSubgraphIdFor(42161),
 };
 
 /**

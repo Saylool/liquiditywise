@@ -105,9 +105,9 @@ describe("the chains v4 is read on", () => {
 });
 
 describe("the chains positions can be listed on", () => {
-  it("are mainnet, Base, OP Mainnet and Polygon, which have a source that keeps positions, and no other", () => {
-    expect(V3_POSITION_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "optimism", "polygon"]);
-    expect([1, 8453, 10, 137, 42161, 130].map((id) => readsV3Positions(id as 1))).toEqual([true, true, true, true, false, false]);
+  it("are mainnet, Base, Arbitrum One, OP Mainnet and Polygon, which have a source that keeps positions, and no other", () => {
+    expect(V3_POSITION_CHAINS.map(({ slug }) => slug)).toEqual(["ethereum", "base", "arbitrum", "optimism", "polygon"]);
+    expect([1, 8453, 10, 137, 42161, 130].map((id) => readsV3Positions(id as 1))).toEqual([true, true, true, true, true, false]);
   });
 });
 

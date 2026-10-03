@@ -22,16 +22,33 @@ const V3_SUBGRAPH = {
 
 /*
  * The subgraph that lists a chain's positions. Mainnet's and Polygon's are the
- * ones the pool pages read; Base's and OP Mainnet's are separate, because the
- * ones the pool pages read there keep no positions or cannot answer for a busy
- * pool.
+ * ones the pool pages read; Base's, OP Mainnet's and Arbitrum's are separate,
+ * because the ones the pool pages read there keep no positions or cannot
+ * answer for a busy pool.
  */
 const V3_POSITIONS_SUBGRAPH = {
   1: () => process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID,
   137: () => process.env.UNISWAP_V3_POLYGON_SUBGRAPH_ID,
   8453: () => process.env.UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID,
   10: () => process.env.UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID,
+  42161: () => process.env.UNISWAP_V3_ARBITRUM_POSITIONS_SUBGRAPH_ID,
 } as const satisfies Record<V3PositionChainId, () => string | undefined>;
+
+/*
+ * How each positions subgraph spells a range's edges. Most keep them as Tick
+ * entities (`tickLower { tickIdx }`); Arbitrum's keeps the numbers themselves
+ * (`tickLower`), and it refuses a query written for the other shape — which
+ * is why it was first taken for one that cannot list positions at all.
+ */
+const V3_POSITION_TICKS = {
+  1: "entity",
+  137: "entity",
+  8453: "entity",
+  10: "entity",
+  42161: "scalar",
+} as const satisfies Record<V3PositionChainId, V3PositionTicks>;
+
+export type V3PositionTicks = "entity" | "scalar";
 
 const V4_SUBGRAPH = {
   1: () => process.env.UNISWAP_V4_ETHEREUM_SUBGRAPH_ID,
@@ -58,6 +75,10 @@ export const v3SubgraphIdFor = (chainId: ChainId): string | undefined =>
 /** The subgraph that lists positions on a chain, or none where they cannot be listed — never another chain's. */
 export const v3PositionsSubgraphIdFor = (chainId: ChainId): string | undefined =>
   readsV3Positions(chainId) ? V3_POSITIONS_SUBGRAPH[chainId]() : undefined;
+
+/** How a chain's positions subgraph spells range edges; `null` where positions are not listed. */
+export const v3PositionTicksFor = (chainId: ChainId): V3PositionTicks | null =>
+  readsV3Positions(chainId) ? V3_POSITION_TICKS[chainId] : null;
 
 /** The v4 subgraph on a chain; on a chain v4 is not read on there is none, never mainnet's. */
 export const v4SubgraphIdFor = (chainId: ChainId): string | undefined =>

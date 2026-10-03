@@ -100,6 +100,7 @@ const SUBGRAPH_WORDS: Record<SubgraphName, { readonly variable: string; readonly
   "v4-polygon": { variable: "UNISWAP_V4_POLYGON_SUBGRAPH_ID", loses: "Polygon v4 pool pages, searches and most-traded" },
   "v3-base-positions": { variable: "UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", loses: "Base's smart-money page and its alerts" },
   "v3-optimism-positions": { variable: "UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID", loses: "OP Mainnet's smart-money page and its alerts" },
+  "v3-arbitrum-positions": { variable: "UNISWAP_V3_ARBITRUM_POSITIONS_SUBGRAPH_ID", loses: "Arbitrum One's smart-money page and its alerts" },
 };
 
 const SUBGRAPH_FAULT: Record<Exclude<SubgraphStatus, "ok" | "unanswered">, string> = {

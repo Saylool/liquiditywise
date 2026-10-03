@@ -1,7 +1,7 @@
 import "server-only";
 
 import { processShared } from "../cache/processShared";
-import { rpcUrlFor, v3PositionsSubgraphIdFor } from "../chains/chainEnvironment";
+import { rpcUrlFor, v3PositionsSubgraphIdFor, v3PositionTicksFor } from "../chains/chainEnvironment";
 import { type ChainId, chainOf, readsV3, readsV3Positions } from "../chains/chains";
 import { loggingFetch } from "../observability/serverDiagnostics";
 import { openConfiguredStore } from "../store/openStore";
@@ -45,6 +45,7 @@ const readNow = (chainId: ChainId): Promise<SmartLiquidityRead> => {
     chainId,
     apiKey: process.env.THE_GRAPH_API_KEY,
     subgraphId: v3PositionsSubgraphIdFor(chainId),
+    ticks: v3PositionTicksFor(chainId) ?? "entity",
     fetchImpl,
     /* OP Mainnet's answers the largest pool's positions in twenty-four seconds. */
     timeoutMs: 45_000,

@@ -19,7 +19,8 @@ describe("the smart-money page's title", () => {
   it("names a chain whose positions it reads, and not one whose it cannot", async () => {
     expect(await titleOn()).toBe("Where the best-earning Uniswap liquidity providers put their money · LiquidityWise");
     expect(await titleOn("polygon")).toContain("on Polygon");
-    expect(await titleOn("arbitrum")).not.toContain("Arbitrum");
+    expect(await titleOn("arbitrum")).toContain("on Arbitrum One");
+    expect(await titleOn("unichain")).not.toContain("Unichain");
     expect(await titleOn("solana")).not.toContain("solana");
   });
 
@@ -31,7 +32,8 @@ describe("the smart-money page's title", () => {
 
     expect(await cards()).toEqual(["/og/smart"]);
     expect(await cards("polygon")).toEqual(["/og/smart?chain=polygon"]);
-    expect(await cards("arbitrum")).toBeUndefined();
+    expect(await cards("arbitrum")).toEqual(["/og/smart?chain=arbitrum"]);
+    expect(await cards("unichain")).toBeUndefined();
     expect(await cards("solana")).toBeUndefined();
   });
 });

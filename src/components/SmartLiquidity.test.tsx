@@ -144,14 +144,15 @@ describe("the smart-money page", () => {
   });
 
   it("names the chains it reads on a chain whose positions cannot be listed, with a tab for each of those", () => {
-    const html = render(null, 42161);
+    const html = render(null, 130);
 
-    expect(html).toContain("Positions cannot be listed on Arbitrum One");
-    expect(html).toContain("This page reads Ethereum, Base, OP Mainnet, Polygon.");
+    expect(html).toContain("Positions cannot be listed on Unichain");
+    expect(html).toContain("This page reads Ethereum, Base, Arbitrum One, OP Mainnet, Polygon.");
+    expect(html).toContain('href="/smart-money?chain=arbitrum"');
     expect(html).toContain('href="/smart-money?chain=base"');
     expect(html).toContain('href="/smart-money?chain=optimism"');
     expect(html).toContain('href="/smart-money?chain=polygon"');
-    expect(html).not.toContain("?chain=arbitrum");
+    expect(html).not.toContain("?chain=unichain");
     expect(ETHEREUM.v3Positions).toBe(true);
   });
 

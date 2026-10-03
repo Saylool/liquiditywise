@@ -5,6 +5,7 @@ import {
   fetchEthereumV3LastChanges,
   SNAPSHOT_BATCH,
   V3_IN_RANGE_POSITIONS_QUERY,
+  V3_IN_RANGE_POSITIONS_SCALAR_QUERY,
   V3_LAST_CHANGES_QUERY,
   V3_POOL_STATE_QUERY,
 } from "./ethereumV3InRangePositions";
@@ -43,7 +44,7 @@ const source = (answers: { state?: unknown; positions?: unknown; snapshots?: (id
     const payload =
       body.query === V3_POOL_STATE_QUERY
         ? answers.state
-        : body.query === V3_IN_RANGE_POSITIONS_QUERY
+        : body.query === V3_IN_RANGE_POSITIONS_QUERY || body.query === V3_IN_RANGE_POSITIONS_SCALAR_QUERY
           ? answers.positions
           : answers.snapshots?.(body.variables.ids as string[]);
     return new Response(JSON.stringify(payload), { status: 200 });
@@ -82,6 +83,28 @@ describe("a pool's positions in range", () => {
     expect(result.data.pool.token0.address).toBe(`0x${"a".repeat(40)}`);
     expect(result.data.usdPerToken0).toBeCloseTo(1, 12);
     expect(result.data.usdPerToken1).toBe(2500);
+  });
+
+  it("asks a subgraph that keeps range edges as numbers in its own words, and reads its answer the same", async () => {
+    const { sent, source: s } = source({
+      state: STATE,
+      positions: {
+        data: {
+          positions: [
+            { id: "21", liquidity: "900", tickLower: "197480", tickUpper: "198680" },
+            { id: "22", liquidity: "800", tickLower: "198100", tickUpper: "198700" },
+          ],
+        },
+      },
+    });
+
+    const result = await fetchEthereumV3InRangePositions(POOL, { ...s, ticks: "scalar" });
+
+    expect(sent.map(({ query }) => query)).toEqual([V3_POOL_STATE_QUERY, V3_IN_RANGE_POSITIONS_SCALAR_QUERY]);
+    expect(V3_IN_RANGE_POSITIONS_SCALAR_QUERY).toContain("tickLower_lte: $tick, tickUpper_gt: $tick");
+    if (result.status !== "success") throw new Error("expected success");
+    /* The second starts above the tick, so it is not in range and is dropped. */
+    expect(result.data.positions).toEqual([{ tokenId: "21", liquidity: "900", tickLower: 197480, tickUpper: 198680 }]);
   });
 
   it("leaves a token's dollar price unknown where the source has no price for it", async () => {

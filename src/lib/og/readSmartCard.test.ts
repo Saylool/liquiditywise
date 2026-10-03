@@ -64,7 +64,7 @@ describe("the smart-money card for a chain", () => {
 
   it("is nothing for a chain nobody reads, one whose positions cannot be listed, or before a measurement is kept", () => {
     expect(readSmartCard(new URLSearchParams({ chain: "solana" }))).toBeNull();
-    expect(readSmartCard(new URLSearchParams({ chain: "arbitrum" }))).toBeNull();
+    expect(readSmartCard(new URLSearchParams({ chain: "unichain" }))).toBeNull();
     expect(state.peeked).toEqual([]);
 
     state.kept = null;

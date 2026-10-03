@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { rpcUrlFor, subgraphIdFor, v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "./chainEnvironment";
+import { rpcUrlFor, subgraphIdFor, v3PositionsSubgraphIdFor, v3PositionTicksFor, v3SubgraphIdFor, v4SubgraphIdFor } from "./chainEnvironment";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -100,9 +100,22 @@ describe("where positions are listed", () => {
 
   it("is none where positions cannot be listed, never another chain's", () => {
     vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
-    vi.stubEnv("UNISWAP_V3_ARBITRUM_SUBGRAPH_ID", "arbitrum-v3");
 
-    expect(v3PositionsSubgraphIdFor(42161)).toBeUndefined();
     expect(v3PositionsSubgraphIdFor(130)).toBeUndefined();
+  });
+
+  it("on Arbitrum One is its own positions subgraph, not the one the pool pages read, and is asked with range edges as numbers", () => {
+    vi.stubEnv("UNISWAP_V3_ARBITRUM_SUBGRAPH_ID", "arbitrum-v3");
+    vi.stubEnv("UNISWAP_V3_ARBITRUM_POSITIONS_SUBGRAPH_ID", "arbitrum-positions");
+
+    expect(v3PositionsSubgraphIdFor(42161)).toBe("arbitrum-positions");
+    expect([1, 8453, 42161, 10, 137, 130].map((id) => v3PositionTicksFor(id as 1))).toEqual([
+      "entity",
+      "entity",
+      "scalar",
+      "entity",
+      "entity",
+      null,
+    ]);
   });
 });

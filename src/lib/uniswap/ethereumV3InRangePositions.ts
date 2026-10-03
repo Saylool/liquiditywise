@@ -65,6 +65,21 @@ export const V3_IN_RANGE_POSITIONS_QUERY = `query V3InRangePositions($pool: Stri
   }
 }`;
 
+/** The same question for a subgraph that keeps range edges as numbers rather than Tick entities. */
+export const V3_IN_RANGE_POSITIONS_SCALAR_QUERY = `query V3InRangePositions($pool: String!, $tick: BigInt!, $limit: Int!) {
+  positions(
+    first: $limit
+    orderBy: liquidity
+    orderDirection: desc
+    where: { pool: $pool, liquidity_gt: 0, tickLower_lte: $tick, tickUpper_gt: $tick }
+  ) {
+    id
+    liquidity
+    tickLower
+    tickUpper
+  }
+}`;
+
 export const V3_LAST_CHANGES_QUERY = `query V3LastChanges($ids: [String!]!, $limit: Int!) {
   positionSnapshots(first: $limit, orderBy: timestamp, orderDirection: desc, where: { position_in: $ids }) {
     position { id }
@@ -94,8 +109,8 @@ const PositionsResponseSchema = z.object({
         z.object({
           id: z.string(),
           liquidity: z.string(),
-          tickLower: z.object({ tickIdx: z.string() }),
-          tickUpper: z.object({ tickIdx: z.string() }),
+          tickLower: z.union([z.object({ tickIdx: z.string() }), z.string()]),
+          tickUpper: z.union([z.object({ tickIdx: z.string() }), z.string()]),
         }),
       ),
     })
@@ -137,7 +152,11 @@ type Source = {
   readonly subgraphId: string | undefined;
   readonly fetchImpl: FetchLike;
   readonly timeoutMs?: number;
+  /** How the subgraph spells range edges; Tick entities unless said otherwise. */
+  readonly ticks?: "entity" | "scalar";
 };
+
+const edge = (value: { readonly tickIdx: string } | string): string => (typeof value === "string" ? value : value.tickIdx);
 
 const unavailable = <T>(reason: DataFailureReason, notice: DataFailureNotice): DataResult<T> => ({
   status: "unavailable",
@@ -218,7 +237,7 @@ export const fetchEthereumV3InRangePositions = async (
   const ethUsd = bundle === undefined ? null : convertNonNegativeDecimal(bundle.ethPriceUSD, { allowZero: false });
   const ethUsdValue = ethUsd !== null && ethUsd.ok ? ethUsd.value : null;
 
-  const second = await ask(source, V3_IN_RANGE_POSITIONS_QUERY, {
+  const second = await ask(source, source.ticks === "scalar" ? V3_IN_RANGE_POSITIONS_SCALAR_QUERY : V3_IN_RANGE_POSITIONS_QUERY, {
     pool: id,
     tick: String(tick.value),
     limit: IN_RANGE_POSITION_LIMIT,
@@ -231,8 +250,8 @@ export const fetchEthereumV3InRangePositions = async (
 
   const positions: InRangePosition[] = [];
   for (const entry of listed.data.data.positions) {
-    const lower = convertSafeInteger(entry.tickLower.tickIdx);
-    const upper = convertSafeInteger(entry.tickUpper.tickIdx);
+    const lower = convertSafeInteger(edge(entry.tickLower));
+    const upper = convertSafeInteger(edge(entry.tickUpper));
     if (!/^[0-9]+$/.test(entry.id) || !/^[0-9]+$/.test(entry.liquidity)) continue;
     if (!lower.ok || !upper.ok || lower.value >= upper.value) continue;
     /* Asked for in range; kept only if it is, so a stale filter cannot let another through. */

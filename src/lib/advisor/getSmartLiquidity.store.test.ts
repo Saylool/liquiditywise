@@ -9,6 +9,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("../chains/chainEnvironment", () => ({
   rpcUrlFor: () => "https://rpc.example",
   v3PositionsSubgraphIdFor: () => "sub",
+  v3PositionTicksFor: () => "entity",
 }));
 vi.mock("./getMostTraded", () => ({ getMostTraded: async () => ({ v3: null, v4: null }) }));
 
@@ -158,7 +159,7 @@ describe("after a restart", () => {
     await getSmartLiquidity(1);
     expect(await hydrateSmartLiquidity(1)).toBe(false);
 
-    expect(await hydrateSmartLiquidity(42161)).toBe(false);
+    expect(await hydrateSmartLiquidity(130)).toBe(false);
     forgetSmartLiquidity();
     state.store!.down = true;
     expect(await hydrateSmartLiquidity(1)).toBe(false);

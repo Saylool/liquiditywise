@@ -40,7 +40,7 @@ export const CHAINS = [
    * 10.5 to 14.5 seconds on 2026-09-25, and still took ten on 2026-09-27.
    */
   { id: 8453, slug: "base", name: "Base", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "days", v3Positions: true, native: "ETH" },
-  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
+  { id: 42161, slug: "arbitrum", name: "Arbitrum One", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: true, native: "ETH" },
   /*
    * v4 alone. Uniswap's own chain, where the week's trading is v4's: its v4
    * subgraph answered the day table in half a second, two seconds behind the
