@@ -1,42 +1,43 @@
 import type { Metadata } from "next";
 
-import { AboutPage } from "@/components/AboutPage";
+import { MethodPage } from "@/components/MethodPage";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getAboutCopy } from "@/lib/i18n/aboutCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getMethodCopy } from "@/lib/i18n/methodCopy";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { getSmartLiquidityCopy } from "@/lib/i18n/smartLiquidityCopy";
 
 /*
- * What the project is and the facts about it, for a reader, a writer or a
- * team looking at it. Reads nothing, so it is the same page for everybody,
+ * How every figure on the site is made and what each one leaves out, for a
+ * liquidity provider deciding how far to trust a number and for anyone
+ * reviewing the project. Reads nothing, so it is the same page for everybody,
  * costs nothing to render, and is open to search engines.
  */
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale } = await getRequestDictionary();
-  const copy = getAboutCopy(locale);
+  const copy = getMethodCopy(locale);
 
   return {
     title: `${copy.title} · LiquidityWise`,
     description: copy.description,
-    alternates: await getOpenPageAlternates("/about"),
+    alternates: await getOpenPageAlternates("/method"),
   };
 }
 
-export default async function About() {
+export default async function Method() {
   const { locale, t } = await getRequestDictionary();
-  const copy = getAboutCopy(locale);
+  const copy = getMethodCopy(locale);
 
   return (
     <WorkspaceShell locale={locale} t={t} heading={copy.heading}>
-      <AboutPage
+      <MethodPage
         copy={copy}
+        locale={locale}
         links={{
-          pools: "/pool",
-          smart: localePath(locale, "/smart-money"),
-          guide: localePath(locale, "/learn"),
-          method: { href: localePath(locale, "/method"), label: getMethodCopy(locale).link },
+          about: { href: localePath(locale, "/about"), label: getAboutCopy(locale).link },
+          smart: { href: localePath(locale, "/smart-money"), label: getSmartLiquidityCopy(locale).link },
         }}
       />
     </WorkspaceShell>

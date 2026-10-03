@@ -4,8 +4,9 @@
  * to them all read it.
  *
  * Open: the front page, the hook directory and the quick guide with its
- * topics, the week's most traded pools and where smart liquidity sits, which say the
- * same thing to everyone and cost nothing to render twice. Closed: every page
+ * topics, the week's most traded pools and where smart liquidity sits, and the
+ * about and method pages, which say the same thing to everyone and cost
+ * nothing to render twice. Closed: every page
  * that reads
  * live data for one pool, pair or address. Each render spends third-party
  * quota and is only true for the moment it was read, and a crawler walking
@@ -29,7 +30,7 @@ export const LEARN_TOPIC_PAGES = [
   "/learn/smart-money",
 ] as const;
 
-export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", "/smart-money", "/about", ...LEARN_TOPIC_PAGES] as const;
+export const INDEXED_PAGES = ["/", "/hooks", "/learn", "/most-traded", "/smart-money", "/about", "/method", ...LEARN_TOPIC_PAGES] as const;
 
 /** Pages that read live data per request, plus the routes that are not pages at all. */
 export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/pair", "/holdings", "/api/", "/__backup/"] as const;

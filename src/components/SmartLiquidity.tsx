@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { SmartHistory } from "../lib/advisor/getSmartHistory";
 import { currentHoldings, type Mover, type PairTrend, type PersistentHolder } from "../lib/analytics/smartHistory";
 import { MIN_POSITION_USD, MIN_WINDOW_DAYS, SMART_SHARE } from "../lib/analytics/smartLiquidity";
@@ -16,7 +18,9 @@ import {
 import { choosePriceQuote, isInverted } from "../lib/format/priceQuote";
 import { type RangeAround, rangeAroundInverted, signedPercent } from "../lib/format/rangeAround";
 import type { Dictionary } from "../lib/i18n/dictionaries";
+import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
+import { getMethodCopy } from "../lib/i18n/methodCopy";
 import type { SmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
 import type { PriceBandParameters, V3PoolMetadata } from "../schemas";
 import { ChainTabs } from "./ChainTabs";
@@ -317,7 +321,10 @@ export function SmartLiquidity({
 
   const method = (
     <p className="max-w-2xl text-sm leading-relaxed text-muted">
-      {copy.method(formatUsd(MIN_POSITION_USD, locale), formatWhole(MIN_WINDOW_DAYS, locale), formatWholePercent(SMART_SHARE, locale))}
+      {copy.method(formatUsd(MIN_POSITION_USD, locale), formatWhole(MIN_WINDOW_DAYS, locale), formatWholePercent(SMART_SHARE, locale))}{" "}
+      <Link href={`${localePath(locale, "/method")}#smart-liquidity`} prefetch={false} className="text-link">
+        {getMethodCopy(locale).pointer}
+      </Link>
     </p>
   );
 

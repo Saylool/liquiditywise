@@ -12,7 +12,13 @@ export function AboutPage({
   links,
 }: {
   copy: AboutCopy;
-  links: { readonly pools: string; readonly smart: string; readonly guide: string };
+  links: {
+    readonly pools: string;
+    readonly smart: string;
+    readonly guide: string;
+    /** How every figure is made, under the words that page is linked by everywhere. */
+    readonly method: { readonly href: string; readonly label: string };
+  };
 }) {
   return (
     <>
@@ -60,6 +66,9 @@ export function AboutPage({
           </Link>
           <Link href={links.guide} prefetch={false} className="text-link">
             {copy.tryLinks.guide}
+          </Link>
+          <Link href={links.method.href} prefetch={false} className="text-link">
+            {links.method.label}
           </Link>
         </p>
       </section>

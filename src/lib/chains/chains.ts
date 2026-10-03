@@ -98,8 +98,9 @@ export const readsV3 = (chainId: ChainId): chainId is V3ChainId => chainById(cha
  * Polygon's v3 subgraphs keep positions, and so does a second, separate
  * subgraph on Base and on OP Mainnet — the ones the pool pages read there
  * have no such entity, or refuse the query on a busy pool with "bad
- * indexers". Arbitrum has none that answers: two subgraphs have the entity
- * and reject its filters.
+ * indexers". Arbitrum's does too (measured 2026-10-03): it keeps range edges
+ * as numbers rather than Tick entities, and only refused a query written for
+ * the other shape — chainEnvironment.ts says which shape each chain is asked in.
  */
 export const readsV3Positions = (chainId: ChainId): chainId is V3PositionChainId => chainById(chainId).v3Positions;
 

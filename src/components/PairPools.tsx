@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   PAIR_PARAMETER,
   PAIR_RANKING_FLOOR_USD,
@@ -10,7 +12,9 @@ import { chainLabel } from "../lib/chains/chainLabel";
 import { formatFeePpm, formatPercent, formatUsd, formatWhole } from "../lib/format/displayFormats";
 import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
+import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
+import { getMethodCopy } from "../lib/i18n/methodCopy";
 import type { MostTradedCopy } from "../lib/i18n/mostTradedCopy";
 import type { PairPoolsCopy } from "../lib/i18n/pairPoolsCopy";
 import type { PoolSearchRejection } from "../lib/search/poolSearchInput";
@@ -243,7 +247,12 @@ export function PairPools({
     <div className="flex flex-col gap-8">
       <header className="flex max-w-3xl flex-col gap-3">
         <p className="text-sm leading-relaxed">{copy.resultsFor(pair)}</p>
-        <p className="text-sm leading-relaxed text-muted">{copy.method(formatUsd(PAIR_RANKING_FLOOR_USD, locale))}</p>
+        <p className="text-sm leading-relaxed text-muted">
+          {copy.method(formatUsd(PAIR_RANKING_FLOOR_USD, locale))}{" "}
+          <Link href={`${localePath(locale, "/method")}#pair`} prefetch={false} className="text-link">
+            {getMethodCopy(locale).pointer}
+          </Link>
+        </p>
         <p className="text-xs leading-relaxed text-muted">{copy.apart}</p>
         <p className="text-xs leading-relaxed text-muted">{copy.symbols}</p>
         <p className="text-xs leading-relaxed text-muted">{copy.window}</p>

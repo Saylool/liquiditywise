@@ -29,6 +29,7 @@ export const PAGES = [
   "/most-traded",
   "/smart-money",
   "/about",
+  "/method",
   ...LEARN_TOPIC_PAGES,
 ] as const;
 export type Page = (typeof PAGES)[number];
