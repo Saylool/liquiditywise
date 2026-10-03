@@ -10,7 +10,10 @@ import {
   MULTIPLIER_PARAMETER,
   DEPOSIT_CHOICES,
   DEPOSIT_PARAMETER,
+  LOWER_PARAMETER,
+  UPPER_PARAMETER,
   poolAnalysisHref,
+  readRequestedCustomRange,
   readRequestedParameters,
   type RangeDefaults,
   v4PoolAnalysisHref,
@@ -271,5 +274,51 @@ describe("poolComparisonHref", () => {
     expect(poolComparisonHref("0xabc", { horizonDays: 90, standardDeviationMultiplier: 2 }, 250)).toBe(
       "/compare?address=0xabc&days=90&sigma=2&usd=250",
     );
+  });
+});
+
+describe("readRequestedCustomRange", () => {
+  it("reads two decimals, the lower below the upper, as the reader wrote them", () => {
+    expect(readRequestedCustomRange("3000", "3600.5")).toEqual({
+      status: "usable",
+      lower: 3000,
+      upper: 3600.5,
+      written: { lower: "3000", upper: "3600.5" },
+    });
+  });
+
+  it("keeps what was written, so a tiny price is not shown back with an exponent", () => {
+    const range = readRequestedCustomRange(" 0.0000001 ", "0.0000002");
+
+    expect(range).toMatchObject({ status: "usable", lower: 1e-7, written: { lower: "0.0000001", upper: "0.0000002" } });
+  });
+
+  it("is nothing asked when neither edge arrived, or both arrived blank", () => {
+    expect(readRequestedCustomRange(undefined, undefined)).toEqual({ status: "none" });
+    expect(readRequestedCustomRange("", "  ")).toEqual({ status: "none" });
+  });
+
+  it.each([
+    ["only a lower edge", "3000", undefined],
+    ["only an upper edge", undefined, "3600"],
+    ["a blank upper edge", "3000", ""],
+    ["a lower edge equal to the upper", "3000", "3000"],
+    ["a lower edge above the upper", "3600", "3000"],
+    ["a zero lower edge", "0", "3000"],
+    ["two zero edges", "0", "0.0"],
+    ["a negative edge", "-1", "3000"],
+    ["an exponent", "3e3", "3600"],
+    ["a thousands separator", "3,000", "3600"],
+    ["a decimal comma", "3000", "3600,5"],
+    ["a word", "cheap", "3600"],
+    ["Infinity spelt out", "3000", "Infinity"],
+    ["a number too large to be finite", "3000", "9".repeat(400)],
+    ["a repeated edge", ["3000", "3100"], "3600"],
+  ])("refuses %s, whole", (_, lower, upper) => {
+    expect(readRequestedCustomRange(lower, upper)).toEqual({ status: "unusable" });
+  });
+
+  it("travels under names a URL bar reads plainly", () => {
+    expect([LOWER_PARAMETER, UPPER_PARAMETER]).toEqual(["lower", "upper"]);
   });
 });

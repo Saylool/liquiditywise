@@ -2,7 +2,13 @@ import {
   calculateDepositFeeShare,
   type DepositFeeShareResult,
 } from "../analytics/depositFeeShare";
-import { calculateRangeBacktest, type RangeBacktest } from "../analytics/rangeBacktest";
+import {
+  calculateCustomRangeBacktest,
+  calculateRangeBacktest,
+  type CustomRangeBacktest,
+  type RangeBacktest,
+} from "../analytics/rangeBacktest";
+import { choosePriceQuote, computedInterval } from "../format/priceQuote";
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
 import { calculateRangeOrders, type RangeOrdersResult } from "../analytics/rangeOrder";
 import { calculateSwapDepth, type SwapDepthResult } from "../analytics/swapDepth";
@@ -139,6 +145,12 @@ export type PoolRangeAnalysis = {
    * when the history cannot hold a range drawn before the window.
    */
   readonly backtest: RangeBacktest | null;
+  /**
+   * The same month replayed in a range the reader typed in, beside the one
+   * above. `null` when none was asked for, and when one was and could not be
+   * replayed — the page tells those apart from what was asked, not from this.
+   */
+  readonly customBacktest: CustomRangeBacktest | null;
   readonly parameters: PriceBandParameters;
   /** The size the figure above was worked out for. Printed wherever it is. */
   readonly depositUsd: number;
@@ -185,6 +197,16 @@ export type PoolRangeAnalysisInput = {
    * of every reading — for a number none of them look at.
    */
   readonly depositUsd: number;
+  /**
+   * A range the reader chose, to replay beside the drawn one — in the
+   * direction the page *shows* prices, quote per base, exactly as they typed
+   * it. Absent when none was asked for.
+   *
+   * Turned into the pool's own direction here rather than by the route,
+   * because which way round the page shows a price is decided from the
+   * current price, and this is where the current price is known.
+   */
+  readonly customRange?: { readonly lower: number; readonly upper: number } | undefined;
 };
 
 /**
@@ -446,6 +468,29 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     token1Decimals: pool.value.token1.decimals,
   });
 
+  /*
+   * The reader's own range, replayed over the same month from the same close.
+   * Typed in the shown direction, so it is turned back with the same quote the
+   * page will show it in — chosen from the same current price — before it
+   * reaches a calculator that only knows the pool's direction.
+   */
+  const customEdges =
+    input.customRange === undefined
+      ? null
+      : computedInterval(choosePriceQuote(pool.value, band.data.currentPrice), input.customRange);
+  const customBacktest =
+    customEdges === null
+      ? null
+      : calculateCustomRangeBacktest({
+          history: history.value,
+          snapshot: snapshot.value,
+          lowerPrice: customEdges.lower,
+          upperPrice: customEdges.upper,
+          depositUsd: input.depositUsd,
+          token0Decimals: pool.value.token0.decimals,
+          token1Decimals: pool.value.token1.decimals,
+        });
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -461,6 +506,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     rangeOrders,
     swapDepth,
     backtest,
+    customBacktest,
     parameters: input.parameters,
     depositUsd: input.depositUsd,
   };

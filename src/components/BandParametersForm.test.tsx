@@ -233,3 +233,34 @@ describe("the chain a pool is on", () => {
     expect(withChain(undefined)).not.toContain('name="chain"');
   });
 });
+
+describe("BandParametersForm, beside a range the reader is replaying", () => {
+  const withRange = (customRange?: { lower: string; upper: string }) =>
+    renderToStaticMarkup(
+      <BandParametersForm
+        action="/pool"
+        poolParameter="address"
+        poolId={POOL}
+        parameters={{ horizonDays: 30, standardDeviationMultiplier: 1 }}
+        depositUsd={1_000}
+        customRange={customRange}
+        fellBack={false}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+  it("carries the range along, as written, so changing the band keeps the comparison", () => {
+    const markup = withRange({ lower: "2950", upper: "3050.5" });
+
+    expect(markup).toContain('<input type="hidden" name="lower" value="2950"/>');
+    expect(markup).toContain('<input type="hidden" name="upper" value="3050.5"/>');
+  });
+
+  it("carries nothing when there is no range", () => {
+    const markup = withRange();
+
+    expect(markup).not.toContain('name="lower"');
+    expect(markup).not.toContain('name="upper"');
+  });
+});

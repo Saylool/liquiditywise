@@ -182,6 +182,82 @@ export const readRequestedParameters = (
   };
 };
 
+/** The two edges of a range the reader typed in, under names a URL bar reads plainly. */
+export const LOWER_PARAMETER = "lower";
+export const UPPER_PARAMETER = "upper";
+
+/**
+ * A range the reader asked to see replayed, as they wrote it.
+ *
+ * In the direction the page *shows* prices — "USDC per WETH" on a pool whose
+ * own direction is WETH per USDC — because that is the only direction the
+ * reader has been given, and asking them to type a reciprocal would be asking
+ * them to make the one mistake this site goes out of its way to prevent. The
+ * analysis turns it back into the pool's direction once it knows which way the
+ * page is showing it; nothing here knows that yet.
+ *
+ * Three states rather than an optional range, because "not asked" and "asked
+ * and unreadable" are different things to tell a reader: the first says
+ * nothing, the second says the range could not be used.
+ */
+export type RequestedCustomRange =
+  | { readonly status: "none" }
+  | { readonly status: "unusable" }
+  | {
+      readonly status: "usable";
+      /** In the shown direction: quote per base, as the page labels it. */
+      readonly lower: number;
+      readonly upper: number;
+      /**
+       * Both as they arrived, trimmed, for the form to show back. Not the
+       * numbers written out again: a small enough price writes itself with an
+       * exponent, which this reader then refuses on the next submit.
+       */
+      readonly written: { readonly lower: string; readonly upper: string };
+    };
+
+/**
+ * Reads the two edges of a chosen range, both or neither.
+ *
+ * Stricter than the band's fields, and on purpose: there is no default to fall
+ * back to. A range missing one edge is not a range, and substituting an edge
+ * would replay one nobody asked for — so anything short of two decimals, both
+ * above zero, the lower below the upper, is refused whole and the page says so.
+ * The rest of the analysis is untouched either way; a mistyped range costs the
+ * reader one panel.
+ *
+ * Both left blank is not asking. A GET form submitted with its two boxes empty
+ * sends both as empty strings, and a reader who changed nothing should not be
+ * told they typed something wrong.
+ */
+export const readRequestedCustomRange = (
+  lower: string | string[] | undefined,
+  upper: string | string[] | undefined,
+): RequestedCustomRange => {
+  /* A repeated parameter is unreadable, as for the band; a blank one is unsaid. */
+  const single = (value: string | string[] | undefined): string | null | undefined => {
+    if (value === undefined) return undefined;
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed === "" ? undefined : trimmed;
+  };
+  const lowerRaw = single(lower);
+  const upperRaw = single(upper);
+  if (lowerRaw === undefined && upperRaw === undefined) return { status: "none" };
+  if (lowerRaw === undefined || upperRaw === undefined || lowerRaw === null || upperRaw === null) {
+    return { status: "unusable" };
+  }
+  if (!DECIMAL.test(lowerRaw) || !DECIMAL.test(upperRaw)) return { status: "unusable" };
+
+  const lowerPrice = Number(lowerRaw);
+  const upperPrice = Number(upperRaw);
+  /* Finite first: two hundred digits is a decimal by the pattern and Infinity by the number. */
+  if (!Number.isFinite(lowerPrice) || !Number.isFinite(upperPrice)) return { status: "unusable" };
+  if (!(lowerPrice > 0) || !(lowerPrice < upperPrice)) return { status: "unusable" };
+
+  return { status: "usable", lower: lowerPrice, upper: upperPrice, written: { lower: lowerRaw, upper: upperRaw } };
+};
+
 /**
  * The link to one pool's analysis, carrying a chosen band.
  *

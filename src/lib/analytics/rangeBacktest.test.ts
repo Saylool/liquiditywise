@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PoolDailyPriceHistory, PoolMarketSnapshot } from "../../schemas";
 import { amountsAt, valueInToken1 } from "./divergenceLoss";
-import { calculateRangeBacktest } from "./rangeBacktest";
+import { calculateCustomRangeBacktest, calculateRangeBacktest } from "./rangeBacktest";
 import { liquidityPerUnitValue } from "./rangeConcentration";
 
 const DAY_MS = 86_400_000;
@@ -150,5 +150,96 @@ describe("a position opened thirty days ago in the range drawn then", () => {
 
   it("is nothing when the history cannot hold a range drawn before the window", () => {
     expect(run(history(50, (before) => ({ price: wobble(before) })))).toBeNull();
+  });
+});
+
+const custom = (days: PoolDailyPriceHistory, lowerPrice: number, upperPrice: number, tvlUsd: number | null = 2_000) =>
+  calculateCustomRangeBacktest({
+    history: days,
+    snapshot: snapshot(tvlUsd),
+    lowerPrice,
+    upperPrice,
+    depositUsd: 1_000,
+    token0Decimals: 18,
+    token1Decimals: 18,
+  });
+
+describe("the same month, replayed in a range the reader chose", () => {
+  const month = history(61, (before) =>
+    before > 30 ? { price: wobble(before) } : before > 10 ? { price: 100, fees: 50 } : { price: 104, fees: 50 },
+  );
+
+  it("is the drawn replay, figure for figure, when handed the drawn range", () => {
+    const drawn = run(month)!;
+    const chosen = custom(month, drawn.lowerPrice, drawn.upperPrice)!;
+    const { openedInside, ...rest } = chosen;
+
+    expect(rest).toEqual(drawn);
+    expect(openedInside).toBe(true);
+  });
+
+  it("opens at the same close and reads the same thirty days, whatever the range", () => {
+    const drawn = run(month)!;
+    const chosen = custom(month, 50, 200)!;
+
+    expect(chosen.openedAt).toBe(drawn.openedAt);
+    expect(chosen.openingPrice).toBe(drawn.openingPrice);
+    expect(chosen.days.map(({ timestamp }) => timestamp)).toEqual(drawn.days.map(({ timestamp }) => timestamp));
+    expect([chosen.lowerPrice, chosen.upperPrice]).toEqual([50, 200]);
+  });
+
+  it("counts its own days against its own edges", () => {
+    /* 102 sits between the window's two prices: the first twenty days below it, the last ten above. */
+    const chosen = custom(month, 102, 200)!;
+
+    expect([chosen.inside, chosen.outside, chosen.crossed]).toEqual([10, 20, 0]);
+  });
+
+  it("takes a smaller share of the same fees in a wider range", () => {
+    const narrow = custom(month, 90, 110)!;
+    const wide = custom(month, 50, 200)!;
+
+    expect(narrow.fees!.daysCounted).toBe(30);
+    expect(wide.fees!.daysCounted).toBe(30);
+    expect(wide.fees!.usd).toBeLessThan(narrow.fees!.usd);
+  });
+
+  it("opens one-sided when its range sits away from the opening close, and still reads the days", () => {
+    const opening = wobble(31);
+    const above = custom(month, 103, 120)!;
+    const lowerRoot = Math.sqrt(103);
+    const upperRoot = Math.sqrt(120);
+    const started = amountsAt(opening, lowerRoot, upperRoot);
+
+    expect(above.openedInside).toBe(false);
+    /* Below the range at the opening, the position holds token0 only. */
+    expect(started.amount1).toBe(0);
+    expect(above.endValueVsHold).toBeCloseTo(
+      valueInToken1(amountsAt(104, lowerRoot, upperRoot), 104) / valueInToken1(started, 104),
+      12,
+    );
+    /* The ten days at 104 are inside it, and the fees are sized from what a one-sided deposit buys. */
+    const liquidity = (1_000 / 2) * 1e18 * (1 / valueInToken1(started, opening));
+    expect(above.fees?.daysCounted).toBe(10);
+    expect(above.fees?.usd).toBeCloseTo(10 * 50 * (liquidity / (1e18 + liquidity)), 9);
+  });
+
+  it("has no fees when the pool's dollar rate cannot be read, as the drawn replay does not", () => {
+    expect(custom(month, 90, 110, null)?.fees).toBeNull();
+  });
+
+  it.each([
+    ["a lower edge at zero", 0, 110],
+    ["a negative lower edge", -1, 110],
+    ["edges the wrong way round", 110, 90],
+    ["edges that meet", 100, 100],
+    ["an infinite upper edge", 90, Infinity],
+    ["an edge that is not a number", Number.NaN, 110],
+  ])("is refused for %s", (_, lowerPrice, upperPrice) => {
+    expect(custom(month, lowerPrice, upperPrice)).toBeNull();
+  });
+
+  it("is refused wherever the drawn replay is: a history too short to open before the window", () => {
+    expect(custom(history(50, (before) => ({ price: wobble(before) })), 90, 110)).toBeNull();
   });
 });

@@ -9,7 +9,10 @@ import {
   MULTIPLIER_PARAMETER,
   DEPOSIT_PARAMETER,
   CHAIN_PARAMETER,
+  LOWER_PARAMETER,
+  UPPER_PARAMETER,
   readRequestedChain,
+  readRequestedCustomRange,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
@@ -118,6 +121,8 @@ export default async function V4PoolPage({
     params[DEPOSIT_PARAMETER],
     await getRangePreferences(),
   );
+  /* The reader's own range, read as the v3 page reads it: whole or not at all. */
+  const customRange = readRequestedCustomRange(params[LOWER_PARAMETER], params[UPPER_PARAMETER]);
 
   if (!poolId.success) {
     return (
@@ -141,6 +146,7 @@ export default async function V4PoolPage({
           chainId={chain.id}
           parameters={band.parameters}
           depositUsd={band.depositUsd}
+          customRange={customRange}
           locale={locale}
           t={t}
           /*
@@ -156,6 +162,7 @@ export default async function V4PoolPage({
               chain={chain.slug}
               parameters={band.parameters}
               depositUsd={band.depositUsd}
+              customRange={customRange.status === "usable" ? customRange.written : undefined}
               fellBack={band.fellBack}
               t={t}
               locale={locale}

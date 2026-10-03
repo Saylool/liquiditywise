@@ -1,3 +1,4 @@
+import { LOWER_PARAMETER, UPPER_PARAMETER } from "../lib/advisor/requestedParameters";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { PriceBandParameters } from "../schemas";
@@ -29,6 +30,7 @@ export function BandParametersForm({
   chain,
   parameters,
   depositUsd,
+  customRange,
   fellBack,
   t,
   locale,
@@ -55,6 +57,12 @@ export function BandParametersForm({
    * reader already is when they want to change what they are being told about.
    */
   depositUsd: number;
+  /**
+   * A range the reader is already replaying beside the suggested one, as they
+   * wrote it. It travels hidden, so changing the band keeps the comparison on
+   * screen rather than quietly dropping one side of it.
+   */
+  customRange?: { readonly lower: string; readonly upper: string } | undefined;
   /** True when something was asked for and could not be used. */
   fellBack: boolean;
   t: Dictionary;
@@ -73,6 +81,12 @@ export function BandParametersForm({
       {/* The pool is not being changed here, so it travels hidden. */}
       <input type="hidden" name={poolParameter} value={poolId} />
       {chain === undefined || chain === "ethereum" ? null : <input type="hidden" name="chain" value={chain} />}
+      {customRange === undefined ? null : (
+        <>
+          <input type="hidden" name={LOWER_PARAMETER} value={customRange.lower} />
+          <input type="hidden" name={UPPER_PARAMETER} value={customRange.upper} />
+        </>
+      )}
 
       <div className="flex flex-wrap items-end gap-4">
         <BandChoices parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />

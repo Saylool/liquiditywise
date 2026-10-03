@@ -77,6 +77,12 @@ export const getPoolRangeAnalysis = async (
    * mainnet and reported missing.
    */
   chainId: ChainId,
+  /**
+   * A range the reader typed in, in the direction the page shows prices, to
+   * replay beside the drawn one. Only the two analysis pages pass one; it
+   * costs no read of its own.
+   */
+  customRange?: { readonly lower: number; readonly upper: number },
 ): Promise<PoolRangeAnalysisResult> => {
   const [pool, snapshot, history] = await Promise.all([
     poolRead ?? POOL_READERS[protocolVersion](poolId, chainId),
@@ -84,5 +90,5 @@ export const getPoolRangeAnalysis = async (
     getEthereumDailyPriceHistory(protocolVersion, poolId, chainId),
   ]);
 
-  return analysePoolRange({ pool, snapshot, history, parameters, depositUsd });
+  return analysePoolRange({ pool, snapshot, history, parameters, depositUsd, customRange });
 };

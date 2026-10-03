@@ -82,6 +82,26 @@ export const quotedInterval = (quote: PriceQuote, interval: PriceInterval): Pric
     : { lower: interval.lower, upper: interval.upper };
 
 /**
+ * The way back: an interval a reader wrote in the shown direction, as the
+ * computed `token0PriceInToken1` prices every calculator here works in.
+ *
+ * The same operation as {@link quotedInterval}, because a reciprocal with its
+ * ends swapped undoes itself — kept under its own name so a caller reading a
+ * typed range says which way it is going, and a test pins that the two round
+ * trip.
+ *
+ * No decimals enter it. Both directions are prices of *whole* tokens — the
+ * source scales by each token's decimals before it publishes a price, and
+ * every figure on the page is that price or its reciprocal — so a reader who
+ * types "3,400 USDC per WETH" on a six-and-eighteen-decimal pool means a
+ * computed price of 1/3,400 WETH per USDC, not one off by twelve powers of ten.
+ * The decimals only enter where whole tokens become raw ones: ticks, and the
+ * protocol's liquidity.
+ */
+export const computedInterval = (quote: PriceQuote, shown: PriceInterval): PriceInterval =>
+  quotedInterval(quote, shown);
+
+/**
  * Anything stated per edge — a truncation flag, a note — moved to the edge it
  * belongs to in the shown direction.
  *

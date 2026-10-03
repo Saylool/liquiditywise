@@ -10,6 +10,8 @@ import {
   quotedInterval,
   quotedPrice,
 } from "../lib/format/priceQuote";
+import type { RequestedCustomRange } from "../lib/advisor/requestedParameters";
+import type { ChainSlug } from "../lib/chains/chains";
 import { getDictionary } from "../lib/i18n/dictionaries";
 import { PoolRangeReport } from "./PoolRangeReport";
 
@@ -1260,5 +1262,206 @@ describe("a position opened thirty days ago", () => {
 
   it("is not on the page when the history is too short to draw a range before the window", () => {
     expect(render(analyse())).not.toContain('id="backtest"');
+  });
+});
+
+/*
+ * The reader's own range: a form that keeps everything that shaped the page,
+ * and — once a range is typed — the month replayed in it beside the suggested
+ * range's figures, behind the same fee gate.
+ */
+describe("trying a range of one's own", () => {
+  const renderWith = (
+    result: ReturnType<typeof analysePoolRange>,
+    requested: RequestedCustomRange,
+    { locale = "en", action = "/pool", poolParameter = "address", chain = "ethereum" as ChainSlug } = {},
+  ) =>
+    renderToStaticMarkup(
+      <PoolRangeReport
+        result={result}
+        poolId={POOL_ID}
+        customRange={{ action, poolParameter, chain, requested }}
+        t={getDictionary(locale as "en" | "tr")}
+        locale={locale as "en" | "tr"}
+      />,
+    );
+  const usable = (lower: string, upper: string): RequestedCustomRange => ({
+    status: "usable",
+    lower: Number(lower),
+    upper: Number(upper),
+    written: { lower, upper },
+  });
+  const replayed = (overrides: Partial<Parameters<typeof analyse>[0]> = {}, customRange?: { lower: number; upper: number }) =>
+    analyse({ history: ok(history(121)), ...(customRange === undefined ? {} : { customRange }), ...overrides });
+  /* Injected rather than run, so the figures asserted are ones the fixture chose. */
+  const withBoth = (result: ReturnType<typeof analysePoolRange>, fees: unknown, suggestedFees: unknown = fees) => {
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    const day = { timestamp: "2026-08-29T00:00:00.000Z", placement: "outside", valueVsHold: 0.951 };
+    const backtest = {
+      openedAt: "2026-08-28T00:00:00.000Z",
+      openingPrice: 1 / 2500,
+      lowerPrice: 1 / 3000,
+      upperPrice: 1 / 2000,
+      days: [day],
+      inside: 20,
+      outside: 6,
+      crossed: 4,
+      endValueVsHold: 0.987,
+      fees: suggestedFees,
+    };
+    const customBacktest = {
+      ...backtest,
+      lowerPrice: 1 / 2600,
+      upperPrice: 1 / 2400,
+      inside: 7,
+      outside: 21,
+      crossed: 2,
+      endValueVsHold: 0.951,
+      fees,
+      openedInside: true,
+    };
+    return { ...result, data: { ...result.data, backtest, customBacktest } } as ReturnType<typeof analysePoolRange>;
+  };
+
+  it("offers a form that keeps the pool, the chain, the band and the deposit, labelled the way the page writes prices", () => {
+    const markup = renderWith(replayed(), { status: "none" }, { chain: "base" });
+
+    expect(markup).toContain('id="customRange"');
+    expect(markup).toContain("Try your own range");
+    expect(markup).toContain('action="/pool"');
+    expect(markup).toContain(`<input type="hidden" name="address" value="${POOL_ID}"/>`);
+    expect(markup).toContain('<input type="hidden" name="chain" value="base"/>');
+    expect(markup).toContain('<input type="hidden" name="days" value="30"/>');
+    expect(markup).toContain('<input type="hidden" name="sigma" value="1"/>');
+    expect(markup).toContain('<input type="hidden" name="usd" value="1000"/>');
+    expect(markup).toContain('name="lower"');
+    expect(markup).toContain('name="upper"');
+    /* The pool quotes WETH per USDC; the page writes USDC per WETH, and so does the label. */
+    expect(markup).toContain("Lower edge (USDC per WETH)");
+    expect(markup).toContain("Upper edge (USDC per WETH)");
+    expect(markup).not.toContain("Your range, over the last 30 days");
+  });
+
+  it("leaves mainnet unsaid, as every other link here does, and submits a v4 pool under its own name", () => {
+    const markup = renderWith(replayed(), { status: "none" }, { action: "/v4", poolParameter: "id" });
+
+    expect(markup).not.toContain('name="chain"');
+    expect(markup).toContain('action="/v4"');
+    expect(markup).toContain(`<input type="hidden" name="id" value="${POOL_ID}"/>`);
+  });
+
+  it("is listed among the page's sections when it is there, and only then", () => {
+    const anchors = (markup: string) => [...markup.matchAll(/href="#([a-zA-Z]+)"/g)].map((m) => m[1]);
+
+    expect(anchors(renderWith(replayed(), { status: "none" }))).toContain("customRange");
+    expect(anchors(render(replayed()))).not.toContain("customRange");
+    /* Where the month cannot be replayed, neither can the reader's range: no form for nothing. */
+    const short = renderWith(analyse(), { status: "none" });
+    expect(anchors(short)).not.toContain("customRange");
+    expect(short).not.toContain('id="customRange"');
+  });
+
+  it("replays a typed range through the real pipeline and shows it back as typed", () => {
+    const markup = renderWith(replayed({}, { lower: 2950, upper: 3050 }), usable("2950", "3050"));
+
+    expect(markup).toContain("Your range, over the last 30 days");
+    expect(markup).toContain('value="2950"');
+    expect(markup).toContain('value="3050"');
+    /* The opened sentence writes the range the way the page writes every range. */
+    expect(markup).toContain(`in ${formatPrice(2950)} – ${formatPrice(3050)} USDC per WETH`);
+  });
+
+  it("sets each figure beside the suggested range's", () => {
+    const markup = renderWith(
+      withBoth(replayed(), { usd: 4.25, ofDeposit: 0.00425, daysCounted: 7, daysUnmeasurable: 0 }, { usd: 12.5, ofDeposit: 0.0125, daysCounted: 20, daysUnmeasurable: 0 }),
+      usable("2400", "2600"),
+    );
+
+    expect(markup).toContain("Your range");
+    expect(markup).toContain("Suggested range");
+    for (const figure of ["95.10%", "98.70%", "$4.25", "$12.50", "0.43%", "1.25%"]) {
+      expect(markup).toContain(figure);
+    }
+    expect(markup).toMatch(/Days entirely inside<\/th><td[^>]*>7<\/td><td[^>]*>20<\/td>/);
+    expect(markup).toMatch(/Days entirely outside<\/th><td[^>]*>21<\/td><td[^>]*>6<\/td>/);
+  });
+
+  it("says when the range did not hold the price at the opening close", () => {
+    const result = withBoth(replayed(), null);
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    const outside = {
+      ...result,
+      data: { ...result.data, customBacktest: { ...result.data.customBacktest!, openedInside: false } },
+    } as ReturnType<typeof analysePoolRange>;
+
+    expect(renderWith(outside, usable("2400", "2600"))).toContain("opened holding only one of the two tokens");
+    expect(renderWith(result, usable("2400", "2600"))).not.toContain("opened holding only one of the two tokens");
+  });
+
+  it("says why there are no fees when the dollar rate could not be read", () => {
+    const markup = renderWith(withBoth(replayed(), null), usable("2400", "2600"));
+
+    expect(markup).toContain("The fees could not be sized");
+  });
+
+  it("says it could not use a range it could not read, and leaves the rest of the page alone", () => {
+    const markup = renderWith(replayed(), { status: "unusable" });
+
+    expect(markup).toContain("This range could not be used");
+    expect(markup).not.toContain("Your range, over the last 30 days");
+    expect(markup).toContain('id="backtest"');
+    expect(markup).toContain('id="divergence"');
+  });
+
+  it("says so when a readable range could not be replayed", () => {
+    const markup = renderWith(replayed(), usable("2400", "2600"));
+
+    expect(markup).toContain("This range could not be replayed");
+  });
+
+  it("speaks the reader's language", () => {
+    const markup = renderWith(withBoth(replayed(), null), { status: "unusable" }, { locale: "tr" });
+
+    expect(markup).toContain("Kendi aralığını dene");
+    expect(markup).toContain("Bu aralık kullanılamadı");
+    expect(markup).toContain("Önerilen aralık");
+    expect(markup).not.toContain("Try your own range");
+  });
+
+  describe("on a v4 pool whose hook may change what swaps pay", () => {
+    const V4_REF = { protocolVersion: "v4", chainId: 1, id: `0x${"d".repeat(64)}` } as const;
+    /** `beforeSwap`, `afterSwap` and `afterSwapReturnsDelta`. */
+    const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+    const hooked = (hookAddress: string | null) =>
+      replayed({
+        pool: ok({
+          ...V4_REF,
+          token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+          token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+          tickSpacing: 60,
+          fee: { kind: "static", feePpm: 3000 },
+          protocolFee: { zeroForOnePpm: 0, oneForZeroPpm: 0 },
+          hookAddress,
+        } as unknown as V3Pool),
+        snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
+        history: ok({ ...history(121), pool: V4_REF, source: "uniswap-v4-subgraph" } as unknown as PoolDailyPriceHistory),
+      });
+    const fees = { usd: 4.25, ofDeposit: 0.00425, daysCounted: 7, daysUnmeasurable: 0 };
+
+    it("withholds both columns' fees and says why, exactly as the month replayed does", () => {
+      const markup = renderWith(withBoth(hooked(SWAP_HOOK), fees), usable("2400", "2600"), { action: "/v4", poolParameter: "id" });
+
+      expect(markup).toContain("Your range, over the last 30 days");
+      expect(markup).not.toContain("Those fees against the deposit");
+      expect(markup).not.toContain("$4.25");
+      expect(markup).toContain("so no fees are attributed to a range here");
+    });
+
+    it("shows them on a v4 pool with no such hook", () => {
+      const markup = renderWith(withBoth(hooked(null), fees), usable("2400", "2600"), { action: "/v4", poolParameter: "id" });
+
+      expect(markup).toContain("Those fees against the deposit");
+      expect(markup).toContain("$4.25");
+    });
   });
 });

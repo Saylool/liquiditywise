@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Token } from "../../schemas";
 import {
   choosePriceQuote,
+  computedInterval,
   edgeDistances,
   heldAboveRange,
   heldBelowRange,
@@ -174,5 +175,46 @@ describe("what a position holds beyond each edge", () => {
 
     expect(heldBelowRange(quote)).toBe(USDC);
     expect(heldAboveRange(quote)).toBe(WETH);
+  });
+});
+
+describe("a range typed in the shown direction, turned back into the pool's", () => {
+  /* USDC (6 decimals) as token0 and WETH (18) as token1: the pool prices a dollar in ether. */
+  const inverted = choosePriceQuote(pair, 1 / 3000);
+  /* WETH as token0 and USDC as token1: the pool already prices ether in dollars. */
+  const upright = choosePriceQuote({ token0: WETH, token1: USDC }, 3000);
+
+  it("takes reciprocals and swaps the ends on a pool shown the other way round", () => {
+    expect(inverted.inverted).toBe(true);
+    const computed = computedInterval(inverted, { lower: 2500, upper: 4000 });
+
+    expect(computed.lower).toBeCloseTo(1 / 4000, 18);
+    expect(computed.upper).toBeCloseTo(1 / 2500, 18);
+    expect(computed.lower).toBeLessThan(computed.upper);
+  });
+
+  it("leaves the prices alone on a pool shown its own way round", () => {
+    expect(upright.inverted).toBe(false);
+    expect(computedInterval(upright, { lower: 2500, upper: 4000 })).toEqual({ lower: 2500, upper: 4000 });
+  });
+
+  /*
+   * A six-and-eighteen-decimal pair is where a decimals factor would show: it
+   * would be out by 10^12. Prices of whole tokens carry none, so none appears.
+   */
+  it("brings no decimals into it: whole tokens either way round", () => {
+    const computed = computedInterval(inverted, { lower: 3000, upper: 3000 * 1.2 });
+
+    expect(computed.upper * 3000).toBeCloseTo(1, 12);
+  });
+
+  it("round-trips through the direction the page writes it in", () => {
+    for (const quote of [inverted, upright]) {
+      const typed = { lower: 2750.25, upper: 3333.5 };
+      const back = quotedInterval(quote, computedInterval(quote, typed));
+
+      expect(back.lower).toBeCloseTo(typed.lower, 9);
+      expect(back.upper).toBeCloseTo(typed.upper, 9);
+    }
   });
 });

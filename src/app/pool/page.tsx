@@ -17,7 +17,10 @@ import {
   MULTIPLIER_PARAMETER,
   DEPOSIT_PARAMETER,
   CHAIN_PARAMETER,
+  LOWER_PARAMETER,
+  UPPER_PARAMETER,
   readRequestedChain,
+  readRequestedCustomRange,
   readRequestedParameters,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
@@ -155,6 +158,12 @@ export default async function PoolRangePage({
       params[DEPOSIT_PARAMETER],
       await getRangePreferences(),
     );
+    /*
+     * A range of the reader's own, to replay beside the suggested one. Read
+     * on its own and refused whole: a mistyped range costs one panel, never
+     * the analysis around it.
+     */
+    const customRange = readRequestedCustomRange(params[LOWER_PARAMETER], params[UPPER_PARAMETER]);
     const result = await getPoolRangeAnalysis(
       "v3",
       address.data,
@@ -162,6 +171,7 @@ export default async function PoolRangePage({
       requested.depositUsd,
       undefined,
       chain.id,
+      customRange.status === "usable" ? { lower: customRange.lower, upper: customRange.upper } : undefined,
     );
 
     return (
@@ -170,6 +180,7 @@ export default async function PoolRangePage({
         <PoolRangeReport
           result={result}
           poolId={address.data}
+          customRange={{ action: "/pool", poolParameter: "address", chain: chain.slug, requested: customRange }}
           t={t}
           locale={locale}
           /*
@@ -185,6 +196,7 @@ export default async function PoolRangePage({
               chain={chain.slug}
               parameters={requested.parameters}
               depositUsd={requested.depositUsd}
+              customRange={customRange.status === "usable" ? customRange.written : undefined}
               fellBack={requested.fellBack}
               t={t}
               locale={locale}

@@ -1,5 +1,14 @@
 import { type FeeDisclosure, feeDisclosureFor } from "../lib/advisor/feeDisclosure";
-import type { RangeBacktest } from "../lib/analytics/rangeBacktest";
+import type { CustomRangeBacktest, RangeBacktest } from "../lib/analytics/rangeBacktest";
+import {
+  DEPOSIT_PARAMETER,
+  HORIZON_PARAMETER,
+  LOWER_PARAMETER,
+  MULTIPLIER_PARAMETER,
+  type RequestedCustomRange,
+  UPPER_PARAMETER,
+} from "../lib/advisor/requestedParameters";
+import type { ChainSlug } from "../lib/chains/chains";
 import type {
   PoolRangeAnalysisResult,
   PoolRangeAnalysisStep,
@@ -37,7 +46,7 @@ import { chartDays, layoutPriceChart } from "../lib/format/priceChartLayout";
 import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
-import type { StatedSwapFee, V4ProtocolFee } from "../schemas";
+import type { PriceBandParameters, StatedSwapFee, V4ProtocolFee } from "../schemas";
 import { PriceHistoryChart } from "./PriceHistoryChart";
 import { chainLabel } from "../lib/chains/chainLabel";
 
@@ -111,6 +120,7 @@ const PANELS = [
   "realizedFee",
   "outOfSample",
   "backtest",
+  "customRange",
   "divergence",
   "rangeOrder",
   "swapDepth",
@@ -128,6 +138,7 @@ const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
   realizedFee: t.realizedFee.heading,
   outOfSample: t.outOfSample.heading,
   backtest: t.backtest.heading,
+  customRange: t.customRange.heading,
   divergence: t.divergence.heading,
   rangeOrder: t.rangeOrder.heading,
   swapDepth: t.swapDepth.heading,
@@ -146,7 +157,11 @@ const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
  * a list of contents standing in front of it would make them read an index
  * before an answer.
  */
-/** Every panel is always there but one: the month replayed needs a history long enough to draw a range before it. */
+/**
+ * Every panel is always there but two: the month replayed needs a history long
+ * enough to draw a range before it, and the reader's own range goes wherever
+ * that does and only on a page that can submit one.
+ */
 function Contents({ t, absent = [] }: { t: Dictionary; absent?: readonly PanelId[] }) {
   const titles = panelTitles(t);
 
@@ -215,6 +230,46 @@ const formatProtocolFee = (fee: V4ProtocolFee, locale: Locale): string =>
 const takesProtocolFee = (fee: V4ProtocolFee | null): fee is V4ProtocolFee =>
   fee !== null && (fee.zeroForOnePpm > 0 || fee.oneForZeroPpm > 0);
 
+/** Each day of a replayed month, folded away: where the price was, and the worth against holding. */
+function BacktestDays({
+  days,
+  t,
+  locale,
+}: {
+  days: RangeBacktest["days"];
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const place = { inside: t.backtest.placeInside, outside: t.backtest.placeOutside, undetermined: t.backtest.placeCrossed };
+
+  return (
+    <details className="flex flex-col gap-2">
+      <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">{t.backtest.showDays}</summary>
+      <div className="scroll-hint mt-3 overflow-x-auto">
+        <table className="w-full min-w-max text-sm">
+          <caption className="sr-only">{t.backtest.daysCaption}</caption>
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-widest text-muted">
+              <th scope="col" className="pr-6 pb-1 font-normal">{t.backtest.dayDate}</th>
+              <th scope="col" className="pr-6 pb-1 font-normal">{t.backtest.dayPlace}</th>
+              <th scope="col" className="pb-1 font-normal">{t.backtest.dayWorth}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((day) => (
+              <tr key={day.timestamp} className="font-mono">
+                <th scope="row" className="py-0.5 pr-6 text-left font-normal">{formatUtcDate(day.timestamp)}</th>
+                <td className="py-0.5 pr-6 text-muted">{place[day.placement]}</td>
+                <td className="py-0.5">{formatPercent(day.valueVsHold, locale)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
+
 /**
  * A position opened thirty days ago in the range drawn then, day by day.
  * Figures only; the words around them say what each rests on.
@@ -238,7 +293,6 @@ function BacktestPanel({
 }) {
   const whole = (value: number) => formatWhole(value, locale);
   const percent = (ratio: number) => formatPercent(ratio, locale);
-  const place = { inside: t.backtest.placeInside, outside: t.backtest.placeOutside, undetermined: t.backtest.placeCrossed };
 
   return (
     <Panel id="backtest" title={t.backtest.heading}>
@@ -265,35 +319,193 @@ function BacktestPanel({
         <p className="text-xs leading-relaxed text-muted">{t.backtest.feesUnread}</p>
       ) : null}
 
-      <details className="flex flex-col gap-2">
-        <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">{t.backtest.showDays}</summary>
-        <div className="scroll-hint mt-3 overflow-x-auto">
-          <table className="w-full min-w-max text-sm">
-            <caption className="sr-only">{t.backtest.daysCaption}</caption>
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-muted">
-                <th scope="col" className="pr-6 pb-1 font-normal">{t.backtest.dayDate}</th>
-                <th scope="col" className="pr-6 pb-1 font-normal">{t.backtest.dayPlace}</th>
-                <th scope="col" className="pb-1 font-normal">{t.backtest.dayWorth}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {backtest.days.map((day) => (
-                <tr key={day.timestamp} className="font-mono">
-                  <th scope="row" className="py-0.5 pr-6 text-left font-normal">{formatUtcDate(day.timestamp)}</th>
-                  <td className="py-0.5 pr-6 text-muted">{place[day.placement]}</td>
-                  <td className="py-0.5">{percent(day.valueVsHold)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+      <BacktestDays days={backtest.days} t={t} locale={locale} />
 
       <p className="text-xs leading-relaxed text-muted">{t.backtest.caveat}</p>
     </Panel>
   );
 }
+
+/**
+ * Where a reader tries a range of their own, and — once they have — the same
+ * month replayed in it, beside the suggested range's figures.
+ *
+ * A plain GET form like the one that sets the band, carrying everything that
+ * shaped the analysis above as hidden fields, so the replay beside the
+ * suggested one is a replay under the *same* settings: the same horizon, the
+ * same width, the same deposit, the same chain. The two prices are typed the
+ * way the page writes prices, and labelled so.
+ *
+ * Every figure in it is computed; none comes from the explanation below.
+ */
+function CustomRangePanel({
+  custom,
+  suggested,
+  requested,
+  form,
+  poolId,
+  parameters,
+  depositUsd,
+  attributesFees,
+  unit,
+  inQuote,
+  t,
+  locale,
+}: {
+  custom: CustomRangeBacktest | null;
+  suggested: RangeBacktest;
+  requested: RequestedCustomRange;
+  form: CustomRangeForm;
+  poolId: string;
+  parameters: PriceBandParameters;
+  depositUsd: number;
+  /** The same gate the month replayed reads, read the same way. */
+  attributesFees: boolean;
+  /** "USDC per WETH": the direction every price on the page is written in. */
+  unit: string;
+  inQuote: (lower: number, upper: number) => string;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const whole = (value: number) => formatWhole(value, locale);
+  const percent = (ratio: number) => formatPercent(ratio, locale);
+  const usd = (value: number) => formatUsd(value, locale);
+  const written = requested.status === "usable" ? requested.written : null;
+
+  /* One row per figure the month replayed shows, its own label on it. */
+  const rows: readonly { readonly label: string; readonly yours: string; readonly theirs: string }[] =
+    custom === null
+      ? []
+      : [
+          { label: t.outOfSample.fullyInside, yours: whole(custom.inside), theirs: whole(suggested.inside) },
+          { label: t.outOfSample.fullyOutside, yours: whole(custom.outside), theirs: whole(suggested.outside) },
+          { label: t.outOfSample.undetermined, yours: whole(custom.crossed), theirs: whole(suggested.crossed) },
+          { label: t.backtest.worth, yours: percent(custom.endValueVsHold), theirs: percent(suggested.endValueVsHold) },
+          ...(!attributesFees
+            ? []
+            : [
+                {
+                  label: t.backtest.fees(usd(depositUsd)),
+                  yours: custom.fees === null ? ABSENT : usd(custom.fees.usd),
+                  theirs: suggested.fees === null ? ABSENT : usd(suggested.fees.usd),
+                },
+                {
+                  label: t.backtest.feesOfDeposit,
+                  yours: custom.fees === null ? ABSENT : percent(custom.fees.ofDeposit),
+                  theirs: suggested.fees === null ? ABSENT : percent(suggested.fees.ofDeposit),
+                },
+              ]),
+        ];
+
+  return (
+    <Panel id="customRange" title={t.customRange.heading}>
+      <p className="text-sm leading-relaxed text-muted">{t.customRange.intro}</p>
+
+      <form method="get" action={form.action} className="flex flex-col gap-4">
+        {/* Everything that shaped the figures above travels unchanged, so the two columns are read under one setting. */}
+        <input type="hidden" name={form.poolParameter} value={poolId} />
+        {form.chain === undefined || form.chain === "ethereum" ? null : (
+          <input type="hidden" name="chain" value={form.chain} />
+        )}
+        <input type="hidden" name={HORIZON_PARAMETER} value={String(parameters.horizonDays)} />
+        <input type="hidden" name={MULTIPLIER_PARAMETER} value={String(parameters.standardDeviationMultiplier)} />
+        <input type="hidden" name={DEPOSIT_PARAMETER} value={String(depositUsd)} />
+
+        <div className="flex flex-wrap items-end gap-4">
+          {(
+            [
+              [LOWER_PARAMETER, t.customRange.lowerLabel(unit), written?.lower],
+              [UPPER_PARAMETER, t.customRange.upperLabel(unit), written?.upper],
+            ] as const
+          ).map(([name, label, value]) => (
+            /* min-w-0, as the band's controls are: a row too wide for a phone is clipped, not scrolled. */
+            <label key={name} className="flex min-w-0 flex-col gap-1">
+              <span className="text-xs uppercase tracking-widest text-muted">{label}</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                name={name}
+                defaultValue={value ?? ""}
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full min-w-0 rounded-md border border-border bg-surface-sunken px-3 py-2 font-mono text-sm"
+              />
+            </label>
+          ))}
+          <button
+            type="submit"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-on transition-[filter] hover:brightness-110"
+          >
+            {t.customRange.apply}
+          </button>
+        </div>
+      </form>
+
+      {requested.status === "unusable" ? (
+        <p className="text-sm leading-relaxed text-muted">{t.customRange.unusable}</p>
+      ) : requested.status === "usable" && custom === null ? (
+        <p className="text-sm leading-relaxed text-muted">{t.customRange.unreplayed}</p>
+      ) : null}
+
+      {custom === null ? null : (
+        <div className="flex flex-col gap-4">
+          <h3 className="text-sm font-semibold">{t.customRange.resultHeading}</h3>
+          <p className="text-sm leading-relaxed">
+            {t.backtest.opened(formatUtcDate(custom.openedAt), inQuote(custom.lowerPrice, custom.upperPrice))}
+          </p>
+          {custom.openedInside ? null : (
+            <p className="text-sm leading-relaxed">{t.customRange.openedOutside}</p>
+          )}
+
+          <div className="scroll-hint overflow-x-auto">
+            <table className="w-full text-sm">
+              <caption className="sr-only">{t.customRange.tableCaption}</caption>
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                  <th scope="col" className="pr-4 pb-1 font-normal">{t.customRange.columnFigure}</th>
+                  <th scope="col" className="pr-4 pb-1 font-normal">{t.customRange.columnYours}</th>
+                  <th scope="col" className="pb-1 font-normal">{t.customRange.columnSuggested}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row" className="py-1 pr-4 text-left font-normal">{row.label}</th>
+                    <td className="py-1 pr-4 font-mono">{row.yours}</td>
+                    <td className="py-1 font-mono text-muted">{row.theirs}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs leading-relaxed text-muted">{t.backtest.worthNote}</p>
+          {!attributesFees ? (
+            <p className="text-xs leading-relaxed text-muted">{t.backtest.feesWithheld}</p>
+          ) : custom.fees === null || suggested.fees === null ? (
+            <p className="text-xs leading-relaxed text-muted">{t.backtest.feesUnread}</p>
+          ) : null}
+
+          <BacktestDays days={custom.days} t={t} locale={locale} />
+
+          <p className="text-xs leading-relaxed text-muted">{t.customRange.caveat}</p>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+/**
+ * Where the reader's own range is submitted, and under what name the pool
+ * travels — the page's to know, as for the band's form.
+ */
+export type CustomRangeForm = {
+  readonly action: string;
+  readonly poolParameter: string;
+  /** The pool's chain, which travels hidden beside it; unsaid for mainnet. */
+  readonly chain?: ChainSlug | undefined;
+  /** What the URL asked for, read and checked by the route. */
+  readonly requested: RequestedCustomRange;
+};
 
 /**
  * What the pool actually charged, beside what it says it charges.
@@ -410,6 +622,7 @@ export function PoolRangeReport({
   result,
   poolId,
   controls,
+  customRange,
   introducedAbove = false,
   t,
   locale,
@@ -424,6 +637,12 @@ export function PoolRangeReport({
    * submits and this does not.
    */
   controls?: React.ReactNode;
+  /**
+   * Where the reader's own range is submitted, and what the URL asked for.
+   * Without it there is no such panel — the comparison page, for one, has
+   * nowhere for the form to go.
+   */
+  customRange?: CustomRangeForm | undefined;
   /**
    * Whether the page has already named this pool directly above the report.
    *
@@ -472,6 +691,7 @@ export function PoolRangeReport({
     rangeOrders,
     swapDepth,
     backtest,
+    customBacktest,
     parameters,
   } = result.data;
   const disclosure = feeDisclosureFor(pool);
@@ -522,6 +742,11 @@ export function PoolRangeReport({
   const percent = (ratio: number) => formatPercent(ratio, locale);
   const whole = (value: number) => formatWhole(value, locale);
   const widthInTicks = range.upperTick - range.lowerTick;
+  /* A computed interval as the page writes ranges: shown direction, both ends, both symbols. */
+  const inQuote = (lower: number, upper: number) => {
+    const shown = quotedInterval(quote, { lower, upper });
+    return t.report.rangeValue(price(shown.lower), price(shown.upper), counter, base);
+  };
   /*
    * The two one-sided halves of the range, quoted like everything else.
    *
@@ -671,7 +896,13 @@ export function PoolRangeReport({
        * knobs are the labels of the form below, so a reader changing one can
        * see which figure they are changing.
        */}
-      <Contents t={t} absent={backtest === null ? ["backtest"] : []} />
+      <Contents
+        t={t}
+        absent={[
+          ...(backtest === null ? (["backtest"] as const) : []),
+          ...(backtest === null || customRange === undefined ? (["customRange"] as const) : []),
+        ]}
+      />
 
       <Panel id="basis" title={t.report.basisHeading}>
         <p className="text-sm leading-relaxed text-muted">
@@ -979,10 +1210,30 @@ export function PoolRangeReport({
           backtest={backtest}
           depositUsd={result.data.depositUsd}
           attributesFees={disclosure.mayAttributeFeesToRange}
-          inQuote={(lower, upper) => {
-            const band = quotedInterval(quote, { lower, upper });
-            return t.report.rangeValue(price(band.lower), price(band.upper), counter, base);
-          }}
+          inQuote={inQuote}
+          t={t}
+          locale={locale}
+        />
+      )}
+
+      {/*
+       * The reader's own range, straight after the month it is compared with,
+       * and only where that month could be replayed: the same history refuses
+       * both, and a form for a replay that cannot run would be a form for
+       * nothing.
+       */}
+      {backtest === null || customRange === undefined ? null : (
+        <CustomRangePanel
+          custom={customBacktest}
+          suggested={backtest}
+          requested={customRange.requested}
+          form={customRange}
+          poolId={poolId}
+          parameters={parameters}
+          depositUsd={result.data.depositUsd}
+          attributesFees={disclosure.mayAttributeFeesToRange}
+          unit={t.technical.quotePerBase(counter, base)}
+          inQuote={inQuote}
           t={t}
           locale={locale}
         />

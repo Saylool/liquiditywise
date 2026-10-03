@@ -8,11 +8,12 @@ import { PoolExplanationSection } from "@/app/pool/PoolExplanationSection";
 import { V4PairSection } from "./V4PairSection";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import type { PoolRangeAnalysisResult } from "@/lib/advisor/poolRangeAnalysis";
+import type { RequestedCustomRange } from "@/lib/advisor/requestedParameters";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV4Pool } from "@/lib/uniswap/getEthereumV4Pool";
 import type { PriceBandParameters } from "@/schemas";
-import type { V4ChainId } from "@/lib/chains/chains";
+import { type ChainSlug, chainById, type V4ChainId } from "@/lib/chains/chains";
 
 /**
  * Reads one v4 pool, and works it through to a range.
@@ -31,6 +32,7 @@ export async function V4PoolSection({
   chainId,
   parameters,
   depositUsd,
+  customRange,
   controls,
   locale,
   t,
@@ -41,13 +43,23 @@ export async function V4PoolSection({
   parameters: PriceBandParameters;
   /** The deposit the fee-share figure is worked out for. Scales nothing else. */
   depositUsd: number;
+  /** A range the reader typed in, as the route read it, to replay beside the suggested one. */
+  customRange: RequestedCustomRange;
   /** The form that changes the range; the report places it under the figures it changes. */
   controls: React.ReactNode;
   locale: Locale;
   t: Dictionary;
 }) {
   const poolRead = getEthereumV4Pool(poolId, chainId);
-  const analysis = getPoolRangeAnalysis("v4", poolId, parameters, depositUsd, poolRead, chainId);
+  const analysis = getPoolRangeAnalysis(
+    "v4",
+    poolId,
+    parameters,
+    depositUsd,
+    poolRead,
+    chainId,
+    customRange.status === "usable" ? { lower: customRange.lower, upper: customRange.upper } : undefined,
+  );
 
   const pool = await poolRead;
 
@@ -64,6 +76,8 @@ export async function V4PoolSection({
           <V4RangeReport
             analysis={analysis}
             poolId={poolId}
+            chainSlug={chainById(chainId).slug}
+            customRange={customRange}
             controls={controls}
             t={t}
             locale={locale}
@@ -81,12 +95,16 @@ export async function V4PoolSection({
 async function V4RangeReport({
   analysis,
   poolId,
+  chainSlug,
+  customRange,
   controls,
   t,
   locale,
 }: {
   analysis: Promise<PoolRangeAnalysisResult>;
   poolId: string;
+  chainSlug: ChainSlug;
+  customRange: RequestedCustomRange;
   controls: React.ReactNode;
   t: Dictionary;
   locale: Locale;
@@ -103,6 +121,7 @@ async function V4RangeReport({
       <PoolRangeReport
         result={result}
         poolId={poolId}
+        customRange={{ action: "/v4", poolParameter: "id", chain: chainSlug, requested: customRange }}
         controls={controls}
         introducedAbove
         t={t}

@@ -340,3 +340,93 @@ describe("DEFAULT_PRICE_BAND_PARAMETERS", () => {
     });
   });
 });
+
+/*
+ * A range the reader typed in, in the direction the page shows it. The same
+ * pair both ways round: USDC/WETH, which the page shows inverted as USDC per
+ * WETH, and WETH/USDC, which it shows as the pool quotes it. A reader types
+ * "2,900 – 3,100 USDC per WETH" into either, and both must replay the same
+ * prices of ether — in each pool's own direction.
+ */
+describe("the reader's own range", () => {
+  const longHistory = (prices: (day: number) => number, days = 121) => {
+    const base = history(days);
+    return {
+      ...base,
+      points: base.points.map((point, day) => ({ ...point, price: prices(day) })),
+    } as PoolDailyPriceHistory;
+  };
+  /* Ether wobbling ±1% around 3,000 dollars, written each pool's way round. */
+  const etherInDollars = (day: number) => 3000 * (day % 2 === 0 ? 1.01 : 1 / 1.01);
+
+  it("is turned back into the pool's direction on a pool the page shows inverted", () => {
+    const { data } = succeed({
+      history: ok(longHistory((day) => 1 / etherInDollars(day))),
+      customRange: { lower: 2900, upper: 3100 },
+    });
+
+    expect(data.customBacktest).not.toBeNull();
+    /* The pool's own direction is WETH per USDC: the reciprocals, ends swapped. */
+    expect(data.customBacktest!.lowerPrice).toBeCloseTo(1 / 3100, 15);
+    expect(data.customBacktest!.upperPrice).toBeCloseTo(1 / 2900, 15);
+    expect(data.customBacktest!.openedInside).toBe(true);
+  });
+
+  /* The same pair with WETH as token0; addresses swapped too, since a pool's token0 is the lower address. */
+  const upright = (customRange: { lower: number; upper: number }) =>
+    succeed({
+      pool: ok({
+        ...pool(),
+        token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "WETH", decimals: 18 },
+        token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "USDC", decimals: 6 },
+      } as unknown as V3Pool),
+      snapshot: ok(
+        snapshot({
+          token0PriceInToken1: 3000,
+          token1PriceInToken0: 1 / 3000,
+          lockedToken0: 6_250_000 / 3000,
+          lockedToken1: 6_250_000,
+          tick: -CURRENT_TICK - 1,
+        }),
+      ),
+      history: ok(longHistory(etherInDollars)),
+      customRange,
+    }).data;
+  const inverted = (customRange: { lower: number; upper: number }) =>
+    succeed({ history: ok(longHistory((day) => 1 / etherInDollars(day))), customRange }).data;
+
+  it("is left as typed on a pool the page shows its own way round, decimals and all", () => {
+    expect(upright({ lower: 2900, upper: 3100 }).customBacktest).toMatchObject({
+      lowerPrice: 2900,
+      upperPrice: 3100,
+      openedInside: true,
+    });
+  });
+
+  it("replays the same days the same way, whichever way round the pool quotes", () => {
+    for (const typed of [{ lower: 2900, upper: 3100 }, { lower: 3010, upper: 3500 }]) {
+      const one = inverted(typed).customBacktest!;
+      const other = upright(typed).customBacktest!;
+
+      expect([one.inside, one.outside, one.crossed]).toEqual([other.inside, other.outside, other.crossed]);
+      expect(one.openedInside).toBe(other.openedInside);
+      /* Worth against holding is the same ratio priced in either token. */
+      expect(one.endValueVsHold).toBeCloseTo(other.endValueVsHold, 9);
+    }
+  });
+
+  it("is nothing when none was asked for, beside a drawn replay that is there", () => {
+    const { data } = succeed({ history: ok(longHistory((day) => 1 / etherInDollars(day))) });
+
+    expect(data.backtest).not.toBeNull();
+    expect(data.customBacktest).toBeNull();
+  });
+
+  it("costs the rest of the analysis nothing when it cannot be replayed", () => {
+    const { data } = succeed({ customRange: { lower: 2900, upper: 3100 } });
+
+    expect(data.backtest).toBeNull();
+    expect(data.customBacktest).toBeNull();
+    expect(data.range.lowerTick).toBeLessThan(data.range.upperTick);
+  });
+});
