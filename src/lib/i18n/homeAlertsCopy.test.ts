@@ -9,19 +9,20 @@ describe("the front page's alerts section", () => {
 
     for (const locale of LOCALES.filter((locale) => locale !== "en")) {
       const copy = getHomeAlertsCopy(locale);
-      for (const key of ["kicker", "heading", "telegramTitle", "telegramBody", "telegramCta"] as const) {
+      for (const key of ["kicker", "heading", "telegramTitle", "telegramBody", "telegramCta", "pairCta"] as const) {
         expect(copy[key].trim(), `${locale} ${key}`).not.toBe("");
         expect(copy[key], `${locale} ${key}`).not.toBe(english[key]);
       }
     }
   });
 
-  it("names the bot's handle in every language, and says /smart is what to send for the smart alert", () => {
+  it("names the bot's handle in every language, and says /smart and /weekly are what to send for the opt-in messages", () => {
     for (const locale of LOCALES) {
       const copy = getHomeAlertsCopy(locale);
 
       expect(copy.telegramBot("LiquidityWiseBot"), locale).toContain("@LiquidityWiseBot");
       expect(copy.telegramBody, locale).toContain("/smart");
+      expect(copy.telegramBody, locale).toContain("/weekly");
     }
   });
 });

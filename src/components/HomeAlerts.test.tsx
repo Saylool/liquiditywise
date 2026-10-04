@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { getPairPoolsCopy } from "../lib/i18n/pairPoolsCopy";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
 import { HomeAlerts } from "./HomeAlerts";
 
@@ -15,6 +16,21 @@ describe("the front page's alerts section", () => {
     expect(html).toContain("Paranın nereye gittiğini gör");
   });
 
+  it("leads to the pair page, which has no language address, with its own heading in the reader's language, with or without a bot", () => {
+    for (const bot of [null, BOT]) {
+      const html = renderToStaticMarkup(<HomeAlerts locale="tr" bot={bot} />);
+
+      expect(html).toContain('href="/pair"');
+      expect(html).toContain(getPairPoolsCopy("tr").heading);
+      expect(html).toContain("Bir parite ara");
+    }
+  });
+
+  it("lays the cards out three across only when the bot's card is the third", () => {
+    expect(renderToStaticMarkup(<HomeAlerts locale="en" bot={BOT} />)).toContain("lg:grid-cols-3");
+    expect(renderToStaticMarkup(<HomeAlerts locale="en" bot={null} />)).not.toContain("lg:grid-cols-3");
+  });
+
   it("shows the bot where alerts are set up: the way to choose an address, and the bot's own link", () => {
     const html = renderToStaticMarkup(<HomeAlerts locale="en" bot={BOT} />);
 
@@ -24,6 +40,7 @@ describe("the front page's alerts section", () => {
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain("Open the bot: @LiquidityWiseBot");
     expect(html).toContain("/smart");
+    expect(html).toContain("/weekly");
   });
 
   it("says nothing of a bot where none is set up, rather than pointing at one that cannot answer", () => {

@@ -1,13 +1,14 @@
 import type { Locale } from "./locales";
 
 /*
- * The front page's section on where the smart money sits and on the Telegram
- * bot. The smart-money card reuses that page's own title and description, so
- * the two say one thing in one way; what is here is the section's heading and
- * the bot's card.
+ * The front page's section on where the smart money sits, on a pair across
+ * every network, and on the Telegram bot. The smart-money and pair cards reuse
+ * their pages' own titles and descriptions, so each says one thing in one way;
+ * what is here is the section's heading, the pair card's link and the bot's
+ * card.
  *
- * The bot's card says what the bot does and that /smart is the one thing that
- * has to be asked for — the same promise the bot's own help makes.
+ * The bot's card says what the bot does and that /smart and /weekly are the
+ * things that have to be asked for — the same promise the bot's own help makes.
  */
 
 export type HomeAlertsCopy = {
@@ -15,6 +16,8 @@ export type HomeAlertsCopy = {
   readonly heading: string;
   readonly telegramTitle: string;
   readonly telegramBody: string;
+  /** The link on the pair card; its title and text are the pair page's own. */
+  readonly pairCta: string;
   readonly telegramCta: string;
   readonly telegramBot: (username: string) => string;
 };
@@ -25,7 +28,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "See where the money goes, and hear when it moves",
     telegramTitle: "Alerts on Telegram",
     telegramBody:
-      "Follow an address's positions and be told when one nears the edge of its range, leaves it or comes back. Send /smart to the bot and it also says when the best-earning liquidity in your pools moves.",
+      "Follow an address's positions and be told when one nears the edge of its range, leaves it or comes back. Send /smart to the bot and it also says when the best-earning liquidity in your pools moves; send /weekly for a Monday digest of where the smart money moved.",
+    pairCta: "Look up a pair",
     telegramCta: "Set up alerts",
     telegramBot: (username) => `Open the bot: @${username}`,
   },
@@ -34,7 +38,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "Paranın nereye gittiğini gör, kaydığında haber al",
     telegramTitle: "Telegram'da uyarılar",
     telegramBody:
-      "Bir adresin pozisyonlarını takip et; biri aralığının sınırına yaklaştığında, aralıktan çıktığında ya da geri girdiğinde haber al. Bota /smart yazarsan, havuzlarında en çok kazanan likidite kaydığında da söyler.",
+      "Bir adresin pozisyonlarını takip et; biri aralığının sınırına yaklaştığında, aralıktan çıktığında ya da geri girdiğinde haber al. Bota /smart yazarsan, havuzlarında en çok kazanan likidite kaydığında da söyler; /weekly yazarsan her pazartesi akıllı paranın nereye kaydığını özetler.",
+    pairCta: "Bir parite ara",
     telegramCta: "Uyarıları kur",
     telegramBot: (username) => `Botu aç: @${username}`,
   },
@@ -43,7 +48,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "Sieh, wohin das Geld geht, und erfahre, wenn es sich bewegt",
     telegramTitle: "Benachrichtigungen auf Telegram",
     telegramBody:
-      "Folge den Positionen einer Adresse und erfahre, wenn eine sich dem Rand ihres Bereichs nähert, ihn verlässt oder zurückkehrt. Sendest du dem Bot /smart, meldet er auch, wenn sich die bestverdienende Liquidität in deinen Pools verschiebt.",
+      "Folge den Positionen einer Adresse und erfahre, wenn eine sich dem Rand ihres Bereichs nähert, ihn verlässt oder zurückkehrt. Sendest du dem Bot /smart, meldet er auch, wenn sich die bestverdienende Liquidität in deinen Pools verschiebt; mit /weekly schickt er jeden Montag einen Überblick, wohin sich das kluge Geld bewegt hat.",
+    pairCta: "Ein Paar nachschlagen",
     telegramCta: "Benachrichtigungen einrichten",
     telegramBot: (username) => `Bot öffnen: @${username}`,
   },
@@ -52,7 +58,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "Mira adónde va el dinero y entérate cuando se mueve",
     telegramTitle: "Alertas en Telegram",
     telegramBody:
-      "Sigue las posiciones de una dirección y entérate cuando una se acerca al borde de su rango, sale de él o vuelve. Si envías /smart al bot, también avisa cuando se mueve la liquidez que más gana en tus pools.",
+      "Sigue las posiciones de una dirección y entérate cuando una se acerca al borde de su rango, sale de él o vuelve. Si envías /smart al bot, también avisa cuando se mueve la liquidez que más gana en tus pools; con /weekly recibes cada lunes un resumen de adónde se movió el dinero inteligente.",
+    pairCta: "Buscar un par",
     telegramCta: "Configurar alertas",
     telegramBot: (username) => `Abrir el bot: @${username}`,
   },
@@ -61,7 +68,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "انظر إلى أين يذهب المال، واعرف متى يتحرّك",
     telegramTitle: "تنبيهات على تيليغرام",
     telegramBody:
-      "تابع مراكز عنوان واحد واعرف حين يقترب أحدها من حافة نطاقه أو يخرج منه أو يعود إليه. وإن أرسلت /smart إلى البوت فسيخبرك أيضًا حين تنتقل السيولة الأعلى ربحًا في تجمّعاتك.",
+      "تابع مراكز عنوان واحد واعرف حين يقترب أحدها من حافة نطاقه أو يخرج منه أو يعود إليه. وإن أرسلت /smart إلى البوت فسيخبرك أيضًا حين تنتقل السيولة الأعلى ربحًا في تجمّعاتك، ومع /weekly تصلك كل يوم اثنين خلاصة عن المكان الذي انتقل إليه المال الذكي.",
+    pairCta: "ابحث عن زوج",
     telegramCta: "إعداد التنبيهات",
     telegramBot: (username) => `افتح البوت: @${username}`,
   },
@@ -70,7 +78,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "देखिए पैसा कहाँ जा रहा है, और खिसकने पर सुनिए",
     telegramTitle: "टेलीग्राम पर सूचनाएँ",
     telegramBody:
-      "किसी पते की पोज़िशनें फ़ॉलो कीजिए और जब कोई अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या लौट आए तो सूचना पाइए। बॉट को /smart भेजें तो वह यह भी बताएगा कि आपके पूलों में सबसे ज़्यादा कमाने वाली तरलता कब खिसकी।",
+      "किसी पते की पोज़िशनें फ़ॉलो कीजिए और जब कोई अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या लौट आए तो सूचना पाइए। बॉट को /smart भेजें तो वह यह भी बताएगा कि आपके पूलों में सबसे ज़्यादा कमाने वाली तरलता कब खिसकी, और /weekly भेजें तो हर सोमवार यह सारांश मिलेगा कि स्मार्ट पैसा कहाँ खिसका।",
+    pairCta: "कोई जोड़ी खोजें",
     telegramCta: "सूचनाएँ सेट करें",
     telegramBot: (username) => `बॉट खोलें: @${username}`,
   },
@@ -79,7 +88,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "看钱去了哪里，并在它移动时得到通知",
     telegramTitle: "Telegram 提醒",
     telegramBody:
-      "关注一个地址的仓位，当其中一个接近区间边缘、离开区间或回到区间时收到通知。向机器人发送 /smart，当你的池子里收益最高的流动性移动时，它也会告诉你。",
+      "关注一个地址的仓位，当其中一个接近区间边缘、离开区间或回到区间时收到通知。向机器人发送 /smart，当你的池子里收益最高的流动性移动时，它也会告诉你；发送 /weekly，每周一收到聪明资金流向的摘要。",
+    pairCta: "查找一个交易对",
     telegramCta: "设置提醒",
     telegramBot: (username) => `打开机器人：@${username}`,
   },
@@ -88,7 +98,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "Смотрите, куда идут деньги, и узнавайте, когда они двигаются",
     telegramTitle: "Оповещения в Telegram",
     telegramBody:
-      "Следите за позициями одного адреса и узнавайте, когда одна из них подходит к границе диапазона, выходит из него или возвращается. Отправьте боту /smart — и он сообщит также, когда сместится самая доходная ликвидность в ваших пулах.",
+      "Следите за позициями одного адреса и узнавайте, когда одна из них подходит к границе диапазона, выходит из него или возвращается. Отправьте боту /smart — и он сообщит также, когда сместится самая доходная ликвидность в ваших пулах, а с /weekly будет каждый понедельник присылать сводку о том, куда переместились умные деньги.",
+    pairCta: "Найти пару",
     telegramCta: "Настроить оповещения",
     telegramBot: (username) => `Открыть бота: @${username}`,
   },
@@ -97,7 +108,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "Veja para onde vai o dinheiro e saiba quando ele se move",
     telegramTitle: "Alertas no Telegram",
     telegramBody:
-      "Acompanhe as posições de um endereço e saiba quando uma se aproxima da borda da faixa, sai dela ou volta. Se você enviar /smart ao bot, ele também avisa quando a liquidez que mais ganha nos seus pools se mover.",
+      "Acompanhe as posições de um endereço e saiba quando uma se aproxima da borda da faixa, sai dela ou volta. Se você enviar /smart ao bot, ele também avisa quando a liquidez que mais ganha nos seus pools se mover; com /weekly, você recebe toda segunda-feira um resumo de para onde o dinheiro inteligente se moveu.",
+    pairCta: "Buscar um par",
     telegramCta: "Configurar alertas",
     telegramBot: (username) => `Abrir o bot: @${username}`,
   },
@@ -106,7 +118,8 @@ const COPY: Record<Locale, HomeAlertsCopy> = {
     heading: "看錢去了哪裡，並在它移動時得到通知",
     telegramTitle: "Telegram 提醒",
     telegramBody:
-      "關注一個地址的倉位，當其中一個接近區間邊緣、離開區間或回到區間時收到通知。向機器人發送 /smart，當你的池子裡收益最高的流動性移動時，它也會告訴你。",
+      "追蹤一個地址的倉位，當其中一個接近區間邊緣、離開區間或回到區間時收到通知。向機器人傳送 /smart，當你的池子裡收益最高的流動性移動時，它也會告訴你；傳送 /weekly，每週一收到聰明資金流向的摘要。",
+    pairCta: "查詢一個交易對",
     telegramCta: "設定提醒",
     telegramBot: (username) => `開啟機器人：@${username}`,
   },
