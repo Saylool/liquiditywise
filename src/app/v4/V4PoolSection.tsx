@@ -10,7 +10,11 @@ import { V4PairSection } from "./V4PairSection";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import { feeDisclosureFor } from "@/lib/advisor/feeDisclosure";
 import type { PoolRangeAnalysisResult } from "@/lib/advisor/poolRangeAnalysis";
-import type { RequestedCustomRange } from "@/lib/advisor/requestedParameters";
+import {
+  recentreGasUsd,
+  type RequestedCustomRange,
+  type RequestedRecentreGas,
+} from "@/lib/advisor/requestedParameters";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { getEthereumV4Pool } from "@/lib/uniswap/getEthereumV4Pool";
@@ -35,6 +39,7 @@ export async function V4PoolSection({
   parameters,
   depositUsd,
   customRange,
+  recentreGas,
   controls,
   locale,
   t,
@@ -47,6 +52,8 @@ export async function V4PoolSection({
   depositUsd: number;
   /** A range the reader typed in, as the route read it, to replay beside the suggested one. */
   customRange: RequestedCustomRange;
+  /** What a re-centre costs in gas, as the route read it, for the strategy replayed beside it. */
+  recentreGas: RequestedRecentreGas;
   /** The form that changes the range; the report places it under the figures it changes. */
   controls: React.ReactNode;
   locale: Locale;
@@ -61,6 +68,7 @@ export async function V4PoolSection({
     poolRead,
     chainId,
     customRange.status === "usable" ? { lower: customRange.lower, upper: customRange.upper } : undefined,
+    recentreGasUsd(recentreGas),
   );
 
   const pool = await poolRead;
@@ -80,6 +88,7 @@ export async function V4PoolSection({
             poolId={poolId}
             chain={chainById(chainId)}
             customRange={customRange}
+            recentreGas={recentreGas}
             controls={controls}
             t={t}
             locale={locale}
@@ -99,6 +108,7 @@ async function V4RangeReport({
   poolId,
   chain,
   customRange,
+  recentreGas,
   controls,
   t,
   locale,
@@ -107,6 +117,7 @@ async function V4RangeReport({
   poolId: string;
   chain: Chain;
   customRange: RequestedCustomRange;
+  recentreGas: RequestedRecentreGas;
   controls: React.ReactNode;
   t: Dictionary;
   locale: Locale;
@@ -123,7 +134,7 @@ async function V4RangeReport({
       <PoolRangeReport
         result={result}
         poolId={poolId}
-        customRange={{ action: "/v4", poolParameter: "id", chain: chain.slug, requested: customRange }}
+        customRange={{ action: "/v4", poolParameter: "id", chain: chain.slug, requested: customRange, gas: recentreGas }}
         controls={controls}
         introducedAbove
         t={t}

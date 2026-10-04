@@ -1,4 +1,4 @@
-import { LOWER_PARAMETER, UPPER_PARAMETER } from "../lib/advisor/requestedParameters";
+import { GAS_PARAMETER, LOWER_PARAMETER, UPPER_PARAMETER } from "../lib/advisor/requestedParameters";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import type { PriceBandParameters } from "../schemas";
@@ -31,6 +31,7 @@ export function BandParametersForm({
   parameters,
   depositUsd,
   customRange,
+  recentreGas,
   fellBack,
   t,
   locale,
@@ -63,6 +64,11 @@ export function BandParametersForm({
    * screen rather than quietly dropping one side of it.
    */
   customRange?: { readonly lower: string; readonly upper: string } | undefined;
+  /**
+   * The cost per re-centre the reader set, as they wrote it, for the same
+   * reason: changing the band keeps it counted rather than quietly dropping it.
+   */
+  recentreGas?: string | undefined;
   /** True when something was asked for and could not be used. */
   fellBack: boolean;
   t: Dictionary;
@@ -87,6 +93,7 @@ export function BandParametersForm({
           <input type="hidden" name={UPPER_PARAMETER} value={customRange.upper} />
         </>
       )}
+      {recentreGas === undefined ? null : <input type="hidden" name={GAS_PARAMETER} value={recentreGas} />}
 
       <div className="flex flex-wrap items-end gap-4">
         <BandChoices parameters={parameters} depositUsd={depositUsd} t={t} locale={locale} />

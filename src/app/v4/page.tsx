@@ -9,11 +9,14 @@ import {
   MULTIPLIER_PARAMETER,
   DEPOSIT_PARAMETER,
   CHAIN_PARAMETER,
+  GAS_PARAMETER,
   LOWER_PARAMETER,
   UPPER_PARAMETER,
+  carriedRecentreGas,
   readRequestedChain,
   readRequestedCustomRange,
   readRequestedParameters,
+  readRequestedRecentreGas,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { type Chain, ETHEREUM, readsV4 } from "@/lib/chains/chains";
@@ -123,6 +126,8 @@ export default async function V4PoolPage({
   );
   /* The reader's own range, read as the v3 page reads it: whole or not at all. */
   const customRange = readRequestedCustomRange(params[LOWER_PARAMETER], params[UPPER_PARAMETER]);
+  /* And the cost per re-centre, as the v3 page reads it. */
+  const recentreGas = readRequestedRecentreGas(params[GAS_PARAMETER]);
 
   if (!poolId.success) {
     return (
@@ -147,6 +152,7 @@ export default async function V4PoolPage({
           parameters={band.parameters}
           depositUsd={band.depositUsd}
           customRange={customRange}
+          recentreGas={recentreGas}
           locale={locale}
           t={t}
           /*
@@ -163,6 +169,7 @@ export default async function V4PoolPage({
               parameters={band.parameters}
               depositUsd={band.depositUsd}
               customRange={customRange.status === "usable" ? customRange.written : undefined}
+              recentreGas={carriedRecentreGas(recentreGas)}
               fellBack={band.fellBack}
               t={t}
               locale={locale}

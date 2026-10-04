@@ -12,6 +12,12 @@ import {
   DEPOSIT_PARAMETER,
   LOWER_PARAMETER,
   UPPER_PARAMETER,
+  GAS_PARAMETER,
+  RECENTRE_GAS_CHOICES,
+  RECENTRE_GAS_MAXIMUM_USD,
+  carriedRecentreGas,
+  readRequestedRecentreGas,
+  recentreGasUsd,
   poolAnalysisHref,
   readRequestedCustomRange,
   readRequestedParameters,
@@ -320,5 +326,49 @@ describe("readRequestedCustomRange", () => {
 
   it("travels under names a URL bar reads plainly", () => {
     expect([LOWER_PARAMETER, UPPER_PARAMETER]).toEqual(["lower", "upper"]);
+  });
+});
+
+describe("readRequestedRecentreGas", () => {
+  it("reads a cost per re-centre as the reader wrote it", () => {
+    expect(readRequestedRecentreGas(" 5.50 ")).toEqual({ status: "usable", usd: 5.5, written: "5.50" });
+    expect(readRequestedRecentreGas("0")).toEqual({ status: "usable", usd: 0, written: "0" });
+    expect(readRequestedRecentreGas(String(RECENTRE_GAS_MAXIMUM_USD))).toMatchObject({ status: "usable", usd: RECENTRE_GAS_MAXIMUM_USD });
+  });
+
+  it("is nothing asked when it did not arrive, or arrived blank", () => {
+    expect(readRequestedRecentreGas(undefined)).toEqual({ status: "none" });
+    expect(readRequestedRecentreGas("  ")).toEqual({ status: "none" });
+  });
+
+  it.each([
+    ["a negative cost", "-1"],
+    ["an exponent", "5e1"],
+    ["a decimal comma", "5,5"],
+    ["a word", "cheap"],
+    ["more than the ceiling", String(RECENTRE_GAS_MAXIMUM_USD + 0.01)],
+    ["a number too large to be finite", "9".repeat(400)],
+    ["a repeated cost", ["1", "5"]],
+  ])("refuses %s, whole", (_, raw) => {
+    expect(readRequestedRecentreGas(raw)).toEqual({ status: "unusable" });
+  });
+
+  it("counts what was asked, and nothing when nothing usable was", () => {
+    expect(recentreGasUsd({ status: "usable", usd: 7.5, written: "7.5" })).toBe(7.5);
+    expect(recentreGasUsd({ status: "none" })).toBe(0);
+    expect(recentreGasUsd({ status: "unusable" })).toBe(0);
+  });
+
+  /* Carried hidden by the page's other forms only when it counts something, and as written. */
+  it("is carried as written, and only when it is a cost", () => {
+    expect(carriedRecentreGas({ status: "usable", usd: 5, written: "5.0" })).toBe("5.0");
+    expect(carriedRecentreGas({ status: "usable", usd: 0, written: "0" })).toBeUndefined();
+    expect(carriedRecentreGas({ status: "unusable" })).toBeUndefined();
+    expect(carriedRecentreGas({ status: "none" })).toBeUndefined();
+  });
+
+  it("offers nothing counted first, and travels under a name a URL bar reads plainly", () => {
+    expect(RECENTRE_GAS_CHOICES[0]).toBe(0);
+    expect(GAS_PARAMETER).toBe("gas");
   });
 });

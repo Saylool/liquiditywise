@@ -8,6 +8,11 @@ import {
   type CustomRangeBacktest,
   type RangeBacktest,
 } from "../analytics/rangeBacktest";
+import {
+  calculateRecentringReplay,
+  recentreSwapFee,
+  type RecentringReplay,
+} from "../analytics/recentringReplay";
 import { choosePriceQuote, computedInterval } from "../format/priceQuote";
 import { calculateDivergenceLoss } from "../analytics/divergenceLoss";
 import { calculateRangeOrders, type RangeOrdersResult } from "../analytics/rangeOrder";
@@ -151,6 +156,13 @@ export type PoolRangeAnalysis = {
    * replayed — the page tells those apart from what was asked, not from this.
    */
   readonly customBacktest: CustomRangeBacktest | null;
+  /**
+   * The same month again, re-centred every time a day closed outside the
+   * range: opened where the month above opened, in its range, and set beside
+   * it. `null` wherever that month is, and on a pool where nothing — neither
+   * its own terms nor its month of swaps — says what a swap would have paid.
+   */
+  readonly recentring: RecentringReplay | null;
   readonly parameters: PriceBandParameters;
   /** The size the figure above was worked out for. Printed wherever it is. */
   readonly depositUsd: number;
@@ -207,6 +219,12 @@ export type PoolRangeAnalysisInput = {
    * current price, and this is where the current price is known.
    */
   readonly customRange?: { readonly lower: number; readonly upper: number } | undefined;
+  /**
+   * What one re-centre costs in gas, in dollars, for the re-centring replay.
+   * Absent or zero counts none. Like the deposit, it decides nothing about the
+   * analysis and only moves one figure at the end of it.
+   */
+  readonly recentreGasUsd?: number | undefined;
 };
 
 /**
@@ -491,6 +509,27 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
           token1Decimals: pool.value.token1.decimals,
         });
 
+  /*
+   * The strategy that moves the range, after the two that do not. It opens on
+   * the month replayed above and is read beside it, so it needs that month;
+   * and it swaps, so it needs what a swap pays here — the pool's own terms
+   * where they say, the month's measured rate where a hook decides.
+   */
+  const swapFee = recentreSwapFee(pool.value, realizedFee);
+  const recentring =
+    backtest === null || swapFee === null
+      ? null
+      : calculateRecentringReplay({
+          history: history.value,
+          snapshot: snapshot.value,
+          suggested: backtest,
+          swapFee,
+          depositUsd: input.depositUsd,
+          gasUsdPerRecentre: input.recentreGasUsd ?? 0,
+          token0Decimals: pool.value.token0.decimals,
+          token1Decimals: pool.value.token1.decimals,
+        });
+
   const data: PoolRangeAnalysis = {
     pool: pool.value,
     snapshot: snapshot.value,
@@ -507,6 +546,7 @@ export const analysePoolRange = (input: PoolRangeAnalysisInput): PoolRangeAnalys
     swapDepth,
     backtest,
     customBacktest,
+    recentring,
     parameters: input.parameters,
     depositUsd: input.depositUsd,
   };

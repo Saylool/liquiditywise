@@ -35,7 +35,8 @@ import type { PriceBandParameters } from "../schemas";
 export const optionsIncluding = (offered: readonly number[], current: number): readonly number[] =>
   offered.includes(current) ? offered : [...offered, current].sort((a, b) => a - b);
 
-const Choice = ({
+/** One labelled select. Exported for the re-centring panel's gas cost, which is chosen the way the deposit is. */
+export const Choice = ({
   name,
   label,
   current,

@@ -258,6 +258,72 @@ export const readRequestedCustomRange = (
   return { status: "usable", lower: lowerPrice, upper: upperPrice, written: { lower: lowerRaw, upper: upperRaw } };
 };
 
+/** What one re-centre costs in gas, in dollars, under a name a URL bar reads plainly. */
+export const GAS_PARAMETER = "gas";
+
+/**
+ * The costs per re-centre the interface offers, in dollars, like the deposit.
+ *
+ * Zero first, and zero is what a page opens at: gas is not counted unless the
+ * reader says what a re-centre costs them. That depends on the network, the
+ * hour and how it is done — cents on Base, dollars on a busy mainnet — and a
+ * figure this site picked would be a guess printed as a cost. The offered
+ * amounts span that, a few hundredfold apart; any other amount up to the
+ * ceiling can be typed into the URL, and is kept.
+ */
+export const RECENTRE_GAS_CHOICES = [0, 0.1, 1, 5, 20, 50] as const;
+
+/**
+ * The most a re-centre may be said to cost. Far past any gas bill, so it
+ * refuses only a typo — a cost the size of a deposit would make every figure
+ * beside it a statement about the typo.
+ */
+export const RECENTRE_GAS_MAXIMUM_USD = 10_000;
+
+/**
+ * The cost per re-centre the URL asked for, as the custom range is asked for:
+ * not asked, asked and unreadable, or a cost — with what was written, so the
+ * forms that carry it carry it unchanged.
+ */
+export type RequestedRecentreGas =
+  | { readonly status: "none" }
+  | { readonly status: "unusable" }
+  | { readonly status: "usable"; readonly usd: number; readonly written: string };
+
+/**
+ * Reads the cost per re-centre: a plain decimal, zero up to the ceiling.
+ *
+ * Blank is not asking, as for the custom range. Anything else that is not a
+ * cost is refused whole and the panel says so; the replay then counts no gas,
+ * which is exactly what it does when nothing was asked — so a mistyped cost
+ * never becomes a cost nobody typed.
+ */
+export const readRequestedRecentreGas = (raw: string | string[] | undefined): RequestedRecentreGas => {
+  if (raw === undefined) return { status: "none" };
+  if (typeof raw !== "string") return { status: "unusable" };
+  const trimmed = raw.trim();
+  if (trimmed === "") return { status: "none" };
+  if (!DECIMAL.test(trimmed)) return { status: "unusable" };
+
+  /* Two hundred digits is a decimal by the pattern and Infinity by the number; the ceiling refuses both. */
+  const usd = Number(trimmed);
+  if (usd > RECENTRE_GAS_MAXIMUM_USD) return { status: "unusable" };
+
+  return { status: "usable", usd, written: trimmed };
+};
+
+/** The cost a replay counts: the one asked for, or none. */
+export const recentreGasUsd = (requested: RequestedRecentreGas): number =>
+  requested.status === "usable" ? requested.usd : 0;
+
+/**
+ * What the page's other forms carry hidden, so changing the band or trying a
+ * range keeps the cost on screen: the cost as written, and nothing when it
+ * counts nothing.
+ */
+export const carriedRecentreGas = (requested: RequestedRecentreGas): string | undefined =>
+  requested.status === "usable" && requested.usd > 0 ? requested.written : undefined;
+
 /**
  * The link to one pool's analysis, carrying a chosen band.
  *

@@ -83,6 +83,11 @@ export const getPoolRangeAnalysis = async (
    * costs no read of its own.
    */
   customRange?: { readonly lower: number; readonly upper: number },
+  /**
+   * What one re-centre costs in gas, in dollars, as the reader set it; zero
+   * counts none. Like the range above, it costs no read of its own.
+   */
+  recentreGasUsd = 0,
 ): Promise<PoolRangeAnalysisResult> => {
   const [pool, snapshot, history] = await Promise.all([
     poolRead ?? POOL_READERS[protocolVersion](poolId, chainId),
@@ -90,5 +95,5 @@ export const getPoolRangeAnalysis = async (
     getEthereumDailyPriceHistory(protocolVersion, poolId, chainId),
   ]);
 
-  return analysePoolRange({ pool, snapshot, history, parameters, depositUsd, customRange });
+  return analysePoolRange({ pool, snapshot, history, parameters, depositUsd, customRange, recentreGasUsd });
 };

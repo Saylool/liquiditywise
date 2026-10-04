@@ -84,8 +84,11 @@ export type RangeBacktestInput = {
  * does and is read over exactly the same days — and is refused on exactly the
  * same histories, even though it needs no volatility of its own. A reader
  * comparing the two should never be comparing two different months.
+ *
+ * Exported for the same reason: the re-centring replay opens on this close
+ * and walks these days, so it too is read over exactly this month.
  */
-const replayWindow = (
+export const replayWindow = (
   history: PoolDailyPriceHistory,
 ): { readonly measured: PoolDailyPriceHistory; readonly fitted: PoolDailyPriceHistory; readonly opening: HistoricalPricePoint } | null => {
   const measured = takeDaysEnding(history, history.rangeEndExclusive, ACTIVITY_WINDOW_DAYS);
@@ -261,6 +264,35 @@ const liquidityPerUnitValueAt = (
   return Number.isFinite(perUnitLiquidity) && perUnitLiquidity > 0 ? 1 / perUnitLiquidity : null;
 };
 
+/**
+ * The protocol's liquidity a value of whole token1 buys, given the liquidity
+ * one unit of value buys in whole-token terms: the deposit panel's decimal
+ * factor, applied once. Shared, so a re-centred position is sized into the
+ * protocol's units exactly as an unmoved one is.
+ */
+export const replayLiquidity = (
+  valueInToken1: number,
+  perUnitValue: number,
+  token0Decimals: number,
+  token1Decimals: number,
+): number => valueInToken1 * 10 ** ((token0Decimals + token1Decimals) / 2) * perUnitValue;
+
+/**
+ * A position's share of one wholly-inside day's fees: `L / (A + L)` of what the
+ * pool charged, as the deposit panel shares them. `null` when the source did
+ * not give that day's fees or its active liquidity, which is a day that cannot
+ * be shared out rather than a day that paid nothing.
+ *
+ * The one place a replayed day is turned into dollars, so the month replayed,
+ * a range the reader chose and the re-centring strategy cannot share a day out
+ * three different ways.
+ */
+export const dayFeeShare = (point: HistoricalPricePoint, liquidity: number): number | null => {
+  const active = Number(point.activeLiquidity);
+  if (point.feesUsd === null || !(active > 0)) return null;
+  return point.feesUsd * (liquidity / (active + liquidity));
+};
+
 /** The deposit's share of each wholly-inside day's fees, as the deposit panel shares them. */
 const feesTaken = (
   measured: PoolDailyPriceHistory,
@@ -275,19 +307,19 @@ const feesTaken = (
   const rate = usdPerToken1(snapshot);
   const perUnitValue = liquidityPerUnitValueAt(band, openingPrice);
   if (rate === null || perUnitValue === null) return null;
-  const liquidity = (depositUsd / rate) * 10 ** ((token0Decimals + token1Decimals) / 2) * perUnitValue;
+  const liquidity = replayLiquidity(depositUsd / rate, perUnitValue, token0Decimals, token1Decimals);
 
   let usd = 0;
   let daysCounted = 0;
   let daysUnmeasurable = 0;
   measured.points.forEach((point, index) => {
     if (days[index]?.placement !== "inside") return;
-    const active = Number(point.activeLiquidity);
-    if (point.feesUsd === null || !(active > 0)) {
+    const share = dayFeeShare(point, liquidity);
+    if (share === null) {
       daysUnmeasurable += 1;
       return;
     }
-    usd += point.feesUsd * (liquidity / (active + liquidity));
+    usd += share;
     daysCounted += 1;
   });
 

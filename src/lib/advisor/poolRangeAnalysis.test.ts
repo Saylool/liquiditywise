@@ -430,3 +430,116 @@ describe("the reader's own range", () => {
     expect(data.range.lowerTick).toBeLessThan(data.range.upperTick);
   });
 });
+
+describe("the strategy re-centred whenever the price leaves", () => {
+  const longHistory = (prices: (day: number) => number) => {
+    const base = history(121);
+    return { ...base, points: base.points.map((point, day) => ({ ...point, price: prices(day) })) } as PoolDailyPriceHistory;
+  };
+  /* Ether wobbling ±1% around 3,000 for ninety-one days, then climbing 2% a day through the month replayed. */
+  const etherInDollars = (day: number) =>
+    day <= 90 ? 3000 * (day % 2 === 0 ? 1.01 : 1 / 1.01) : 3000 * 1.02 ** (day - 90);
+  const inverted = (overrides: Partial<PoolRangeAnalysisInput> = {}) =>
+    succeed({ history: ok(longHistory((day) => 1 / etherInDollars(day))), ...overrides }).data;
+  const upright = () =>
+    succeed({
+      pool: ok({
+        ...pool(),
+        token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "WETH", decimals: 18 },
+        token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "USDC", decimals: 6 },
+      } as unknown as V3Pool),
+      snapshot: ok(
+        snapshot({
+          token0PriceInToken1: 3000,
+          token1PriceInToken0: 1 / 3000,
+          lockedToken0: 6_250_000 / 3000,
+          lockedToken1: 6_250_000,
+          tick: -CURRENT_TICK - 1,
+        }),
+      ),
+      history: ok(longHistory(etherInDollars)),
+    }).data;
+
+  it("opens where the month replayed opens, in its range, at the pool's tier", () => {
+    const { backtest, recentring } = inverted();
+
+    expect(recentring).not.toBeNull();
+    expect(recentring!.openedAt).toBe(backtest!.openedAt);
+    expect([recentring!.lowerPrice, recentring!.upperPrice]).toEqual([backtest!.lowerPrice, backtest!.upperPrice]);
+    expect(recentring!.swapFee).toEqual({ zeroForOnePpm: 3000, oneForZeroPpm: 3000, basis: "stated" });
+    /* A month climbing 2% a day leaves a range a few percent wide every few days. */
+    expect(recentring!.recentres.length).toBeGreaterThan(3);
+  });
+
+  it("counts the reader's gas cost once per re-centre, and none unless asked", () => {
+    const free = inverted().recentring!;
+    const paid = inverted({ recentreGasUsd: 5 }).recentring!;
+
+    expect(free.gas).toEqual({ perRecentreUsd: 0, usd: 0 });
+    expect(paid.gas).toEqual({ perRecentreUsd: 5, usd: 5 * paid.recentres.length });
+  });
+
+  /* As ether climbs the position ends up all USDC, whichever token the pool calls token0, and sells USDC to re-centre. */
+  it("re-centres on the same days, sells the same token and ends the same against holding, whichever way round the pool quotes", () => {
+    const one = inverted().recentring!;
+    const other = upright().recentring!;
+
+    expect(one.recentres.map(({ timestamp }) => timestamp)).toEqual(other.recentres.map(({ timestamp }) => timestamp));
+    expect(new Set(one.recentres.map(({ sold }) => sold))).toEqual(new Set(["token0"]));
+    expect(new Set(other.recentres.map(({ sold }) => sold))).toEqual(new Set(["token1"]));
+    /*
+     * A ratio at one close, so priced in either token it is the same. The
+     * dollar figures are not held to this: they follow the deposit, which is
+     * sized in the pool's token1 at today's rate, as the deposit panel sizes it.
+     */
+    expect(one.endValueVsHold).toBeCloseTo(other.endValueVsHold, 9);
+  });
+
+  it("is nothing where the month cannot be replayed, and costs the rest of the analysis nothing", () => {
+    const { data } = succeed();
+
+    expect(data.backtest).toBeNull();
+    expect(data.recentring).toBeNull();
+    expect(data.range.lowerTick).toBeLessThan(data.range.upperTick);
+  });
+
+  describe("on a v4 pool whose hook sets the fee per swap", () => {
+    const V4_REF = { protocolVersion: "v4", chainId: 1, id: `0x${"d".repeat(64)}` } as const;
+    const dynamic = (feesPerMillion: number | null) => {
+      const days = longHistory((day) => 1 / etherInDollars(day));
+      return succeed({
+        pool: ok({
+          ...V4_REF,
+          token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+          token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+          tickSpacing: 60,
+          fee: { kind: "dynamic", currentFeePpm: 9000 },
+          protocolFee: { zeroForOnePpm: 0, oneForZeroPpm: 0 },
+          hookAddress: `0x${"1".repeat(36)}00c4`,
+        } as unknown as V3Pool),
+        snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
+        history: ok({
+          ...days,
+          pool: V4_REF,
+          source: "uniswap-v4-subgraph",
+          points: days.points.map((point) => ({
+            ...point,
+            volumeUsd: feesPerMillion === null ? null : 1_000_000,
+            feesUsd: feesPerMillion,
+          })),
+        } as unknown as PoolDailyPriceHistory),
+      }).data;
+    };
+
+    it("charges each swap what the month's swaps paid, measured, never the hook's passing reading", () => {
+      expect(dynamic(420).recentring?.swapFee).toEqual({ zeroForOnePpm: 420, oneForZeroPpm: 420, basis: "measured" });
+    });
+
+    it("is not replayed when no swap of the month could be measured either", () => {
+      const data = dynamic(null);
+
+      expect(data.backtest).not.toBeNull();
+      expect(data.recentring).toBeNull();
+    });
+  });
+});

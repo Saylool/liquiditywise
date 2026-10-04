@@ -3,16 +3,21 @@ import { describe, expect, it } from "vitest";
 
 import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../schemas";
 import { analysePoolRange, DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
-import { formatPercent, formatPrice } from "../lib/format/displayFormats";
+import { formatMeasuredFeePpm, formatPercent, formatPrice } from "../lib/format/displayFormats";
 import {
   choosePriceQuote,
   edgeDistances,
   quotedInterval,
   quotedPrice,
 } from "../lib/format/priceQuote";
-import type { RequestedCustomRange } from "../lib/advisor/requestedParameters";
+import {
+  RECENTRE_GAS_CHOICES,
+  type RequestedCustomRange,
+  type RequestedRecentreGas,
+} from "../lib/advisor/requestedParameters";
 import type { ChainSlug } from "../lib/chains/chains";
 import { getDictionary } from "../lib/i18n/dictionaries";
+import { getRecentringCopy } from "../lib/i18n/recentringCopy";
 import { PoolRangeReport } from "./PoolRangeReport";
 
 /*
@@ -1463,5 +1468,303 @@ describe("trying a range of one's own", () => {
       expect(markup).toContain("Those fees against the deposit");
       expect(markup).toContain("$4.25");
     });
+  });
+});
+
+/*
+ * One active strategy beside the month replayed: re-centre whenever a day
+ * closes outside the range. The figures are injected where the test is about
+ * what the panel shows, so every one asserted is one the fixture chose, and
+ * run through the real pipeline where it is about what the pipeline hands it.
+ */
+describe("re-centring when the price leaves", () => {
+  const V4_REF = { protocolVersion: "v4", chainId: 1, id: `0x${"d".repeat(64)}` } as const;
+  /** `beforeSwap`, `afterSwap` and `afterSwapReturnsDelta`. */
+  const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+  /** `beforeAddLiquidity` alone: it never runs on a swap. */
+  const LIQUIDITY_HOOK = `0x${"1".repeat(36)}0800`;
+
+  const renderWith = (
+    result: ReturnType<typeof analysePoolRange>,
+    {
+      locale = "en" as "en" | "tr",
+      requested = { status: "none" } as RequestedCustomRange,
+      gas = { status: "none" } as RequestedRecentreGas,
+      action = "/pool",
+      poolParameter = "address",
+      chain = "ethereum" as ChainSlug,
+    } = {},
+  ) =>
+    renderToStaticMarkup(
+      <PoolRangeReport
+        result={result}
+        poolId={POOL_ID}
+        customRange={{ action, poolParameter, chain, requested, gas }}
+        t={getDictionary(locale)}
+        locale={locale}
+      />,
+    );
+
+  const backtest = {
+    openedAt: "2026-08-28T00:00:00.000Z",
+    openingPrice: 1 / 2500,
+    lowerPrice: 1 / 2750,
+    upperPrice: 1 / 2250,
+    days: [],
+    inside: 20,
+    outside: 6,
+    crossed: 4,
+    endValueVsHold: 0.987,
+    fees: { usd: 12.5, ofDeposit: 0.0125, daysCounted: 20, daysUnmeasurable: 0 },
+  };
+  /* Two re-centres: ether up through the top (all USDC, sells USDC), then down through the bottom (all WETH, sells WETH). */
+  const replayed = (overrides: Record<string, unknown> = {}) => ({
+    openedAt: backtest.openedAt,
+    openingPrice: backtest.openingPrice,
+    lowerPrice: backtest.lowerPrice,
+    upperPrice: backtest.upperPrice,
+    swapFee: { zeroForOnePpm: 3000, oneForZeroPpm: 3000, basis: "stated" },
+    days: [],
+    recentres: [
+      {
+        timestamp: "2026-09-02T00:00:00.000Z",
+        price: 1 / 2800,
+        lowerPrice: 1 / 3080,
+        upperPrice: 1 / 2520,
+        sold: "token0",
+        swappedOfDeposit: 0.49,
+        swapFeeOfDeposit: 0.00147,
+        swappedUsd: 490,
+        swapFeeUsd: 1.47,
+      },
+      {
+        timestamp: "2026-09-09T00:00:00.000Z",
+        price: 1 / 2450,
+        lowerPrice: 1 / 2695,
+        upperPrice: 1 / 2205,
+        sold: "token1",
+        swappedOfDeposit: 0.5012,
+        swapFeeOfDeposit: 0.0015,
+        swappedUsd: 501.2,
+        swapFeeUsd: 1.5,
+      },
+    ],
+    inside: 26,
+    outside: 2,
+    crossed: 2,
+    endValueVsHold: 0.972,
+    heldUsd: 1032.1,
+    swapFees: { ofDeposit: 0.00297, usd: 2.97 },
+    gas: { perRecentreUsd: 0, usd: 0 },
+    fees: { usd: 15.5, ofDeposit: 0.0155, daysCounted: 26, daysUnmeasurable: 0 },
+    beforeFees: { recentredUsd: 1003.2, neverUsd: 1018.7, recentredVsHeldUsd: -28.9, neverVsHeldUsd: -13.4, differenceUsd: -15.5 },
+    afterFees: { recentredUsd: 1018.7, neverUsd: 1031.2, recentredVsHeldUsd: -13.4, neverVsHeldUsd: -0.9, differenceUsd: -12.5 },
+    ...overrides,
+  });
+  const injected = (recentring: unknown, overrides: Parameters<typeof analyse>[0] = {}, staticReplay: unknown = backtest) => {
+    const result = analyse({ history: ok(history(121)), ...overrides });
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    return { ...result, data: { ...result.data, backtest: staticReplay, recentring } } as ReturnType<typeof analysePoolRange>;
+  };
+  const v4 = (hookAddress: string | null) => ({
+    pool: ok({
+      ...V4_REF,
+      token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+      token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+      tickSpacing: 60,
+      fee: { kind: "static", feePpm: 3000 },
+      protocolFee: { zeroForOnePpm: 0, oneForZeroPpm: 0 },
+      hookAddress,
+    } as unknown as V3Pool),
+    snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
+    history: ok({ ...history(121), pool: V4_REF, source: "uniswap-v4-subgraph" } as unknown as PoolDailyPriceHistory),
+  });
+  const copy = getRecentringCopy("en");
+  const escaped = (text: string) => text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;");
+
+  it("is only on a page that can submit its cost, and listed among the sections there", () => {
+    const anchors = (markup: string) => [...markup.matchAll(/href="#([a-zA-Z]+)"/g)].map((m) => m[1]);
+
+    expect(render(analyse({ history: ok(history(121)) }))).not.toContain('id="recentring"');
+    expect(anchors(render(analyse({ history: ok(history(121)) })))).not.toContain("recentring");
+    const markup = renderWith(analyse({ history: ok(history(121)) }));
+    expect(markup).toContain('id="recentring"');
+    expect(anchors(markup)).toContain("recentring");
+  });
+
+  it("says so when the history is too short to open where the suggested range was drawn", () => {
+    const markup = renderWith(analyse());
+
+    expect(markup).toContain('id="recentring"');
+    expect(markup).toContain(escaped(copy.noHistory));
+    expect(markup).not.toContain(copy.tableCaption);
+  });
+
+  it("says so when the month could be replayed and this could not", () => {
+    const markup = renderWith(injected(null));
+
+    expect(markup).toContain(escaped(copy.unreplayed));
+    expect(markup).not.toContain(escaped(copy.noHistory));
+  });
+
+  /* Through the real pipeline: closes wobbling ±1% inside a range a few percent wide never leave it. */
+  it("says plainly when it was never re-centred, and shows nothing that would repeat the month above", () => {
+    const result = analyse({ history: ok(history(121)) });
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    const markup = renderWith(result);
+
+    expect(result.data.recentring?.recentres).toEqual([]);
+    expect(markup).toContain(escaped(copy.never));
+    expect(markup).not.toContain(copy.tableCaption);
+    expect(markup).not.toContain('name="gas"');
+    expect(markup).toContain(escaped(copy.closesOnly));
+  });
+
+  it("names the days it re-centred on and the fee each swap paid", () => {
+    const markup = renderWith(injected(replayed()));
+
+    expect(markup).toContain("Re-centred at the close of 2026-09-02 and 2026-09-09.");
+    expect(markup).toContain(escaped(copy.feeStated("0.30%")));
+    expect(markup).toContain("Opened at the close of 2026-08-28, in");
+  });
+
+  it("sets each figure beside the month never re-centred, and says what re-centring changed", () => {
+    const markup = renderWith(injected(replayed()));
+
+    expect(markup).toMatch(/Re-centres<\/th><td[^>]*>2<\/td><td[^>]*>0<\/td>/);
+    expect(markup).toMatch(/Days entirely inside<\/th><td[^>]*>26<\/td><td[^>]*>20<\/td>/);
+    expect(markup).toMatch(/Fees it would have taken, on \$1,000<\/th><td[^>]*>\$15\.50<\/td><td[^>]*>\$12\.50<\/td>/);
+    expect(markup).toMatch(/Swap fees paid<\/th><td[^>]*>\$2\.97<\/td><td[^>]*>\$0\.00<\/td>/);
+    expect(markup).toMatch(/Gas cost<\/th><td[^>]*>Not counted<\/td><td[^>]*>Not counted<\/td>/);
+    expect(markup).toMatch(/Worth against holding, at the last close<\/th><td[^>]*>97\.20%<\/td><td[^>]*>98\.70%<\/td>/);
+    expect(markup).toMatch(/End value, everything counted<\/th><td[^>]*>\$1,019<\/td><td[^>]*>\$1,031<\/td>/);
+    expect(markup).toMatch(/Against holding<\/th><td[^>]*>-\$13\.40<\/td><td[^>]*>-\$0\.90<\/td>/);
+    expect(markup).toContain(escaped(copy.held("$1,032")));
+    expect(markup).toContain(escaped(copy.difference("-$12.50")));
+    expect(markup).not.toContain(escaped(copy.hookMayAlter));
+  });
+
+  it("writes a gain with its sign", () => {
+    const markup = renderWith(
+      injected(replayed({ afterFees: { recentredUsd: 1040, neverUsd: 1031.2, recentredVsHeldUsd: 7.9, neverVsHeldUsd: -0.9, differenceUsd: 8.8 } })),
+    );
+
+    expect(markup).toMatch(/Against holding<\/th><td[^>]*>\+\$7\.90<\/td>/);
+    expect(markup).toContain(escaped(copy.difference("+$8.80")));
+  });
+
+  it("lists each re-centre with its close, its new range and what was sold for what, in the page's direction", () => {
+    const markup = renderWith(injected(replayed()));
+
+    expect(markup).toContain(copy.showRecentres);
+    expect(markup).toContain(`${formatPrice(2800)} USDC`);
+    expect(markup).toContain(`${formatPrice(2520)} – ${formatPrice(3080)} USDC`);
+    /* Selling the pool's token0 is selling USDC; its token1 is WETH. */
+    expect(markup).toContain(copy.swapped("$490.00", "USDC", "WETH"));
+    expect(markup).toContain(copy.swapped("$501.20", "WETH", "USDC"));
+    expect(markup).toContain("$1.47");
+  });
+
+  it("counts gas once per re-centre when a cost is set, and none for the month never re-centred", () => {
+    const markup = renderWith(injected(replayed({ gas: { perRecentreUsd: 5, usd: 10 } })), {
+      gas: { status: "usable", usd: 5, written: "5" },
+    });
+
+    expect(markup).toMatch(/Gas cost<\/th><td[^>]*>2 × \$5\.00 = \$10\.00<\/td><td[^>]*>\$0\.00<\/td>/);
+    expect(markup).toContain('<option value="5" selected="">$5.00</option>');
+  });
+
+  it("offers its cost as a GET form that keeps the pool, the chain, the band, the deposit and the reader's range", () => {
+    const markup = renderWith(injected(replayed()), {
+      chain: "base",
+      requested: { status: "usable", lower: 2400, upper: 2600, written: { lower: "2400", upper: "2600" } },
+    });
+    const form = markup.slice(markup.indexOf('id="recentring"'));
+
+    expect(form).toContain('action="/pool" method="get"');
+    for (const hidden of [
+      `name="address" value="${POOL_ID}"`,
+      'name="chain" value="base"',
+      'name="days" value="30"',
+      'name="sigma" value="1"',
+      'name="usd" value="1000"',
+      'name="lower" value="2400"',
+      'name="upper" value="2600"',
+    ]) {
+      expect(form).toContain(`<input type="hidden" ${hidden}/>`);
+    }
+    expect(form).toContain('<select name="gas"');
+    for (const value of RECENTRE_GAS_CHOICES) expect(form).toContain(`<option value="${value}"`);
+    expect(form).toContain(`<option value="0" selected="">${copy.gasNotCounted}</option>`);
+    expect(form).toContain(escaped(copy.gasNote));
+  });
+
+  it("says a cost it could not read is not counted", () => {
+    const markup = renderWith(injected(replayed()), { gas: { status: "unusable" } });
+
+    expect(markup).toContain(escaped(copy.gasUnusable));
+  });
+
+  it("keeps a set cost when the reader tries a range of their own", () => {
+    const markup = renderWith(injected(replayed()), { gas: { status: "usable", usd: 5, written: "5.0" } });
+    const custom = markup.slice(markup.indexOf('id="customRange"'), markup.indexOf('id="recentring"'));
+
+    expect(custom).toContain('<input type="hidden" name="gas" value="5.0"/>');
+  });
+
+  it("says each swap paid a measured rate where nothing fixed says what a swap pays", () => {
+    const markup = renderWith(injected(replayed({ swapFee: { zeroForOnePpm: 420, oneForZeroPpm: 420, basis: "measured" } })));
+
+    expect(markup).toContain(escaped(copy.feeMeasured(formatMeasuredFeePpm(420))));
+  });
+
+  it("ends before fees, and says why, when the pool's dollar rate could not be read", () => {
+    const markup = renderWith(injected(replayed({ fees: null, afterFees: null })));
+
+    expect(markup).toMatch(/End value, before fees<\/th><td[^>]*>\$1,003<\/td><td[^>]*>\$1,019<\/td>/);
+    expect(markup).not.toContain("Fees it would have taken, on $1,000</th>");
+    expect(markup).toContain("The fees could not be sized");
+    expect(markup).toContain(escaped(copy.differenceBeforeFees("-$15.50")));
+  });
+
+  /*
+   * A hook permitted to rewrite a swap's fee or take part of it: the swap fees
+   * here are the curve's figure and the page says so — only there — and the
+   * fees attributed to a range are withheld, exactly as the month replayed
+   * withholds them.
+   */
+  it("qualifies the swap cost and withholds the fees where a hook may alter a swap", () => {
+    const markup = renderWith(injected(replayed(), v4(SWAP_HOOK)), { action: "/v4", poolParameter: "id" });
+
+    expect(markup).toContain(escaped(copy.hookMayAlter));
+    expect(markup).toMatch(/End value, before fees<\/th>/);
+    expect(markup).not.toContain("Fees it would have taken, on $1,000</th>");
+    expect(markup).toContain("so no fees are attributed to a range here");
+    expect(markup).toContain(escaped(copy.differenceBeforeFees("-$15.50")));
+  });
+
+  it("leaves the swap cost alone where the hook never runs on a swap, or there is none", () => {
+    for (const hook of [LIQUIDITY_HOOK, null]) {
+      const markup = renderWith(injected(replayed(), v4(hook)), { action: "/v4", poolParameter: "id" });
+
+      expect(markup).not.toContain(escaped(copy.hookMayAlter));
+      expect(markup).toMatch(/End value, everything counted<\/th>/);
+    }
+  });
+
+  it("leads on to how it is measured, without prefetching", () => {
+    const markup = renderWith(injected(replayed()));
+
+    expect(markup).toContain('href="/en/method#recentring"');
+  });
+
+  it("speaks the reader's language", () => {
+    const markup = renderWith(injected(replayed()), { locale: "tr" });
+    const turkish = getRecentringCopy("tr");
+
+    expect(markup).toContain(turkish.heading);
+    expect(markup).toContain(escaped(turkish.recentredOn("2026-09-02 ve 2026-09-09")));
+    expect(markup).toContain(turkish.columnRecentred);
+    expect(markup).not.toContain(copy.heading);
   });
 });

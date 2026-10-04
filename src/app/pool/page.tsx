@@ -20,11 +20,15 @@ import {
   MULTIPLIER_PARAMETER,
   DEPOSIT_PARAMETER,
   CHAIN_PARAMETER,
+  GAS_PARAMETER,
   LOWER_PARAMETER,
   UPPER_PARAMETER,
+  carriedRecentreGas,
   readRequestedChain,
   readRequestedCustomRange,
   readRequestedParameters,
+  readRequestedRecentreGas,
+  recentreGasUsd,
 } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { type Chain, ETHEREUM, readsV3, readsV4 } from "@/lib/chains/chains";
@@ -168,6 +172,8 @@ export default async function PoolRangePage({
      * the analysis around it.
      */
     const customRange = readRequestedCustomRange(params[LOWER_PARAMETER], params[UPPER_PARAMETER]);
+    /* What a re-centre costs in gas, for the strategy replayed beside it; read the same way, whole or not at all. */
+    const recentreGas = readRequestedRecentreGas(params[GAS_PARAMETER]);
     const result = await getPoolRangeAnalysis(
       "v3",
       address.data,
@@ -176,6 +182,7 @@ export default async function PoolRangePage({
       undefined,
       chain.id,
       customRange.status === "usable" ? { lower: customRange.lower, upper: customRange.upper } : undefined,
+      recentreGasUsd(recentreGas),
     );
 
     return (
@@ -184,7 +191,13 @@ export default async function PoolRangePage({
         <PoolRangeReport
           result={result}
           poolId={address.data}
-          customRange={{ action: "/pool", poolParameter: "address", chain: chain.slug, requested: customRange }}
+          customRange={{
+            action: "/pool",
+            poolParameter: "address",
+            chain: chain.slug,
+            requested: customRange,
+            gas: recentreGas,
+          }}
           t={t}
           locale={locale}
           /*
@@ -201,6 +214,7 @@ export default async function PoolRangePage({
               parameters={requested.parameters}
               depositUsd={requested.depositUsd}
               customRange={customRange.status === "usable" ? customRange.written : undefined}
+              recentreGas={carriedRecentreGas(recentreGas)}
               fellBack={requested.fellBack}
               t={t}
               locale={locale}

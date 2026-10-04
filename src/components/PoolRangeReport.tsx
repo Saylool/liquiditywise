@@ -1,11 +1,18 @@
+import Link from "next/link";
+
 import { type FeeDisclosure, feeDisclosureFor } from "../lib/advisor/feeDisclosure";
 import type { CustomRangeBacktest, RangeBacktest } from "../lib/analytics/rangeBacktest";
+import type { RecentringReplay } from "../lib/analytics/recentringReplay";
 import {
+  carriedRecentreGas,
   DEPOSIT_PARAMETER,
+  GAS_PARAMETER,
   HORIZON_PARAMETER,
   LOWER_PARAMETER,
   MULTIPLIER_PARAMETER,
+  RECENTRE_GAS_CHOICES,
   type RequestedCustomRange,
+  type RequestedRecentreGas,
   UPPER_PARAMETER,
 } from "../lib/advisor/requestedParameters";
 import type { ChainSlug } from "../lib/chains/chains";
@@ -46,7 +53,11 @@ import { chartDays, layoutPriceChart } from "../lib/format/priceChartLayout";
 import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
+import { localePath } from "../lib/i18n/localePath";
+import { getMethodCopy } from "../lib/i18n/methodCopy";
+import { getRecentringCopy } from "../lib/i18n/recentringCopy";
 import type { PriceBandParameters, StatedSwapFee, V4ProtocolFee } from "../schemas";
+import { Choice, optionsIncluding } from "./BandChoices";
 import { PriceHistoryChart } from "./PriceHistoryChart";
 import { chainLabel } from "../lib/chains/chainLabel";
 
@@ -121,6 +132,7 @@ const PANELS = [
   "outOfSample",
   "backtest",
   "customRange",
+  "recentring",
   "divergence",
   "rangeOrder",
   "swapDepth",
@@ -129,7 +141,7 @@ const PANELS = [
 
 type PanelId = (typeof PANELS)[number];
 
-const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
+const panelTitles = (t: Dictionary, locale: Locale): Record<PanelId, string> => ({
   range: t.report.rangeHeading,
   basis: t.report.basisHeading,
   widths: t.widths.heading,
@@ -139,6 +151,7 @@ const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
   outOfSample: t.outOfSample.heading,
   backtest: t.backtest.heading,
   customRange: t.customRange.heading,
+  recentring: getRecentringCopy(locale).heading,
   divergence: t.divergence.heading,
   rangeOrder: t.rangeOrder.heading,
   swapDepth: t.swapDepth.heading,
@@ -158,12 +171,14 @@ const panelTitles = (t: Dictionary): Record<PanelId, string> => ({
  * before an answer.
  */
 /**
- * Every panel is always there but two: the month replayed needs a history long
- * enough to draw a range before it, and the reader's own range goes wherever
- * that does and only on a page that can submit one.
+ * Every panel is always there but three: the month replayed needs a history
+ * long enough to draw a range before it, the reader's own range goes wherever
+ * that does and only on a page that can submit one, and the re-centring
+ * strategy is on every page that can submit its cost — saying so where the
+ * history is too short, rather than vanishing.
  */
-function Contents({ t, absent = [] }: { t: Dictionary; absent?: readonly PanelId[] }) {
-  const titles = panelTitles(t);
+function Contents({ t, locale, absent = [] }: { t: Dictionary; locale: Locale; absent?: readonly PanelId[] }) {
+  const titles = panelTitles(t, locale);
 
   return (
     <nav aria-label={t.report.contentsLabel} className="flex flex-col gap-2">
@@ -371,6 +386,7 @@ function CustomRangePanel({
   const percent = (ratio: number) => formatPercent(ratio, locale);
   const usd = (value: number) => formatUsd(value, locale);
   const written = requested.status === "usable" ? requested.written : null;
+  const gas = form.gas === undefined ? undefined : carriedRecentreGas(form.gas);
 
   /* One row per figure the month replayed shows, its own label on it. */
   const rows: readonly { readonly label: string; readonly yours: string; readonly theirs: string }[] =
@@ -410,6 +426,8 @@ function CustomRangePanel({
         <input type="hidden" name={HORIZON_PARAMETER} value={String(parameters.horizonDays)} />
         <input type="hidden" name={MULTIPLIER_PARAMETER} value={String(parameters.standardDeviationMultiplier)} />
         <input type="hidden" name={DEPOSIT_PARAMETER} value={String(depositUsd)} />
+        {/* The cost per re-centre, too, so trying a range does not quietly drop it from the panel below. */}
+        {gas === undefined ? null : <input type="hidden" name={GAS_PARAMETER} value={gas} />}
 
         <div className="flex flex-wrap items-end gap-4">
           {(
@@ -505,7 +523,318 @@ export type CustomRangeForm = {
   readonly chain?: ChainSlug | undefined;
   /** What the URL asked for, read and checked by the route. */
   readonly requested: RequestedCustomRange;
+  /**
+   * The cost per re-centre the URL asked for. It travels with every form on
+   * the page, as the band does, and the re-centring panel submits it; absent
+   * is the same as not asked.
+   */
+  readonly gas?: RequestedRecentreGas | undefined;
 };
+
+/**
+ * One simple active strategy over the month replayed: re-centre whenever a day
+ * closes outside the range. Set beside the same month never re-centred, whose
+ * figures it reuses rather than recomputes.
+ *
+ * Every figure is the analysis's; this decides only which of two endings to
+ * show — with the fees in, or before them where they are withheld or unread —
+ * and it decides that through the same gate the month replayed reads.
+ *
+ * A plain GET form sets the gas cost, carrying everything that shaped the
+ * page, the reader's own range included, so recounting changes nothing but
+ * the cost.
+ */
+function RecentringPanel({
+  recentring,
+  suggested,
+  form,
+  poolId,
+  parameters,
+  depositUsd,
+  disclosure,
+  symbols,
+  inQuote,
+  edgesInQuote,
+  atClose,
+  t,
+  locale,
+}: {
+  recentring: RecentringReplay | null;
+  /** The month never re-centred, or `null` where the history cannot hold one. */
+  suggested: RangeBacktest | null;
+  form: CustomRangeForm;
+  poolId: string;
+  parameters: PriceBandParameters;
+  depositUsd: number;
+  disclosure: FeeDisclosure;
+  symbols: { readonly token0: string; readonly token1: string };
+  inQuote: (lower: number, upper: number) => string;
+  /** The same, shorter, for a table cell: both ends and the quote token. */
+  edgesInQuote: (lower: number, upper: number) => string;
+  /** A close in the page's own quote. */
+  atClose: (price: number) => string;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const copy = getRecentringCopy(locale);
+  const whole = (value: number) => formatWhole(value, locale);
+  const percent = (ratio: number) => formatPercent(ratio, locale);
+  const usd = (value: number) => formatUsd(value, locale);
+  const signed = (value: number) => `${value > 0 ? "+" : ""}${usd(value)}`;
+
+  return (
+    <Panel id="recentring" title={copy.heading}>
+      <p className="text-sm leading-relaxed text-muted">{copy.intro}</p>
+
+      {suggested === null ? (
+        <p className="text-sm leading-relaxed">{copy.noHistory}</p>
+      ) : recentring === null ? (
+        <p className="text-sm leading-relaxed">{copy.unreplayed}</p>
+      ) : (
+        <RecentringResult
+          recentring={recentring}
+          suggested={suggested}
+          form={form}
+          poolId={poolId}
+          parameters={parameters}
+          depositUsd={depositUsd}
+          disclosure={disclosure}
+          symbols={symbols}
+          inQuote={inQuote}
+          edgesInQuote={edgesInQuote}
+          atClose={atClose}
+          format={{ whole, percent, usd, signed }}
+          t={t}
+          locale={locale}
+        />
+      )}
+
+      <Link href={`${localePath(locale, "/method")}#recentring`} prefetch={false} className="text-link text-sm">
+        {getMethodCopy(locale).pointer}
+      </Link>
+    </Panel>
+  );
+}
+
+function RecentringResult({
+  recentring,
+  suggested,
+  form,
+  poolId,
+  parameters,
+  depositUsd,
+  disclosure,
+  symbols,
+  inQuote,
+  edgesInQuote,
+  atClose,
+  format: { whole, percent, usd, signed },
+  t,
+  locale,
+}: {
+  recentring: RecentringReplay;
+  suggested: RangeBacktest;
+  form: CustomRangeForm;
+  poolId: string;
+  parameters: PriceBandParameters;
+  depositUsd: number;
+  disclosure: FeeDisclosure;
+  symbols: { readonly token0: string; readonly token1: string };
+  inQuote: (lower: number, upper: number) => string;
+  edgesInQuote: (lower: number, upper: number) => string;
+  atClose: (price: number) => string;
+  format: {
+    whole: (value: number) => string;
+    percent: (ratio: number) => string;
+    usd: (value: number) => string;
+    signed: (value: number) => string;
+  };
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const copy = getRecentringCopy(locale);
+  const { recentres, swapFee, gas } = recentring;
+  /*
+   * With the fees in only where the month replayed shows its fees — the same
+   * gate, read the same way — and before them everywhere else.
+   */
+  const withFees = disclosure.mayAttributeFeesToRange ? recentring.afterFees : null;
+  const outcome = withFees ?? recentring.beforeFees;
+  const dates = new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(
+    recentres.map(({ timestamp }) => formatUtcDate(timestamp)),
+  );
+  const fee =
+    swapFee.basis === "stated"
+      ? copy.feeStated(
+          formatStatedFee(
+            {
+              lowestPpm: Math.min(swapFee.zeroForOnePpm, swapFee.oneForZeroPpm),
+              highestPpm: Math.max(swapFee.zeroForOnePpm, swapFee.oneForZeroPpm),
+            },
+            locale,
+          ),
+        )
+      : copy.feeMeasured(formatMeasuredFeePpm(swapFee.zeroForOnePpm, locale));
+
+  const rows: readonly { readonly label: string; readonly recentred: string; readonly never: string }[] = [
+    { label: copy.recentres, recentred: whole(recentres.length), never: whole(0) },
+    { label: t.outOfSample.fullyInside, recentred: whole(recentring.inside), never: whole(suggested.inside) },
+    ...(withFees === null || recentring.fees === null || suggested.fees === null
+      ? []
+      : [{ label: t.backtest.fees(usd(depositUsd)), recentred: usd(recentring.fees.usd), never: usd(suggested.fees.usd) }]),
+    { label: copy.swapFees, recentred: usd(recentring.swapFees.usd), never: usd(0) },
+    gas.perRecentreUsd > 0
+      ? {
+          label: copy.gas,
+          recentred: copy.gasValue(whole(recentres.length), usd(gas.perRecentreUsd), usd(gas.usd)),
+          never: usd(0),
+        }
+      : { label: copy.gas, recentred: copy.gasNotCounted, never: copy.gasNotCounted },
+    { label: t.backtest.worth, recentred: percent(recentring.endValueVsHold), never: percent(suggested.endValueVsHold) },
+    {
+      label: withFees === null ? copy.endValueBeforeFees : copy.endValue,
+      recentred: usd(outcome.recentredUsd),
+      never: usd(outcome.neverUsd),
+    },
+    { label: copy.vsHeld, recentred: signed(outcome.recentredVsHeldUsd), never: signed(outcome.neverVsHeldUsd) },
+  ];
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm leading-relaxed">
+        {t.backtest.opened(formatUtcDate(recentring.openedAt), inQuote(recentring.lowerPrice, recentring.upperPrice))}
+      </p>
+
+      {recentres.length === 0 ? (
+        <p className="text-sm leading-relaxed">{copy.never}</p>
+      ) : (
+        <>
+          <p className="text-sm leading-relaxed">{copy.recentredOn(dates)}</p>
+          <p className="text-sm leading-relaxed">{fee}</p>
+          {/*
+           * Only where it is true, as the swap-cost panel says it: a hook
+           * that may rewrite a swap's fee or take part of it makes the fee
+           * charged here the curve's figure and nothing more.
+           */}
+          {disclosure.hookMayAlterSwaps ? <p className="text-sm leading-relaxed">{copy.hookMayAlter}</p> : null}
+
+          <form method="get" action={form.action} className="flex flex-col gap-2">
+            <input type="hidden" name={form.poolParameter} value={poolId} />
+            {form.chain === undefined || form.chain === "ethereum" ? null : (
+              <input type="hidden" name="chain" value={form.chain} />
+            )}
+            <input type="hidden" name={HORIZON_PARAMETER} value={String(parameters.horizonDays)} />
+            <input type="hidden" name={MULTIPLIER_PARAMETER} value={String(parameters.standardDeviationMultiplier)} />
+            <input type="hidden" name={DEPOSIT_PARAMETER} value={String(depositUsd)} />
+            {form.requested.status === "usable" ? (
+              <>
+                <input type="hidden" name={LOWER_PARAMETER} value={form.requested.written.lower} />
+                <input type="hidden" name={UPPER_PARAMETER} value={form.requested.written.upper} />
+              </>
+            ) : null}
+            <div className="flex flex-wrap items-end gap-4">
+              <Choice
+                name={GAS_PARAMETER}
+                label={copy.gasLabel}
+                current={gas.perRecentreUsd}
+                options={optionsIncluding(RECENTRE_GAS_CHOICES, gas.perRecentreUsd)}
+                format={(value) => (value === 0 ? copy.gasNotCounted : usd(value))}
+              />
+              <button
+                type="submit"
+                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-on transition-[filter] hover:brightness-110"
+              >
+                {copy.apply}
+              </button>
+            </div>
+          </form>
+          {form.gas?.status === "unusable" ? (
+            <p className="text-sm leading-relaxed text-muted">{copy.gasUnusable}</p>
+          ) : null}
+          <p className="text-xs leading-relaxed text-muted">{copy.gasNote}</p>
+
+          {/*
+           * Hyphenated in the page's own language, because some of these
+           * labels are one long word — Russian "перецентрирование" in capitals
+           * is wider than half a phone — and a table that has to be scrolled
+           * sideways to read two figures side by side has lost its point.
+           */}
+          <div className="scroll-hint overflow-x-auto">
+            <table className="w-full text-sm hyphens-auto">
+              <caption className="sr-only">{copy.tableCaption}</caption>
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                  <th scope="col" className="pr-4 pb-1 font-normal">{copy.columnFigure}</th>
+                  <th scope="col" className="pr-4 pb-1 font-normal">{copy.columnRecentred}</th>
+                  <th scope="col" className="pb-1 font-normal">{copy.columnNever}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row" className="py-1 pr-4 text-left font-normal">{row.label}</th>
+                    <td className="py-1 pr-4 font-mono">{row.recentred}</td>
+                    <td className="py-1 font-mono text-muted">{row.never}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs leading-relaxed text-muted">{copy.endValueNote}</p>
+          {!disclosure.mayAttributeFeesToRange ? (
+            <p className="text-xs leading-relaxed text-muted">{t.backtest.feesWithheld}</p>
+          ) : withFees === null ? (
+            <p className="text-xs leading-relaxed text-muted">{t.backtest.feesUnread}</p>
+          ) : null}
+
+          <p className="text-sm leading-relaxed">{copy.held(usd(recentring.heldUsd))}</p>
+          <p className="text-sm font-medium leading-relaxed">
+            {withFees === null
+              ? copy.differenceBeforeFees(signed(outcome.differenceUsd))
+              : copy.difference(signed(outcome.differenceUsd))}
+          </p>
+
+          <details className="flex flex-col gap-2">
+            <summary className="cursor-pointer text-xs uppercase tracking-widest text-muted">{copy.showRecentres}</summary>
+            <div className="scroll-hint mt-3 overflow-x-auto">
+              <table className="w-full min-w-max text-sm">
+                <caption className="sr-only">{copy.recentresCaption}</caption>
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-widest text-muted">
+                    <th scope="col" className="pr-6 pb-1 font-normal">{copy.columnDay}</th>
+                    <th scope="col" className="pr-6 pb-1 font-normal">{copy.columnClose}</th>
+                    <th scope="col" className="pr-6 pb-1 font-normal">{copy.columnRange}</th>
+                    <th scope="col" className="pr-6 pb-1 font-normal">{copy.columnSwapped}</th>
+                    <th scope="col" className="pb-1 font-normal">{copy.columnSwapFee}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentres.map((recentre) => (
+                    <tr key={recentre.timestamp} className="font-mono">
+                      <th scope="row" className="py-0.5 pr-6 text-left font-normal">{formatUtcDate(recentre.timestamp)}</th>
+                      <td className="py-0.5 pr-6">{atClose(recentre.price)}</td>
+                      <td className="py-0.5 pr-6">{edgesInQuote(recentre.lowerPrice, recentre.upperPrice)}</td>
+                      <td className="py-0.5 pr-6">
+                        {recentre.sold === "token0"
+                          ? copy.swapped(usd(recentre.swappedUsd), symbols.token0, symbols.token1)
+                          : copy.swapped(usd(recentre.swappedUsd), symbols.token1, symbols.token0)}
+                      </td>
+                      <td className="py-0.5">{usd(recentre.swapFeeUsd)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </>
+      )}
+
+      <p className="text-xs leading-relaxed text-muted">{copy.closesOnly}</p>
+      {recentres.length === 0 ? null : <p className="text-xs leading-relaxed text-muted">{copy.noImpact}</p>}
+      <p className="text-xs leading-relaxed text-muted">{copy.caveat}</p>
+    </div>
+  );
+}
 
 /**
  * What the pool actually charged, beside what it says it charges.
@@ -692,6 +1021,7 @@ export function PoolRangeReport({
     swapDepth,
     backtest,
     customBacktest,
+    recentring,
     parameters,
   } = result.data;
   const disclosure = feeDisclosureFor(pool);
@@ -747,6 +1077,12 @@ export function PoolRangeReport({
     const shown = quotedInterval(quote, { lower, upper });
     return t.report.rangeValue(price(shown.lower), price(shown.upper), counter, base);
   };
+  /* The same, shorter, for a table cell, as the widths table writes one. */
+  const edgesInQuote = (lower: number, upper: number) => {
+    const shown = quotedInterval(quote, { lower, upper });
+    return `${price(shown.lower)} – ${price(shown.upper)} ${counter}`;
+  };
+  const atClose = (close: number) => `${price(quotedPrice(quote, close))} ${counter}`;
   /*
    * The two one-sided halves of the range, quoted like everything else.
    *
@@ -898,9 +1234,11 @@ export function PoolRangeReport({
        */}
       <Contents
         t={t}
+        locale={locale}
         absent={[
           ...(backtest === null ? (["backtest"] as const) : []),
           ...(backtest === null || customRange === undefined ? (["customRange"] as const) : []),
+          ...(customRange === undefined ? (["recentring"] as const) : []),
         ]}
       />
 
@@ -1234,6 +1572,30 @@ export function PoolRangeReport({
           attributesFees={disclosure.mayAttributeFeesToRange}
           unit={t.technical.quotePerBase(counter, base)}
           inQuote={inQuote}
+          t={t}
+          locale={locale}
+        />
+      )}
+
+      {/*
+       * The strategy that moves the range, after the two that do not, on
+       * every page that can submit its cost. Where the month cannot be
+       * replayed it says so rather than vanishing: a reader looking for it
+       * should learn why it is empty.
+       */}
+      {customRange === undefined ? null : (
+        <RecentringPanel
+          recentring={recentring}
+          suggested={backtest}
+          form={customRange}
+          poolId={poolId}
+          parameters={parameters}
+          depositUsd={result.data.depositUsd}
+          disclosure={disclosure}
+          symbols={{ token0: pool.token0.symbol, token1: pool.token1.symbol }}
+          inQuote={inQuote}
+          edgesInQuote={edgesInQuote}
+          atClose={atClose}
           t={t}
           locale={locale}
         />

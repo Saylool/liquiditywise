@@ -264,3 +264,28 @@ describe("BandParametersForm, beside a range the reader is replaying", () => {
     expect(markup).not.toContain('name="upper"');
   });
 });
+
+describe("BandParametersForm, beside a cost per re-centre", () => {
+  const withGas = (recentreGas?: string) =>
+    renderToStaticMarkup(
+      <BandParametersForm
+        action="/pool"
+        poolParameter="address"
+        poolId={POOL}
+        parameters={{ horizonDays: 30, standardDeviationMultiplier: 1 }}
+        depositUsd={1_000}
+        recentreGas={recentreGas}
+        fellBack={false}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+  it("carries the cost along, as written, so changing the band keeps it counted", () => {
+    expect(withGas("5.0")).toContain('<input type="hidden" name="gas" value="5.0"/>');
+  });
+
+  it("carries nothing when no cost is counted", () => {
+    expect(withGas()).not.toContain('name="gas"');
+  });
+});

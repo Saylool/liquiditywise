@@ -8,7 +8,8 @@ import type { Locale } from "./locales";
  * sentence below summarises an implementation and the block comment above it
  * — the volatility in analytics/historicalVolatility.ts, the band in
  * logSymmetricBand.ts, the deposit's share in depositFeeShare.ts, the hook
- * rule in advisor/feeDisclosure.ts, the smart fifth in smartLiquidity.ts, an
+ * rule in advisor/feeDisclosure.ts, the re-centring strategy in
+ * recentringReplay.ts, the smart fifth in smartLiquidity.ts, an
  * open position's record in advisor/positionRecord.ts, the explanation's
  * contract in schemas/interpretation.ts — and where one of those
  * changes, the sentence here is wrong until it is changed too.
@@ -28,6 +29,7 @@ import type { Locale } from "./locales";
 export const METHOD_SECTION_IDS = [
   "suggested-range",
   "out-of-sample",
+  "recentring",
   "fees",
   "hooks",
   "smart-liquidity",
@@ -123,6 +125,14 @@ const en: MethodCopy = {
         `"Try your own range" replays two prices you type over the same thirty days, from the same opening close, with the same fee sharing and the same dollar rate, so the only difference between the two columns is the range. A range that does not hold the opening price starts with only one of the two tokens and takes no fees until the price reaches it. A range that did well over these days says nothing about the next ones.`,
       ],
     },
+    recentring: {
+      title: "Re-centring when the price leaves",
+      paragraphs: () => [
+        "\"Re-centre when the price leaves\" replays one simple active strategy over the same thirty days as \"Opened thirty days ago\", from the same opening close and in the same range. At each later day's close, if the close is outside the range, the position is re-centred there: what it holds — by then only one of the two tokens — is swapped into the mix a range of the same width centred on that close needs, and what is left after the swap's fee is the new position. The width is the opening range's, as multiples of its centre, so a re-centre moves the range and never redraws it. Fees are counted exactly as in the static replay, day by day, for the range held that day, and kept aside rather than reinvested.",
+        "The swap pays the fee the pool's own terms say a swap pays — a v3 tier, or a v4 key's fee with the protocol's cut, in the swap's direction. Where nothing fixed says, because a hook sets the fee per swap, it pays the rate the month's swaps actually paid, fees over volume, and the page says so; where a hook may change what a swap pays, the page says the cost may differ. Price impact is not modelled: each swap is priced at the close, as if the pool could take it whole. Gas is counted only if you set a cost per re-centre, in dollars like the deposit, and it is paid from outside the position; opening costs both the same and is counted in neither.",
+        "It sees daily closes and nothing else. A price that left the range and came back within a day is not a re-centre, and a re-centre happens at the close rather than at the edge — usually past it. Every dollar figure is at today's rate, as the deposit's are. The page sets the end value, everything counted, beside holding the deposit's opening tokens and beside the same range never re-centred; a month with no re-centre is that range exactly. It is one strategy over one month that already happened, and it is not advice.",
+      ],
+    },
     fees: {
       title: "Fees and impermanent loss",
       paragraphs: () => [
@@ -212,6 +222,14 @@ const tr: MethodCopy = {
         "Bu, tek bir havuzun birkaç dönemidir; yöntemin ne sıklıkla tuttuğunun bir ölçüsü değildir. Ardışık kurulumlar birbiriyle örtüşür, bu yüzden dönemler birbirinden bağımsız değildir ve bu bantları kimse gerçekten tutmadı.",
         `"Otuz gün önce açılsaydı", yöntemin son otuz günün başında çizeceği aralığı — o günden önceki ${f.closes} kapanıştan, sonrasından hiçbir şey katmadan — o günlerin her biri üzerinde yeniden oynatır. İki rakam verir. Sadece tutmaya göre değer, her günün kapanışında, yoğunlaştırılmış likiditenin tam miktarlarından gelir ve dolar fiyatına ihtiyaç duymaz. Komisyonlar, fiyatın tamamen içeride kaldığı günlerde havuzun kendi günlük komisyonlarından gelir ve yatırım rakamının paylaştırdığı gibi paylaştırılır; geçmişte günlük dolar kuru olmadığı için yatırım bugünkü dolar kuruyla boyutlandırılır.`,
         `"Kendi aralığını dene", yazdığın iki fiyatı aynı otuz gün üzerinde, aynı açılış kapanışından, aynı komisyon paylaşımı ve aynı dolar kuruyla yeniden oynatır; böylece iki sütun arasındaki tek fark aralıktır. Açılış fiyatını içermeyen bir aralık iki tokendan yalnızca biriyle başlar ve fiyat ona ulaşana kadar komisyon almaz. Bu günlerde iyi giden bir aralık, sonraki günler hakkında hiçbir şey söylemez.`,
+      ],
+    },
+    recentring: {
+      title: "Fiyat çıkınca yeniden ortalamak",
+      paragraphs: () => [
+        "\"Fiyat çıkınca yeniden ortala\", basit bir aktif stratejiyi \"Otuz gün önce açılsaydı\" ile aynı otuz günde, aynı açılış kapanışından ve aynı aralıkta yeniden oynatır. Sonraki her günün kapanışında, kapanış aralığın dışındaysa pozisyon orada yeniden ortalanır: elindekiler — o noktada iki tokendan yalnızca biri — o kapanışı ortalayan aynı genişlikteki aralığın gerektirdiği karışıma takasla çevrilir ve takasın komisyonundan sonra kalan, yeni pozisyondur. Genişlik, açılış aralığınınkidir, merkezinin katları olarak; yani yeniden ortalama aralığı taşır, asla yeniden çizmez. Komisyon, sabit tekrardaki gibi gün gün, o gün tutulan aralık için sayılır ve yeniden yatırılmaz, kenara konur.",
+        "Takas, havuzun kendi koşullarının bir takas için söylediği komisyonu öder — v3'te kademe, v4'te anahtarın komisyonu artı protokolün payı, takasın yönünde. Sabit hiçbir şey söylemiyorsa, çünkü komisyonu bir hook takas başına belirliyorsa, ayın takaslarının gerçekte ödediği oranı — hacme bölünmüş komisyonu — öder ve sayfa bunu söyler; bir hook bir takasın ödediğini değiştirebiliyorsa sayfa maliyetin farklı olabileceğini söyler. Fiyat etkisi modellenmez: her takas, havuz onu bütünüyle karşılayabilirmiş gibi kapanıştan fiyatlanır. Gas yalnızca yeniden ortalama başına bir maliyet girersen sayılır, yatırım gibi dolar cinsinden, ve pozisyonun dışından ödenir; açılış ikisine de aynı maliyettedir ve hiçbirinde sayılmaz.",
+        "Günlük kapanışlardan başka hiçbir şey görmez. Aralıktan çıkıp aynı gün içinde geri dönen bir fiyat yeniden ortalama değildir ve yeniden ortalama kenarda değil kapanışta olur — çoğu zaman kenarın ötesinde. Dolar cinsinden her rakam, yatırımınkiler gibi bugünkü kurdandır. Sayfa, her şey sayılınca son değeri, yatırımın açılıştaki tokenlarını elde tutmanın ve aynı aralığın hiç yeniden ortalanmamasının yanına koyar; hiç yeniden ortalanmayan bir ay tam olarak o aralıktır. Zaten yaşanmış tek bir aydaki tek bir stratejidir ve yatırım tavsiyesi değildir.",
       ],
     },
     fees: {
@@ -305,6 +323,14 @@ const de: MethodCopy = {
         `„Eigenen Bereich ausprobieren" spielt zwei eingegebene Preise über dieselben dreißig Tage nach, ab demselben Eröffnungskurs, mit derselben Gebührenverteilung und demselben Dollarkurs, sodass sich die beiden Spalten nur im Bereich unterscheiden. Ein Bereich, der den Eröffnungspreis nicht einschließt, beginnt mit nur einem der beiden Token und nimmt keine Gebühren ein, bis der Preis ihn erreicht. Ein Bereich, der an diesen Tagen gut lief, sagt nichts über die nächsten.`,
       ],
     },
+    recentring: {
+      title: "Neu zentrieren, wenn der Preis den Bereich verlässt",
+      paragraphs: () => [
+        "„Neu zentrieren, sobald der Preis den Bereich verlässt\" spielt eine einfache aktive Strategie über dieselben dreißig Tage nach wie „Vor dreißig Tagen eröffnet\", ab demselben Eröffnungskurs und im selben Bereich. Schließt ein späterer Tag außerhalb des Bereichs, wird die Position dort neu zentriert: Was sie hält — dann nur noch einer der beiden Token —, wird in die Mischung getauscht, die ein gleich breiter Bereich um diesen Schlusskurs braucht, und was nach der Gebühr des Tauschs bleibt, ist die neue Position. Die Breite ist die des Eröffnungsbereichs, als Vielfache seiner Mitte; eine Neuzentrierung verschiebt den Bereich also und zieht ihn nie neu. Gebühren werden genau wie beim statischen Nachspielen gezählt, Tag für Tag, für den an diesem Tag gehaltenen Bereich, und beiseitegelegt statt reinvestiert.",
+        "Der Tausch zahlt die Gebühr, die nach den eigenen Bedingungen des Pools ein Tausch zahlt — eine v3-Gebührenstufe oder die Gebühr eines v4-Schlüssels samt Anteil des Protokolls, in Richtung des Tauschs. Wo nichts Festes sie nennt, weil ein Hook die Gebühr je Tausch festlegt, zahlt er den Satz, den die Tausche des Monats tatsächlich zahlten — Gebühren durch Volumen —, und die Seite sagt das; wo ein Hook ändern darf, was ein Tausch zahlt, sagt die Seite, dass die Kosten abweichen können. Der Preiseinfluss ist nicht modelliert: Jeder Tausch wird zum Schlusskurs bewertet, als könnte der Pool ihn ganz aufnehmen. Gas wird nur gezählt, wenn du Kosten je Neuzentrierung angibst, in Dollar wie die Einlage, und es wird von außerhalb der Position bezahlt; die Eröffnung kostet beide gleich und wird bei keiner gezählt.",
+        "Sie sieht Tagesschlusskurse und sonst nichts. Ein Preis, der den Bereich verließ und innerhalb eines Tages zurückkam, ist keine Neuzentrierung, und eine Neuzentrierung geschieht zum Schlusskurs statt an der Grenze — meist jenseits davon. Jede Dollarzahl steht zum heutigen Kurs, wie die der Einlage. Die Seite stellt den Endwert, alles gezählt, neben das Halten der Token der Einlage bei der Eröffnung und neben denselben Bereich ohne Neuzentrierung; ein Monat ohne Neuzentrierung ist genau dieser Bereich. Es ist eine Strategie über einen Monat, der schon vergangen ist, und keine Finanzberatung.",
+      ],
+    },
     fees: {
       title: "Gebühren und Impermanent Loss",
       paragraphs: () => [
@@ -394,6 +420,14 @@ const es: MethodCopy = {
         "Son unos pocos tramos de un solo pool, no una medida de con qué frecuencia funciona el método. Los ajustes consecutivos se solapan, así que los tramos no son independientes entre sí, y nadie mantuvo estas bandas.",
         `"Abierta hace treinta días" reproduce el rango que el método habría trazado al comienzo de los últimos treinta días — con los ${f.closes} cierres anteriores y nada posterior — sobre cada uno de esos días. Da dos cifras. El valor frente a mantener, en cada cierre diario, sale de las cantidades exactas de la liquidez concentrada y no necesita precio en dólares. Las comisiones salen de las comisiones diarias del propio pool en los días en que el precio quedó totalmente dentro, repartidas como las reparte la cifra del depósito, con el depósito dimensionado al tipo de cambio en dólares de hoy porque el historial no tiene uno diario.`,
         `"Prueba tu propio rango" reproduce dos precios que escribas sobre los mismos treinta días, desde el mismo cierre de apertura, con el mismo reparto de comisiones y el mismo tipo en dólares, de modo que lo único que distingue las dos columnas es el rango. Un rango que no contiene el precio de apertura empieza con solo uno de los dos tokens y no cobra comisiones hasta que el precio lo alcanza. Un rango que fue bien en estos días no dice nada de los siguientes.`,
+      ],
+    },
+    recentring: {
+      title: "Recentrar cuando el precio sale",
+      paragraphs: () => [
+        "\"Recentrar cuando el precio sale\" reproduce una estrategia activa sencilla sobre los mismos treinta días que \"Abierta hace treinta días\", desde el mismo cierre de apertura y en el mismo rango. En el cierre de cada día posterior, si el cierre queda fuera del rango, la posición se recentra allí: lo que tiene — para entonces solo uno de los dos tokens — se intercambia por la mezcla que necesita un rango del mismo ancho centrado en ese cierre, y lo que queda tras la comisión del intercambio es la nueva posición. El ancho es el del rango de apertura, como múltiplos de su centro, así que un recentrado mueve el rango y nunca lo vuelve a trazar. Las comisiones se cuentan exactamente como en la repetición estática, día a día, para el rango que se tiene ese día, y se apartan en vez de reinvertirse.",
+        "El intercambio paga la comisión que, según las propias condiciones del pool, paga un intercambio: un nivel de v3, o la comisión de la clave de v4 con la parte del protocolo, en la dirección del intercambio. Donde nada fijo la dice, porque un hook fija la comisión en cada intercambio, paga la tasa que de verdad pagaron los intercambios del mes — comisiones sobre volumen — y la página lo dice; donde un hook puede cambiar lo que paga un intercambio, la página dice que el coste puede ser otro. No se modela el impacto en el precio: cada intercambio se valora al cierre, como si el pool pudiera absorberlo entero. El gas solo se cuenta si fijas un coste por recentrado, en dólares como el depósito, y se paga desde fuera de la posición; la apertura cuesta lo mismo a las dos y no se cuenta en ninguna.",
+        "Ve cierres diarios y nada más. Un precio que salió del rango y volvió en el mismo día no es un recentrado, y un recentrado ocurre en el cierre y no en el borde — normalmente más allá. Toda cifra en dólares está a la tasa de hoy, como las del depósito. La página pone el valor final, todo contado, junto a mantener los tokens con que se abrió el depósito y junto al mismo rango nunca recentrado; un mes sin recentrados es exactamente ese rango. Es una estrategia sobre un mes que ya ocurrió, y no es asesoramiento.",
       ],
     },
     fees: {
@@ -487,6 +521,14 @@ const ar: MethodCopy = {
         `«جرّب نطاقك الخاص» يعيد تطبيق النطاق بين سعرين تكتبهما على الأيام الثلاثين نفسها، من إغلاق الافتتاح نفسه، بتوزيع الرسوم نفسه وسعر الدولار نفسه، فلا يبقى بين العمودين فرق سوى النطاق. والنطاق الذي لا يحوي سعر الافتتاح يبدأ برمز واحد فقط من الرمزين ولا يأخذ رسومًا حتى يبلغه السعر. والنطاق الذي أبلى حسنًا في هذه الأيام لا يقول شيئًا عن الأيام التالية.`,
       ],
     },
+    recentring: {
+      title: "إعادة التوسيط حين يخرج السعر",
+      paragraphs: () => [
+        "«إعادة التوسيط حين يخرج السعر» تعيد تطبيق استراتيجية نشطة بسيطة واحدة على الأيام الثلاثين نفسها التي يعيدها «لو فُتح قبل ثلاثين يومًا»، من إغلاق الافتتاح نفسه وفي النطاق نفسه. عند إغلاق كل يوم لاحق، إذا كان الإغلاق خارج النطاق، يُعاد توسيط المركز هناك: ما يحمله — وهو حينها أحد الرمزين فقط — يُحوَّل بتبادلٍ إلى المزيج الذي يحتاجه نطاق بالاتساع نفسه يتوسّطه ذلك الإغلاق، وما يتبقى بعد رسوم التبادل هو المركز الجديد. والاتساع هو اتساع نطاق الافتتاح، كمضاعفات لمنتصفه، فإعادة التوسيط تنقل النطاق ولا تعيد رسمه أبدًا. وتُحتسب الرسوم تمامًا كما في الإعادة الثابتة، يومًا بيوم، للنطاق المحتفَظ به في ذلك اليوم، وتوضع جانبًا بدل إعادة استثمارها.",
+        "ويدفع التبادل الرسوم التي تقول شروط التجمّع نفسه إن التبادل يدفعها — شريحة رسوم في v3، أو رسوم مفتاح v4 مع حصة البروتوكول، في اتجاه التبادل. وحيث لا يذكرها شيء ثابت، لأن خطّافًا يحدّد الرسوم لكل تبادل، يدفع المعدل الذي دفعته تبادلات الشهر فعلًا — الرسوم مقسومة على الحجم — وتقول الصفحة ذلك؛ وحيث يمكن لخطّاف أن يغيّر ما يدفعه التبادل، تقول الصفحة إن التكلفة قد تختلف. أثر السعر غير منمذج: يُسعَّر كل تبادل عند الإغلاق، كأن التجمّع يستطيع استيعابه كاملًا. ولا يُحتسب الغاز إلا إذا حدّدت تكلفة لكل إعادة توسيط، بالدولار كالإيداع، ويُدفع من خارج المركز؛ والافتتاح يكلّف الاثنين القدر نفسه ولا يُحتسب في أيّ منهما.",
+        "لا ترى إلا الإغلاقات اليومية. السعر الذي خرج من النطاق وعاد خلال يوم ليس إعادة توسيط، وإعادة التوسيط تحدث عند الإغلاق لا عند الحافة — وغالبًا بعدها. وكل رقم بالدولار محسوب بسعر اليوم، كأرقام الإيداع. وتضع الصفحة القيمة النهائية، مع احتساب كل شيء، بجانب الاحتفاظ بالرموز التي فُتح بها الإيداع وبجانب النطاق نفسه بلا إعادة توسيط؛ والشهر الذي لا إعادة توسيط فيه هو ذلك النطاق تمامًا. إنها استراتيجية واحدة على شهر واحد مضى، وليست نصيحة.",
+      ],
+    },
     fees: {
       title: "الرسوم والخسارة غير الدائمة",
       paragraphs: () => [
@@ -576,6 +618,14 @@ const hi: MethodCopy = {
         "ये एक ही पूल के कुछ हिस्से हैं, यह माप नहीं कि तरीका कितनी बार टिकता है। लगातार बिठाए गए बैंड एक-दूसरे पर चढ़ते हैं, इसलिए हिस्से एक-दूसरे से स्वतंत्र नहीं हैं, और ये बैंड किसी ने असल में रखे नहीं थे।",
         `"तीस दिन पहले खोली गई होती" उस दायरे को, जो तरीका पिछले तीस दिनों की शुरुआत में खींचता — उससे पहले के ${f.closes} बंद भावों से, बाद के किसी दिन के बिना — उन दिनों में से हर एक पर दोबारा चलाता है। यह दो आँकड़े देता है। रखे रहने की तुलना में मूल्य, हर दिन के बंद भाव पर, केंद्रित तरलता की सटीक मात्राओं से आता है और उसे डॉलर कीमत नहीं चाहिए। शुल्क उन दिनों के पूल के अपने दैनिक शुल्क से आते हैं जब कीमत पूरी तरह भीतर रही, वैसे ही बाँटे जाते हैं जैसे जमा वाला आँकड़ा बाँटता है, और जमा का आकार आज की डॉलर दर पर तय होता है क्योंकि इतिहास में दैनिक दर नहीं है।`,
         `"अपना दायरा आज़माएँ" आपकी लिखी दो कीमतों को उन्हीं तीस दिनों पर, उसी शुरुआती बंद भाव से, उसी शुल्क-बँटवारे और उसी डॉलर दर के साथ दोबारा चलाता है, ताकि दोनों कॉलम में फ़र्क़ केवल दायरे का रहे। जो दायरा शुरुआती कीमत को नहीं समेटता, वह दोनों में से केवल एक टोकन के साथ शुरू होता है, और कीमत के उस तक पहुँचने तक कोई शुल्क नहीं लेता। जो दायरा इन दिनों में अच्छा रहा, वह अगले दिनों के बारे में कुछ नहीं कहता।`,
+      ],
+    },
+    recentring: {
+      title: "बाहर जाने पर फिर से केंद्रित करना",
+      paragraphs: () => [
+        "\"बाहर जाने पर फिर से केंद्रित करें\" एक सरल सक्रिय रणनीति को उन्हीं तीस दिनों पर दोहराता है जिन पर \"तीस दिन पहले खोली गई होती\", उसी शुरुआती बंद भाव से और उसी दायरे में। हर अगले दिन के बंद भाव पर, अगर बंद भाव दायरे के बाहर है, तो पोज़िशन वहीं फिर से केंद्रित की जाती है: उसके पास जो है — तब तक दोनों में से बस एक टोकन — उसे स्वैप करके उस मिश्रण में बदला जाता है जो उस बंद भाव पर केंद्रित, उतनी ही चौड़ाई वाले दायरे को चाहिए, और स्वैप के शुल्क के बाद जो बचता है वही नई पोज़िशन है। चौड़ाई शुरुआती दायरे की ही रहती है, उसके केंद्र के गुणजों के रूप में, इसलिए पुनःकेंद्रण दायरे को खिसकाता है, उसे कभी दोबारा नहीं खींचता। शुल्क ठीक स्थिर दोहराव की तरह गिना जाता है, दिन-ब-दिन, उस दिन रखे गए दायरे के लिए, और दोबारा लगाया नहीं जाता, अलग रखा जाता है।",
+        "स्वैप वह शुल्क चुकाता है जो पूल की अपनी शर्तों के अनुसार एक स्वैप चुकाता है — v3 का शुल्क स्तर, या v4 की कुंजी का शुल्क और प्रोटोकॉल का हिस्सा, स्वैप की दिशा में। जहाँ कोई तय चीज़ यह नहीं बताती, क्योंकि hook हर स्वैप पर शुल्क तय करता है, वहाँ वह दर चुकाई जाती है जो महीने के स्वैप ने असल में चुकाई — शुल्क बँटा वॉल्यूम — और पृष्ठ यह बताता है; जहाँ hook बदल सकता है कि स्वैप क्या चुकाता है, वहाँ पृष्ठ कहता है कि लागत अलग हो सकती है। कीमत पर असर का मॉडल नहीं बनाया गया: हर स्वैप बंद भाव पर आँका जाता है, मानो पूल उसे पूरा सँभाल सके। गैस तभी गिनी जाती है जब आप प्रति पुनःकेंद्रण लागत तय करें, जमा की तरह डॉलर में, और वह पोज़िशन के बाहर से चुकाई जाती है; शुरुआत दोनों को बराबर पड़ती है और किसी में नहीं गिनी जाती।",
+        "यह दैनिक बंद भाव देखता है, और कुछ नहीं। जो कीमत दायरे से बाहर जाकर एक ही दिन में लौट आई, वह पुनःकेंद्रण नहीं है, और पुनःकेंद्रण किनारे पर नहीं, बंद भाव पर होता है — अक्सर उसके पार। डॉलर का हर आँकड़ा, जमा के आँकड़ों की तरह, आज की दर पर है। पृष्ठ अंतिम मूल्य को, सब कुछ गिनकर, जमा के शुरुआती टोकन रखे रहने के बगल में और उसी दायरे के बिना पुनःकेंद्रण के बगल में रखता है; जिस महीने कोई पुनःकेंद्रण न हो, वह ठीक वही दायरा है। यह बीत चुके एक महीने पर एक रणनीति है, और सलाह नहीं है।",
       ],
     },
     fees: {
@@ -669,6 +719,14 @@ const zh: MethodCopy = {
         `"试试你自己的区间"把你输入的两个价格在同样的三十天上、从同一个开仓收盘价、用同样的手续费分配和同样的美元汇率重放，所以两列之间唯一的差别就是区间。不包含开仓价格的区间一开始只持有两种代币中的一种，在价格到达它之前不收手续费。在这些日子里表现好的区间，对接下来的日子什么也说明不了。`,
       ],
     },
+    recentring: {
+      title: "价格离开时重新居中",
+      paragraphs: () => [
+        "\"价格离开时重新居中\"在与\"如果三十天前开仓\"相同的三十天里，从同一个开仓收盘价、在同一个区间重演一个简单的主动策略。在之后每一天收盘时，如果收盘价在区间之外，就在那里把仓位重新居中：它持有的东西——那时只剩两种代币中的一种——通过兑换调成以该收盘价为中心、同样宽度的区间所需的比例，扣掉兑换手续费后剩下的就是新仓位。宽度沿用开仓区间的宽度，按其中心的倍数计，所以重新居中只是移动区间，从不重新画它。手续费的计法与静态重演完全相同，逐日、按当天所持的区间计算，并单独存放而不再投入。",
+        "兑换支付的是资金池自己的条款规定一笔兑换要付的费率——v3 的费率档，或 v4 键里的费率加上协议的抽成，按兑换方向计。如果没有任何固定的东西写明，因为 hook 逐笔设定费率，就按本月兑换实际支付的费率——手续费除以交易量——计，页面会说明；如果 hook 可能改变一笔兑换所付的费用，页面会说明成本可能不同。没有模拟价格冲击：每笔兑换都按收盘价计价，仿佛资金池能整笔吃下。只有你设定每次重新居中的成本时才计 gas，和存入金额一样以美元计，并从仓位之外支付；开仓对两者成本相同，两边都不计。",
+        "它只看每日收盘价，别的都看不到。价格离开区间又在一天之内回来，不算重新居中；重新居中发生在收盘价上而不是边界上——通常已经越过边界。所有美元数字都按今天的汇率计算，和存入金额一样。页面把全部计入后的期末价值，与持有存入时的代币相比，也与同一区间从不重新居中相比；没有任何重新居中的一个月，就正好是那个区间。这是一个策略在一个已经过去的月份上的表现，不构成建议。",
+      ],
+    },
     fees: {
       title: "手续费与无常损失",
       paragraphs: () => [
@@ -758,6 +816,14 @@ const ru: MethodCopy = {
         "Это несколько отрезков одного пула, а не мера того, как часто метод срабатывает. Соседние подгонки перекрываются, так что отрезки не независимы друг от друга, и никто на самом деле не держал эти полосы.",
         `«Если бы открыли тридцать дней назад» воспроизводит диапазон, который метод нарисовал бы в начале последних тридцати дней — по ${f.closes} закрытиям до этого и ничему после, — на каждом из этих дней. Получаются две цифры. Стоимость в сравнении с хранением, на каждом дневном закрытии, берётся из точных количеств концентрированной ликвидности и не требует цены в долларах. Комиссии берутся из собственных дневных комиссий пула в те дни, когда цена целиком оставалась внутри, и делятся так же, как в расчёте вклада; вклад пересчитывается по сегодняшнему курсу доллара, потому что дневного курса в истории нет.`,
         `«Попробуйте свой диапазон» воспроизводит две введённые цены на тех же тридцати днях, от того же закрытия открытия, с тем же делением комиссий и тем же курсом доллара, так что две колонки отличаются только диапазоном. Диапазон, не содержащий цену открытия, начинает лишь с одним из двух токенов и не получает комиссий, пока цена до него не дойдёт. Диапазон, который хорошо показал себя в эти дни, ничего не говорит о следующих.`,
+      ],
+    },
+    recentring: {
+      title: "Перецентрирование, когда цена выходит",
+      paragraphs: () => [
+        "«Перецентрировать, когда цена выходит» повторяет одну простую активную стратегию на тех же тридцати днях, что и «Если бы открыли тридцать дней назад», с того же закрытия при открытии и в том же диапазоне. На закрытии каждого следующего дня, если закрытие вне диапазона, позиция перецентрируется там: то, что она держит, — к тому моменту лишь один из двух токенов — обменивается на соотношение, которое нужно диапазону той же ширины с центром на этом закрытии, а то, что остаётся после комиссии свопа, и есть новая позиция. Ширина — та же, что у диапазона при открытии, в долях от его центра, так что перецентрирование сдвигает диапазон и никогда не рисует его заново. Комиссии считаются точно так же, как в статичном повторе, день за днём, для диапазона, который держали в тот день, и откладываются, а не реинвестируются.",
+        "Своп платит ту комиссию, которую по собственным условиям пула платит своп: уровень комиссии v3 или комиссию ключа v4 с долей протокола, в направлении свопа. Где ничто фиксированное её не называет, потому что комиссию для каждого свопа задаёт hook, он платит ставку, которую фактически платили свопы за месяц, — комиссии, делённые на объём, — и страница это говорит; где hook может менять то, что платит своп, страница говорит, что стоимость может отличаться. Влияние на цену не моделируется: каждый своп оценивается по закрытию, как будто пул может принять его целиком. Gas учитывается, только если вы зададите стоимость одного перецентрирования, в долларах, как вклад, и он оплачивается не из позиции; открытие стоит обеим одинаково и не учитывается ни в одной.",
+        "Она видит дневные закрытия и ничего больше. Цена, которая вышла из диапазона и вернулась в течение дня, — не перецентрирование, а перецентрирование происходит на закрытии, а не на границе, — обычно за ней. Каждая долларовая цифра — по сегодняшнему курсу, как и у вклада. Страница ставит итоговую стоимость, всё учтено, рядом с хранением токенов, с которыми открылся вклад, и рядом с тем же диапазоном без перецентрирования; месяц без перецентрирований — это ровно тот диапазон. Это одна стратегия на одном уже прошедшем месяце, и это не совет.",
       ],
     },
     fees: {
@@ -851,6 +917,14 @@ const pt: MethodCopy = {
         `"Teste sua própria faixa" reproduz dois preços que você digitar sobre os mesmos trinta dias, a partir do mesmo fechamento de abertura, com a mesma repartição de taxas e a mesma cotação do dólar, de modo que a única diferença entre as duas colunas é a faixa. Uma faixa que não contém o preço de abertura começa com só um dos dois tokens e não recebe taxas até o preço alcançá-la. Uma faixa que foi bem nesses dias não diz nada sobre os próximos.`,
       ],
     },
+    recentring: {
+      title: "Recentralizar quando o preço sai",
+      paragraphs: () => [
+        "\"Recentralizar quando o preço sai\" repete uma estratégia ativa simples sobre os mesmos trinta dias que \"Aberta há trinta dias\", a partir do mesmo fechamento de abertura e na mesma faixa. No fechamento de cada dia seguinte, se o fechamento estiver fora da faixa, a posição é recentralizada ali: o que ela tem — a essa altura só um dos dois tokens — é trocado pela mistura de que precisa uma faixa da mesma largura centrada nesse fechamento, e o que sobra depois da taxa do swap é a nova posição. A largura é a da faixa de abertura, como múltiplos do seu centro, então uma recentralização move a faixa e nunca a traça de novo. As taxas são contadas exatamente como na repetição estática, dia a dia, para a faixa mantida naquele dia, e postas de lado em vez de reinvestidas.",
+        "O swap paga a taxa que, pelas próprias condições do pool, um swap paga — um nível da v3, ou a taxa da chave da v4 com a parte do protocolo, na direção do swap. Onde nada fixo a diz, porque um hook define a taxa a cada swap, ele paga a taxa que os swaps do mês de fato pagaram — taxas sobre volume — e a página diz isso; onde um hook pode mudar o que um swap paga, a página diz que o custo pode ser outro. O impacto no preço não é modelado: cada swap é avaliado no fechamento, como se o pool pudesse absorvê-lo inteiro. O gas só é contado se você definir um custo por recentralização, em dólar como o depósito, e é pago de fora da posição; a abertura custa o mesmo às duas e não é contada em nenhuma.",
+        "Ela vê fechamentos diários e nada mais. Um preço que saiu da faixa e voltou no mesmo dia não é uma recentralização, e uma recentralização acontece no fechamento, não na borda — em geral além dela. Todo número em dólar está pela cotação de hoje, como os do depósito. A página coloca o valor final, tudo contado, ao lado de manter os tokens com que o depósito abriu e ao lado da mesma faixa nunca recentralizada; um mês sem recentralização é exatamente essa faixa. É uma estratégia sobre um mês que já aconteceu, e não é recomendação.",
+      ],
+    },
     fees: {
       title: "Taxas e perda impermanente",
       paragraphs: () => [
@@ -940,6 +1014,14 @@ const zhHant: MethodCopy = {
         "這只是一個資金池的幾段時間，不能衡量方法有多常成立。相鄰的擬合彼此重疊，所以這些時段彼此並不獨立，而且沒有人真的持有過這些價格帶。",
         `「如果三十天前開倉」把方法在最近三十天開始時會畫出的區間——用那之前的 ${f.closes} 個收盤價，之後的一概不用——逐日重演這三十天。它給出兩個數字。「相對持有的價值」按每天的收盤價計算，來自集中流動性的精確數量，不需要美元價格。手續費來自價格完全留在區間內的那些日子裡資金池自己的每日手續費，與「一筆資金本可以收到多少」用同樣的方式分配；由於歷史資料沒有每日美元匯率，存入資金按今天的美元匯率折算。`,
         `「試試你自己的區間」把你輸入的兩個價格構成的區間，在同樣的三十天裡、從同一個開倉收盤價起，以同樣的手續費分配方式和同樣的美元匯率重演，所以兩欄之間唯一的差別就是區間。不包含開倉價格的區間一開始只持有兩種代幣中的一種，在價格到達它之前不收手續費。在這些日子裡表現好的區間，對接下來的日子什麼也說明不了。`,
+      ],
+    },
+    recentring: {
+      title: "價格離開時重新置中",
+      paragraphs: () => [
+        "「價格離開時重新置中」在與「如果三十天前開倉」相同的三十天期間裡，從同一個開倉收盤價、在同一個區間重演一個簡單的主動策略。在之後每一天收盤時，如果收盤價在區間之外，就在那裡把倉位重新置中：它持有的東西——那時只剩兩種代幣中的一種——透過兌換調成以該收盤價為中心、同樣寬度的區間所需的比例，扣掉兌換手續費後剩下的就是新倉位。寬度沿用開倉區間的寬度，按其中心的倍數計，所以重新置中只是移動區間，從不重新畫它。手續費的計法與靜態重演完全相同，逐日、按當天所持的區間計算，並另外存放而不再投入。",
+        "兌換支付的是資金池自己的條款規定一筆兌換要付的費率——v3 的費率級距，或 v4 鍵裡的費率加上協議的抽成，按兌換方向計。如果沒有任何固定的東西寫明，因為 hook 逐筆設定費率，就按這段期間兌換實際支付的費率——手續費除以交易量——計，頁面會說明；如果 hook 可能改變一筆兌換所付的費用，頁面會說明成本可能不同。沒有模擬價格衝擊：每筆兌換都按收盤價計價，彷彿資金池能整筆吃下。只有你設定每次重新置中的成本時才計 gas，和存入金額一樣以美元計，並從倉位之外支付；開倉對兩者成本相同，兩邊都不計。",
+        "它只看每日收盤價，其他都看不到。價格離開區間又在一天之內回來，不算重新置中；重新置中發生在收盤價上而不是邊界上——通常已經越過邊界。所有美元數字都按今天的匯率計算，和存入金額一樣。頁面把全部計入後的期末價值，與持有存入時的代幣相比，也與同一區間從不重新置中相比；沒有任何重新置中的一個月，就正好是那個區間。這是一個策略在一個已經過去的月份上的表現，不構成建議。",
       ],
     },
     fees: {
