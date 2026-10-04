@@ -49,7 +49,7 @@ describe("the offer to embed a pool", () => {
     const v4 = render({ protocol: "v4", poolId: ID, chain: chainBySlug("base")!, hookMayAlterSwaps: true });
 
     expect(v4).toContain(`embed/pool?chain=base&amp;amp;id=${ID}`);
-    expect(v4).toContain("height=&quot;240&quot;");
+    expect(v4).toContain("height=&quot;260&quot;");
   });
 
   it("speaks the reader's language, and offers the card in it", () => {

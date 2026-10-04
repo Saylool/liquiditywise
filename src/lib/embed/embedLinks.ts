@@ -30,9 +30,17 @@ export const embedDataUrl = (request: EmbedRequest): string => `${SITE_URL}${DAT
  * How tall the frame is offered at: the card's size, and a little more when
  * it carries the hook note, so nothing on it is cut off at the bottom of
  * somebody else's page.
+ *
+ * With room for the one line the frame cannot be sized for in advance: the
+ * note that the price is outside the range, which comes and goes after the
+ * snippet is pasted. Measured on 2026-10-04 at 360 px wide with that note
+ * forced in, USDC/WETH's card stood 163–198 px across the ten languages
+ * (Turkish the tallest) and 189–225 px with the hook note too — 198 of 200
+ * left no room for a pair or a network name one line longer. The footer
+ * keeps to the bottom (`margin-top: auto`), so the room reads as space.
  */
 export const EMBED_FRAME_WIDTH = 360;
-export const embedFrameHeight = (hookMayAlterSwaps: boolean): number => (hookMayAlterSwaps ? 240 : 200);
+export const embedFrameHeight = (hookMayAlterSwaps: boolean): number => (hookMayAlterSwaps ? 260 : 220);
 
 /**
  * The frame to paste. Escaped like the card, because the title carries two

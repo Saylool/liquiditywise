@@ -29,7 +29,7 @@ describe("a card's addresses", () => {
 describe("the snippet to paste", () => {
   it("is a lazy, borderless frame of the card, at the card's size", () => {
     expect(embedSnippet(V3, "USDC / WETH", false, "en")).toBe(
-      `<iframe src="https://liquiditywise.com/embed/pool?address=${ADDRESS}" title="USDC / WETH on LiquidityWise" width="360" height="200" style="border:0;max-width:100%" loading="lazy"></iframe>`,
+      `<iframe src="https://liquiditywise.com/embed/pool?address=${ADDRESS}" title="USDC / WETH on LiquidityWise" width="360" height="220" style="border:0;max-width:100%" loading="lazy"></iframe>`,
     );
   });
 
