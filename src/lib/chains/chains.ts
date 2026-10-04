@@ -45,7 +45,9 @@ export const CHAINS = [
    * v4 alone. Uniswap's own chain, where the week's trading is v4's: its v4
    * subgraph answered the day table in half a second, two seconds behind the
    * chain, with the PoolManager Uniswap publishes for it (measured
-   * 2026-09-27). The one public v3 subgraph for it has no indexer serving it.
+   * 2026-09-27). That one stopped on an indexing error by 2026-10-04 and was
+   * replaced with another over the same PoolManager (.env.example says which).
+   * The one public v3 subgraph for it had no indexer serving it.
    * `v3Search` and `v3Pairs` are never read where `v3` is false.
    */
   { id: 130, slug: "unichain", name: "Unichain", v3: false, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "ETH" },
