@@ -15,11 +15,21 @@ import {
  * The network's own Blockscout: whether it holds verified source for a
  * contract, what that source calls it, and whether it is a proxy.
  *
- * Every network a v4 pool is read on has a public instance, and each was
- * asked about Uniswap's own PoolManager there on 2026-10-04 and answered
+ * Every network a v4 pool is read on but two has a public instance, and each
+ * was asked about Uniswap's own PoolManager there on 2026-10-04 and answered
  * `is_verified: true`, `name: "PoolManager"`. OP Mainnet's lives at
  * explorer.optimism.io: optimism.blockscout.com answers with a 301 to it, so
  * it is asked directly rather than through the redirect.
+ *
+ * **BNB Chain and Avalanche have none.** Blockscout's own list of the
+ * instances it runs (chains.blockscout.com/api/chains) names neither chain 56
+ * nor 43114, and bnb., bsc., bnb-chain., avalanche., avax. and
+ * snowtrace.blockscout.com each answered a bare 404 from Cloudflare, root
+ * and API alike (measured 2026-10-04). So a hook there is asked of Sourcify
+ * alone, which holds both chains' PoolManagers verified (`"match"`) and
+ * answered for every hook their week's busiest pools name — 41 of them — in
+ * 0.2 to 0.6 seconds. Their host is `null` rather than another network's:
+ * the same address elsewhere is another contract or none.
  *
  * **`/api/v2/addresses/{address}`, not `/api/v2/smart-contracts/{address}`.**
  * Both say `is_verified` and `name`. The second also sends the whole verified
@@ -43,7 +53,17 @@ export const BLOCKSCOUT_HOSTS = {
   130: "unichain.blockscout.com",
   10: "explorer.optimism.io",
   137: "polygon.blockscout.com",
-} as const satisfies Record<V4ChainId, string>;
+  56: null,
+  43114: null,
+} as const satisfies Record<V4ChainId, string | null>;
+
+/** The networks with a Blockscout of their own, which are the only ones it is asked about. */
+export type BlockscoutChainId = {
+  [Id in V4ChainId]: (typeof BLOCKSCOUT_HOSTS)[Id] extends string ? Id : never;
+}[V4ChainId];
+
+/** Whether a network has a Blockscout to ask; where it has none, a hook is asked of Sourcify alone. */
+export const hasBlockscout = (chainId: V4ChainId): chainId is BlockscoutChainId => BLOCKSCOUT_HOSTS[chainId] !== null;
 
 /** Above Unichain's measured three seconds, with room; below anything a reader should wait on. */
 export const BLOCKSCOUT_TIMEOUT_MS = 5_000;
@@ -60,11 +80,11 @@ const AddressSchema = z.object({
 /** How Blockscout answers a path or an address it has no entry for, rather than an error page in front of it. */
 const NotFoundSchema = z.object({ message: z.literal("Not found") });
 
-export const blockscoutAddressUrl = (chainId: V4ChainId, address: string): string =>
+export const blockscoutAddressUrl = (chainId: BlockscoutChainId, address: string): string =>
   `https://${BLOCKSCOUT_HOSTS[chainId]}/api/v2/addresses/${address}`;
 
 /** Where a reader can read the verified source for themselves. */
-export const blockscoutPage = (chainId: V4ChainId, address: string): string =>
+export const blockscoutPage = (chainId: BlockscoutChainId, address: string): string =>
   `https://${BLOCKSCOUT_HOSTS[chainId]}/address/${address}?tab=contract`;
 
 const proxyOf = (
@@ -100,7 +120,7 @@ export const readBlockscoutAnswer = (answer: PublicJsonAnswer): SourceAnswer => 
 };
 
 export type BlockscoutRequest = {
-  readonly chainId: V4ChainId;
+  readonly chainId: BlockscoutChainId;
   /** Lower-cased, `0x` and forty hex characters; the caller has checked. */
   readonly address: string;
   readonly fetchImpl: FetchLike;

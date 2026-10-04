@@ -116,11 +116,15 @@ export type ChainId = z.infer<typeof ChainIdSchema>;
 
 /**
  * The chains a figure may describe a pool on, per protocol: v3 on Ethereum,
- * Base, Arbitrum One, OP Mainnet and Polygon, and v4 on those and Unichain — each protocol listed
+ * Base, Arbitrum One, OP Mainnet, Polygon, BNB Chain, Avalanche and Celo, and
+ * v4 on all of those but Celo, and on Unichain — each protocol listed
  * apart, because a chain can be read for one and not the other. The list lib/chains/chains.ts holds, restated here so the
  * domain layer depends on nothing above it — a test holds the two together.
  */
-export const READABLE_CHAIN_IDS = { v3: [1, 8453, 42161, 10, 137], v4: [1, 8453, 42161, 130, 10, 137] } as const;
+export const READABLE_CHAIN_IDS = {
+  v3: [1, 8453, 42161, 10, 137, 56, 43114, 42220],
+  v4: [1, 8453, 42161, 130, 10, 137, 56, 43114],
+} as const;
 
 export const isReadableChain = (chainId: number, protocolVersion: "v3" | "v4"): boolean =>
   (READABLE_CHAIN_IDS[protocolVersion] as readonly number[]).includes(chainId);

@@ -9,6 +9,8 @@ import type { Locale } from "./locales";
  * Three states for the source code and no fourth: verified on one verifier or
  * both, found on neither, or not known just now. "Not known" is never folded
  * into "not found" — a verifier that did not answer has not said anything.
+ * On a network with no Blockscout (BNB Chain and Avalanche) "neither" is
+ * Sourcify alone, and its sentence says that only Sourcify could be asked.
  *
  * **"Verified" never stands alone.** Every page that says it also says what it
  * means — that the published code compiles to what is deployed, so it can be
@@ -43,6 +45,10 @@ export type HookCheckCopy = {
   readonly unverified: string;
   /** Not known just now: a verifier did not answer, or not in time. */
   readonly unchecked: string;
+  /** Sourcify holds no verified source for it, on a network with no Blockscout to ask (verification/blockscout.ts). */
+  readonly unverifiedSourcifyOnly: string;
+  /** On the directory of a network with no Blockscout: Sourcify alone is asked there, and no proxy is read. */
+  readonly noBlockscout: (network: string) => string;
   /** Blockscout reads it as a proxy; the name of the code behind it where known. */
   readonly proxy: (implementation: string | null) => string;
   /** Before the links to each verifier's own page for it. */
@@ -67,6 +73,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `Its published source names the contract ${name}.`,
     unverified: "No verified source code was found on Sourcify or on Blockscout. Other explorers were not asked.",
     unchecked: "Whether its source code is verified could not be checked just now.",
+    unverifiedSourcifyOnly: "No verified source code was found on Sourcify. This network has no Blockscout to ask, and other explorers were not asked.",
+    noBlockscout: (network) =>
+      `${network} has no Blockscout, so here a hook's source code is asked of Sourcify alone, and whether a hook is a proxy goes unsaid.`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout reads this address as a proxy: the code that runs is kept at another address. A verified proxy says nothing about that code, and a proxy can often be pointed at new code."
@@ -88,6 +97,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `Yayımlanan kaynağında sözleşmenin adı ${name}.`,
     unverified: "Ne Sourcify'da ne de Blockscout'ta doğrulanmış bir kaynak kodu bulundu. Başka blok gezginlerine sorulmadı.",
     unchecked: "Kaynak kodunun doğrulanmış olup olmadığına şu anda bakılamadı.",
+    unverifiedSourcifyOnly: "Sourcify'da doğrulanmış bir kaynak kodu bulunamadı. Bu ağın sorulabilecek bir Blockscout'u yok; başka blok gezginlerine de sorulmadı.",
+    noBlockscout: (network) =>
+      `${network} için bir Blockscout yok; bu yüzden burada bir hook'un kaynak kodu yalnızca Sourcify'a sorulur ve bir hook'un proxy olup olmadığı söylenmez.`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout bu adresi bir proxy olarak okuyor: çalışan kod başka bir adreste duruyor. Bir proxy'nin doğrulanmış olması o kod hakkında hiçbir şey söylemez, ve bir proxy çoğu zaman yeni bir koda yönlendirilebilir."
@@ -109,6 +121,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `Sein veröffentlichter Quellcode nennt den Vertrag ${name}.`,
     unverified: "Weder auf Sourcify noch auf Blockscout wurde verifizierter Quellcode gefunden. Andere Explorer wurden nicht gefragt.",
     unchecked: "Ob sein Quellcode verifiziert ist, ließ sich gerade nicht prüfen.",
+    unverifiedSourcifyOnly: "Auf Sourcify wurde kein verifizierter Quellcode gefunden. Dieses Netzwerk hat kein Blockscout, das sich fragen ließe, und andere Explorer wurden nicht gefragt.",
+    noBlockscout: (network) =>
+      `${network} hat kein Blockscout; hier wird der Quellcode eines Hooks deshalb nur bei Sourcify erfragt, und ob ein Hook ein Proxy ist, bleibt ungesagt.`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout liest diese Adresse als Proxy: Der Code, der läuft, liegt an einer anderen Adresse. Ein verifizierter Proxy sagt nichts über diesen Code, und ein Proxy lässt sich oft auf neuen Code umstellen."
@@ -130,6 +145,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `Su código publicado llama al contrato ${name}.`,
     unverified: "No se encontró código fuente verificado ni en Sourcify ni en Blockscout. No se preguntó a otros exploradores.",
     unchecked: "No se pudo comprobar en este momento si su código fuente está verificado.",
+    unverifiedSourcifyOnly: "No se encontró código fuente verificado en Sourcify. Esta red no tiene un Blockscout al que preguntar, y no se preguntó a otros exploradores.",
+    noBlockscout: (network) =>
+      `${network} no tiene Blockscout, así que aquí el código fuente de un hook se pregunta solo a Sourcify, y no se dice si un hook es un proxy.`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout lee esta dirección como un proxy: el código que se ejecuta está en otra dirección. Un proxy verificado no dice nada de ese código, y a menudo un proxy puede apuntarse a código nuevo."
@@ -151,6 +169,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `تسمّي شيفرته المنشورة العقدَ ${name}.`,
     unverified: "لم يُعثر على شيفرة مصدرية موثّقة لا على Sourcify ولا على Blockscout. ولم تُسأل مستكشفات أخرى.",
     unchecked: "تعذّر الآن التحقق مما إذا كانت شيفرته المصدرية موثّقة.",
+    unverifiedSourcifyOnly: "لم يُعثر على شيفرة مصدرية موثّقة على Sourcify. وليس لهذه الشبكة مستكشف Blockscout يُسأل، ولم تُسأل مستكشفات أخرى.",
+    noBlockscout: (network) =>
+      `ليس لشبكة ${network} مستكشف Blockscout، لذا يُسأل هنا Sourcify وحده عن الشيفرة المصدرية للخطّاف، ولا يُقال هل الخطّاف وكيل (proxy) أم لا.`,
     proxy: (implementation) =>
       implementation === null
         ? "يقرأ Blockscout هذا العنوان على أنه وكيل (proxy): الشيفرة التي تعمل محفوظة عند عنوان آخر. والوكيل الموثّق لا يقول شيئًا عن تلك الشيفرة، وكثيرًا ما يمكن توجيه الوكيل إلى شيفرة جديدة."
@@ -172,6 +193,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `उसका प्रकाशित सोर्स कोड कॉन्ट्रैक्ट को ${name} नाम देता है।`,
     unverified: "न Sourcify पर और न Blockscout पर कोई सत्यापित सोर्स कोड मिला। दूसरे एक्सप्लोरर से नहीं पूछा गया।",
     unchecked: "उसका सोर्स कोड सत्यापित है या नहीं, यह अभी जाँचा नहीं जा सका।",
+    unverifiedSourcifyOnly: "Sourcify पर कोई सत्यापित सोर्स कोड नहीं मिला। इस नेटवर्क का कोई Blockscout नहीं है जिससे पूछा जा सके, और दूसरे एक्सप्लोरर से नहीं पूछा गया।",
+    noBlockscout: (network) =>
+      `${network} का कोई Blockscout नहीं है, इसलिए यहाँ किसी hook का सोर्स कोड सिर्फ़ Sourcify से पूछा जाता है, और यह नहीं बताया जाता कि hook proxy है या नहीं।`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout इस पते को proxy के रूप में पढ़ता है: जो कोड चलता है वह किसी दूसरे पते पर रखा है। सत्यापित proxy उस कोड के बारे में कुछ नहीं बताता, और proxy को अक्सर नए कोड की ओर मोड़ा जा सकता है।"
@@ -193,6 +217,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `它公开的源代码把这份合约命名为 ${name}。`,
     unverified: "在 Sourcify 和 Blockscout 上都没有找到经过验证的源代码。没有查询其他区块浏览器。",
     unchecked: "暂时无法核实它的源代码是否经过验证。",
+    unverifiedSourcifyOnly: "在 Sourcify 上没有找到经过验证的源代码。这个网络没有可查询的 Blockscout，也没有查询其他区块浏览器。",
+    noBlockscout: (network) =>
+      `${network} 没有 Blockscout，因此这里 hook 的源代码只向 Sourcify 查询，也不说明 hook 是否为代理合约。`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout 将这个地址识别为代理合约：实际运行的代码位于另一个地址。代理合约经过验证，并不能说明那份代码的任何情况，而且代理合约往往可以被指向新的代码。"
@@ -214,6 +241,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `В его опубликованном исходном коде контракт называется ${name}.`,
     unverified: "Ни на Sourcify, ни на Blockscout верифицированный исходный код не найден. Другие обозреватели не опрашивались.",
     unchecked: "Верифицирован ли его исходный код, сейчас проверить не удалось.",
+    unverifiedSourcifyOnly: "На Sourcify верифицированный исходный код не найден. У этой сети нет Blockscout, который можно было бы спросить, а другие обозреватели не опрашивались.",
+    noBlockscout: (network) =>
+      `У сети ${network} нет Blockscout, поэтому здесь об исходном коде hook’а спрашивается только Sourcify, и о том, прокси ли hook, ничего не говорится.`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout читает этот адрес как прокси: выполняемый код хранится по другому адресу. Верифицированный прокси ничего не говорит об этом коде, а прокси часто можно перенаправить на новый код."
@@ -235,6 +265,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `O código publicado dele chama o contrato de ${name}.`,
     unverified: "Nenhum código-fonte verificado foi encontrado no Sourcify nem no Blockscout. Outros exploradores não foram consultados.",
     unchecked: "Não foi possível conferir agora se o código-fonte dele está verificado.",
+    unverifiedSourcifyOnly: "Nenhum código-fonte verificado foi encontrado no Sourcify. Esta rede não tem um Blockscout para consultar, e outros exploradores não foram consultados.",
+    noBlockscout: (network) =>
+      `${network} não tem Blockscout, então aqui o código-fonte de um hook é perguntado só ao Sourcify, e não se diz se um hook é um proxy.`,
     proxy: (implementation) =>
       implementation === null
         ? "O Blockscout lê este endereço como um proxy: o código que roda fica em outro endereço. Um proxy verificado não diz nada sobre esse código, e muitas vezes um proxy pode ser apontado para um código novo."
@@ -256,6 +289,9 @@ const COPY: Record<Locale, HookCheckCopy> = {
     named: (name) => `它公開的原始碼把這份合約命名為 ${name}。`,
     unverified: "在 Sourcify 和 Blockscout 上都沒有找到經過驗證的原始碼。沒有查詢其他區塊瀏覽器。",
     unchecked: "目前無法核實它的原始碼是否經過驗證。",
+    unverifiedSourcifyOnly: "在 Sourcify 上沒有找到經過驗證的原始碼。這個網路沒有可查詢的 Blockscout，也沒有查詢其他區塊瀏覽器。",
+    noBlockscout: (network) =>
+      `${network} 沒有 Blockscout，因此這裡 hook 的原始碼只向 Sourcify 查詢，也不說明 hook 是否為代理合約。`,
     proxy: (implementation) =>
       implementation === null
         ? "Blockscout 將這個地址識別為代理合約：實際執行的程式碼位於另一個地址。代理合約經過驗證，並不能說明那份程式碼的任何情況，而且代理合約往往可以被指向新的程式碼。"

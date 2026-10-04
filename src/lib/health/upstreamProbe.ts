@@ -45,7 +45,7 @@ const PROBE_KEY = "liquiditywise:health:upstream";
 export const PROBE_INTERVAL_MS = 60 * 60 * 1_000;
 
 /** The chains read beside mainnet, each probed on its own endpoint. */
-export const OTHER_CHAINS = ["base", "arbitrum", "unichain", "optimism", "polygon"] as const;
+export const OTHER_CHAINS = ["base", "arbitrum", "unichain", "optimism", "polygon", "bnb", "avalanche", "celo"] as const;
 export type OtherChain = (typeof OTHER_CHAINS)[number];
 
 /**
@@ -62,12 +62,17 @@ export const SUBGRAPHS = [
   "v3-arbitrum",
   "v3-optimism",
   "v3-polygon",
+  "v3-bnb",
+  "v3-avalanche",
+  "v3-celo",
   "v4-ethereum",
   "v4-base",
   "v4-arbitrum",
   "v4-unichain",
   "v4-optimism",
   "v4-polygon",
+  "v4-bnb",
+  "v4-avalanche",
   "v3-base-positions",
   "v3-optimism-positions",
   "v3-arbitrum-positions",
@@ -110,7 +115,9 @@ const isFailing = (status: SubgraphStatus): boolean =>
 
 /**
  * The public contract verifiers the hook pages ask (src/lib/verification/):
- * Sourcify, and each network's own Blockscout.
+ * Sourcify, and each network's own Blockscout where it has one — BNB Chain
+ * and Avalanche have none (verification/blockscout.ts), so there is nothing
+ * there to ask but Sourcify, which is asked once for every network.
  *
  * Neither takes a key, so a probe of them is not about a credential. It is
  * about the quieter way they can break: an endpoint moved or reshaped, or a

@@ -69,6 +69,38 @@ export const V3_POSITION_MANAGERS: Readonly<Record<V3ChainId, { readonly address
     address: "0xc36442b4a4522e871399cd717abdd847ab11fe88",
     codeHash: "0xdcffe49a687c3ea536e42193f2e0bc89c20282c7bd6106eddc2bfc19a091114e",
   },
+  /*
+   * Addresses of their own on BNB Chain, Avalanche and Celo, the ones Uniswap
+   * publishes, read 2026-10-04: 24,384 bytes each, a hash of each's own, and
+   * each manager's factory() the factory its chain's v3 subgraph indexes —
+   * 0xdb1d1001…61f7 on BNB Chain, 0x740b1c1d…1bad on Avalanche, and on Celo
+   * 0xafe208a3…acdec. WETH9() is WBNB on BNB Chain and WAVAX on Avalanche, and
+   * the zero address on Celo, where the chain's own CELO is already a token
+   * contract and there is nothing to wrap.
+   *
+   * Celo's subgraph names mainnet's 0x1f98431c…f984 as its factory, which is
+   * a constant written into that subgraph rather than a fact about Celo:
+   * Celo's busiest five pools are where 0xafe208a3…acdec puts them by CREATE2
+   * with the standard init code hash (v3PoolAddress.ts), each pool's own
+   * factory() names it, and its getPool() returns them — while deriving them
+   * from mainnet's factory lands on five empty addresses. A position's pool is
+   * derived from the factory the manager answers with, so it is the right one.
+   *
+   * All three runtimes are test fixtures (testing/bnb-…, avalanche-… and
+   * celo-v3-position-manager.hex).
+   */
+  56: {
+    address: "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
+    codeHash: "0xbc0177f23ffd65c41e41fb201e170cb253489d7d637f8f6a15743a1f861160f5",
+  },
+  43114: {
+    address: "0x655c406ebfa14ee2006250925e54ec43ad184f8b",
+    codeHash: "0x205ff9899554c143a43f678aaed40fbdac7a6339dcfd4992a199314d52bb9ab0",
+  },
+  42220: {
+    address: "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a",
+    codeHash: "0x5be93c65c71abd9ced97ce6522beb801e340e9b3bb687a87d089116f58234922",
+  },
 };
 
 /**

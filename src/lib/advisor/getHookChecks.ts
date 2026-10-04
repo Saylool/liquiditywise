@@ -7,7 +7,7 @@ import { v4SubgraphIdFor } from "../chains/chainEnvironment";
 import type { V4ChainId } from "../chains/chains";
 import { loggingFetch } from "../observability/serverDiagnostics";
 import { fetchV4HookPools, type HookUsage } from "../uniswap/ethereumV4HookPools";
-import { fetchBlockscoutAnswer } from "../verification/blockscout";
+import { fetchBlockscoutAnswer, hasBlockscout } from "../verification/blockscout";
 import { isAnswered, type SourceAnswer, unanswered } from "../verification/sourceAnswer";
 import { fetchSourcifyAnswer, SOURCIFY_ANSWER_STATUSES } from "../verification/sourcify";
 import { composeHookCheck, HOOK_CHECK_KEPT_MS, HOOK_CHECK_RETRY_MS, type HookCheck, isCounted } from "./hookCheck";
@@ -16,7 +16,8 @@ import { composeHookCheck, HOOK_CHECK_KEPT_MS, HOOK_CHECK_RETRY_MS, type HookChe
  * The server-only boundary for what can be checked about a hook: three
  * questions per hook — Sourcify, the network's Blockscout, the network's v4
  * subgraph — each kept on its own, asked a few at a time, and never waited
- * on for long.
+ * on for long. Two where the network has no Blockscout (BNB Chain and
+ * Avalanche): Sourcify and the subgraph.
  *
  * **Kept** for twelve hours once answered and ten minutes when not
  * (hookCheck.ts says why), in this process's memory like the week's pool
@@ -51,7 +52,12 @@ const VERIFIER_AT_ONCE = 4;
 /** The gateway already serves the pages' heavier reads; three leaves them room. */
 const SUBGRAPH_AT_ONCE = 3;
 
-/** Bounded like every kept read here: the six networks' directories (126 hooks on 2026-10-04) and every hook a pool page shows, with room. */
+/**
+ * Bounded like every kept read here: the networks' directories and every hook
+ * a pool page shows, with room. On 2026-10-04 the first six networks'
+ * directories listed 126 hooks, and BNB Chain's and Avalanche's weeks of
+ * busiest pools named 14 and 27 more.
+ */
 const KEPT_HOOKS = 2_000;
 
 const SOURCIFY_LABEL = "hook-sourcify";
@@ -118,9 +124,12 @@ const ask = (chainId: V4ChainId, address: string) => {
         ),
       )
       .catch(() => unanswered("unreachable")),
-    blockscout: kept.blockscout
-      .read(key, () => lines.blockscout(() => fetchBlockscoutAnswer({ chainId, address, fetchImpl: loggingFetch(BLOCKSCOUT_LABEL) })))
-      .catch(() => unanswered("unreachable")),
+    /* Not asked where the network has none, which is not the same as asked and silent (hookCheck.ts). */
+    blockscout: !hasBlockscout(chainId)
+      ? Promise.resolve(null)
+      : kept.blockscout
+          .read(key, () => lines.blockscout(() => fetchBlockscoutAnswer({ chainId, address, fetchImpl: loggingFetch(BLOCKSCOUT_LABEL) })))
+          .catch(() => unanswered("unreachable")),
     pools: kept.pools
       .read(key, () =>
         lines.subgraph(() =>

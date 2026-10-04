@@ -68,6 +68,51 @@ describe("OP Mainnet and Polygon", () => {
   });
 });
 
+describe("BNB Chain, Avalanche and Celo", () => {
+  it("each have their own subgraphs and their own endpoint, never mainnet's", () => {
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", "mainnet-v4");
+    vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
+    vi.stubEnv("UNISWAP_V3_BNB_SUBGRAPH_ID", "bnb-v3");
+    vi.stubEnv("UNISWAP_V4_BNB_SUBGRAPH_ID", "bnb-v4");
+    vi.stubEnv("BNB_RPC_URL", "https://bnb.example");
+    vi.stubEnv("UNISWAP_V3_AVALANCHE_SUBGRAPH_ID", "avalanche-v3");
+    vi.stubEnv("UNISWAP_V4_AVALANCHE_SUBGRAPH_ID", "avalanche-v4");
+    vi.stubEnv("AVALANCHE_RPC_URL", "https://avalanche.example");
+    vi.stubEnv("UNISWAP_V3_CELO_SUBGRAPH_ID", "celo-v3");
+    vi.stubEnv("CELO_RPC_URL", "https://celo.example");
+
+    expect([v3SubgraphIdFor(56), v4SubgraphIdFor(56), rpcUrlFor(56)]).toEqual([
+      "bnb-v3",
+      "bnb-v4",
+      "https://bnb.example",
+    ]);
+    expect([v3SubgraphIdFor(43114), v4SubgraphIdFor(43114), rpcUrlFor(43114)]).toEqual([
+      "avalanche-v3",
+      "avalanche-v4",
+      "https://avalanche.example",
+    ]);
+    expect([v3SubgraphIdFor(42220), rpcUrlFor(42220)]).toEqual(["celo-v3", "https://celo.example"]);
+  });
+
+  it("give Celo no v4 subgraph, rather than another chain's, even with one in the environment", () => {
+    vi.stubEnv("UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", "mainnet-v4");
+    vi.stubEnv("UNISWAP_V4_CELO_SUBGRAPH_ID", "celo-v4");
+
+    expect(v4SubgraphIdFor(42220)).toBeUndefined();
+    expect(subgraphIdFor("v4", 42220)).toBeUndefined();
+  });
+
+  it("list no positions on any of the three, whose v3 subgraphs keep none", () => {
+    vi.stubEnv("UNISWAP_V3_BNB_SUBGRAPH_ID", "bnb-v3");
+    vi.stubEnv("UNISWAP_V3_AVALANCHE_SUBGRAPH_ID", "avalanche-v3");
+    vi.stubEnv("UNISWAP_V3_CELO_SUBGRAPH_ID", "celo-v3");
+
+    expect([56, 43114, 42220].map((id) => v3PositionsSubgraphIdFor(id as 1))).toEqual([undefined, undefined, undefined]);
+    expect([56, 43114, 42220].map((id) => v3PositionTicksFor(id as 1))).toEqual([null, null, null]);
+  });
+});
+
 describe("a chain whose v3 pools are not read", () => {
   it("has no v3 subgraph, rather than another chain's, and its own endpoint and v4 subgraph", () => {
     vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");

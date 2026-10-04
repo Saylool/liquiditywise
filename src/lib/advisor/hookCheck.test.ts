@@ -61,6 +61,41 @@ describe("two verifiers' answers, made one", () => {
   });
 });
 
+/*
+ * BNB Chain and Avalanche have no Blockscout (verification/blockscout.ts), so
+ * Blockscout is not asked there — `null`, which is not the same as asked and
+ * silent.
+ */
+describe("a verdict on a network with no Blockscout", () => {
+  it("is Sourcify's alone: verified, not found, or not known as Sourcify says", () => {
+    expect(combineVerification(verified("BnbHook"), null)).toEqual({
+      status: "verified",
+      sources: ["sourcify"],
+      name: "BnbHook",
+      proxy: null,
+    });
+    expect(combineVerification(unverified(), null)).toEqual({ status: "unverified", proxy: null });
+    expect(combineVerification(silent, null)).toEqual({ status: "unchecked" });
+    expect(combineVerification(unreadable, null)).toEqual({ status: "unchecked" });
+  });
+
+  it("is not found there on Sourcify's word, where elsewhere it would need Blockscout's too", () => {
+    expect(combineVerification(unverified(), null)).toMatchObject({ status: "unverified" });
+    expect(combineVerification(unverified(), silent)).toEqual({ status: "unchecked" });
+  });
+
+  it("is a check of its own chain, never borrowing another network's Blockscout", () => {
+    const usage = { status: "unchecked" as const };
+
+    expect(composeHookCheck(56, "0xb0b0", unverified(), null, usage)).toEqual({
+      chainId: 56,
+      address: "0xb0b0",
+      verification: { status: "unverified", proxy: null },
+      usage,
+    });
+  });
+});
+
 describe("a hook's check", () => {
   it("is its chain and address, the combined verification and the count as given", () => {
     const usage = { status: "counted" as const, pools: 18, capped: false, firstCreatedAt: "2025-06-08T16:26:44.000Z" };

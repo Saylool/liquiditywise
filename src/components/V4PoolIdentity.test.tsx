@@ -221,6 +221,13 @@ describe("V4PoolIdentity and the chain's own currency", () => {
     expect(render(holdingNative(137, "POL"))).toContain("own currency, POL,");
     expect(render(holdingNative(137, "POL"))).not.toContain("Native ETH");
   });
+
+  it("names BNB as BNB on BNB Chain, and AVAX as AVAX on Avalanche", () => {
+    expect(render(holdingNative(56, "BNB"))).toContain("Native BNB");
+    expect(render(holdingNative(56, "BNB"))).toContain("own currency, BNB,");
+    expect(render(holdingNative(43114, "AVAX"))).toContain("Native AVAX");
+    expect(render(holdingNative(43114, "AVAX"))).not.toContain("Native ETH");
+  });
 });
 
 describe("V4PoolIdentity and what can be checked about the hook", () => {

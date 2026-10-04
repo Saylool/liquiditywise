@@ -61,7 +61,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "Every Uniswap pool of a pair, on every network",
     titleFor: (pair) => `Every Uniswap pool of ${pair}, on every network`,
     description:
-      "Where a token pair trades on Uniswap v3 and v4 across Ethereum, Base, Arbitrum One, Unichain, OP Mainnet and Polygon, with each pool's last week of volume and fees set against what is in it.",
+      "Where a token pair trades on Uniswap v3 and v4 across Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche and Celo, with each pool's last week of volume and fees set against what is in it.",
     heading: "One pair, every pool",
     network: "All networks",
     intro: (chains) =>
@@ -98,7 +98,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "Bir paritenin tüm ağlardaki bütün Uniswap havuzları",
     titleFor: (pair) => `${pair} paritesinin tüm ağlardaki bütün Uniswap havuzları`,
     description:
-      "Bir token paritesinin Ethereum, Base, Arbitrum One, Unichain, OP Mainnet ve Polygon üzerindeki Uniswap v3 ve v4 havuzları; her havuzun geçen haftaki işlem hacmi ve komisyonu, havuzdakiyle karşılaştırılarak.",
+      "Bir token paritesinin Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche ve Celo üzerindeki Uniswap v3 ve v4 havuzları; her havuzun geçen haftaki işlem hacmi ve komisyonu, havuzdakiyle karşılaştırılarak.",
     heading: "Bir parite, bütün havuzlar",
     network: "Tüm ağlar",
     intro: (chains) =>
@@ -135,7 +135,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "Jeder Uniswap-Pool eines Paars, in jedem Netzwerk",
     titleFor: (pair) => `Jeder Uniswap-Pool von ${pair}, in jedem Netzwerk`,
     description:
-      "Wo ein Token-Paar auf Uniswap v3 und v4 gehandelt wird, über Ethereum, Base, Arbitrum One, Unichain, OP Mainnet und Polygon, mit Volumen und Gebühren jedes Pools der letzten Woche im Verhältnis zu dem, was in ihm liegt.",
+      "Wo ein Token-Paar auf Uniswap v3 und v4 gehandelt wird, über Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche und Celo, mit Volumen und Gebühren jedes Pools der letzten Woche im Verhältnis zu dem, was in ihm liegt.",
     heading: "Ein Paar, jeder Pool",
     network: "Alle Netzwerke",
     intro: (chains) =>
@@ -172,7 +172,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "Todos los pools de Uniswap de un par, en todas las redes",
     titleFor: (pair) => `Todos los pools de Uniswap de ${pair}, en todas las redes`,
     description:
-      "Dónde se negocia un par de tokens en Uniswap v3 y v4 en Ethereum, Base, Arbitrum One, Unichain, OP Mainnet y Polygon, con el volumen y las comisiones de la última semana de cada pool frente a lo que contiene.",
+      "Dónde se negocia un par de tokens en Uniswap v3 y v4 en Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche y Celo, con el volumen y las comisiones de la última semana de cada pool frente a lo que contiene.",
     heading: "Un par, todos los pools",
     network: "Todas las redes",
     intro: (chains) =>
@@ -209,7 +209,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "كل تجمّعات Uniswap لزوج واحد، على كل الشبكات",
     titleFor: (pair) => `كل تجمّعات Uniswap للزوج ${pair}، على كل الشبكات`,
     description:
-      "أين يُتداول زوج رموز على Uniswap v3 وv4 عبر Ethereum وBase وArbitrum One وUnichain وOP Mainnet وPolygon، مع حجم تداول كل تجمّع ورسومه في الأسبوع الماضي مقابل ما فيه.",
+      "أين يُتداول زوج رموز على Uniswap v3 وv4 عبر Ethereum وBase وArbitrum One وUnichain وOP Mainnet وPolygon وBNB Chain وAvalanche وCelo، مع حجم تداول كل تجمّع ورسومه في الأسبوع الماضي مقابل ما فيه.",
     heading: "زوج واحد، كل التجمّعات",
     network: "كل الشبكات",
     intro: (chains) =>
@@ -246,7 +246,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "एक जोड़ी के सभी Uniswap पूल, हर नेटवर्क पर",
     titleFor: (pair) => `${pair} के सभी Uniswap पूल, हर नेटवर्क पर`,
     description:
-      "किसी टोकन जोड़ी का कारोबार Ethereum, Base, Arbitrum One, Unichain, OP Mainnet और Polygon पर Uniswap v3 और v4 में कहाँ होता है, हर पूल के पिछले हफ़्ते के कारोबार और शुल्क के साथ, उसमें मौजूद रक़म के मुक़ाबले।",
+      "किसी टोकन जोड़ी का कारोबार Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche और Celo पर Uniswap v3 और v4 में कहाँ होता है, हर पूल के पिछले हफ़्ते के कारोबार और शुल्क के साथ, उसमें मौजूद रक़म के मुक़ाबले।",
     heading: "एक जोड़ी, सभी पूल",
     network: "सभी नेटवर्क",
     intro: (chains) =>
@@ -283,7 +283,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "一个交易对在每个网络上的所有 Uniswap 资金池",
     titleFor: (pair) => `${pair} 在每个网络上的所有 Uniswap 资金池`,
     description:
-      "一个代币交易对在 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet 和 Polygon 上的 Uniswap v3 和 v4 资金池，以及每个资金池上周的交易量和手续费，与池中现有的价值相比。",
+      "一个代币交易对在 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet、Polygon、BNB Chain、Avalanche 和 Celo 上的 Uniswap v3 和 v4 资金池，以及每个资金池上周的交易量和手续费，与池中现有的价值相比。",
     heading: "一个交易对，所有资金池",
     network: "所有网络",
     intro: (chains) =>
@@ -320,7 +320,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "Все пулы Uniswap одной пары во всех сетях",
     titleFor: (pair) => `Все пулы Uniswap пары ${pair} во всех сетях`,
     description:
-      "Где пара токенов торгуется в Uniswap v3 и v4 в Ethereum, Base, Arbitrum One, Unichain, OP Mainnet и Polygon — с объёмом и комиссиями каждого пула за последнюю неделю против того, что в нём лежит.",
+      "Где пара токенов торгуется в Uniswap v3 и v4 в Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche и Celo — с объёмом и комиссиями каждого пула за последнюю неделю против того, что в нём лежит.",
     heading: "Одна пара, все пулы",
     network: "Все сети",
     intro: (chains) =>
@@ -357,7 +357,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "Todos os pools da Uniswap de um par, em todas as redes",
     titleFor: (pair) => `Todos os pools da Uniswap de ${pair}, em todas as redes`,
     description:
-      "Onde um par de tokens é negociado na Uniswap v3 e v4 em Ethereum, Base, Arbitrum One, Unichain, OP Mainnet e Polygon, com o volume e as taxas da última semana de cada pool diante do que há nele.",
+      "Onde um par de tokens é negociado na Uniswap v3 e v4 em Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche e Celo, com o volume e as taxas da última semana de cada pool diante do que há nele.",
     heading: "Um par, todos os pools",
     network: "Todas as redes",
     intro: (chains) =>
@@ -394,7 +394,7 @@ const COPY: Record<Locale, PairPoolsCopy> = {
     title: "一個交易對在每個網路上的所有 Uniswap 資金池",
     titleFor: (pair) => `${pair} 在每個網路上的所有 Uniswap 資金池`,
     description:
-      "一個代幣交易對在 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet 和 Polygon 上的 Uniswap v3 和 v4 資金池，以及每個資金池過去一週的交易量和手續費，並與池中現有的價值對照。",
+      "一個代幣交易對在 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet、Polygon、BNB Chain、Avalanche 和 Celo 上的 Uniswap v3 和 v4 資金池，以及每個資金池過去一週的交易量和手續費，並與池中現有的價值對照。",
     heading: "一個交易對，所有資金池",
     network: "所有網路",
     intro: (chains) =>

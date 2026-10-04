@@ -158,7 +158,7 @@ describe("a link on a chain", () => {
     const store = fakeStore();
     store.data.set(
       key,
-      JSON.stringify({ address: ADDRESS, locale: "tr", chatId: 42, createdAt: NOW.toISOString(), chainId: 56, snapshot: null }),
+      JSON.stringify({ address: ADDRESS, locale: "tr", chatId: 42, createdAt: NOW.toISOString(), chainId: 324, snapshot: null }),
     );
 
     expect(await readLink(store, TOKEN)).toBeNull();

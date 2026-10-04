@@ -59,6 +59,17 @@ describe("V4PairPoolList", () => {
     expect(polygon).not.toMatch(/≈ [^<]+ ETH</);
   });
 
+  it("puts each depth in BNB on BNB Chain and in AVAX on Avalanche, as their subgraphs price", () => {
+    const on = (chainId: number) => (pool: V4PairPool): V4PairPool => ({ ...pool, pool: { ...pool.pool, chainId } });
+    const bnb = render(found([on(56)(entry(1, "20")), on(56)(entry(2, "10"))], null));
+    const avalanche = render(found([on(43114)(entry(1, "20")), on(43114)(entry(2, "10"))], null));
+
+    expect(bnb).toMatch(/≈ [^<]+ BNB</);
+    expect(avalanche).toMatch(/≈ [^<]+ AVAX</);
+    expect(bnb).not.toMatch(/≈ [^<]+ ETH</);
+    expect(avalanche).not.toMatch(/≈ [^<]+ ETH</);
+  });
+
   it("shows each sibling's fee, price step, hook and depth", () => {
     const markup = render(found([entry(1, "20"), entry(2, "10", SWAP_HOOK)]));
 

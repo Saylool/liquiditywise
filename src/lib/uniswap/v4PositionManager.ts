@@ -80,6 +80,22 @@ export const V4_POSITION_MANAGERS: Readonly<Record<V4ChainId, { readonly address
     address: "0x1ec2ebf4f37e7363fdfe3551602425af0b3ceef9",
     codeHash: "0x876d8664907d1fa2b3f00e6f49671585abd614c836f110b36c1e76fd407e67ba",
   },
+  /*
+   * Read on 2026-10-04: 23,877 bytes on both, poolManager() answered
+   * 0x28e2ea09…e9df on BNB Chain and 0x06380c0e…bc85 on Avalanche — the
+   * PoolManagers Uniswap publishes there, and the ones each chain's v4
+   * subgraph indexes — and WETH9() is WBNB and WAVAX. Both runtimes are test
+   * fixtures (testing/bnb-… and avalanche-v4-position-manager.hex). Celo is not
+   * here: v4 is not read on it (chains.ts).
+   */
+  56: {
+    address: "0x7a4a5c919ae2541aed11041a1aeee68f1287f95b",
+    codeHash: "0x07867576e9a6a0fdcead21a487dce04eae6161fb350edc8c56954c09fa015ef0",
+  },
+  43114: {
+    address: "0xb74b1f14d2754acfcbbe1a221023a5cf50ab8acd",
+    codeHash: "0xabd80e476783c8cf55c44af17dcc96990359b5999a61075fd2402858f92311ff",
+  },
 };
 
 /**

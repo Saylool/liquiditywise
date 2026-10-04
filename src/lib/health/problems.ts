@@ -47,6 +47,9 @@ export type ProblemId =
   | "unichain-rpc-key-refused"
   | "optimism-rpc-key-refused"
   | "polygon-rpc-key-refused"
+  | "bnb-rpc-key-refused"
+  | "avalanche-rpc-key-refused"
+  | "celo-rpc-key-refused"
   | `${SubgraphName}-subgraph-failing`
   | `${VerifierName}-verifier-failing`;
 
@@ -100,12 +103,17 @@ const SUBGRAPH_WORDS: Record<SubgraphName, { readonly variable: string; readonly
   "v3-arbitrum": { variable: "UNISWAP_V3_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v3 pool pages, searches, holdings and most-traded" },
   "v3-optimism": { variable: "UNISWAP_V3_OPTIMISM_SUBGRAPH_ID", loses: "OP Mainnet v3 pool pages, searches, holdings and most-traded" },
   "v3-polygon": { variable: "UNISWAP_V3_POLYGON_SUBGRAPH_ID", loses: "Polygon v3 pool pages, searches, holdings and most-traded" },
+  "v3-bnb": { variable: "UNISWAP_V3_BNB_SUBGRAPH_ID", loses: "BNB Chain v3 pool pages, searches, holdings and most-traded" },
+  "v3-avalanche": { variable: "UNISWAP_V3_AVALANCHE_SUBGRAPH_ID", loses: "Avalanche v3 pool pages, searches, holdings and most-traded" },
+  "v3-celo": { variable: "UNISWAP_V3_CELO_SUBGRAPH_ID", loses: "Every Celo page" },
   "v4-ethereum": { variable: "UNISWAP_V4_ETHEREUM_SUBGRAPH_ID", loses: "Ethereum v4 pool pages, searches, hooks and most-traded" },
   "v4-base": { variable: "UNISWAP_V4_BASE_SUBGRAPH_ID", loses: "Base v4 pool pages, searches and most-traded" },
   "v4-arbitrum": { variable: "UNISWAP_V4_ARBITRUM_SUBGRAPH_ID", loses: "Arbitrum v4 pool pages, searches and most-traded" },
   "v4-unichain": { variable: "UNISWAP_V4_UNICHAIN_SUBGRAPH_ID", loses: "Every Unichain page" },
   "v4-optimism": { variable: "UNISWAP_V4_OPTIMISM_SUBGRAPH_ID", loses: "OP Mainnet v4 pool pages, searches and most-traded" },
   "v4-polygon": { variable: "UNISWAP_V4_POLYGON_SUBGRAPH_ID", loses: "Polygon v4 pool pages, searches and most-traded" },
+  "v4-bnb": { variable: "UNISWAP_V4_BNB_SUBGRAPH_ID", loses: "BNB Chain v4 pool pages, searches, hooks and most-traded" },
+  "v4-avalanche": { variable: "UNISWAP_V4_AVALANCHE_SUBGRAPH_ID", loses: "Avalanche v4 pool pages, searches, hooks and most-traded" },
   "v3-base-positions": { variable: "UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", loses: "Base's smart-money page and its alerts" },
   "v3-optimism-positions": { variable: "UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID", loses: "OP Mainnet's smart-money page and its alerts" },
   "v3-arbitrum-positions": { variable: "UNISWAP_V3_ARBITRUM_POSITIONS_SUBGRAPH_ID", loses: "Arbitrum One's smart-money page and its alerts" },
@@ -170,6 +178,21 @@ const OTHER_CHAIN_PROBLEMS: Record<OtherChain, Problem> = {
     id: "polygon-rpc-key-refused",
     message:
       "The Polygon RPC endpoint is refusing POLYGON_RPC_URL (401/403). Polygon pool, holdings and alert reads fail. Check that Polygon is still enabled on the provider's app.",
+  },
+  bnb: {
+    id: "bnb-rpc-key-refused",
+    message:
+      "The BNB Chain RPC endpoint is refusing BNB_RPC_URL (401/403). BNB Chain pool, holdings and alert reads fail. Check that BNB Smart Chain is still enabled on the provider's app.",
+  },
+  avalanche: {
+    id: "avalanche-rpc-key-refused",
+    message:
+      "The Avalanche RPC endpoint is refusing AVALANCHE_RPC_URL (401/403). Avalanche pool, holdings and alert reads fail. Check that Avalanche C-Chain is still enabled on the provider's app.",
+  },
+  celo: {
+    id: "celo-rpc-key-refused",
+    message:
+      "The Celo RPC endpoint is refusing CELO_RPC_URL (401/403). Celo v3 pool, holdings and alert reads fail. Check that Celo is still enabled on the provider's app.",
   },
 };
 

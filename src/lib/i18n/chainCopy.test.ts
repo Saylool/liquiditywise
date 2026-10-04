@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { CHAINS, chainOf } from "../chains/chains";
 import { getChainCopy, titleOnChain } from "./chainCopy";
 import { getPositionOutlookCopy } from "./positionOutlookCopy";
 import { LOCALES } from "./locales";
@@ -33,6 +34,22 @@ describe("a chain whose v3 pools are not read", () => {
 
   it("is among the chains the unknown-chain line names, in every language", () => {
     for (const locale of LOCALES) expect(getChainCopy(locale).unknown, locale).toContain("Unichain");
+  });
+});
+
+describe("the chains the unknown-chain line names", () => {
+  it("are every chain read, BNB Chain, Avalanche and Celo among them, in every language", () => {
+    for (const locale of LOCALES) {
+      for (const { name } of CHAINS) expect(getChainCopy(locale).unknown, `${locale} ${name}`).toContain(name);
+    }
+  });
+
+  it("name Celo, read for v3 alone, as a chain whose v4 pools are not read, in every language", () => {
+    for (const locale of LOCALES) {
+      const line = getChainCopy(locale).v4NotRead(chainOf(42220).name);
+      expect(line, locale).toContain("Celo");
+      expect(line, locale).toContain("v4");
+    }
   });
 });
 

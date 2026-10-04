@@ -29,15 +29,17 @@ const LABEL = "hook-check-warm";
 
 /** One network's round. The checks queue in getHookChecks.ts's lines, so all are handed over at once. */
 export const warmHookChecks = async (chain: Chain): Promise<{ asked: number; verified: number; counted: number }> => {
-  if (!readsV4(chain.id)) return { asked: 0, verified: 0, counted: 0 };
+  /* Held as its own name so the narrowing reaches the callback below, where Celo (v3 alone) cannot. */
+  const chainId = chain.id;
+  if (!readsV4(chainId)) return { asked: 0, verified: 0, counted: 0 };
 
-  const directory = await getHookDirectory(chain.id);
+  const directory = await getHookDirectory(chainId);
   if (directory.status === "unavailable") {
     console.info(`[${LABEL}] chain=${chain.slug} directory unavailable (${directory.notice})`);
     return { asked: 0, verified: 0, counted: 0 };
   }
 
-  const checks = await Promise.all(directory.data.hooks.map(({ address }) => readHookCheck(chain.id, address)));
+  const checks = await Promise.all(directory.data.hooks.map(({ address }) => readHookCheck(chainId, address)));
   const verified = checks.filter(({ verification }) => verification.status === "verified").length;
   const counted = checks.filter(({ usage }) => usage.status === "counted").length;
 

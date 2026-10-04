@@ -222,6 +222,7 @@ describe("the parameters the developers page documents", () => {
       { address: POOL, chain: ["base", "base"] },
       { address: POOL, chain: "solana" },
       { address: POOL, chain: "unichain" },
+      { id: V4_ID, chain: "celo" },
     ]) {
       expect(readEmbedRequest(query(refused)), JSON.stringify(refused)).toBeNull();
     }
@@ -239,6 +240,7 @@ describe("the parameters the developers page documents", () => {
       expect(readEmbedRequest(query({ id: V4_ID, chain: slug })) !== null, `${slug} v4`).toBe(chain.v4);
     }
     expect(developerFigures("en").v4OnlyChains).toBe("Unichain");
+    expect(developerFigures("en").v3OnlyChains).toBe("Celo");
   });
 });
 

@@ -76,17 +76,30 @@ const nameOf = (answer: SourceAnswer): string | null => (answer.kind === "verifi
  * The name is Blockscout's where it has one. It is Blockscout's reading of
  * the contract at that address, and the one beside its proxy reading; a
  * Sourcify name stands in only where Blockscout did not give one.
+ *
+ * `blockscout` is `null` on a network that has no Blockscout (BNB Chain and
+ * Avalanche, verification/blockscout.ts) — not asked, rather than asked and
+ * silent. There Sourcify's word is the whole verdict: "not found" needs only
+ * its "no", and the page says Sourcify alone was asked. No proxy is read
+ * there, because only Blockscout says whether an address is one.
  */
-export const combineVerification = (sourcify: SourceAnswer, blockscout: SourceAnswer): HookVerification => {
-  const proxy = blockscout.kind === "unanswered" ? null : blockscout.proxy;
+export const combineVerification = (sourcify: SourceAnswer, blockscout: SourceAnswer | null): HookVerification => {
+  const proxy = blockscout === null || blockscout.kind === "unanswered" ? null : blockscout.proxy;
   const sources: VerificationSource[] = [];
   if (sourcify.kind === "verified") sources.push("sourcify");
-  if (blockscout.kind === "verified") sources.push("blockscout");
+  if (blockscout?.kind === "verified") sources.push("blockscout");
 
   if (sources.length > 0) {
-    return { status: "verified", sources, name: nameOf(blockscout) ?? nameOf(sourcify), proxy };
+    return {
+      status: "verified",
+      sources,
+      name: (blockscout === null ? null : nameOf(blockscout)) ?? nameOf(sourcify),
+      proxy,
+    };
   }
-  if (sourcify.kind === "unverified" && blockscout.kind === "unverified") return { status: "unverified", proxy };
+  if (sourcify.kind === "unverified" && (blockscout === null || blockscout.kind === "unverified")) {
+    return { status: "unverified", proxy };
+  }
 
   return { status: "unchecked" };
 };
@@ -95,7 +108,7 @@ export const composeHookCheck = (
   chainId: V4ChainId,
   address: string,
   sourcify: SourceAnswer,
-  blockscout: SourceAnswer,
+  blockscout: SourceAnswer | null,
   usage: HookUsage,
 ): HookCheck => ({ chainId, address, verification: combineVerification(sourcify, blockscout), usage });
 

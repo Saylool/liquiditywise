@@ -80,6 +80,17 @@ describe("V4PoolSearchResults", () => {
     expect(render(found([match()]))).toMatch(/≈ [^<]+ ETH</);
   });
 
+  it("puts the depth in BNB on BNB Chain and in AVAX on Avalanche", () => {
+    const on = (chainId: number) => {
+      const found_ = match();
+      return render(found([{ ...found_, pool: { ...found_.pool, chainId } }]));
+    };
+
+    expect(on(56)).toMatch(/≈ [^<]+ BNB</);
+    expect(on(43114)).toMatch(/≈ [^<]+ AVAX</);
+    expect(on(56)).not.toMatch(/≈ [^<]+ ETH</);
+  });
+
   it("links each pool to its own v4 page, by id", () => {
     expect(render(found([match()]))).toContain(`href="/v4?id=${POOL_ID}"`);
   });

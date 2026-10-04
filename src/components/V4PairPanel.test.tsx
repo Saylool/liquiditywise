@@ -41,4 +41,15 @@ describe("the pair panel on a v4 page", () => {
     expect(render(undefined, 137)).toContain("(WPOL)");
     expect(render(undefined, 137)).not.toContain("ETH,");
   });
+
+  it("names BNB and wrapped BNB on BNB Chain, and AVAX and wrapped AVAX on Avalanche, never ether", () => {
+    expect(render(undefined, 56)).toContain("own currency, BNB");
+    expect(render(undefined, 56)).toContain("(WBNB)");
+    expect(render(undefined, 43114)).toContain("own currency, AVAX");
+    expect(render(undefined, 43114)).toContain("(WAVAX)");
+    for (const chainId of [56, 43114]) {
+      expect(render(undefined, chainId)).not.toContain("own currency, ETH");
+      expect(render(undefined, chainId)).not.toContain("(WETH)");
+    }
+  });
 });

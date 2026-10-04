@@ -183,6 +183,35 @@ describe("the manager on each chain", () => {
     expect(isV4PositionManagerCode(runtime, keccak256Hex, 8453)).toBe(false);
   });
 
+  /* Each runtime carries its chain's PoolManager as an immutable: the one that chain's v4 subgraph indexes. */
+  it.each([
+    ["BNB Chain", 56, "bnb", "28e2ea090877bf75740558f6bfb36a5ffee9e9df", 43114],
+    ["Avalanche", 43114, "avalanche", "06380c0e0912312b5150364b9dc4542ba0dbbc85", 56],
+  ] as const)(
+    "holds %s's manager to its own hash, recomputed from its real runtime, which names that chain's PoolManager",
+    (_, id, file, poolManager, other) => {
+      const runtime = readFileSync(join(__dirname, "testing", `${file}-v4-position-manager.hex`), "utf8").trim();
+
+      expect((runtime.length - 2) / 2).toBe(23_877);
+      expect(keccak256Hex(runtime)).toBe(V4_POSITION_MANAGERS[id].codeHash);
+      expect(isV4PositionManagerCode(runtime, keccak256Hex, id)).toBe(true);
+      expect(isV4PositionManagerCode(runtime, keccak256Hex, other)).toBe(false);
+      expect(isV4PositionManagerCode(runtime, keccak256Hex, 1)).toBe(false);
+      expect(runtime).toContain(poolManager);
+    },
+  );
+
+  it("is at the address Uniswap publishes on BNB Chain and on Avalanche", () => {
+    expect([V4_POSITION_MANAGERS[56].address, V4_POSITION_MANAGERS[43114].address]).toEqual([
+      "0x7a4a5c919ae2541aed11041a1aeee68f1287f95b",
+      "0xb74b1f14d2754acfcbbe1a221023a5cf50ab8acd",
+    ]);
+  });
+
+  it("is not kept for Celo, where v4 is not read", () => {
+    expect(Object.keys(V4_POSITION_MANAGERS)).not.toContain("42220");
+  });
+
   it("is 23,877 bytes on Base, as on mainnet", () => {
     expect((BASE_RUNTIME.length - 2) / 2).toBe(23_877);
   });
@@ -192,7 +221,7 @@ describe("the manager on each chain", () => {
 
     expect(new Set(managers.map(({ address }) => address)).size).toBe(managers.length);
     expect(new Set(managers.map(({ codeHash }) => codeHash)).size).toBe(managers.length);
-    expect(managers).toHaveLength(6);
+    expect(managers).toHaveLength(8);
     expect(V4_POSITION_MANAGERS[1].codeHash).toBe(V4_POSITION_MANAGER_CODE_HASH);
   });
 });

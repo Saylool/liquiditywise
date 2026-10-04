@@ -154,10 +154,27 @@ describe("one pair on every network", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     /* Every read has started before any has answered: none waits on another network. */
-    expect(asked.v3.sort((left, right) => left - right)).toEqual([1, 10, 137, 8453, 42161]);
-    expect(asked.v4.sort((left, right) => left - right)).toEqual([1, 10, 130, 137, 8453, 42161]);
+    expect(asked.v3.sort((left, right) => left - right)).toEqual([1, 10, 56, 137, 8453, 42161, 42220, 43114]);
+    expect(asked.v4.sort((left, right) => left - right)).toEqual([1, 10, 56, 130, 137, 8453, 42161, 43114]);
     expect(asked.price.sort()).toEqual(
-      ["1:v3", "1:v4", "10:v3", "10:v4", "130:v4", "137:v3", "137:v4", "42161:v3", "42161:v4", "8453:v3", "8453:v4"].sort(),
+      [
+        "1:v3",
+        "1:v4",
+        "10:v3",
+        "10:v4",
+        "130:v4",
+        "137:v3",
+        "137:v4",
+        "42161:v3",
+        "42161:v4",
+        "8453:v3",
+        "8453:v4",
+        "56:v3",
+        "56:v4",
+        "43114:v3",
+        "43114:v4",
+        "42220:v3",
+      ].sort(),
     );
     release();
     await reading;
@@ -166,7 +183,16 @@ describe("one pair on every network", () => {
   it("lists only the exact pair, ranks across networks by yield, and names every network read", async () => {
     const pools = await readPairPools(["usdc", "weth"], readers());
 
-    expect(pools.v3.ranked.map(({ chain }) => chain.slug)).toEqual(["base", "ethereum", "optimism", "polygon", "arbitrum"]);
+    expect(pools.v3.ranked.map(({ chain }) => chain.slug)).toEqual([
+      "base",
+      "ethereum",
+      "optimism",
+      "bnb",
+      "polygon",
+      "arbitrum",
+      "celo",
+      "avalanche",
+    ]);
     expect(pools.v3.ranked.every(({ pool }) => pool.token1.symbol === "WETH")).toBe(true);
     expect(pools.v3.ranked[0]?.liquidityUsd).toBeCloseTo(1_000_000, 6);
     expect(pools.v3.ranked[0]?.feeYield).toBeCloseTo((6_500 / 1_000_000) * (365 / 6.5), 10);
@@ -176,10 +202,15 @@ describe("one pair on every network", () => {
       ["arbitrum", "read"],
       ["optimism", "read"],
       ["polygon", "read"],
+      ["bnb", "read"],
+      ["avalanche", "read"],
+      ["celo", "read"],
     ]);
-    /* Unichain is read for v4 alone. */
+    /* Unichain is read for v4 alone, and Celo for v3 alone. */
     expect(pools.v4.chains.map(({ chain }) => chain.slug)).toContain("unichain");
     expect(pools.v3.chains.map(({ chain }) => chain.slug)).not.toContain("unichain");
+    expect(pools.v3.chains.map(({ chain }) => chain.slug)).toContain("celo");
+    expect(pools.v4.chains.map(({ chain }) => chain.slug)).not.toContain("celo");
   });
 
   it("lists a network whose search failed as unread, and costs the others nothing", async () => {
@@ -195,7 +226,15 @@ describe("one pair on every network", () => {
       status: "unavailable",
       notice: "market-data-timed-out",
     });
-    expect(pools.v3.ranked.map(({ chain }) => chain.slug)).toEqual(["ethereum", "optimism", "polygon", "arbitrum"]);
+    expect(pools.v3.ranked.map(({ chain }) => chain.slug)).toEqual([
+      "ethereum",
+      "optimism",
+      "bnb",
+      "polygon",
+      "arbitrum",
+      "celo",
+      "avalanche",
+    ]);
     /* Base's v4 search answered, and is listed. */
     expect(pools.v4.chains.find(({ chain }) => chain.slug === "base")?.status).toBe("read");
   });

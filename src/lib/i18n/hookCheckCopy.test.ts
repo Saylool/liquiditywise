@@ -19,6 +19,7 @@ const STRINGS = [
   "meaning",
   "unverified",
   "unchecked",
+  "unverifiedSourcifyOnly",
   "readOn",
   "poolsLabel",
   "firstLabel",
@@ -33,6 +34,7 @@ const templated = (copy: HookCheckCopy) => ({
   proxy: copy.proxy(null),
   proxyNamed: copy.proxy("StablePairHook"),
   poolsNote: copy.poolsNote("1,000"),
+  noBlockscout: copy.noBlockscout("BNB Chain"),
 });
 
 describe("the words beside a hook's permissions", () => {
@@ -60,6 +62,23 @@ describe("the words beside a hook's permissions", () => {
       expect(sentences.named, locale).toContain("LaunchHook");
       expect(sentences.proxyNamed, locale).toContain("StablePairHook");
       expect(sentences.poolsNote, locale).toContain("1,000");
+      expect(sentences.noBlockscout, locale).toContain("BNB Chain");
+    }
+  });
+
+  /*
+   * On BNB Chain and Avalanche only Sourcify is asked, so "not found" there
+   * names Sourcify, says the network has no Blockscout, and is a sentence of
+   * its own rather than the both-verifiers one.
+   */
+  it("say not found on a network with no Blockscout as Sourcify's word alone, and say why, in every language", () => {
+    for (const locale of LOCALES) {
+      const { unverified, unverifiedSourcifyOnly, noBlockscout } = getHookCheckCopy(locale);
+      expect(unverifiedSourcifyOnly, locale).toContain("Sourcify");
+      expect(unverifiedSourcifyOnly, locale).toContain("Blockscout");
+      expect(unverifiedSourcifyOnly, locale).not.toBe(unverified);
+      expect(noBlockscout("Avalanche"), locale).toContain("Sourcify");
+      expect(noBlockscout("Avalanche"), locale).toContain("Blockscout");
     }
   });
 

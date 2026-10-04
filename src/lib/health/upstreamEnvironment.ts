@@ -2,7 +2,7 @@ import "server-only";
 
 import { v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
 import type { V4ChainId } from "../chains/chains";
-import { fetchBlockscoutAnswer } from "../verification/blockscout";
+import { type BlockscoutChainId, fetchBlockscoutAnswer } from "../verification/blockscout";
 import type { SourceAnswer } from "../verification/sourceAnswer";
 import { fetchSourcifyAnswer } from "../verification/sourcify";
 import type { OtherChain, ProbeDependencies, SubgraphName, VerifierName } from "./upstreamProbe";
@@ -71,12 +71,17 @@ const SUBGRAPH_IDS: Record<SubgraphName, () => string | undefined> = {
   "v3-arbitrum": () => v3SubgraphIdFor(42161),
   "v3-optimism": () => v3SubgraphIdFor(10),
   "v3-polygon": () => v3SubgraphIdFor(137),
+  "v3-bnb": () => v3SubgraphIdFor(56),
+  "v3-avalanche": () => v3SubgraphIdFor(43114),
+  "v3-celo": () => v3SubgraphIdFor(42220),
   "v4-ethereum": () => v4SubgraphIdFor(1),
   "v4-base": () => v4SubgraphIdFor(8453),
   "v4-arbitrum": () => v4SubgraphIdFor(42161),
   "v4-unichain": () => v4SubgraphIdFor(130),
   "v4-optimism": () => v4SubgraphIdFor(10),
   "v4-polygon": () => v4SubgraphIdFor(137),
+  "v4-bnb": () => v4SubgraphIdFor(56),
+  "v4-avalanche": () => v4SubgraphIdFor(43114),
   "v3-base-positions": () => v3PositionsSubgraphIdFor(8453),
   "v3-optimism-positions": () => v3PositionsSubgraphIdFor(10),
   "v3-arbitrum-positions": () => v3PositionsSubgraphIdFor(42161),
@@ -108,7 +113,10 @@ const probeSubgraph = (apiKey: string, subgraphId: string) => async (): Promise<
  * Uniswap's own PoolManager on each network: the one contract every verifier
  * the hook pages ask is known to hold verified there — each network's
  * Blockscout for its own, and Sourcify for mainnet's (it holds none for
- * Unichain's). Measured 2026-10-04.
+ * Unichain's). Measured 2026-10-04. BNB Chain's and Avalanche's have no
+ * Blockscout to ask (verification/blockscout.ts); Sourcify holds both, and is
+ * asked about mainnet's alone, since it is one service whichever network a
+ * question names.
  */
 const POOL_MANAGERS = {
   1: "0x000000000004444c5dc75cb358380d2e3de08a90",
@@ -117,9 +125,11 @@ const POOL_MANAGERS = {
   130: "0x1f98400000000000000000000000000000000004",
   10: "0x9a13f98cb987694c9f086b1f5eb990eea8264ec3",
   137: "0x67366782805870060151383f4bbff9dab53e5cd6",
+  56: "0x28e2ea090877bf75740558f6bfb36a5ffee9e9df",
+  43114: "0x06380c0e0912312b5150364b9dc4542ba0dbbc85",
 } as const satisfies Record<V4ChainId, string>;
 
-const askBlockscout = (chainId: V4ChainId) => (): Promise<SourceAnswer> =>
+const askBlockscout = (chainId: BlockscoutChainId) => (): Promise<SourceAnswer> =>
   fetchBlockscoutAnswer({ chainId, address: POOL_MANAGERS[chainId], fetchImpl: fetch, timeoutMs: PROBE_TIMEOUT_MS });
 
 /** Keyless, so always asked: nothing to configure, and nothing that could leave this module but a verdict. */
@@ -162,6 +172,9 @@ export const upstreamProbes = (): ProbeDependencies | null => {
           ["unichain", process.env.UNICHAIN_RPC_URL?.trim()],
           ["optimism", process.env.OPTIMISM_RPC_URL?.trim()],
           ["polygon", process.env.POLYGON_RPC_URL?.trim()],
+          ["bnb", process.env.BNB_RPC_URL?.trim()],
+          ["avalanche", process.env.AVALANCHE_RPC_URL?.trim()],
+          ["celo", process.env.CELO_RPC_URL?.trim()],
         ] as const
       )
         .filter((entry): entry is readonly [OtherChain, string] => Boolean(entry[1]))

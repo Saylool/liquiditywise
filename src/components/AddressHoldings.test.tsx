@@ -305,4 +305,41 @@ describe("holdings read off mainnet", () => {
     expect(html).toContain("POL and the currencies of v4 pools");
     expect(html).not.toContain(getDictionary("en").holdings.v4NotSearched("ETH"));
   });
+
+  it("names BNB on BNB Chain and AVAX on Avalanche, not ether, wherever the page names it", () => {
+    for (const [chainId, native] of [
+      [56, "BNB"],
+      [43114, "AVAX"],
+    ] as const) {
+      const html = renderToStaticMarkup(
+        <AddressHoldings
+          result={holdings({ poolsSearched: { v3: 250, v4: null } })}
+          chainId={chainId}
+          parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+          t={getDictionary("en")}
+          locale="en"
+        />,
+      );
+
+      expect(html, native).toContain(getDictionary("en").holdings.v4NotSearched(native));
+      expect(html, native).not.toContain(getDictionary("en").holdings.v4NotSearched("ETH"));
+    }
+  });
+
+  /* Celo is read for v3 alone: its v4 net is not cast, and that is not the net failing. */
+  it("on Celo says how the v3 net was cast, and never that a v4 net could not be", () => {
+    const html = renderToStaticMarkup(
+      <AddressHoldings
+        result={holdings({ poolsSearched: { v3: 250, v4: null } })}
+        chainId={42220}
+        parameters={DEFAULT_PRICE_BAND_PARAMETERS}
+        t={getDictionary("en")}
+        locale="en"
+      />,
+    );
+
+    expect(html).toContain("most-traded Uniswap v3 pools on Celo");
+    expect(html).not.toContain("Uniswap v4 pools were not searched");
+    expect(html).not.toContain("own CELO");
+  });
 });

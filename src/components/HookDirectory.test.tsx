@@ -155,6 +155,26 @@ describe("HookDirectory", () => {
     expect(markup.indexOf(meaning)).toBeLessThan(markup.indexOf(SWAP_HOOK));
   });
 
+  /* BNB Chain and Avalanche have no Blockscout: the intro's "and of the network's own Blockscout" is qualified there. */
+  it("says on a network with no Blockscout that Sourcify alone is asked there, and says nothing of the kind elsewhere", () => {
+    const onChain = (chainId: 1 | 56 | 43114) =>
+      renderToStaticMarkup(
+        <HookDirectory
+          result={directoryOf([pool(1, SWAP_HOOK)])}
+          parameters={PARAMETERS}
+          t={getDictionary("en")}
+          locale="en"
+          chainId={chainId}
+        />,
+      );
+    const copy = getHookCheckCopy("en");
+
+    expect(onChain(56)).toContain(copy.noBlockscout("BNB Chain").replace(/'/g, "&#x27;"));
+    expect(onChain(43114)).toContain(copy.noBlockscout("Avalanche").replace(/'/g, "&#x27;"));
+    expect(onChain(1)).not.toContain("has no Blockscout");
+    expect(render([pool(1, SWAP_HOOK)])).not.toContain("has no Blockscout");
+  });
+
   it("no longer says the permissions are the whole of what the page knows", () => {
     expect(render([pool(1, SWAP_HOOK)])).not.toContain("whole of what this page knows");
   });

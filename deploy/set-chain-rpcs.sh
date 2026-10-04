@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Gives the application an RPC endpoint on Base, Arbitrum, Unichain, OP Mainnet and
-# Polygon, made from the
+# Gives the application an RPC endpoint on Base, Arbitrum, Unichain, OP Mainnet,
+# Polygon, BNB Chain, Avalanche and Celo, made from the
 # Ethereum one it already has, and the Uniswap subgraphs of each. Run as root:
 #
 #   bash /opt/liquiditywise/deploy/set-chain-rpcs.sh
@@ -80,6 +80,9 @@ set_one ARBITRUM_RPC_URL arb-mainnet 0xa4b1 || status=1
 set_one UNICHAIN_RPC_URL unichain-mainnet 0x82 || status=1
 set_one OPTIMISM_RPC_URL opt-mainnet 0xa || status=1
 set_one POLYGON_RPC_URL polygon-mainnet 0x89 || status=1
+set_one BNB_RPC_URL bnb-mainnet 0x38 || status=1
+set_one AVALANCHE_RPC_URL avax-mainnet 0xa86a || status=1
+set_one CELO_RPC_URL celo-mainnet 0xa4ec || status=1
 set_public UNISWAP_V3_BASE_SUBGRAPH_ID 43Hwfi3dJSoGpyas9VwNoDAv55yjgGrPpNSmbQZArzMG
 set_public UNISWAP_V3_ARBITRUM_SUBGRAPH_ID FbCGRftH4a3yZugY7TnbYgPJVEv2LvMT6oF1fxPe9aJM
 set_public UNISWAP_V4_ARBITRUM_SUBGRAPH_ID D1VHPU6cXXSC8eaApWCjCnPcTZQFSYCpGoDAvt4ogDWh
@@ -89,6 +92,11 @@ set_public UNISWAP_V3_OPTIMISM_SUBGRAPH_ID 49LkWjoVKd3bM9ZrMdFgYkjaCuVj4ExZttQi6
 set_public UNISWAP_V4_OPTIMISM_SUBGRAPH_ID Ab7CAcb1yPXUU2j9Bha1BPDHjE5QqUtjC3rPYyAyodJA
 set_public UNISWAP_V3_POLYGON_SUBGRAPH_ID 3hCPRGf4z88VC5rsBKU5AA9FBBq5nF3jbKJG7VZCbhjm
 set_public UNISWAP_V4_POLYGON_SUBGRAPH_ID 2CB2uQxcDKWDenagn2z17KQVCtfwSx5eXYuvqTciRTJu
+set_public UNISWAP_V3_BNB_SUBGRAPH_ID 7XgdLW3bts4HktCYsu9dy8bEnuiNeZuftcuK3Aj4JXYV
+set_public UNISWAP_V4_BNB_SUBGRAPH_ID EAq1nJKgjnuKH6Gj4RFjCW7LcL7E2uipbncdwV7TTWkX
+set_public UNISWAP_V3_AVALANCHE_SUBGRAPH_ID 6yLTrSzuv11uQizC1rZskEYbBve3Me5azjbY28MTAmhh
+set_public UNISWAP_V4_AVALANCHE_SUBGRAPH_ID AbFwkbD1Gnj9vXwoLZMr5fo2xEs8MbSe9cf6TofvgYmK
+set_public UNISWAP_V3_CELO_SUBGRAPH_ID 6thLVqcdLLqhRKy1BzRn34VkfaQ1xfgt1m6eyPNM4e26
 set_public UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID GqzP4Xaehti8KSfQmv3ZctFSjnSUYZ4En5NRsiTbvZpz
 set_public UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID Cghf4LfVqPiFw6fp6Y5X5Ubc8UpmUhSfJL82zwiBFLaj
 set_public UNISWAP_V3_ARBITRUM_POSITIONS_SUBGRAPH_ID HyW7A86UEdYVt5b9Lrw8W2F98yKecerHKutZTRbSCX27

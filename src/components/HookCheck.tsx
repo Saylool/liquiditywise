@@ -5,7 +5,8 @@ import { HOOK_POOL_COUNT_CAP } from "../lib/uniswap/ethereumV4HookPools";
 import { formatUtcDate, formatWhole } from "../lib/format/displayFormats";
 import { getHookCheckCopy } from "../lib/i18n/hookCheckCopy";
 import type { Locale } from "../lib/i18n/locales";
-import { blockscoutPage } from "../lib/verification/blockscout";
+import type { V4ChainId } from "../lib/chains/chains";
+import { blockscoutPage, hasBlockscout } from "../lib/verification/blockscout";
 import { sourcifyPage } from "../lib/verification/sourcify";
 
 /*
@@ -22,6 +23,12 @@ import { sourcifyPage } from "../lib/verification/sourcify";
  */
 
 const SOURCE_NAMES: Record<VerificationSource, string> = { sourcify: "Sourcify", blockscout: "Blockscout" };
+
+/** Where a reader can read the verified source on one verifier; none for a Blockscout the network does not have. */
+const pageOn = (source: VerificationSource, chainId: V4ChainId, address: string): string | null => {
+  if (source === "sourcify") return sourcifyPage(chainId, address);
+  return hasBlockscout(chainId) ? blockscoutPage(chainId, address) : null;
+};
 
 /** The verifiers' names in the reader's own list: "Sourcify and Blockscout", "Sourcify ve Blockscout". */
 const listed = (locale: Locale, names: readonly string[]): string =>
@@ -86,7 +93,12 @@ export function HookCheckLines({ check, locale }: { check: HookCheck; locale: Lo
         </>
       ) : (
         <p className="text-sm leading-relaxed">
-          {verification.status === "unverified" ? copy.unverified : copy.unchecked}
+          {/* Where the network has no Blockscout, "not found" is Sourcify's alone, and says so. */}
+          {verification.status === "unverified"
+            ? hasBlockscout(chainId)
+              ? copy.unverified
+              : copy.unverifiedSourcifyOnly
+            : copy.unchecked}
         </p>
       )}
 
@@ -98,16 +110,14 @@ export function HookCheckLines({ check, locale }: { check: HookCheck; locale: Lo
       {verification.status === "verified" ? (
         <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs leading-relaxed text-muted">
           <span>{copy.readOn}</span>
-          {verification.sources.map((source) => (
-            <a
-              key={source}
-              href={source === "sourcify" ? sourcifyPage(chainId, address) : blockscoutPage(chainId, address)}
-              rel="noopener noreferrer"
-              className="text-accent underline"
-            >
-              {SOURCE_NAMES[source]}
-            </a>
-          ))}
+          {verification.sources.map((source) => {
+            const href = pageOn(source, chainId, address);
+            return href === null ? null : (
+              <a key={source} href={href} rel="noopener noreferrer" className="text-accent underline">
+                {SOURCE_NAMES[source]}
+              </a>
+            );
+          })}
         </p>
       ) : null}
 

@@ -21,7 +21,7 @@ export type ChainCopy = {
 const COPY: Record<Locale, ChainCopy> = {
   en: {
     network: "Network",
-    unknown: "LiquidityWise does not read that network. It reads Ethereum, Base, Arbitrum One, Unichain, OP Mainnet and Polygon.",
+    unknown: "LiquidityWise does not read that network. It reads Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche and Celo.",
     v4NotRead: (chain) =>
       `LiquidityWise does not read Uniswap v4 pools on ${chain} yet.`,
     v3NotRead: (chain) =>
@@ -31,7 +31,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   tr: {
     network: "Ağ",
-    unknown: "LiquidityWise bu ağı okumuyor. Okuduğu ağlar: Ethereum, Base, Arbitrum One, Unichain, OP Mainnet ve Polygon.",
+    unknown: "LiquidityWise bu ağı okumuyor. Okuduğu ağlar: Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche ve Celo.",
     v4NotRead: (chain) =>
       `LiquidityWise ${chain} üzerindeki Uniswap v4 havuzlarını henüz okumuyor.`,
     v3NotRead: (chain) =>
@@ -41,7 +41,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   de: {
     network: "Netzwerk",
-    unknown: "LiquidityWise liest dieses Netzwerk nicht. Gelesen werden Ethereum, Base, Arbitrum One, Unichain, OP Mainnet und Polygon.",
+    unknown: "LiquidityWise liest dieses Netzwerk nicht. Gelesen werden Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche und Celo.",
     v4NotRead: (chain) =>
       `LiquidityWise liest Uniswap-v4-Pools auf ${chain} noch nicht.`,
     v3NotRead: (chain) =>
@@ -51,7 +51,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   es: {
     network: "Red",
-    unknown: "LiquidityWise no lee esa red. Lee Ethereum, Base, Arbitrum One, Unichain, OP Mainnet y Polygon.",
+    unknown: "LiquidityWise no lee esa red. Lee Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche y Celo.",
     v4NotRead: (chain) =>
       `LiquidityWise todavía no lee pools de Uniswap v4 en ${chain}.`,
     v3NotRead: (chain) =>
@@ -61,7 +61,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   ar: {
     network: "الشبكة",
-    unknown: "لا يقرأ LiquidityWise هذه الشبكة. الشبكات التي يقرؤها: Ethereum وBase وArbitrum One وUnichain وOP Mainnet وPolygon.",
+    unknown: "لا يقرأ LiquidityWise هذه الشبكة. الشبكات التي يقرؤها: Ethereum وBase وArbitrum One وUnichain وOP Mainnet وPolygon وBNB Chain وAvalanche وCelo.",
     v4NotRead: (chain) =>
       `لا يقرأ LiquidityWise تجمّعات Uniswap v4 على ${chain} بعد.`,
     v3NotRead: (chain) =>
@@ -71,7 +71,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   hi: {
     network: "नेटवर्क",
-    unknown: "LiquidityWise यह नेटवर्क नहीं पढ़ता। यह Ethereum, Base, Arbitrum One, Unichain, OP Mainnet और Polygon पढ़ता है।",
+    unknown: "LiquidityWise यह नेटवर्क नहीं पढ़ता। यह Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche और Celo पढ़ता है।",
     v4NotRead: (chain) =>
       `LiquidityWise अभी ${chain} पर Uniswap v4 पूल नहीं पढ़ता।`,
     v3NotRead: (chain) =>
@@ -81,7 +81,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   zh: {
     network: "网络",
-    unknown: "LiquidityWise 不读取该网络。它读取 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet 和 Polygon。",
+    unknown: "LiquidityWise 不读取该网络。它读取 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet、Polygon、BNB Chain、Avalanche 和 Celo。",
     v4NotRead: (chain) =>
       `LiquidityWise 尚未读取 ${chain} 上的 Uniswap v4 池。`,
     v3NotRead: (chain) =>
@@ -91,7 +91,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   ru: {
     network: "Сеть",
-    unknown: "LiquidityWise не читает эту сеть. Он читает Ethereum, Base, Arbitrum One, Unichain, OP Mainnet и Polygon.",
+    unknown: "LiquidityWise не читает эту сеть. Он читает Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche и Celo.",
     v4NotRead: (chain) =>
       `LiquidityWise пока не читает пулы Uniswap v4 в ${chain}.`,
     v3NotRead: (chain) =>
@@ -101,7 +101,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   pt: {
     network: "Rede",
-    unknown: "O LiquidityWise não lê essa rede. Ele lê Ethereum, Base, Arbitrum One, Unichain, OP Mainnet e Polygon.",
+    unknown: "O LiquidityWise não lê essa rede. Ele lê Ethereum, Base, Arbitrum One, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche e Celo.",
     v4NotRead: (chain) =>
       `O LiquidityWise ainda não lê pools do Uniswap v4 em ${chain}.`,
     v3NotRead: (chain) =>
@@ -111,7 +111,7 @@ const COPY: Record<Locale, ChainCopy> = {
   },
   "zh-Hant": {
     network: "網路",
-    unknown: "LiquidityWise 不讀取該網路。它讀取 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet 和 Polygon。",
+    unknown: "LiquidityWise 不讀取該網路。它讀取 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet、Polygon、BNB Chain、Avalanche 和 Celo。",
     v4NotRead: (chain) =>
       `LiquidityWise 尚未讀取 ${chain} 上的 Uniswap v4 資金池。`,
     v3NotRead: (chain) =>

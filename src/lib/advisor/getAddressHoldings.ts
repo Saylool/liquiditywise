@@ -80,10 +80,20 @@ export const getAddressHoldings = async (
   /*
    * Both nets' currencies, together. The v4 list is what brings in the chain's
    * own ether, under the zero address, which the sweep asks about directly.
+   *
+   * Only where v4 is read. A v3 pool cannot hold the chain's own currency, so
+   * on a chain read for v3 alone the zero address is no pool's currency, and
+   * asking it would put one more in the count than the sentence under the
+   * list says were asked. On Celo it would also list the same CELO twice: the
+   * chain's own CELO is a token contract as well (0x471ece37…a438), the v3
+   * pools there trade it under that address, and the two are one balance —
+   * eth_getBalance and that contract's balanceOf agreed to the wei on
+   * 2026-10-04.
    */
+  const asksNative = readsV4(chainId);
   const tokenAddresses = [
     /* The chain's own ether, asked for by name, whether or not a v4 net named it. */
-    ZERO_ADDRESS,
+    ...(asksNative ? [ZERO_ADDRESS] : []),
     ...[
       ...(v3Candidates.status === "unavailable" ? [] : v3Candidates.data.pools),
       ...(v4Candidates.status === "unavailable" ? [] : v4Candidates.data.pools),
@@ -108,7 +118,7 @@ export const getAddressHoldings = async (
     v3Candidates,
     v4Candidates,
     balances,
-    nativeToken: nativeCurrencyOn(chainId),
+    ...(asksNative ? { nativeToken: nativeCurrencyOn(chainId) } : {}),
     fetchedAt: new Date().toISOString(),
   });
   if (composed.status === "unavailable" || v4Candidates.status === "unavailable") {

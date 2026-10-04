@@ -93,6 +93,8 @@ describe("the figures the method page states", () => {
       ownerSets: "8",
       pairFloorUsd: "$100,000",
       v4OnlyChains: "Unichain",
+      v3OnlyChains: "Celo",
+      sourcifyOnlyChains: "BNB Chain and Avalanche",
       hookPoolCap: "1,000",
       hookCheckHours: "12",
       hookCheckRetryMinutes: "10",
@@ -100,9 +102,10 @@ describe("the figures the method page states", () => {
   });
 
   it("name every network read, and only those whose positions can be listed for smart liquidity", () => {
-    for (const name of ["Ethereum", "Base", "Arbitrum One", "Unichain", "OP Mainnet", "Polygon"]) {
+    for (const name of ["Ethereum", "Base", "Arbitrum One", "Unichain", "OP Mainnet", "Polygon", "BNB Chain", "Avalanche", "Celo"]) {
       expect(englishFigures.chains, name).toContain(name);
     }
+    for (const name of ["BNB Chain", "Avalanche", "Celo"]) expect(englishFigures.smartChains, name).not.toContain(name);
     expect(englishFigures.smartChains).not.toContain("Unichain");
     expect(englishFigures.smartChains).toContain("Arbitrum One");
   });

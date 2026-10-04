@@ -99,6 +99,9 @@ beforeEach(() => {
   vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
   vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
   vi.stubEnv("UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", "base-positions");
+  vi.stubEnv("CELO_RPC_URL", "https://celo.example");
+  vi.stubEnv("UNISWAP_V3_CELO_SUBGRAPH_ID", "celo-v3");
+  vi.stubEnv("BNB_RPC_URL", "https://bnb.example");
   asked.positions = [];
   asked.poolsByIds = [];
   asked.v4Ids = [];
@@ -229,5 +232,45 @@ describe("an address on a v4-only chain", () => {
     expect(asked.days).toEqual([]);
     expect(asked.tradedPools).toBe(0);
     expect(asked.v4Traded).toEqual([130]);
+  });
+});
+
+/*
+ * Celo is read for v3 alone. Its positions come from its own manager and
+ * endpoint, nothing is asked of v4, and the holdings sweep leaves the zero
+ * address out: no v3 pool can hold it, and Celo's own CELO is already the
+ * token contract its v3 pools trade, one balance under two addresses.
+ */
+describe("an address on a v3-only chain", () => {
+  it("reads its v3 positions there from Celo's own endpoint, and asks nothing of v4", async () => {
+    const { getAddressPositions } = await import("./getAddressPositions");
+
+    await getAddressPositions(OWNER, 42220);
+
+    expect(asked.positions[0]).toMatchObject({ chainId: 42220, rpcUrl: "https://celo.example" });
+    expect(asked.v4Ids).toEqual([]);
+    expect(asked.v4Positions).toEqual([]);
+  });
+
+  it("casts only the v3 net there, from Celo's week, and never asks for the zero address", async () => {
+    const { getAddressHoldings } = await import("./getAddressHoldings");
+
+    await getAddressHoldings(OWNER, 42220);
+
+    expect(asked.days).toEqual([42220]);
+    expect(asked.tradedPools).toBe(0);
+    expect(asked.v4Traded).toEqual([]);
+    /* The week is unread in this test, so the zero address is the only thing that could have been asked — and it is not. */
+    expect(asked.balances[0]).toMatchObject({ rpcUrl: "https://celo.example", tokenAddresses: [] });
+  });
+
+  it("still asks for the chain's own currency by name where v4 is read, BNB on BNB Chain", async () => {
+    const { getAddressHoldings } = await import("./getAddressHoldings");
+
+    await getAddressHoldings(OWNER, 56);
+
+    expect(asked.v4Traded).toEqual([56]);
+    expect(asked.balances[0]).toMatchObject({ rpcUrl: "https://bnb.example" });
+    expect(asked.balances[0]?.tokenAddresses).toContain(`0x${"0".repeat(40)}`);
   });
 });

@@ -82,6 +82,8 @@ const script = (chainId: number, address: string, sourcify: () => Promise<unknow
   state.blockscout.set(`${chainId}:${address}`, blockscout);
   state.pools.set(`unichain-v4:${address}`, pools);
   state.pools.set(`base-v4:${address}`, pools);
+  state.pools.set(`bnb-v4:${address}`, pools);
+  state.pools.set(`avalanche-v4:${address}`, pools);
 };
 
 const calls = () => ({
@@ -96,6 +98,8 @@ beforeEach(() => {
   vi.stubEnv("THE_GRAPH_API_KEY", "test-key");
   vi.stubEnv("UNISWAP_V4_UNICHAIN_SUBGRAPH_ID", "unichain-v4");
   vi.stubEnv("UNISWAP_V4_BASE_SUBGRAPH_ID", "base-v4");
+  vi.stubEnv("UNISWAP_V4_BNB_SUBGRAPH_ID", "bnb-v4");
+  vi.stubEnv("UNISWAP_V4_AVALANCHE_SUBGRAPH_ID", "avalanche-v4");
   forgetHookChecks();
   for (const map of [state.sourcify, state.blockscout, state.pools]) map.clear();
   state.asked = { sourcify: [], blockscout: [], pools: [] };
@@ -175,6 +179,36 @@ describe("checking a hook", () => {
     script(130, HOOK, () => Promise.reject(new Error("boom")), now(UNVERIFIED), () => Promise.reject(new Error("boom")));
 
     expect(await checkHook(130, HOOK)).toMatchObject({ verification: { status: "unchecked" }, usage: { status: "unchecked" } });
+  });
+});
+
+/* BNB Chain and Avalanche have no Blockscout (verification/blockscout.ts): two questions there, not three. */
+describe("checking a hook on a network with no Blockscout", () => {
+  it.each([
+    ["BNB Chain", 56, "bnb-v4"],
+    ["Avalanche", 43114, "avalanche-v4"],
+  ] as const)("asks Sourcify and %s's own subgraph, and never a Blockscout", async (_, chainId, subgraphId) => {
+    script(chainId, HOOK, now(VERIFIED), now(VERIFIED), now(COUNTED));
+
+    const check = await checkHook(chainId, HOOK);
+
+    expect(check).toEqual({
+      chainId,
+      address: HOOK,
+      verification: { status: "verified", sources: ["sourcify"], name: "Spot", proxy: null },
+      usage: COUNTED,
+    });
+    expect(state.asked.sourcify).toMatchObject([{ chainId, address: HOOK }]);
+    expect(state.asked.blockscout).toEqual([]);
+    expect(state.asked.pools).toMatchObject([{ hook: HOOK, subgraphId }]);
+  });
+
+  it("says no verified source was found on Sourcify's word alone there, and waits on nothing else", async () => {
+    script(56, HOOK, now(UNVERIFIED), now(VERIFIED), now(COUNTED));
+
+    expect((await readHookCheck(56, HOOK)).verification).toEqual({ status: "unverified", proxy: null });
+    expect((await checkHook(56, OTHER)).verification).toEqual({ status: "unchecked" });
+    expect(calls().blockscout).toBe(0);
   });
 });
 

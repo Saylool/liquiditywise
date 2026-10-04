@@ -18,6 +18,9 @@ const V3_SUBGRAPH = {
   42161: () => process.env.UNISWAP_V3_ARBITRUM_SUBGRAPH_ID,
   10: () => process.env.UNISWAP_V3_OPTIMISM_SUBGRAPH_ID,
   137: () => process.env.UNISWAP_V3_POLYGON_SUBGRAPH_ID,
+  56: () => process.env.UNISWAP_V3_BNB_SUBGRAPH_ID,
+  43114: () => process.env.UNISWAP_V3_AVALANCHE_SUBGRAPH_ID,
+  42220: () => process.env.UNISWAP_V3_CELO_SUBGRAPH_ID,
 } as const satisfies Record<V3ChainId, () => string | undefined>;
 
 /*
@@ -57,6 +60,8 @@ const V4_SUBGRAPH = {
   130: () => process.env.UNISWAP_V4_UNICHAIN_SUBGRAPH_ID,
   10: () => process.env.UNISWAP_V4_OPTIMISM_SUBGRAPH_ID,
   137: () => process.env.UNISWAP_V4_POLYGON_SUBGRAPH_ID,
+  56: () => process.env.UNISWAP_V4_BNB_SUBGRAPH_ID,
+  43114: () => process.env.UNISWAP_V4_AVALANCHE_SUBGRAPH_ID,
 } as const satisfies Record<V4ChainId, () => string | undefined>;
 
 const RPC = {
@@ -66,6 +71,9 @@ const RPC = {
   130: () => process.env.UNICHAIN_RPC_URL,
   10: () => process.env.OPTIMISM_RPC_URL,
   137: () => process.env.POLYGON_RPC_URL,
+  56: () => process.env.BNB_RPC_URL,
+  43114: () => process.env.AVALANCHE_RPC_URL,
+  42220: () => process.env.CELO_RPC_URL,
 } as const satisfies Record<ChainId, () => string | undefined>;
 
 /** The v3 subgraph on a chain; on a chain v3 is not read on there is none, never mainnet's. */

@@ -65,7 +65,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "Name and address", value: "LiquidityWise · liquiditywise.com" },
       { label: "Covers", value: "Uniswap v3 and v4" },
-      { label: "Networks", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "Networks", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "Languages", value: "English, Turkish, German, Spanish, Arabic, Hindi, Chinese (simplified and traditional), Russian, Portuguese" },
       { label: "Status", value: "Independent and educational; free to use" },
     ],
@@ -107,7 +107,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "Ad ve adres", value: "LiquidityWise · liquiditywise.com" },
       { label: "Kapsam", value: "Uniswap v3 ve v4" },
-      { label: "Ağlar", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "Ağlar", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "Diller", value: "İngilizce, Türkçe, Almanca, İspanyolca, Arapça, Hintçe, Çince (basitleştirilmiş ve geleneksel), Rusça, Portekizce" },
       { label: "Durum", value: "Bağımsız ve eğitim amaçlı; kullanımı ücretsiz" },
     ],
@@ -149,7 +149,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "Name und Adresse", value: "LiquidityWise · liquiditywise.com" },
       { label: "Deckt ab", value: "Uniswap v3 und v4" },
-      { label: "Netzwerke", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "Netzwerke", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "Sprachen", value: "Englisch, Türkisch, Deutsch, Spanisch, Arabisch, Hindi, Chinesisch (vereinfacht und traditionell), Russisch, Portugiesisch" },
       { label: "Status", value: "Unabhängig und zum Lernen; kostenlos nutzbar" },
     ],
@@ -191,7 +191,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "Nombre y dirección", value: "LiquidityWise · liquiditywise.com" },
       { label: "Cubre", value: "Uniswap v3 y v4" },
-      { label: "Redes", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "Redes", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "Idiomas", value: "Inglés, turco, alemán, español, árabe, hindi, chino (simplificado y tradicional), ruso, portugués" },
       { label: "Estado", value: "Independiente y educativo; de uso gratuito" },
     ],
@@ -233,7 +233,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "الاسم والعنوان", value: "LiquidityWise · liquiditywise.com" },
       { label: "يغطي", value: "Uniswap v3 وv4" },
-      { label: "الشبكات", value: "Ethereum وBase وArbitrum وUnichain وOP Mainnet وPolygon" },
+      { label: "الشبكات", value: "Ethereum وBase وArbitrum وUnichain وOP Mainnet وPolygon وBNB Chain وAvalanche وCelo" },
       { label: "اللغات", value: "الإنجليزية والتركية والألمانية والإسبانية والعربية والهندية والصينية (المبسطة والتقليدية) والروسية والبرتغالية" },
       { label: "الحالة", value: "مستقل وتعليمي؛ الاستخدام مجاني" },
     ],
@@ -275,7 +275,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "नाम और पता", value: "LiquidityWise · liquiditywise.com" },
       { label: "क्या शामिल है", value: "Uniswap v3 और v4" },
-      { label: "नेटवर्क", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "नेटवर्क", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "भाषाएँ", value: "अंग्रेज़ी, तुर्की, जर्मन, स्पेनिश, अरबी, हिंदी, चीनी (सरलीकृत और पारंपरिक), रूसी, पुर्तगाली" },
       { label: "स्थिति", value: "स्वतंत्र और शैक्षिक; इस्तेमाल मुफ़्त" },
     ],
@@ -317,7 +317,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "名称与网址", value: "LiquidityWise · liquiditywise.com" },
       { label: "覆盖", value: "Uniswap v3 和 v4" },
-      { label: "网络", value: "Ethereum、Base、Arbitrum、Unichain、OP Mainnet、Polygon" },
+      { label: "网络", value: "Ethereum、Base、Arbitrum、Unichain、OP Mainnet、Polygon、BNB Chain、Avalanche、Celo" },
       { label: "语言", value: "英语、土耳其语、德语、西班牙语、阿拉伯语、印地语、中文（简体和繁体）、俄语、葡萄牙语" },
       { label: "性质", value: "独立、教育性质；免费使用" },
     ],
@@ -359,7 +359,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "Название и адрес", value: "LiquidityWise · liquiditywise.com" },
       { label: "Охват", value: "Uniswap v3 и v4" },
-      { label: "Сети", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "Сети", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "Языки", value: "английский, турецкий, немецкий, испанский, арабский, хинди, китайский (упрощённый и традиционный), русский, португальский" },
       { label: "Статус", value: "Независимый и обучающий; пользоваться бесплатно" },
     ],
@@ -401,7 +401,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "Nome e endereço", value: "LiquidityWise · liquiditywise.com" },
       { label: "Cobre", value: "Uniswap v3 e v4" },
-      { label: "Redes", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon" },
+      { label: "Redes", value: "Ethereum, Base, Arbitrum, Unichain, OP Mainnet, Polygon, BNB Chain, Avalanche, Celo" },
       { label: "Idiomas", value: "inglês, turco, alemão, espanhol, árabe, hindi, chinês (simplificado e tradicional), russo, português" },
       { label: "Situação", value: "Independente e educativo; uso gratuito" },
     ],
@@ -443,7 +443,7 @@ const COPY: Record<Locale, AboutCopy> = {
     facts: [
       { label: "名稱與網址", value: "LiquidityWise · liquiditywise.com" },
       { label: "涵蓋", value: "Uniswap v3 與 v4" },
-      { label: "網路", value: "Ethereum、Base、Arbitrum、Unichain、OP Mainnet、Polygon" },
+      { label: "網路", value: "Ethereum、Base、Arbitrum、Unichain、OP Mainnet、Polygon、BNB Chain、Avalanche、Celo" },
       { label: "語言", value: "英語、土耳其語、德語、西班牙語、阿拉伯語、印地語、中文（簡體與繁體）、俄語、葡萄牙語" },
       { label: "性質", value: "獨立、教育性質；免費使用" },
     ],

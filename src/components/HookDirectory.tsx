@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 
 import type { HookDirectoryResult } from "../lib/advisor/hookDirectory";
-import { chainOf } from "../lib/chains/chains";
+import { chainOf, type V4ChainId } from "../lib/chains/chains";
 import { v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatPercent, formatWhole } from "../lib/format/displayFormats";
 import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import { getHookCheckCopy } from "../lib/i18n/hookCheckCopy";
 import type { Locale } from "../lib/i18n/locales";
+import { hasBlockscout } from "../lib/verification/blockscout";
 import type { PriceBandParameters } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
 import { HookCheckFrame } from "./HookCheck";
@@ -36,6 +37,7 @@ export function HookDirectory({
   t,
   locale,
   checks,
+  chainId = 1,
 }: {
   result: HookDirectoryResult;
   /**
@@ -48,6 +50,8 @@ export function HookDirectory({
   locale: Locale;
   /** What can be checked about each hook, by address: a streamed slot each. None where it is absent. */
   checks?: ReadonlyMap<string, ReactNode> | undefined;
+  /** The network the directory is of, which decides whether its Blockscout is asked; mainnet when not said. */
+  chainId?: V4ChainId;
 }) {
   if (result.status === "unavailable") {
     return (
@@ -69,6 +73,10 @@ export function HookDirectory({
         <p className="text-sm leading-relaxed">{t.hooks.onlyPermissions}</p>
         {/* Said once here rather than under every hook: what each hook's "verified" does and does not mean. */}
         <p className="text-sm leading-relaxed">{checkCopy.directoryIntro}</p>
+        {/* On a network with no Blockscout, the intro's "and of the network's own Blockscout" is qualified at once. */}
+        {hasBlockscout(chainId) ? null : (
+          <p className="text-sm leading-relaxed">{checkCopy.noBlockscout(chainOf(chainId).name)}</p>
+        )}
         <p className="text-sm leading-relaxed">{checkCopy.meaning}</p>
         <p className="text-sm leading-relaxed text-muted">
           {t.hooks.window(

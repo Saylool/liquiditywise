@@ -85,6 +85,51 @@ describe("what the hourly check asks", () => {
     expect(asked.map((url) => url.split("/").pop())).toEqual(["base-v3", "base-positions", "optimism-positions"]);
   });
 
+  it("asks BNB Chain's, Avalanche's and Celo's own endpoints and subgraphs, each under its own name, and Celo's for v3 alone", async () => {
+    vi.stubEnv("THE_GRAPH_API_KEY", "key");
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
+    vi.stubEnv("BNB_RPC_URL", "https://bnb.example");
+    vi.stubEnv("AVALANCHE_RPC_URL", "https://avalanche.example");
+    vi.stubEnv("CELO_RPC_URL", "https://celo.example");
+    vi.stubEnv("UNISWAP_V3_BNB_SUBGRAPH_ID", "bnb-v3");
+    vi.stubEnv("UNISWAP_V4_BNB_SUBGRAPH_ID", "bnb-v4");
+    vi.stubEnv("UNISWAP_V3_AVALANCHE_SUBGRAPH_ID", "avalanche-v3");
+    vi.stubEnv("UNISWAP_V4_AVALANCHE_SUBGRAPH_ID", "avalanche-v4");
+    vi.stubEnv("UNISWAP_V3_CELO_SUBGRAPH_ID", "celo-v3");
+    vi.stubEnv("UNISWAP_V4_CELO_SUBGRAPH_ID", "celo-v4");
+    const asked: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        asked.push(url);
+        return new Response("{}", { status: 200 });
+      }),
+    );
+
+    const probes = upstreamProbes();
+    for (const name of ["v3-bnb", "v4-bnb", "v3-avalanche", "v4-avalanche", "v3-celo"] as const) {
+      await probes?.probeSubgraphs?.[name]?.();
+    }
+    await probes?.probeOtherChains?.bnb?.();
+    await probes?.probeOtherChains?.avalanche?.();
+    await probes?.probeOtherChains?.celo?.();
+    vi.unstubAllGlobals();
+
+    expect(asked.map((url) => url.split("/").pop())).toEqual([
+      "bnb-v3",
+      "bnb-v4",
+      "avalanche-v3",
+      "avalanche-v4",
+      "celo-v3",
+      "bnb.example",
+      "avalanche.example",
+      "celo.example",
+    ]);
+    /* No v4 subgraph is read on Celo, so none is asked about there, whatever the environment holds. */
+    expect(Object.keys(probes?.probeSubgraphs ?? {})).not.toContain("v4-celo");
+  });
+
   it("asks nothing when the key or mainnet's settings are missing", () => {
     vi.stubEnv("THE_GRAPH_API_KEY", "");
 
@@ -122,5 +167,7 @@ describe("what the hourly check asks", () => {
         "https://polygon.blockscout.com/api/v2/addresses/0x67366782805870060151383f4bbff9dab53e5cd6",
       ].sort(),
     );
+    /* BNB Chain and Avalanche have no Blockscout, and nothing stands in for one. */
+    expect(asked.some((url) => /bnb|bsc|avalanche|avax|snowtrace/.test(url))).toBe(false);
   });
 });

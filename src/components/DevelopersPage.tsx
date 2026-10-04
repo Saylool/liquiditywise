@@ -62,6 +62,7 @@ export const developerFigures = (locale: Locale): DevelopersFigures => ({
   measuredDays: formatWhole(MEASURED_DAYS, locale),
   languages: formatWhole(LOCALES.length, locale),
   v4OnlyChains: list(locale, CHAINS.filter(({ v3 }) => !v3).map(({ name }) => name)),
+  v3OnlyChains: list(locale, CHAINS.filter(({ v4 }) => !v4).map(({ name }) => name)),
   embedSummary: getEmbedCopy(locale).summary,
   analysedBy: getEmbedCopy(locale).analysedBy,
   methodLink: getMethodCopy(locale).link,

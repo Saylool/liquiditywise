@@ -71,13 +71,15 @@ export default async function HooksPage({
     );
   }
 
-  const result = await getHookDirectory(chain.id);
+  /* Its own name, so the narrowing above reaches the callback below: Celo is read for v3 alone. */
+  const chainId = chain.id;
+  const result = await getHookDirectory(chainId);
   const checks =
     result.status === "success"
       ? new Map(
           result.data.hooks.map(({ address }) => [
             address,
-            <HookCheckSection key={address} check={checkHook(chain.id, address)} locale={locale} />,
+            <HookCheckSection key={address} check={checkHook(chainId, address)} locale={locale} />,
           ]),
         )
       : undefined;
@@ -93,6 +95,7 @@ export default async function HooksPage({
         t={t}
         locale={locale}
         checks={checks}
+        chainId={chainId}
       />
     </WorkspaceShell>
   );

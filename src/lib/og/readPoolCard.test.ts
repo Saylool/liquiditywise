@@ -57,6 +57,22 @@ describe("reading a pool's card", () => {
     expect([asked.v3.length, asked.v4.length]).toEqual([0, 0]);
   });
 
+  it("names BNB Chain, Avalanche and Celo on their cards, and draws no v4 card on Celo, where v4 is not read", async () => {
+    expect(await read(`protocol=v4&id=${ID}&chain=bnb`)).toEqual({ pair: "WETH / USDC", detail: "Uniswap v4 · 0.05% · BNB Chain" });
+    expect(await read(`protocol=v3&id=${ADDRESS}&chain=avalanche`)).toEqual({
+      pair: "WETH / USDC",
+      detail: "Uniswap v3 · 0.05% · Avalanche",
+    });
+    expect(await read(`protocol=v3&id=${ADDRESS}&chain=celo`)).toEqual({ pair: "WETH / USDC", detail: "Uniswap v3 · 0.05% · Celo" });
+    expect(await read(`protocol=v4&id=${ID}&chain=celo`)).toBeNull();
+
+    expect(asked.v4).toEqual([[ID, 56]]);
+    expect(asked.v3).toEqual([
+      [ADDRESS, 43114],
+      [ADDRESS, 42220],
+    ]);
+  });
+
   it("does not keep a pool it could not read, and asks again", async () => {
     asked.fail = true;
     expect(await read(`protocol=v3&id=${ADDRESS}`)).toBeNull();

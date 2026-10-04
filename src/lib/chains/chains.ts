@@ -68,6 +68,37 @@ export const CHAINS = [
    * answered in three.
    */
   { id: 137, slug: "polygon", name: "Polygon", v3: true, v3Search: "days", v3Pairs: "days", v4: true, v4Pairs: "pools", v3Positions: true, native: "POL" },
+  /*
+   * BNB Chain, Avalanche C-Chain and Celo, from the subgraphs .env.example
+   * names, each with its own currency — BNB, AVAX and CELO — which every one
+   * of their subgraphs prices tokens in (about $788, $11 and $0.10 on
+   * 2026-10-04), as Polygon's v4 one prices in POL.
+   *
+   * "pools" for every search and pair list, by measurement on 2026-10-04,
+   * each query asked three times with the limits the pages ask for:
+   *   - BNB Chain: a pair search 1.1–4.7 s, one symbol 0.8–6.0 s, a pair's
+   *     fee tiers 0.6–3.0 s; a v4 pair 0.5–4.2 s.
+   *   - Avalanche: a pair search 2.0–4.0 s, one symbol 3.2–6.0 s, fee tiers
+   *     0.5–3.0 s; a v4 pair 0.6–3.1 s.
+   *   - Celo: a pair search 0.9–1.5 s, one symbol 0.8–1.6 s, fee tiers
+   *     0.6–2.0 s.
+   * Every one answered, none with "bad indexers", and the slowest is under
+   * a third of the twenty seconds a search is given and well inside the ten
+   * a v4 pair list is — where Base's and Polygon's v3 subgraphs failed or
+   * took ten seconds and more.
+   *
+   * `v3Positions: false` on all three: none of their v3 subgraphs has a
+   * `Position` entity ("Type `Query` has no field `positions`", asked
+   * 2026-10-04), so no smart-money page and no record under a position.
+   *
+   * Celo is read for v3 alone, the first chain that is: no v4 source for it
+   * is configured, so a v4 page on Celo says v4 is not read there rather
+   * than asking another chain, and its holdings cast only the v3 net.
+   * `v4Pairs` is never read where `v4` is false.
+   */
+  { id: 56, slug: "bnb", name: "BNB Chain", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "BNB" },
+  { id: 43114, slug: "avalanche", name: "Avalanche", v3: true, v3Search: "pools", v3Pairs: "pools", v4: true, v4Pairs: "pools", v3Positions: false, native: "AVAX" },
+  { id: 42220, slug: "celo", name: "Celo", v3: true, v3Search: "pools", v3Pairs: "pools", v4: false, v4Pairs: "pools", v3Positions: false, native: "CELO" },
 ] as const;
 
 export type Chain = (typeof CHAINS)[number];

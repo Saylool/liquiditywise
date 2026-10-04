@@ -204,3 +204,30 @@ describe("Unichain in the hourly check", () => {
     expect(failing[0]?.message).toContain("UNISWAP_V4_UNICHAIN_SUBGRAPH_ID");
   });
 });
+
+describe("BNB Chain, Avalanche and Celo in the hourly check", () => {
+  it("name each chain's own RPC setting when its endpoint refuses the key", () => {
+    const refused = problemsFrom({
+      otherChainStatus: { bnb: "credentials-rejected", avalanche: "credentials-rejected", celo: "credentials-rejected" },
+    });
+
+    expect(refused.map(({ id }) => id)).toEqual(["bnb-rpc-key-refused", "avalanche-rpc-key-refused", "celo-rpc-key-refused"]);
+    expect(refused.map(({ message }) => message.match(/[A-Z]+_RPC_URL/)?.[0])).toEqual([
+      "BNB_RPC_URL",
+      "AVALANCHE_RPC_URL",
+      "CELO_RPC_URL",
+    ]);
+  });
+
+  it("name each failing subgraph's own setting, and Celo's v3 one as every Celo page", () => {
+    const failing = (name: "v3-bnb" | "v4-bnb" | "v3-avalanche" | "v4-avalanche" | "v3-celo") =>
+      problemsFrom({ subgraphFailures: { [name]: { status: "errors", forMs: SUBGRAPH_FAILING_LIMIT_MS } } })[0]?.message;
+
+    expect(failing("v3-bnb")).toContain("UNISWAP_V3_BNB_SUBGRAPH_ID");
+    expect(failing("v4-bnb")).toContain("UNISWAP_V4_BNB_SUBGRAPH_ID");
+    expect(failing("v3-avalanche")).toContain("UNISWAP_V3_AVALANCHE_SUBGRAPH_ID");
+    expect(failing("v4-avalanche")).toContain("UNISWAP_V4_AVALANCHE_SUBGRAPH_ID");
+    expect(failing("v3-celo")).toContain("UNISWAP_V3_CELO_SUBGRAPH_ID");
+    expect(failing("v3-celo")).toContain("Every Celo page");
+  });
+});

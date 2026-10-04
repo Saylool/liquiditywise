@@ -34,7 +34,7 @@ describe("the about page's words", () => {
   it("name every language and every network the site covers", () => {
     for (const locale of LOCALES) {
       const networks = getAboutCopy(locale).facts[2].value;
-      for (const name of ["Ethereum", "Base", "Arbitrum", "Unichain", "OP Mainnet", "Polygon"]) {
+      for (const name of ["Ethereum", "Base", "Arbitrum", "Unichain", "OP Mainnet", "Polygon", "BNB Chain", "Avalanche", "Celo"]) {
         expect(networks, `${locale} ${name}`).toContain(name);
       }
     }

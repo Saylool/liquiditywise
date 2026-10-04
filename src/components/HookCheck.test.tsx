@@ -10,8 +10,8 @@ import { HookCheckFrame, HookCheckLines, HookCheckPending } from "./HookCheck";
 const HOOK = "0xa0b0d2d00fd544d8e0887f1a3cedd6e24baf10cc";
 const COUNTED: HookUsage = { status: "counted", pools: 18, capped: false, firstCreatedAt: "2025-06-08T16:26:44.000Z" };
 
-const check = (verification: HookVerification, usage: HookUsage = COUNTED): HookCheck => ({
-  chainId: 130,
+const check = (verification: HookVerification, usage: HookUsage = COUNTED, chainId: HookCheck["chainId"] = 130): HookCheck => ({
+  chainId,
   address: HOOK,
   verification,
   usage,
@@ -52,6 +52,24 @@ describe("what can be checked about a hook, on the page", () => {
 
     expect(markup).toContain(getHookCheckCopy("en").unverified);
     expect(markup).not.toContain("Read the source on");
+  });
+
+  /* BNB Chain and Avalanche have no Blockscout: there "not found" is Sourcify's alone, and says so. */
+  it("says on a network with no Blockscout that only Sourcify was asked, never that Blockscout found nothing", () => {
+    for (const chainId of [56, 43114] as const) {
+      const markup = render(check({ status: "unverified", proxy: null }, COUNTED, chainId));
+
+      expect(markup, String(chainId)).toContain(escaped(getHookCheckCopy("en").unverifiedSourcifyOnly));
+      expect(markup, String(chainId)).not.toContain(escaped(getHookCheckCopy("en").unverified));
+    }
+    expect(render(check({ status: "unverified", proxy: null }, COUNTED, 1))).toContain(escaped(getHookCheckCopy("en").unverified));
+  });
+
+  it("links a hook verified there to Sourcify alone", () => {
+    const markup = render(check({ status: "verified", sources: ["sourcify"], name: "Spot", proxy: null }, COUNTED, 56));
+
+    expect(markup).toContain(`href="https://repo.sourcify.dev/56/${HOOK}"`);
+    expect(markup).not.toContain("blockscout.com");
   });
 
   it("says it could not be checked just now, and nothing that would read as either verdict", () => {

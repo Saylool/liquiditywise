@@ -56,6 +56,8 @@ export type DevelopersFigures = {
   readonly languages: string;
   /** The networks read for v4 only, where a v3 pool names nothing. */
   readonly v4OnlyChains: string;
+  /** The networks read for v3 only, where a v4 pool names nothing. */
+  readonly v3OnlyChains: string;
   /** The pool page's own heading for its offer of the card, so a reader can find it. */
   readonly embedSummary: string;
   /** The card's own link back, as it reads in this language. */
@@ -152,7 +154,7 @@ const en: DevelopersCopy = {
     },
     id: {
       accepts: "A v4 pool's id, the hash of its key: `0x` and 64 hexadecimal digits, in upper or lower case.",
-      otherwise: "Anything else names no pool: `400`, and nothing is read. So does an `id` beside an `address`.",
+      otherwise: `Anything else names no pool, and so does a v4 pool on a network where v4 is not read (${f.v3OnlyChains}): \`400\`, and nothing is read. So does an \`id\` beside an \`address\`.`,
     },
     chain: {
       accepts: "A network's slug, from the table below. Left out, the network is Ethereum.",
@@ -215,7 +217,7 @@ const en: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "The figures: a card with them, or the JSON above.",
-    "not-a-pool": `The address names no pool the site reads: neither \`address\` nor \`id\`, or both, or one malformed or given twice, a network the site does not read, or a v3 pool where only v4 is read (${f.v4OnlyChains}). Nothing was read, and asking again will not change the answer.`,
+    "not-a-pool": `The address names no pool the site reads: neither \`address\` nor \`id\`, or both, or one malformed or given twice, a network the site does not read, a v3 pool where only v4 is read (${f.v4OnlyChains}), or a v4 pool where only v3 is read (${f.v3OnlyChains}). Nothing was read, and asking again will not change the answer.`,
     unreadable:
       "A well-formed pool that could not be read just now: a source did not answer in time, or there is no such pool on that network. `poolUrl` still leads to its page. Asking again in a minute may find it.",
     "rate-limited":
@@ -285,7 +287,7 @@ const tr: DevelopersCopy = {
     },
     id: {
       accepts: "Bir v4 havuzunun kimliği, anahtarının özeti: `0x` ve ardından 64 onaltılık rakam, büyük ya da küçük harfle.",
-      otherwise: "Başka her şey bir havuz belirtmez: `400`, ve hiçbir şey okunmaz. Bir `address`'in yanında gelen `id` de öyle.",
+      otherwise: `Başka her şey bir havuz belirtmez; v4'ün okunmadığı bir ağdaki (${f.v3OnlyChains}) v4 havuzu da öyle: \`400\`, ve hiçbir şey okunmaz. Bir \`address\`'in yanında gelen \`id\` de öyle.`,
     },
     chain: {
       accepts: "Aşağıdaki tablodan bir ağın kısa adı. Verilmezse ağ Ethereum'dur.",
@@ -348,7 +350,7 @@ const tr: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "Rakamlar: onları taşıyan bir kart ya da yukarıdaki JSON.",
-    "not-a-pool": `Adres, sitenin okuduğu bir havuz belirtmiyor: ne \`address\` ne \`id\` var ya da ikisi birden var, biri bozuk ya da iki kez verilmiş, ağ sitenin okumadığı bir ağ, ya da yalnızca v4'ün okunduğu yerde (${f.v4OnlyChains}) bir v3 havuzu. Hiçbir şey okunmadı ve yeniden sormak cevabı değiştirmez.`,
+    "not-a-pool": `Adres, sitenin okuduğu bir havuz belirtmiyor: ne \`address\` ne \`id\` var ya da ikisi birden var, biri bozuk ya da iki kez verilmiş, ağ sitenin okumadığı bir ağ, yalnızca v4'ün okunduğu yerde (${f.v4OnlyChains}) bir v3 havuzu ya da yalnızca v3'ün okunduğu yerde (${f.v3OnlyChains}) bir v4 havuzu. Hiçbir şey okunmadı ve yeniden sormak cevabı değiştirmez.`,
     unreadable:
       "Biçimi doğru ama şu an okunamayan bir havuz: bir kaynak zamanında cevap vermedi ya da o ağda böyle bir havuz yok. `poolUrl` yine de sayfasına götürür. Bir dakika sonra yeniden sormak onu bulabilir.",
     "rate-limited":
@@ -418,7 +420,7 @@ const de: DevelopersCopy = {
     },
     id: {
       accepts: "Die ID eines v4-Pools, der Hash seines Schlüssels: `0x` und 64 Hexadezimalziffern, in Groß- oder Kleinbuchstaben.",
-      otherwise: "Alles andere benennt keinen Pool: `400`, und nichts wird gelesen. Ebenso eine `id` neben einer `address`.",
+      otherwise: `Alles andere benennt keinen Pool, ebenso ein v4-Pool auf einem Netzwerk, auf dem v4 nicht gelesen wird (${f.v3OnlyChains}): \`400\`, und nichts wird gelesen. Ebenso eine \`id\` neben einer \`address\`.`,
     },
     chain: {
       accepts: "Das Kürzel eines Netzwerks aus der Tabelle unten. Fehlt es, ist das Netzwerk Ethereum.",
@@ -481,7 +483,7 @@ const de: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "Die Zahlen: eine Karte mit ihnen oder das JSON oben.",
-    "not-a-pool": `Die Adresse benennt keinen Pool, den die Website liest: weder \`address\` noch \`id\`, oder beide, oder einer fehlerhaft oder doppelt, ein Netzwerk, das die Website nicht liest, oder ein v3-Pool, wo nur v4 gelesen wird (${f.v4OnlyChains}). Nichts wurde gelesen, und erneutes Fragen ändert die Antwort nicht.`,
+    "not-a-pool": `Die Adresse benennt keinen Pool, den die Website liest: weder \`address\` noch \`id\`, oder beide, oder einer fehlerhaft oder doppelt, ein Netzwerk, das die Website nicht liest, ein v3-Pool, wo nur v4 gelesen wird (${f.v4OnlyChains}), oder ein v4-Pool, wo nur v3 gelesen wird (${f.v3OnlyChains}). Nichts wurde gelesen, und erneutes Fragen ändert die Antwort nicht.`,
     unreadable:
       "Ein korrekt benannter Pool, der gerade nicht gelesen werden konnte: Eine Quelle hat nicht rechtzeitig geantwortet, oder auf diesem Netzwerk gibt es keinen solchen Pool. `poolUrl` führt trotzdem zu seiner Seite. In einer Minute erneut zu fragen kann ihn finden.",
     "rate-limited":
@@ -551,7 +553,7 @@ const es: DevelopersCopy = {
     },
     id: {
       accepts: "El id de un pool v4, el hash de su clave: `0x` y 64 dígitos hexadecimales, en mayúsculas o minúsculas.",
-      otherwise: "Cualquier otra cosa no nombra ningún pool: `400`, y no se lee nada. Tampoco un `id` junto a una `address`.",
+      otherwise: `Cualquier otra cosa no nombra ningún pool, y tampoco un pool v4 en una red donde no se lee v4 (${f.v3OnlyChains}): \`400\`, y no se lee nada. Tampoco un \`id\` junto a una \`address\`.`,
     },
     chain: {
       accepts: "El identificador corto de una red, de la tabla de abajo. Si falta, la red es Ethereum.",
@@ -614,7 +616,7 @@ const es: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "Las cifras: una tarjeta con ellas, o el JSON de arriba.",
-    "not-a-pool": `La dirección no nombra ningún pool que el sitio lea: ni \`address\` ni \`id\`, o los dos, o uno mal formado o repetido, una red que el sitio no lee, o un pool v3 donde solo se lee v4 (${f.v4OnlyChains}). No se leyó nada, y volver a preguntar no cambiará la respuesta.`,
+    "not-a-pool": `La dirección no nombra ningún pool que el sitio lea: ni \`address\` ni \`id\`, o los dos, o uno mal formado o repetido, una red que el sitio no lee, un pool v3 donde solo se lee v4 (${f.v4OnlyChains}) o un pool v4 donde solo se lee v3 (${f.v3OnlyChains}). No se leyó nada, y volver a preguntar no cambiará la respuesta.`,
     unreadable:
       "Un pool bien nombrado que no se pudo leer ahora mismo: una fuente no respondió a tiempo, o no existe ese pool en esa red. `poolUrl` sigue llevando a su página. Preguntar de nuevo en un minuto puede encontrarlo.",
     "rate-limited":
@@ -684,7 +686,7 @@ const ar: DevelopersCopy = {
     },
     id: {
       accepts: "معرّف تجمّع v4، أي تجزئة مفتاحه: `0x` ثم 64 رقمًا ست عشريًا، بأحرف كبيرة أو صغيرة.",
-      otherwise: "أي شيء آخر لا يسمّي تجمّعًا: `400`، ولا يُقرأ شيء. وكذلك `id` إلى جانب `address`.",
+      otherwise: `أي شيء آخر لا يسمّي تجمّعًا، وكذلك تجمّع v4 على شبكة لا يُقرأ فيها v4 (${f.v3OnlyChains}): \`400\`، ولا يُقرأ شيء. وكذلك \`id\` إلى جانب \`address\`.`,
     },
     chain: {
       accepts: "الاسم المختصر لشبكة من الجدول أدناه. إن غاب، فالشبكة هي Ethereum.",
@@ -747,7 +749,7 @@ const ar: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "الأرقام: بطاقة تحملها، أو JSON الموصوف أعلاه.",
-    "not-a-pool": `العنوان لا يسمّي تجمّعًا يقرؤه الموقع: لا \`address\` ولا \`id\`، أو كلاهما، أو أحدهما مشوّه أو مكرّر، أو شبكة لا يقرؤها الموقع، أو تجمّع v3 حيث لا يُقرأ إلا v4 (${f.v4OnlyChains}). لم يُقرأ شيء، وإعادة السؤال لن تغيّر الإجابة.`,
+    "not-a-pool": `العنوان لا يسمّي تجمّعًا يقرؤه الموقع: لا \`address\` ولا \`id\`، أو كلاهما، أو أحدهما مشوّه أو مكرّر، أو شبكة لا يقرؤها الموقع، أو تجمّع v3 حيث لا يُقرأ إلا v4 (${f.v4OnlyChains})، أو تجمّع v4 حيث لا يُقرأ إلا v3 (${f.v3OnlyChains}). لم يُقرأ شيء، وإعادة السؤال لن تغيّر الإجابة.`,
     unreadable:
       "تجمّع سُمّي تسمية صحيحة وتعذّرت قراءته الآن: مصدرٌ لم يُجب في الوقت المحدد، أو لا يوجد تجمّع كهذا على تلك الشبكة. يبقى `poolUrl` موصلًا إلى صفحته. وقد تجده إعادة السؤال بعد دقيقة.",
     "rate-limited":
@@ -817,7 +819,7 @@ const hi: DevelopersCopy = {
     },
     id: {
       accepts: "v4 पूल का id, उसकी कुंजी का हैश: `0x` और 64 हेक्साडेसिमल अंक, बड़े या छोटे अक्षरों में।",
-      otherwise: "इसके अलावा कुछ भी किसी पूल का नाम नहीं लेता: `400`, और कुछ नहीं पढ़ा जाता। `address` के साथ दिया गया `id` भी नहीं।",
+      otherwise: `इसके अलावा कुछ भी किसी पूल का नाम नहीं लेता, और न ही ऐसे नेटवर्क पर v4 पूल जहाँ v4 नहीं पढ़ा जाता (${f.v3OnlyChains}): \`400\`, और कुछ नहीं पढ़ा जाता। \`address\` के साथ दिया गया \`id\` भी नहीं।`,
     },
     chain: {
       accepts: "नीचे की तालिका से किसी नेटवर्क का छोटा नाम। न दिया जाए, तो नेटवर्क Ethereum है।",
@@ -880,7 +882,7 @@ const hi: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "आँकड़े: उनके साथ कार्ड, या ऊपर वाला JSON।",
-    "not-a-pool": `पता ऐसे किसी पूल का नाम नहीं लेता जिसे साइट पढ़ती है: न \`address\` न \`id\`, या दोनों, या कोई एक बिगड़ा हुआ या दो बार दिया गया, ऐसा नेटवर्क जिसे साइट नहीं पढ़ती, या ऐसी जगह v3 पूल जहाँ केवल v4 पढ़ा जाता है (${f.v4OnlyChains})। कुछ नहीं पढ़ा गया, और दोबारा पूछने से जवाब नहीं बदलेगा।`,
+    "not-a-pool": `पता ऐसे किसी पूल का नाम नहीं लेता जिसे साइट पढ़ती है: न \`address\` न \`id\`, या दोनों, या कोई एक बिगड़ा हुआ या दो बार दिया गया, ऐसा नेटवर्क जिसे साइट नहीं पढ़ती, ऐसी जगह v3 पूल जहाँ केवल v4 पढ़ा जाता है (${f.v4OnlyChains}), या ऐसी जगह v4 पूल जहाँ केवल v3 पढ़ा जाता है (${f.v3OnlyChains})। कुछ नहीं पढ़ा गया, और दोबारा पूछने से जवाब नहीं बदलेगा।`,
     unreadable:
       "सही ढंग से नामित पूल जो अभी पढ़ा नहीं जा सका: कोई स्रोत समय पर जवाब नहीं दे सका, या उस नेटवर्क पर ऐसा कोई पूल नहीं है। `poolUrl` फिर भी उसके पृष्ठ तक ले जाता है। एक मिनट बाद दोबारा पूछने पर वह मिल सकता है।",
     "rate-limited":
@@ -950,7 +952,7 @@ const zh: DevelopersCopy = {
     },
     id: {
       accepts: "v4 池子的 id，即其 PoolKey 的哈希：`0x` 加 64 个十六进制数字，大小写均可。",
-      otherwise: "其他任何内容都不指向池子：`400`，什么也不读取。与 `address` 一起给出的 `id` 也一样。",
+      otherwise: `其他任何内容都不指向池子；不读取 v4 的网络（${f.v3OnlyChains}）上的 v4 池子也一样：\`400\`，什么也不读取。与 \`address\` 一起给出的 \`id\` 也一样。`,
     },
     chain: {
       accepts: "下表中某个网络的简称。不给出时，网络为 Ethereum。",
@@ -1010,7 +1012,7 @@ const zh: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "数字：带数字的卡片，或上面的 JSON。",
-    "not-a-pool": `地址没有指向本站读取的池子：既没有 \`address\` 也没有 \`id\`，或两者都有，或其中一个格式错误或出现两次，或是本站不读取的网络，或是只读取 v4 的网络（${f.v4OnlyChains}）上的 v3 池子。什么也没有读取，再问一次也不会改变答案。`,
+    "not-a-pool": `地址没有指向本站读取的池子：既没有 \`address\` 也没有 \`id\`，或两者都有，或其中一个格式错误或出现两次，或是本站不读取的网络，或是只读取 v4 的网络（${f.v4OnlyChains}）上的 v3 池子，或是只读取 v3 的网络（${f.v3OnlyChains}）上的 v4 池子。什么也没有读取，再问一次也不会改变答案。`,
     unreadable:
       "格式正确、但此刻无法读取的池子：某个数据源没有及时回应，或该网络上没有这个池子。`poolUrl` 仍然指向它的页面。一分钟后再问，也许就能读到。",
     "rate-limited":
@@ -1080,7 +1082,7 @@ const ru: DevelopersCopy = {
     },
     id: {
       accepts: "Id пула v4, хеш его ключа: `0x` и 64 шестнадцатеричные цифры, в верхнем или нижнем регистре.",
-      otherwise: "Всё остальное не называет пул: `400`, и ничего не читается. Как и `id` рядом с `address`.",
+      otherwise: `Всё остальное не называет пул, как и пул v4 в сети, где v4 не читается (${f.v3OnlyChains}): \`400\`, и ничего не читается. Как и \`id\` рядом с \`address\`.`,
     },
     chain: {
       accepts: "Короткое имя сети из таблицы ниже. Если его нет, сеть — Ethereum.",
@@ -1143,7 +1145,7 @@ const ru: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "Цифры: карточка с ними или JSON выше.",
-    "not-a-pool": `Адрес не называет пул, который читает сайт: нет ни \`address\`, ни \`id\`, или есть оба, или один из них искажён либо повторён, или это сеть, которую сайт не читает, или пул v3 там, где читается только v4 (${f.v4OnlyChains}). Ничего не прочитано, и повторный запрос ответа не изменит.`,
+    "not-a-pool": `Адрес не называет пул, который читает сайт: нет ни \`address\`, ни \`id\`, или есть оба, или один из них искажён либо повторён, или это сеть, которую сайт не читает, или пул v3 там, где читается только v4 (${f.v4OnlyChains}), или пул v4 там, где читается только v3 (${f.v3OnlyChains}). Ничего не прочитано, и повторный запрос ответа не изменит.`,
     unreadable:
       "Правильно названный пул, который сейчас не удалось прочитать: источник не ответил вовремя, или такого пула в этой сети нет. `poolUrl` всё равно ведёт на его страницу. Повторный запрос через минуту может его найти.",
     "rate-limited":
@@ -1213,7 +1215,7 @@ const pt: DevelopersCopy = {
     },
     id: {
       accepts: "O id de um pool v4, o hash da sua chave: `0x` e 64 dígitos hexadecimais, em maiúsculas ou minúsculas.",
-      otherwise: "Qualquer outra coisa não nomeia nenhum pool: `400`, e nada é lido. Nem um `id` ao lado de um `address`.",
+      otherwise: `Qualquer outra coisa não nomeia nenhum pool, nem um pool v4 numa rede em que o v4 não é lido (${f.v3OnlyChains}): \`400\`, e nada é lido. Nem um \`id\` ao lado de um \`address\`.`,
     },
     chain: {
       accepts: "O identificador curto de uma rede, da tabela abaixo. Sem ele, a rede é a Ethereum.",
@@ -1276,7 +1278,7 @@ const pt: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "Os números: um cartão com eles, ou o JSON acima.",
-    "not-a-pool": `O endereço não nomeia nenhum pool que o site lê: nem \`address\` nem \`id\`, ou os dois, ou um malformado ou repetido, uma rede que o site não lê, ou um pool v3 onde só o v4 é lido (${f.v4OnlyChains}). Nada foi lido, e perguntar de novo não muda a resposta.`,
+    "not-a-pool": `O endereço não nomeia nenhum pool que o site lê: nem \`address\` nem \`id\`, ou os dois, ou um malformado ou repetido, uma rede que o site não lê, um pool v3 onde só o v4 é lido (${f.v4OnlyChains}) ou um pool v4 onde só o v3 é lido (${f.v3OnlyChains}). Nada foi lido, e perguntar de novo não muda a resposta.`,
     unreadable:
       "Um pool bem nomeado que não pôde ser lido agora: uma fonte não respondeu a tempo, ou não existe esse pool nessa rede. `poolUrl` continua levando à página dele. Perguntar de novo em um minuto pode encontrá-lo.",
     "rate-limited":
@@ -1346,7 +1348,7 @@ const zhHant: DevelopersCopy = {
     },
     id: {
       accepts: "v4 池子的 id，即其 PoolKey 的雜湊值：`0x` 加 64 個十六進位數字，大小寫皆可。",
-      otherwise: "其他任何內容都不指向池子：`400`，什麼也不讀取。與 `address` 一起給出的 `id` 也一樣。",
+      otherwise: `其他任何內容都不指向池子；不讀取 v4 的網路（${f.v3OnlyChains}）上的 v4 池子也一樣：\`400\`，什麼也不讀取。與 \`address\` 一起給出的 \`id\` 也一樣。`,
     },
     chain: {
       accepts: "下表中某個網路的簡稱。不給出時，網路為 Ethereum。",
@@ -1406,7 +1408,7 @@ const zhHant: DevelopersCopy = {
   ],
   statuses: (f) => ({
     figures: "數字：帶數字的卡片，或上面的 JSON。",
-    "not-a-pool": `網址沒有指向本站讀取的池子：既沒有 \`address\` 也沒有 \`id\`，或兩者都有，或其中一個格式錯誤或出現兩次，或是本站不讀取的網路，或是只讀取 v4 的網路（${f.v4OnlyChains}）上的 v3 池子。什麼也沒有讀取，再問一次也不會改變答案。`,
+    "not-a-pool": `網址沒有指向本站讀取的池子：既沒有 \`address\` 也沒有 \`id\`，或兩者都有，或其中一個格式錯誤或出現兩次，或是本站不讀取的網路，或是只讀取 v4 的網路（${f.v4OnlyChains}）上的 v3 池子，或是只讀取 v3 的網路（${f.v3OnlyChains}）上的 v4 池子。什麼也沒有讀取，再問一次也不會改變答案。`,
     unreadable:
       "格式正確、但此刻無法讀取的池子：某個資料來源沒有及時回應，或該網路上沒有這個池子。`poolUrl` 仍然指向它的頁面。一分鐘後再問，也許就能讀到。",
     "rate-limited":

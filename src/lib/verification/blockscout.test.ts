@@ -8,6 +8,7 @@ import {
   blockscoutAddressUrl,
   blockscoutPage,
   fetchBlockscoutAnswer,
+  hasBlockscout,
   readBlockscoutAnswer,
 } from "./blockscout";
 
@@ -96,8 +97,15 @@ describe("reading what Blockscout says", () => {
 describe("asking Blockscout", () => {
   const json = (status: number, body: unknown) => async () => new Response(JSON.stringify(body), { status });
 
-  it("has an instance for every network a v4 pool is read on", () => {
+  it("says, for every network a v4 pool is read on, which instance it has, or that it has none", () => {
     expect(Object.keys(BLOCKSCOUT_HOSTS).map(Number).sort()).toEqual(V4_CHAINS.map(({ id }) => id).sort());
+  });
+
+  /* Measured 2026-10-04: no instance for chain 56 or 43114 in Blockscout's own list, and a bare 404 at every likely name. */
+  it("has none on BNB Chain or Avalanche, and stands no other network's in for theirs", () => {
+    expect([BLOCKSCOUT_HOSTS[56], BLOCKSCOUT_HOSTS[43114]]).toEqual([null, null]);
+    expect([hasBlockscout(56), hasBlockscout(43114)]).toEqual([false, false]);
+    expect([1, 8453, 42161, 130, 10, 137].map((id) => hasBlockscout(id as 1))).toEqual([true, true, true, true, true, true]);
   });
 
   /* optimism.blockscout.com answers 301 to explorer.optimism.io, so OP Mainnet's is asked there directly. */

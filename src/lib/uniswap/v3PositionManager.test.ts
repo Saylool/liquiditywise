@@ -163,7 +163,7 @@ describe("the manager on each chain", () => {
   it("is at mainnet's address on Arbitrum, with a runtime of its own", () => {
     expect(V3_POSITION_MANAGERS[42161].address).toBe(V3_POSITION_MANAGERS[1].address);
     expect(V3_POSITION_MANAGERS[42161].codeHash).not.toBe(V3_POSITION_MANAGERS[1].codeHash);
-    expect(new Set(Object.values(V3_POSITION_MANAGERS).map(({ codeHash }) => codeHash)).size).toBe(5);
+    expect(new Set(Object.values(V3_POSITION_MANAGERS).map(({ codeHash }) => codeHash)).size).toBe(8);
   });
 
   it("is at mainnet's address on OP Mainnet and Polygon too, each with a runtime of its own", () => {
@@ -184,4 +184,39 @@ describe("the manager on each chain", () => {
     expect(isPositionManagerCode(runtime, keccak256Hex, other)).toBe(false);
     expect(isPositionManagerCode(runtime, keccak256Hex, 1)).toBe(false);
   });
+
+  it("is at an address of its own on BNB Chain, Avalanche and Celo, each the one Uniswap publishes there", () => {
+    expect([56, 43114, 42220].map((id) => V3_POSITION_MANAGERS[id as 56].address)).toEqual([
+      "0x7b8a01b39d58278b5de7e48c8449c9f4f5170613",
+      "0x655c406ebfa14ee2006250925e54ec43ad184f8b",
+      "0x3d79edaabc0eab6f08ed885c05fc0b014290d95a",
+    ]);
+    for (const id of [56, 43114, 42220] as const) {
+      expect(V3_POSITION_MANAGERS[id].address, String(id)).not.toBe(V3_POSITION_MANAGERS[1].address);
+    }
+  });
+
+  /*
+   * Each runtime carries the factory it was deployed against as an immutable,
+   * so the fixture itself says which factory the manager answers with — and
+   * on Celo that is Celo's own, not the mainnet address its subgraph names.
+   */
+  it.each([
+    ["BNB Chain", 56, "bnb", "db1d10011ad0ff90774d0c6bb92e5c5c8b4461f7", 43114],
+    ["Avalanche", 43114, "avalanche", "740b1c1de25031c31ff4fc9a62f554a55cdc1bad", 42220],
+    ["Celo", 42220, "celo", "afe208a311b21f13ef87e33a90049fc17a7acdec", 56],
+  ] as const)(
+    "holds %s's manager to its own hash, recomputed from its real runtime of 24,384 bytes, which names its own factory",
+    (_, id, file, factory, other) => {
+      const runtime = readFileSync(join(__dirname, "testing", `${file}-v3-position-manager.hex`), "utf8").trim();
+
+      expect((runtime.length - 2) / 2).toBe(24_384);
+      expect(keccak256Hex(runtime)).toBe(V3_POSITION_MANAGERS[id].codeHash);
+      expect(isPositionManagerCode(runtime, keccak256Hex, id)).toBe(true);
+      expect(isPositionManagerCode(runtime, keccak256Hex, other)).toBe(false);
+      expect(isPositionManagerCode(runtime, keccak256Hex, 1)).toBe(false);
+      expect(runtime).toContain(factory);
+      expect(runtime).not.toContain("1f98431c8ad98523631ae4a59f267346ea31f984");
+    },
+  );
 });
