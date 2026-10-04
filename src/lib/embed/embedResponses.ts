@@ -25,9 +25,17 @@ import { MEASURED_DAYS, poolEmbedData, type PoolEmbedFigures } from "./poolEmbed
  */
 export const EMBED_TTL_SECONDS = 300;
 
-export const FIGURES_CACHE = `public, max-age=${EMBED_TTL_SECONDS}, s-maxage=${EMBED_TTL_SECONDS}`;
-export const UNREADABLE_CACHE = "public, max-age=60, s-maxage=60";
-export const NOT_A_POOL_CACHE = "public, max-age=3600, s-maxage=3600";
+/** A pool that could not be read: a minute, so one that comes back is not shown as unreadable for long. */
+export const UNREADABLE_TTL_SECONDS = 60;
+
+/** An address that names no pool: an hour, since no later moment will change it. */
+export const NOT_A_POOL_TTL_SECONDS = 3600;
+
+const keptFor = (seconds: number): string => `public, max-age=${seconds}, s-maxage=${seconds}`;
+
+export const FIGURES_CACHE = keptFor(EMBED_TTL_SECONDS);
+export const UNREADABLE_CACHE = keptFor(UNREADABLE_TTL_SECONDS);
+export const NOT_A_POOL_CACHE = keptFor(NOT_A_POOL_TTL_SECONDS);
 
 export type EmbedAnswer =
   | { readonly kind: "pool"; readonly figures: PoolEmbedFigures }

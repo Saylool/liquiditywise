@@ -31,7 +31,18 @@ describe("the offer to embed a pool", () => {
 
   it("names the JSON address, as text rather than a link", () => {
     expect(markup).toContain(`https://liquiditywise.com/api/embed/pool?address=${ADDRESS}`);
-    expect(markup).not.toContain("<a ");
+    expect(markup).not.toContain(`href="https://liquiditywise.com/api/`);
+  });
+
+  /* The one link in it: everything a developer would ask next, in the reader's language. */
+  it("leads to the documentation, and nowhere else", () => {
+    const links = [...markup.matchAll(/<a [^>]*href="([^"]+)"/g)].map(([, href]) => href);
+
+    expect(links).toEqual(["/en/developers"]);
+    expect(markup).toContain("The card and its JSON, documented in full");
+    expect([...render({ locale: "tr" }).matchAll(/<a [^>]*href="([^"]+)"/g)].map(([, href]) => href)).toEqual([
+      "/tr/developers",
+    ]);
   });
 
   it("offers a v4 pool's frame by its id, on its chain, taller where the hook note goes", () => {

@@ -30,6 +30,7 @@ export const PAGES = [
   "/smart-money",
   "/about",
   "/method",
+  "/developers",
   ...LEARN_TOPIC_PAGES,
   ...EMBED_PAGES,
 ] as const;

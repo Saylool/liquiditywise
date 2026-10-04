@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AboutPage } from "@/components/AboutPage";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getAboutCopy } from "@/lib/i18n/aboutCopy";
+import { getDevelopersCopy } from "@/lib/i18n/developersCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getMethodCopy } from "@/lib/i18n/methodCopy";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
@@ -37,6 +38,7 @@ export default async function About() {
           smart: localePath(locale, "/smart-money"),
           guide: localePath(locale, "/learn"),
           method: { href: localePath(locale, "/method"), label: getMethodCopy(locale).link },
+          developers: { href: localePath(locale, "/developers"), label: getDevelopersCopy(locale).link },
         }}
       />
     </WorkspaceShell>

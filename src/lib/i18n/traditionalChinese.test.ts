@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getLearnCopy } from "../learn/briefs";
 import { getTopicCopy } from "../learn/topics";
 import { getChainCopy } from "./chainCopy";
+import { getDevelopersCopy } from "./developersCopy";
 import { getDictionary } from "./dictionaries";
 import { getEmbedCopy } from "./embedCopy";
 import { getHomeAlertsCopy } from "./homeAlertsCopy";
@@ -146,6 +147,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     homeAlerts: getHomeAlertsCopy,
     embed: getEmbedCopy,
     hookCheck: getHookCheckCopy,
+    developers: getDevelopersCopy,
   } as const;
 
   it("carries no character that only exists in the Simplified script, in any copy module", () => {

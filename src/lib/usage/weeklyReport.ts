@@ -36,6 +36,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/smart-money": "smart liquidity",
   "/about": "about",
   "/method": "how it works",
+  "/developers": "for developers",
   "/learn/concentrated": "guide: ranges",
   "/learn/in-range": "guide: in and out of range",
   "/learn/divergence": "guide: impermanent loss",

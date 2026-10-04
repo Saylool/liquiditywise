@@ -18,6 +18,8 @@ export function AboutPage({
     readonly guide: string;
     /** How every figure is made, under the words that page is linked by everywhere. */
     readonly method: { readonly href: string; readonly label: string };
+    /** What another site can build on, the same way. */
+    readonly developers: { readonly href: string; readonly label: string };
   };
 }) {
   return (
@@ -69,6 +71,9 @@ export function AboutPage({
           </Link>
           <Link href={links.method.href} prefetch={false} className="text-link">
             {links.method.label}
+          </Link>
+          <Link href={links.developers.href} prefetch={false} className="text-link">
+            {links.developers.label}
           </Link>
         </p>
       </section>

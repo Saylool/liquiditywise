@@ -1,6 +1,10 @@
+import Link from "next/link";
+
 import type { Chain } from "../lib/chains/chains";
 import { embedDataUrl, embedSnippet } from "../lib/embed/embedLinks";
+import { getDevelopersCopy } from "../lib/i18n/developersCopy";
 import { getEmbedCopy } from "../lib/i18n/embedCopy";
+import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
 
 /**
@@ -14,7 +18,9 @@ import type { Locale } from "../lib/i18n/locales";
  *
  * The frame is offered in the reader's language, which is the language they
  * are reading this in; the card says which horizon and width it was drawn for,
- * whatever this page was set to.
+ * whatever this page was set to. Everything else a developer would ask — every
+ * parameter and field, the statuses, the cache and the limit — is on
+ * /developers, linked at the end.
  */
 export function EmbedPoolSnippet({
   protocol,
@@ -56,6 +62,9 @@ export function EmbedPoolSnippet({
         </label>
         <p className="text-xs leading-relaxed text-muted">{copy.data}</p>
         <p className="break-all font-mono text-xs">{embedDataUrl(request)}</p>
+        <Link href={localePath(locale, "/developers")} prefetch={false} className="text-link self-start text-xs">
+          {getDevelopersCopy(locale).pointer}
+        </Link>
       </div>
     </details>
   );
