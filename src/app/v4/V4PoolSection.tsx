@@ -5,8 +5,10 @@ import { EmbedPoolSnippet } from "@/components/EmbedPoolSnippet";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
 import { V4PairPanelPending } from "@/components/V4PairPanel";
 import { V4PoolIdentity } from "@/components/V4PoolIdentity";
+import { HookCheckSection } from "@/app/hooks/HookCheckSection";
 import { PoolExplanationSection } from "@/app/pool/PoolExplanationSection";
 import { V4PairSection } from "./V4PairSection";
+import { checkHook } from "@/lib/advisor/getHookChecks";
 import { getPoolRangeAnalysis } from "@/lib/advisor/getPoolRangeAnalysis";
 import { feeDisclosureFor } from "@/lib/advisor/feeDisclosure";
 import type { PoolRangeAnalysisResult } from "@/lib/advisor/poolRangeAnalysis";
@@ -73,9 +75,19 @@ export async function V4PoolSection({
 
   const pool = await poolRead;
 
+  /*
+   * What can be checked about the hook, asked the moment the pool names one
+   * and streamed into the identity panel in a boundary of its own — the
+   * same line the hooks directory shows under it, from the same kept answers.
+   */
+  const hookCheck =
+    pool.status === "unavailable" || pool.data.hookAddress === null ? undefined : (
+      <HookCheckSection check={checkHook(chainId, pool.data.hookAddress)} locale={locale} />
+    );
+
   return (
     <>
-      <V4PoolIdentity result={pool} t={t} locale={locale} />
+      <V4PoolIdentity result={pool} t={t} locale={locale} hookCheck={hookCheck} />
 
       {/*
        * Only when the pool was read at all. An id nobody initialised has no

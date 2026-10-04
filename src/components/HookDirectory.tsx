@@ -1,12 +1,16 @@
+import type { ReactNode } from "react";
+
 import type { HookDirectoryResult } from "../lib/advisor/hookDirectory";
 import { chainOf } from "../lib/chains/chains";
 import { v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import { formatPercent, formatWhole } from "../lib/format/displayFormats";
 import { priceStepRatio } from "../lib/format/priceStep";
 import type { Dictionary } from "../lib/i18n/dictionaries";
+import { getHookCheckCopy } from "../lib/i18n/hookCheckCopy";
 import type { Locale } from "../lib/i18n/locales";
 import type { PriceBandParameters } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
+import { HookCheckFrame } from "./HookCheck";
 import { HookPermissions } from "./HookPermissions";
 
 /**
@@ -18,13 +22,20 @@ import { HookPermissions } from "./HookPermissions";
  *
  * Each entry leads with the address rather than a name, because there is no
  * name: nothing on chain gives a hook one, and a label from anywhere else would
- * be a claim this application cannot check.
+ * be a claim this application cannot check. Where a hook's source code is
+ * verified, the name in that source is said under its permissions — as the
+ * name its author chose, which is all it is.
+ *
+ * What can be checked about each hook from outside arrives in `checks`, one
+ * streamed slot per hook, made by the route (app/hooks/page.tsx): this
+ * component reads nothing, and a slow verifier holds back one line of it.
  */
 export function HookDirectory({
   result,
   parameters,
   t,
   locale,
+  checks,
 }: {
   result: HookDirectoryResult;
   /**
@@ -35,6 +46,8 @@ export function HookDirectory({
   parameters: PriceBandParameters;
   t: Dictionary;
   locale: Locale;
+  /** What can be checked about each hook, by address: a streamed slot each. None where it is absent. */
+  checks?: ReadonlyMap<string, ReactNode> | undefined;
 }) {
   if (result.status === "unavailable") {
     return (
@@ -47,12 +60,16 @@ export function HookDirectory({
 
   const { hooks, poolsConsidered, hooklessPools } = result.data;
   const whole = (value: number) => formatWhole(value, locale);
+  const checkCopy = getHookCheckCopy(locale);
 
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5 shadow-card">
         <p className="text-sm leading-relaxed">{t.hooks.intro}</p>
         <p className="text-sm leading-relaxed">{t.hooks.onlyPermissions}</p>
+        {/* Said once here rather than under every hook: what each hook's "verified" does and does not mean. */}
+        <p className="text-sm leading-relaxed">{checkCopy.directoryIntro}</p>
+        <p className="text-sm leading-relaxed">{checkCopy.meaning}</p>
         <p className="text-sm leading-relaxed text-muted">
           {t.hooks.window(
             whole(poolsConsidered),
@@ -81,6 +98,12 @@ export function HookDirectory({
             </div>
 
             <HookPermissions hookAddress={entry.address} t={t} />
+
+            {checks?.has(entry.address) === true ? (
+              <HookCheckFrame locale={locale} explain={false}>
+                {checks.get(entry.address)}
+              </HookCheckFrame>
+            ) : null}
 
             <div className="flex flex-col gap-2 border-t border-border pt-3">
               <h3 className="text-xs uppercase tracking-widest text-muted">

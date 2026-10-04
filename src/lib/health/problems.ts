@@ -27,6 +27,9 @@ import {
   type SubgraphName,
   type SubgraphStatus,
   type UpstreamStatus,
+  VERIFIERS,
+  type VerifierName,
+  type VerifierStatus,
 } from "./upstreamProbe";
 
 /** Each problem has a stable id, so the same fault is not reported twice. */
@@ -44,7 +47,8 @@ export type ProblemId =
   | "unichain-rpc-key-refused"
   | "optimism-rpc-key-refused"
   | "polygon-rpc-key-refused"
-  | `${SubgraphName}-subgraph-failing`;
+  | `${SubgraphName}-subgraph-failing`
+  | `${VerifierName}-verifier-failing`;
 
 export type Problem = { readonly id: ProblemId; readonly message: string };
 
@@ -76,6 +80,10 @@ export type Readings = {
   readonly subgraphFailures?:
     | Partial<Record<SubgraphName, { readonly status: SubgraphStatus; readonly forMs: number }>>
     | undefined;
+  /** The contract verifiers that were failing when last asked, and for how long. */
+  readonly verifierFailures?:
+    | Partial<Record<VerifierName, { readonly status: VerifierStatus; readonly forMs: number }>>
+    | undefined;
 };
 
 /**
@@ -101,6 +109,24 @@ const SUBGRAPH_WORDS: Record<SubgraphName, { readonly variable: string; readonly
   "v3-base-positions": { variable: "UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", loses: "Base's smart-money page and its alerts" },
   "v3-optimism-positions": { variable: "UNISWAP_V3_OPTIMISM_POSITIONS_SUBGRAPH_ID", loses: "OP Mainnet's smart-money page and its alerts" },
   "v3-arbitrum-positions": { variable: "UNISWAP_V3_ARBITRUM_POSITIONS_SUBGRAPH_ID", loses: "Arbitrum One's smart-money page and its alerts" },
+};
+
+/**
+ * Two hourly probes in a row, as for a subgraph. A verifier that answered
+ * strangely once may have been mid-deploy; one that still does an hour later
+ * has changed.
+ */
+export const VERIFIER_FAILING_LIMIT_MS = PROBE_INTERVAL_MS;
+
+/** Which service each verifier is, the file that reads it, and which hooks go unchecked while it fails. */
+const VERIFIER_WORDS: Record<VerifierName, { readonly service: string; readonly reader: string; readonly where: string }> = {
+  sourcify: { service: "Sourcify (sourcify.dev)", reader: "sourcify.ts", where: "on every network" },
+  "blockscout-ethereum": { service: "Ethereum's Blockscout (eth.blockscout.com)", reader: "blockscout.ts", where: "on Ethereum" },
+  "blockscout-base": { service: "Base's Blockscout (base.blockscout.com)", reader: "blockscout.ts", where: "on Base" },
+  "blockscout-arbitrum": { service: "Arbitrum's Blockscout (arbitrum.blockscout.com)", reader: "blockscout.ts", where: "on Arbitrum One" },
+  "blockscout-unichain": { service: "Unichain's Blockscout (unichain.blockscout.com)", reader: "blockscout.ts", where: "on Unichain" },
+  "blockscout-optimism": { service: "OP Mainnet's Blockscout (explorer.optimism.io)", reader: "blockscout.ts", where: "on OP Mainnet" },
+  "blockscout-polygon": { service: "Polygon's Blockscout (polygon.blockscout.com)", reader: "blockscout.ts", where: "on Polygon" },
 };
 
 const SUBGRAPH_FAULT: Record<Exclude<SubgraphStatus, "ok" | "unanswered">, string> = {
@@ -264,6 +290,27 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
     problems.push({
       id: `${name}-subgraph-failing`,
       message: `The ${name} subgraph (${variable}) has answered with ${SUBGRAPH_FAULT[failure.status]} for ${Math.round(failure.forMs / 60_000)} minutes. ${loses} say they cannot read it. Find another deployment on thegraph.com/explorer and set ${variable}.`,
+    });
+  }
+
+  /*
+   * A contract verifier that has changed, or has started refusing this
+   * server. No page breaks — each hook it would have answered for says it
+   * "could not be checked just now" — which is exactly why nobody would
+   * notice, and why it is said here.
+   */
+  for (const name of VERIFIERS) {
+    const failure = readings.verifierFailures?.[name];
+    if (failure === undefined || failure.forMs < VERIFIER_FAILING_LIMIT_MS) continue;
+    if (failure.status !== "unrecognised" && failure.status !== "refused") continue;
+    const { service, reader, where } = VERIFIER_WORDS[name];
+    const minutes = Math.round(failure.forMs / 60_000);
+    problems.push({
+      id: `${name}-verifier-failing`,
+      message:
+        failure.status === "refused"
+          ? `${service} has refused this server (401/403) for ${minutes} minutes. Every hook ${where} on /hooks and on v4 pool pages says its source code could not be checked. See whether it now wants a key or blocks the server's address.`
+          : `${service} has not recognised Uniswap's own PoolManager as verified for ${minutes} minutes: its answer no longer reads the way src/lib/verification/${reader} expects. Every hook ${where} on /hooks and on v4 pool pages says its source code could not be checked. Look at what its API answers now and update ${reader}.`,
     });
   }
 

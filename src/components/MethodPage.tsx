@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { HOOK_CHECK_KEPT_MS, HOOK_CHECK_RETRY_MS } from "../lib/advisor/hookCheck";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
 import { PAIR_RANKING_FLOOR_USD } from "../lib/advisor/pairPools";
 import { SMART_POOLS } from "../lib/advisor/readSmartLiquidity";
@@ -15,6 +16,7 @@ import { CHAINS, V3_POSITION_CHAINS } from "../lib/chains/chains";
 import { formatMultiplier, formatUsd, formatWhole, formatWholePercent } from "../lib/format/displayFormats";
 import type { Locale } from "../lib/i18n/locales";
 import { METHOD_SECTION_IDS, type MethodCopy, type MethodFigures } from "../lib/i18n/methodCopy";
+import { HOOK_POOL_COUNT_CAP } from "../lib/uniswap/ethereumV4HookPools";
 import { MAX_SOURCE_LAG_MS } from "../lib/uniswap/v3SourceFreshness";
 import { ANNUALIZATION_DAYS, DAILY_PRICE_HISTORY_MAX_POINTS, VOLATILITY_WINDOW_DAYS } from "../schemas";
 
@@ -55,6 +57,9 @@ export const methodFigures = (locale: Locale): MethodFigures => ({
   chains: list(locale, CHAINS.map(({ name }) => name), "conjunction"),
   smartChains: list(locale, V3_POSITION_CHAINS.map(({ name }) => name), "conjunction"),
   v4OnlyChains: list(locale, CHAINS.filter(({ v3 }) => !v3).map(({ name }) => name), "conjunction"),
+  hookPoolCap: formatWhole(HOOK_POOL_COUNT_CAP, locale),
+  hookCheckHours: formatWhole(HOOK_CHECK_KEPT_MS / 3_600_000, locale),
+  hookCheckRetryMinutes: formatWhole(HOOK_CHECK_RETRY_MS / 60_000, locale),
 });
 
 type PageLink = { readonly href: string; readonly label: string };

@@ -55,6 +55,18 @@ describe("loggingFetch", () => {
     expect(entries[0]?.level).toBe("error");
   });
 
+  /* Sourcify says "not verified" with a 404, for half the hooks on a network. */
+  it("writes nothing for a status the caller says is the source's answer, and still writes every other", async () => {
+    const { lines, log } = capture();
+    const answers = new Set([404]);
+
+    await loggingFetch("hook-sourcify", respondWith(404), log, { answers })(RPC_URL, init);
+    expect(lines).toEqual([]);
+
+    await loggingFetch("hook-sourcify", respondWith(500), log, { answers })(RPC_URL, init);
+    expect(lines).toEqual([expect.stringContaining("HTTP 500")]);
+  });
+
   it("distinguishes the statuses that mean different things", async () => {
     for (const status of [400, 401, 403, 429, 500, 503]) {
       const { lines, log } = capture();
@@ -271,6 +283,20 @@ describe("a slow answer", () => {
     await loggingFetch("v4-pair-pools", answeringAfter(SLOW_RESPONSE_MS, 503), log)(RPC_URL, init);
 
     expect(lines).toEqual([`[v4-pair-pools] HTTP 503 after ${SLOW_RESPONSE_MS}ms`]);
+  });
+
+  it("names a contract verifier as one, OP Mainnet's own explorer among them", async () => {
+    const { lines, log } = capture();
+
+    for (const url of [
+      "https://sourcify.dev/server/v2/contract/1/0x01",
+      "https://unichain.blockscout.com/api/v2/addresses/0x01",
+      "https://explorer.optimism.io/api/v2/addresses/0x01",
+    ]) {
+      await loggingFetch("hook-check", answeringAfter(SLOW_RESPONSE_MS), log)(url, {});
+    }
+
+    expect(lines).toEqual(Array.from({ length: 3 }, () => `[hook-check] slow verifier answer: ${SLOW_RESPONSE_MS}ms`));
   });
 
   it("names the source a request that threw was sent to, and reads an address it cannot parse as the chain", async () => {

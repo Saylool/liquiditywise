@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ChainTabs } from "@/components/ChainTabs";
 import { HookDirectory } from "@/components/HookDirectory";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
+import { checkHook } from "@/lib/advisor/getHookChecks";
 import { getHookDirectory } from "@/lib/advisor/getHookDirectory";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
@@ -11,6 +12,7 @@ import { ETHEREUM, readsV4, V4_CHAINS } from "@/lib/chains/chains";
 import { getChainCopy, titleOnChain } from "@/lib/i18n/chainCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
+import { HookCheckSection } from "./HookCheckSection";
 
 /*
  * Every hook the v4 net saw this week, in one place, one chain at a time.
@@ -23,7 +25,13 @@ import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestL
  *
  * Which is also why it is not behind the rate limiter in `proxy.ts`. That
  * counts requests that will spend something upstream; this one spends a single
- * subgraph read every ten minutes however often it is asked for.
+ * subgraph read every ten minutes however often it is asked for, and three
+ * questions per hook every twelve hours for what can be checked about it
+ * (advisor/getHookChecks.ts) — kept, and warmed before anybody asks.
+ *
+ * Those checks are started here, every hook's at once, and each is handed to
+ * the directory as a boundary of its own: the page is sent as soon as the
+ * week's pools are read, and each hook's line follows when its answers do.
  */
 
 export async function generateMetadata({
@@ -64,6 +72,15 @@ export default async function HooksPage({
   }
 
   const result = await getHookDirectory(chain.id);
+  const checks =
+    result.status === "success"
+      ? new Map(
+          result.data.hooks.map(({ address }) => [
+            address,
+            <HookCheckSection key={address} check={checkHook(chain.id, address)} locale={locale} />,
+          ]),
+        )
+      : undefined;
 
   return (
     <WorkspaceShell locale={locale} t={t} section="hooks" network={chainLabel(chain.id, locale)}>
@@ -75,6 +92,7 @@ export default async function HooksPage({
         parameters={DEFAULT_PRICE_BAND_PARAMETERS}
         t={t}
         locale={locale}
+        checks={checks}
       />
     </WorkspaceShell>
   );

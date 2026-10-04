@@ -16,7 +16,7 @@ describe("the words the chain choice needs", () => {
 
 describe("a page's title on a chain", () => {
   it("names the chain before the site's name, and after a title that has none", () => {
-    expect(titleOnChain("Uniswap v4 kancaları · LiquidityWise", "Base")).toBe("Uniswap v4 kancaları · Base · LiquidityWise");
+    expect(titleOnChain("Uniswap v4 hook'ları · LiquidityWise", "Base")).toBe("Uniswap v4 hook'ları · Base · LiquidityWise");
     expect(titleOnChain("Hooks", "Arbitrum One")).toBe("Hooks · Arbitrum One");
   });
 });

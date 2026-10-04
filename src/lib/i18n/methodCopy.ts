@@ -8,7 +8,8 @@ import type { Locale } from "./locales";
  * sentence below summarises an implementation and the block comment above it
  * — the volatility in analytics/historicalVolatility.ts, the band in
  * logSymmetricBand.ts, the deposit's share in depositFeeShare.ts, the hook
- * rule in advisor/feeDisclosure.ts, the re-centring strategy in
+ * rule in advisor/feeDisclosure.ts, what is checked about a hook in
+ * advisor/hookCheck.ts and getHookChecks.ts, the re-centring strategy in
  * recentringReplay.ts, the smart fifth in smartLiquidity.ts, an
  * open position's record in advisor/positionRecord.ts, the explanation's
  * contract in schemas/interpretation.ts — and where one of those
@@ -76,6 +77,12 @@ export type MethodFigures = {
   readonly smartChains: string;
   /** The networks read for v4 only. */
   readonly v4OnlyChains: string;
+  /** How many of a hook's pools are counted before the count is said to be at least that. */
+  readonly hookPoolCap: string;
+  /** Hours an answer about a hook is kept. */
+  readonly hookCheckHours: string;
+  /** Minutes before a question about a hook that went unanswered is asked again. */
+  readonly hookCheckRetryMinutes: string;
 };
 
 export type MethodSection = {
@@ -144,9 +151,10 @@ const en: MethodCopy = {
     },
     hooks: {
       title: "v4 hooks",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "A v4 pool may name a hook, a contract the protocol calls at fixed moments. Its permissions are read from its address: a hook is deployed to an address whose lowest fourteen bits say which callbacks the PoolManager will call, and the PoolManager checks those bits rather than asking the contract. So the site reads the rule the protocol enforces, not a registry, a label or the contract's own description — and it says what a hook may do, never what it does.",
         "A hook allowed to act before a swap can rewrite its fee; one allowed to return a delta from a swap can take part of the swap itself. When a pool's hook holds either, every fee figure tied to a range or a deposit is withheld — the fees while inside, a deposit's share, the fees in the thirty-day replay, the yield on the pair page — because nothing in the source separates the hook's share from the providers'. What the pool charged is still shown, as a fact about the pool, and the panels showing what a swap costs carry a note. A pool whose key fixes no fee is shown as having none, and the rate it actually charged is measured from its days.",
+        `Beside the permissions, the hooks page and a v4 pool's page show two things anyone can check from outside. Whether a hook's source code is verified is asked, from the server and with no key, of Sourcify and of the network's own Blockscout: verified on either is shown as verified, with the contract's name from Blockscout where it gives one and from Sourcify otherwise; verified on neither is shown as not found; a source that did not answer within a few seconds, or answered in a way not understood, leaves it shown as not checked. Verified means the source published for the address compiles to the code deployed there, so it can be read; it is not an audit, and it says nothing about whether the hook is safe. How many v4 pools on the network name the hook, and when the first of them was created, comes from the network's v4 subgraph, counted up to ${f.hookPoolCap}. Answers are kept for ${f.hookCheckHours} hours and a question that went unanswered is asked again after ${f.hookCheckRetryMinutes} minutes; a page never waits on one for long, and says the check could not be made instead.`,
       ],
     },
     "smart-liquidity": {
@@ -243,9 +251,10 @@ const tr: MethodCopy = {
     },
     hooks: {
       title: "v4 hook'ları",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "Bir v4 havuzu bir hook belirleyebilir: protokolün belirli anlarda çağırdığı bir sözleşme. İzinleri adresinden okunur: bir hook, en alttaki on dört biti PoolManager'ın hangi geri çağrıları yapacağını söyleyen bir adrese kurulur ve PoolManager sözleşmeye sormak yerine bu bitleri kontrol eder. Yani site protokolün zorunlu kıldığı kuralı okur; bir kayıt listesini, bir etiketi ya da sözleşmenin kendi tanımını değil — ve bir hook'un ne yapabileceğini söyler, ne yaptığını asla.",
         "Takastan önce devreye girmesine izin verilen bir hook komisyonu yeniden yazabilir; bir takastan delta döndürmesine izin verilen bir hook takasın bir kısmını kendisi alabilir. Bir havuzun hook'u bunlardan birine sahipse, bir aralığa ya da bir yatırıma bağlanan her komisyon rakamı gösterilmez — içerideyken alınan komisyonlar, bir yatırımın payı, otuz günlük yeniden oynatmadaki komisyonlar, parite sayfasındaki verim — çünkü kaynakta hiçbir şey hook'un payını likidite sağlayıcılarınınkinden ayırmaz. Havuzun aldığı komisyon, havuz hakkında bir olgu olarak yine gösterilir ve bir takasın maliyetini gösteren paneller bir not taşır. Anahtarı sabit bir komisyon taşımayan havuz böyle gösterilir ve gerçekte aldığı oran günlerinden ölçülür.",
+        `İzinlerin yanında, v4 hook'ları sayfası ve bir v4 havuzunun sayfası herkesin dışarıdan bakabileceği iki şey daha gösterir. Bir hook'un kaynak kodunun doğrulanmış olup olmadığı, sunucudan ve anahtarsız olarak Sourcify'a ve ağın kendi Blockscout'una sorulur: ikisinden birinde doğrulanmışsa doğrulanmış gösterilir, sözleşmenin adı Blockscout veriyorsa ondan, vermiyorsa Sourcify'dan alınır; ikisinde de doğrulanmamışsa bulunamadı olarak gösterilir; birkaç saniye içinde cevap vermeyen ya da anlaşılmayan bir biçimde cevap veren bir kaynak, durumu kontrol edilemedi olarak bırakır. Doğrulanmış, adres için yayımlanan kaynağın orada dağıtılmış koda derlendiği, yani okunabileceği anlamına gelir; bir denetim değildir ve hook'un güvenli olup olmadığı hakkında hiçbir şey söylemez. Ağda kaç v4 havuzunun hook'un adını verdiği ve ilkinin ne zaman oluşturulduğu ağın v4 subgraph'ından gelir; en fazla ${f.hookPoolCap} tanesi sayılır. Cevaplar ${f.hookCheckHours} saat saklanır, cevapsız kalan bir soru ${f.hookCheckRetryMinutes} dakika sonra yeniden sorulur; bir sayfa hiçbirini uzun süre beklemez, onun yerine kontrolün yapılamadığını söyler.`,
       ],
     },
     "smart-liquidity": {
@@ -342,9 +351,10 @@ const de: MethodCopy = {
     },
     hooks: {
       title: "v4-Hooks",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "Ein v4-Pool kann einen Hook nennen, einen Vertrag, den das Protokoll zu festen Zeitpunkten aufruft. Seine Berechtigungen werden aus seiner Adresse gelesen: ein Hook wird an eine Adresse deployt, deren unterste vierzehn Bits sagen, welche Callbacks der PoolManager aufruft, und der PoolManager prüft diese Bits, statt den Vertrag zu fragen. Die Seite liest also die Regel, die das Protokoll durchsetzt — kein Verzeichnis, kein Etikett und nicht die Selbstbeschreibung des Vertrags —, und sie sagt, was ein Hook darf, nie, was er tut.",
         "Ein Hook, der vor einem Tausch eingreifen darf, kann dessen Gebühr umschreiben; einer, der aus einem Tausch ein Delta zurückgeben darf, kann einen Teil des Tauschs selbst nehmen. Hat der Hook eines Pools eine dieser Berechtigungen, wird jede Gebührenzahl, die an einen Bereich oder eine Einlage gebunden ist, zurückgehalten — die Gebühren innerhalb, der Anteil einer Einlage, die Gebühren im Dreißig-Tage-Rückblick, die Rendite auf der Paar-Seite —, weil nichts in der Quelle den Anteil des Hooks von dem der Anbieter trennt. Was der Pool berechnet hat, wird weiter gezeigt, als Tatsache über den Pool, und die Felder, die zeigen, was ein Tausch kostet, tragen einen Hinweis. Ein Pool, dessen Schlüssel keine Gebühr festlegt, wird so angezeigt, und der tatsächlich berechnete Satz wird aus seinen Tagen gemessen.",
+        `Neben den Rechten zeigen die Hook-Seite und die Seite eines v4-Pools zwei Dinge, die jeder von außen prüfen kann. Ob der Quellcode eines Hooks verifiziert ist, wird vom Server aus und ohne Schlüssel bei Sourcify und beim Blockscout des Netzwerks erfragt: bei einem von beiden verifiziert wird als verifiziert gezeigt, mit dem Namen des Vertrags von Blockscout, wo es einen nennt, sonst von Sourcify; bei keinem verifiziert wird als nicht gefunden gezeigt; eine Quelle, die nicht binnen weniger Sekunden oder nur unverständlich antwortet, lässt es als nicht geprüft stehen. Verifiziert heißt, dass der für die Adresse veröffentlichte Quellcode zu dem dort deployten Code kompiliert, man ihn also lesen kann; es ist kein Audit und sagt nichts darüber, ob der Hook sicher ist. Wie viele v4-Pools im Netzwerk den Hook nennen und wann der erste davon angelegt wurde, kommt aus dem v4-Subgraph des Netzwerks, gezählt bis ${f.hookPoolCap}. Antworten werden ${f.hookCheckHours} Stunden behalten, und eine unbeantwortete Frage wird nach ${f.hookCheckRetryMinutes} Minuten erneut gestellt; eine Seite wartet auf keine lange und sagt stattdessen, dass die Prüfung nicht möglich war.`,
       ],
     },
     "smart-liquidity": {
@@ -441,9 +451,10 @@ const es: MethodCopy = {
     },
     hooks: {
       title: "Hooks de v4",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "Un pool de v4 puede nombrar un hook, un contrato al que el protocolo llama en momentos fijos. Sus permisos se leen de su dirección: un hook se despliega en una dirección cuyos catorce bits más bajos dicen qué callbacks llamará el PoolManager, y el PoolManager comprueba esos bits en lugar de preguntar al contrato. Así que el sitio lee la regla que el protocolo hace cumplir — no un registro, una etiqueta ni la descripción que el contrato da de sí mismo — y dice lo que un hook puede hacer, nunca lo que hace.",
         "Un hook autorizado a actuar antes de un intercambio puede reescribir su comisión; uno autorizado a devolver un delta de un intercambio puede quedarse con parte del intercambio. Cuando el hook de un pool tiene alguno de estos permisos, se retiene toda cifra de comisiones ligada a un rango o a un depósito — las comisiones mientras está dentro, la parte de un depósito, las comisiones de la reproducción de treinta días, el rendimiento en la página del par — porque nada en la fuente separa la parte del hook de la de los proveedores. Lo que cobró el pool se sigue mostrando, como un hecho sobre el pool, y los paneles que muestran lo que cuesta un intercambio llevan una nota. Un pool cuya clave no fija comisión se muestra sin ella, y la tasa que realmente cobró se mide a partir de sus días.",
+        `Junto a los permisos, la página de hooks y la de un pool v4 muestran dos cosas que cualquiera puede comprobar desde fuera. Si el código fuente de un hook está verificado se pregunta, desde el servidor y sin clave, a Sourcify y al Blockscout de la propia red: verificado en cualquiera de los dos se muestra como verificado, con el nombre del contrato según Blockscout cuando lo da y según Sourcify si no; no verificado en ninguno se muestra como no encontrado; una fuente que no responde en unos segundos, o que responde de un modo que no se entiende, lo deja como no comprobado. Verificado significa que el código publicado para la dirección compila al código desplegado allí, así que se puede leer; no es una auditoría y no dice nada sobre si el hook es seguro. Cuántos pools v4 de la red nombran el hook, y cuándo se creó el primero de ellos, sale del subgraph v4 de la red, contados hasta ${f.hookPoolCap}. Las respuestas se guardan ${f.hookCheckHours} horas y una pregunta sin respuesta se repite a los ${f.hookCheckRetryMinutes} minutos; ninguna página espera mucho por una, y en su lugar dice que la comprobación no pudo hacerse.`,
       ],
     },
     "smart-liquidity": {
@@ -540,9 +551,10 @@ const ar: MethodCopy = {
     },
     hooks: {
       title: "خطّافات v4",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "قد يسمّي تجمّع v4 خطّافًا (hook)، أي عقدًا يستدعيه البروتوكول في لحظات محددة. وتُقرأ صلاحياته من عنوانه: يُنشر الخطّاف على عنوان تقول بِتّاته الأربع عشرة الدنيا أيّ الاستدعاءات سيجريها الـ PoolManager، والـ PoolManager يفحص تلك البِتّات بدل أن يسأل العقد. فالموقع إذن يقرأ القاعدة التي يفرضها البروتوكول — لا سجلًّا ولا وسمًا ولا وصف العقد لنفسه — ويقول ما يُسمح للخطّاف بفعله، ولا يقول أبدًا ما يفعله.",
         "الخطّاف المسموح له بالتدخل قبل التبادل يستطيع إعادة كتابة رسمه؛ والمسموح له بإرجاع فرق (delta) من التبادل يستطيع أن يأخذ جزءًا من التبادل نفسه. وحين يملك خطّاف التجمّع أيًّا من هذين، يُحجب كل رقم رسوم مرتبط بنطاق أو بإيداع — الرسوم أثناء البقاء داخله، وحصة الإيداع، والرسوم في الشهر المُعاد، والعائد في صفحة الزوج — إذ لا شيء في المصدر يفصل حصة الخطّاف عن حصة المزوّدين. أما ما تقاضاه التجمّع فيبقى معروضًا، بوصفه حقيقة عن التجمّع، واللوحات التي تعرض تكلفة التبادل تحمل ملاحظة. والتجمّع الذي لا يثبّت مفتاحه رسمًا يُعرض بلا رسم، ويُقاس المعدّل الذي تقاضاه فعلًا من أيامه.",
+        `إلى جانب الصلاحيات، تعرض صفحة الخطّافات وصفحة تجمّع v4 أمرين يستطيع أي أحد التحقق منهما من الخارج. أما هل الشيفرة المصدرية للخطّاف موثّقة، فيُسأل عنه من الخادم وبلا مفتاح كلٌّ من Sourcify ومستكشف Blockscout الخاص بالشبكة: الموثّق على أيٍّ منهما يُعرض موثّقًا، مع اسم العقد من Blockscout حين يذكره ومن Sourcify إن لم يذكره؛ وغير الموثّق على كليهما يُعرض على أنه لم يُعثر عليه؛ والمصدر الذي لا يجيب في غضون ثوانٍ، أو يجيب بما لا يُفهم، يتركه معروضًا على أنه لم يُتحقق منه. والموثّق يعني أن المصدر المنشور للعنوان يُترجَم إلى الشيفرة المنشورة عنده، فتمكن قراءتها؛ وهو ليس تدقيقًا، ولا يقول شيئًا عن كون الخطّاف آمنًا. أما عدد تجمّعات v4 على الشبكة التي تسمّي الخطّاف، ومتى أُنشئ أولها، فيأتي من subgraph الـ v4 الخاص بالشبكة، ويتوقف العدّ عند ${f.hookPoolCap}. وتُحفظ الإجابات ${f.hookCheckHours} ساعة، ويُعاد السؤال الذي لم يُجب عنه بعد ${f.hookCheckRetryMinutes} دقائق؛ ولا تنتظر أي صفحة إجابةً طويلًا، بل تقول بدلًا من ذلك إن التحقق تعذّر.`,
       ],
     },
     "smart-liquidity": {
@@ -639,9 +651,10 @@ const hi: MethodCopy = {
     },
     hooks: {
       title: "v4 के hooks",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "कोई v4 पूल एक hook का नाम दे सकता है — एक कॉन्ट्रैक्ट जिसे प्रोटोकॉल तय क्षणों पर बुलाता है। उसकी अनुमतियाँ उसके पते से पढ़ी जाती हैं: hook ऐसे पते पर तैनात होता है जिसके सबसे निचले चौदह बिट बताते हैं कि PoolManager कौन-से कॉलबैक बुलाएगा, और PoolManager कॉन्ट्रैक्ट से पूछने के बजाय इन्हीं बिटों को जाँचता है। इसलिए साइट वह नियम पढ़ती है जिसे प्रोटोकॉल लागू करता है — कोई रजिस्टर, कोई लेबल या कॉन्ट्रैक्ट का अपने बारे में दिया विवरण नहीं — और बताती है कि hook क्या कर सकता है, यह कभी नहीं कि वह क्या करता है।",
         "जिस hook को स्वैप से पहले दख़ल की अनुमति है, वह उसका शुल्क दोबारा लिख सकता है; जिसे स्वैप से delta लौटाने की अनुमति है, वह स्वैप का एक हिस्सा ख़ुद ले सकता है। जब किसी पूल के hook के पास इनमें से कोई अनुमति हो, तो दायरे या जमा से जुड़ा हर शुल्क-आँकड़ा रोक लिया जाता है — भीतर रहने के दौरान के शुल्क, एक जमा का हिस्सा, तीस दिन के दोहराव के शुल्क, जोड़ी वाले पृष्ठ की शुल्क आय — क्योंकि स्रोत में कुछ भी hook के हिस्से को तरलता देने वालों के हिस्से से अलग नहीं करता। पूल ने जो लिया वह फिर भी दिखाया जाता है, पूल के बारे में एक तथ्य के रूप में, और स्वैप की लागत दिखाने वाले पैनलों पर एक टिप्पणी रहती है। जिस पूल की कुंजी कोई शुल्क तय नहीं करती, वह बिना शुल्क के दिखाया जाता है, और उसने असल में जो दर ली वह उसके दिनों से मापी जाती है।",
+        `अनुमतियों के साथ, hooks वाला पृष्ठ और किसी v4 पूल का पृष्ठ दो ऐसी बातें दिखाते हैं जिन्हें कोई भी बाहर से जाँच सकता है। किसी hook का सोर्स कोड सत्यापित है या नहीं, यह सर्वर से और बिना किसी कुंजी के Sourcify और नेटवर्क के अपने Blockscout से पूछा जाता है: दोनों में से किसी पर भी सत्यापित हो तो उसे सत्यापित दिखाया जाता है, कॉन्ट्रैक्ट का नाम Blockscout दे तो उससे, नहीं तो Sourcify से; दोनों में से किसी पर सत्यापित न हो तो दिखाया जाता है कि कुछ नहीं मिला; जो स्रोत कुछ सेकंड में जवाब न दे, या ऐसा जवाब दे जो समझ में न आए, उसके रहते दिखाया जाता है कि जाँच नहीं हो सकी। सत्यापित का मतलब है कि पते के लिए प्रकाशित सोर्स कोड कंपाइल होकर वहाँ तैनात कोड बनता है, इसलिए उसे पढ़ा जा सकता है; यह ऑडिट नहीं है, और इससे यह पता नहीं चलता कि hook सुरक्षित है या नहीं। नेटवर्क पर कितने v4 पूल उस hook का नाम लेते हैं, और उनमें से पहला कब बना, यह नेटवर्क के v4 subgraph से आता है, ${f.hookPoolCap} तक गिना जाता है। जवाब ${f.hookCheckHours} घंटे रखे जाते हैं और जिस सवाल का जवाब नहीं मिला वह ${f.hookCheckRetryMinutes} मिनट बाद फिर पूछा जाता है; कोई पृष्ठ किसी जवाब का देर तक इंतज़ार नहीं करता, बल्कि कह देता है कि जाँच नहीं हो सकी।`,
       ],
     },
     "smart-liquidity": {
@@ -738,9 +751,10 @@ const zh: MethodCopy = {
     },
     hooks: {
       title: "v4 钩子",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "v4 资金池可以指定一个 hook：一个由协议在固定时刻调用的合约。它的权限从它的地址读取：hook 部署在这样一个地址上，其最低的十四位说明 PoolManager 会调用哪些回调，而 PoolManager 检查的正是这些位，而不是去问合约。所以本站读的是协议强制执行的规则——不是登记表、标签或合约对自己的描述——它说的是 hook 被允许做什么，从不说它实际做了什么。",
         "被允许在兑换前介入的 hook 可以改写兑换的手续费；被允许从兑换中返回 delta 的 hook 可以自己拿走兑换的一部分。当资金池的 hook 拥有其中任何一项权限时，所有与区间或存入资金挂钩的手续费数字都会被隐去——区间内期间的手续费、一笔资金的份额、三十天重放里的手续费、交易对页面上的收益率——因为来源中没有任何东西能把 hook 的份额和流动性提供者的份额分开。资金池收了多少仍会显示，作为关于这个资金池的事实；显示兑换成本的面板会附上说明。PoolKey 中没有固定手续费的资金池会如实显示为没有，它实际收取的费率从它的每日数据中测出。",
+        `除了权限，hook 页面和 v4 资金池的页面还显示两项任何人都能从外部核实的信息。一个 hook 的源代码是否经过验证，由服务器在不使用任何密钥的情况下向 Sourcify 和该网络自己的 Blockscout 查询：在其中任何一个上经过验证就显示为已验证，合约名称在 Blockscout 给出时取自 Blockscout，否则取自 Sourcify；在两者上都未经验证就显示为未找到；某个来源如果几秒内没有回应，或者回应的内容无法理解，就显示为未能核实。经过验证的意思是，为该地址公开的源代码编译后就是部署在那里的代码，因此可以阅读；这不是审计，也不说明这个 hook 是否安全。网络上有多少个 v4 资金池指定了这个 hook，以及其中第一个是什么时候创建的，来自该网络的 v4 子图，计数上限为 ${f.hookPoolCap}。回应会保留 ${f.hookCheckHours} 小时，没有得到回应的查询会在 ${f.hookCheckRetryMinutes} 分钟后重新发出；页面从不长时间等待任何一个，而是直接说明这项核实未能完成。`,
       ],
     },
     "smart-liquidity": {
@@ -837,9 +851,10 @@ const ru: MethodCopy = {
     },
     hooks: {
       title: "Hook’и v4",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "Пул v4 может назвать hook — контракт, который протокол вызывает в определённые моменты. Его разрешения читаются из его адреса: hook развёртывается по адресу, младшие четырнадцать бит которого говорят, какие обратные вызовы сделает PoolManager, и PoolManager проверяет эти биты, а не спрашивает контракт. Значит, сайт читает правило, которое обеспечивает протокол, — не реестр, не ярлык и не описание контракта самим собой — и говорит, что hook’у разрешено, но никогда не то, что он делает.",
         "Hook, которому разрешено вмешиваться до свопа, может переписать его комиссию; тот, которому разрешено возвращать delta из свопа, может забрать часть самого свопа. Если у hook’а пула есть любое из этих разрешений, скрывается каждая цифра комиссий, привязанная к диапазону или вкладу, — комиссии, пока цена внутри, доля вклада, комиссии в тридцатидневном воспроизведении, доходность на странице пары, — потому что ничто в источнике не отделяет долю hook’а от доли поставщиков. То, что пул взял, по-прежнему показывается как факт о пуле, а панели, показывающие стоимость свопа, несут пометку. Пул, чей ключ не фиксирует комиссию, так и показывается, а ставка, которую он реально брал, измеряется по его дням.",
+        `Помимо разрешений, страница hook’ов и страница пула v4 показывают две вещи, которые любой может проверить снаружи. Верифицирован ли исходный код hook’а, спрашивается с сервера и без ключа у Sourcify и у собственного Blockscout сети: верифицированный хотя бы на одном показывается как верифицированный, с именем контракта от Blockscout, если тот его даёт, а иначе от Sourcify; не верифицированный ни на одном показывается как не найденный; источник, который не ответил за несколько секунд или ответил непонятно, оставляет его непроверенным. Верифицирован значит, что исходный код, опубликованный для адреса, компилируется в код, развёрнутый по нему, и его можно прочитать; это не аудит, и это ничего не говорит о том, безопасен ли hook. Сколько пулов v4 в сети называют hook и когда был создан первый из них, берётся из subgraph’а v4 этой сети, счёт идёт до ${f.hookPoolCap}. Ответы хранятся ${f.hookCheckHours} часов, а вопрос без ответа задаётся снова через ${f.hookCheckRetryMinutes} минут; страница никогда не ждёт ответа долго и вместо этого говорит, что проверить не удалось.`,
       ],
     },
     "smart-liquidity": {
@@ -936,9 +951,10 @@ const pt: MethodCopy = {
     },
     hooks: {
       title: "Hooks do v4",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "Um pool do v4 pode nomear um hook, um contrato que o protocolo chama em momentos fixos. As permissões dele são lidas do seu endereço: um hook é implantado num endereço cujos catorze bits mais baixos dizem quais callbacks o PoolManager vai chamar, e o PoolManager confere esses bits em vez de perguntar ao contrato. Então o site lê a regra que o protocolo impõe — não um registro, um rótulo ou a descrição que o contrato faz de si mesmo — e diz o que um hook pode fazer, nunca o que ele faz.",
         "Um hook autorizado a agir antes de um swap pode reescrever a taxa dele; um autorizado a devolver um delta de um swap pode ficar com parte do próprio swap. Quando o hook de um pool tem qualquer uma dessas permissões, todo número de taxas ligado a uma faixa ou a um depósito é retido — as taxas enquanto dentro, a parcela de um depósito, as taxas na reprodução de trinta dias, o rendimento na página do par — porque nada na fonte separa a parte do hook da dos provedores. O que o pool cobrou continua aparecendo, como um fato sobre o pool, e os painéis que mostram quanto custa um swap trazem uma nota. Um pool cuja chave não fixa taxa aparece sem taxa, e a taxa que ele de fato cobrou é medida a partir dos seus dias.",
+        `Ao lado das permissões, a página de hooks e a página de um pool v4 mostram duas coisas que qualquer um pode conferir de fora. Se o código-fonte de um hook está verificado é perguntado, pelo servidor e sem chave, ao Sourcify e ao Blockscout da própria rede: verificado em qualquer um dos dois aparece como verificado, com o nome do contrato dado pelo Blockscout quando ele dá um e pelo Sourcify caso contrário; não verificado em nenhum aparece como não encontrado; uma fonte que não responde em poucos segundos, ou responde de um jeito que não se entende, deixa como não conferido. Verificado quer dizer que o código publicado para o endereço compila para o código implantado ali, então ele pode ser lido; não é uma auditoria e não diz nada sobre o hook ser seguro. Quantos pools v4 da rede citam o hook, e quando o primeiro deles foi criado, vem do subgraph v4 da rede, contados até ${f.hookPoolCap}. As respostas ficam guardadas por ${f.hookCheckHours} horas e uma pergunta sem resposta é refeita depois de ${f.hookCheckRetryMinutes} minutos; nenhuma página espera muito por uma, e diz em vez disso que a conferência não pôde ser feita.`,
       ],
     },
     "smart-liquidity": {
@@ -1035,9 +1051,10 @@ const zhHant: MethodCopy = {
     },
     hooks: {
       title: "v4 hook",
-      paragraphs: () => [
+      paragraphs: (f) => [
         "v4 資金池可以指定一個 hook：一個由協議在固定時刻呼叫的合約。它的權限從它的地址讀取：hook 部署在這樣一個地址上，其最低的十四個位元說明 PoolManager 會呼叫哪些回呼，而 PoolManager 檢查的正是這些位元，而不是去問合約。所以本站讀的是協議強制執行的規則——不是登記表、標籤或合約對自己的描述——它說的是 hook 被允許做什麼，從不說它實際做了什麼。",
         "被允許在兌換前介入的 hook 可以改寫兌換的手續費；被允許從兌換中回傳 delta 的 hook 可以自己拿走兌換的一部分。當資金池的 hook 擁有其中任何一項權限時，所有與區間或存入資金掛鉤的手續費數字都會被隱去——價格在區間內那些日子的手續費、一筆資金的份額、三十天重演裡的手續費、交易對頁面上的收益率——因為來源中沒有任何東西能把 hook 的份額和流動性提供者的份額分開。資金池收了多少仍會顯示，作為關於這個資金池的事實；顯示兌換成本的面板會附上說明。PoolKey 中沒有固定手續費的資金池會如實顯示為沒有，它實際收取的費率從它的每日資料中測出。",
+        `除了權限，hook 頁面和 v4 資金池的頁面還顯示兩項任何人都能從外部核實的資訊。一個 hook 的原始碼是否經過驗證，由伺服器在不使用任何金鑰的情況下向 Sourcify 和該網路自己的 Blockscout 查詢：在其中任何一個上經過驗證就顯示為已驗證，合約名稱在 Blockscout 給出時取自 Blockscout，否則取自 Sourcify；在兩者上都未經驗證就顯示為未找到；某個來源如果幾秒內沒有回應，或者回應的內容無法理解，就顯示為未能核實。經過驗證的意思是，為該地址公開的原始碼編譯後就是部署在那裡的程式碼，因此可以閱讀；這不是審計，也不說明這個 hook 是否安全。網路上有多少個 v4 資金池指定了這個 hook，以及其中第一個是什麼時候建立的，來自該網路的 v4 子圖，計數上限為 ${f.hookPoolCap}。回應會保留 ${f.hookCheckHours} 小時，沒有得到回應的查詢會在 ${f.hookCheckRetryMinutes} 分鐘後重新送出；頁面從不長時間等待任何一個，而是直接說明這項核實未能完成。`,
       ],
     },
     "smart-liquidity": {

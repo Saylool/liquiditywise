@@ -1,4 +1,5 @@
 import type { KeyValueStore } from "../store/keyValueStore";
+import type { SourceAnswer } from "../verification/sourceAnswer";
 
 /*
  * Whether the two paid credentials this application depends on still work.
@@ -107,6 +108,51 @@ export type SubgraphReading = { readonly status: SubgraphStatus; readonly failin
 const isFailing = (status: SubgraphStatus): boolean =>
   status === "errors" || status === "indexing-errors" || status === "behind";
 
+/**
+ * The public contract verifiers the hook pages ask (src/lib/verification/):
+ * Sourcify, and each network's own Blockscout.
+ *
+ * Neither takes a key, so a probe of them is not about a credential. It is
+ * about the quieter way they can break: an endpoint moved or reshaped, or a
+ * service that has started refusing this server. Every hook on every page
+ * would say "could not be checked just now" from then on — true each time,
+ * and never fixed — so each is asked, hourly, about a contract it is known
+ * to hold verified: Uniswap's own PoolManager, on that network.
+ */
+export const VERIFIERS = [
+  "sourcify",
+  "blockscout-ethereum",
+  "blockscout-base",
+  "blockscout-arbitrum",
+  "blockscout-unichain",
+  "blockscout-optimism",
+  "blockscout-polygon",
+] as const;
+export type VerifierName = (typeof VERIFIERS)[number];
+
+/**
+ * "unrecognised": it answered, and not with the verdict known to be true —
+ * not verified, or not in a shape src/lib/verification/ reads. "refused": a
+ * 401 or 403. "unanswered" is a timeout, a dropped connection, a 429 or a
+ * 5xx: a service having a moment, which passes and is never reported.
+ */
+export type VerifierStatus = "ok" | "unrecognised" | "refused" | "unanswered";
+
+/** Reads one verifier's answer about a contract it is known to hold verified. Pure. */
+export const classifyVerifierAnswer = (answer: SourceAnswer): VerifierStatus => {
+  if (answer.kind === "verified") return "ok";
+  if (answer.kind === "unverified") return "unrecognised";
+  if (answer.why === "unreadable") return "unrecognised";
+  if (answer.why === "refused") return "refused";
+
+  return "unanswered";
+};
+
+/** One verifier's reading, and since when it has been failing, carried from probe to probe. */
+export type VerifierReading = { readonly status: VerifierStatus; readonly failingSinceMs: number | null };
+
+const verifierFailing = (status: VerifierStatus): boolean => status === "unrecognised" || status === "refused";
+
 export type UpstreamReport = {
   readonly marketData: UpstreamStatus;
   readonly chainData: UpstreamStatus;
@@ -118,6 +164,8 @@ export type UpstreamReport = {
   readonly otherChains?: Partial<Record<OtherChain, UpstreamStatus>>;
   /** What each configured subgraph said, and since when it has been failing. */
   readonly subgraphs?: Partial<Record<SubgraphName, SubgraphReading>>;
+  /** What each contract verifier said about the PoolManager it holds verified, and since when it has been failing. */
+  readonly verifiers?: Partial<Record<VerifierName, VerifierReading>>;
   /** When these were taken, so a stale report can be told from a fresh one. */
   readonly atMs: number;
 };
@@ -127,7 +175,7 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { marketData, chainData, atMs, otherChains, subgraphs } = parsed as Partial<UpstreamReport>;
+    const { marketData, chainData, atMs, otherChains, subgraphs, verifiers } = parsed as Partial<UpstreamReport>;
     const known = (value: unknown): value is UpstreamStatus =>
       value === "ok" || value === "credentials-rejected" || value === "rate-limited" || value === "unreachable";
 
@@ -152,8 +200,22 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
       }
     }
 
+    /* And one stored before the verifiers were. */
+    const verifierReadings: Partial<Record<VerifierName, VerifierReading>> = {};
+    for (const name of VERIFIERS) {
+      const reading = (verifiers as Record<string, Partial<VerifierReading>> | undefined)?.[name];
+      const status = reading?.status;
+      const since = reading?.failingSinceMs;
+      if (
+        (status === "ok" || status === "unrecognised" || status === "refused" || status === "unanswered") &&
+        (since === null || typeof since === "number")
+      ) {
+        verifierReadings[name] = { status, failingSinceMs: since };
+      }
+    }
+
     return known(marketData) && known(chainData) && typeof atMs === "number"
-      ? { marketData, chainData, otherChains: others, subgraphs: readings, atMs }
+      ? { marketData, chainData, otherChains: others, subgraphs: readings, verifiers: verifierReadings, atMs }
       : null;
   } catch {
     return null;
@@ -173,6 +235,8 @@ export type ProbeDependencies = {
   readonly probeOtherChains?: Partial<Record<OtherChain, () => Promise<number>>>;
   /** One question per configured subgraph: its HTTP status and decoded body. */
   readonly probeSubgraphs?: Partial<Record<SubgraphName, () => Promise<{ status: number; body: unknown }>>>;
+  /** One question per verifier, about the contract it is known to hold verified. */
+  readonly probeVerifiers?: Partial<Record<VerifierName, () => Promise<SourceAnswer>>>;
   readonly now: () => Date;
 };
 
@@ -206,13 +270,22 @@ export const readUpstreamReport = async (
     const probe = dependencies.probeSubgraphs?.[name];
     return probe === undefined ? [] : [{ name, probe }];
   });
-  const [[marketStatus, chainStatus, ...otherStatuses], answers] = await Promise.all([
+  const verifiersAsked = VERIFIERS.flatMap((name) => {
+    const probe = dependencies.probeVerifiers?.[name];
+    return probe === undefined ? [] : [{ name, probe }];
+  });
+  const [[marketStatus, chainStatus, ...otherStatuses], answers, verdicts] = await Promise.all([
     Promise.all([
       dependencies.probeMarketData().catch(() => 0),
       dependencies.probeChainData().catch(() => 0),
       ...others.map(({ probe }) => probe().catch(() => 0)),
     ]),
     Promise.all(asked.map(({ probe }) => probe().catch(() => ({ status: 0, body: null })))),
+    Promise.all(
+      verifiersAsked.map(({ probe }) =>
+        probe().then(classifyVerifierAnswer, (): VerifierStatus => "unanswered"),
+      ),
+    ),
   ]);
 
   /* A failure keeps the moment it began, so a problem can wait for a second probe that agrees. */
@@ -225,6 +298,14 @@ export const readUpstreamReport = async (
     }),
   );
 
+  const verifiers = Object.fromEntries(
+    verifiersAsked.map(({ name }, index) => {
+      const status = verdicts[index] ?? "unanswered";
+      const failingSinceMs = verifierFailing(status) ? (previous?.verifiers?.[name]?.failingSinceMs ?? nowMs) : null;
+      return [name, { status, failingSinceMs }];
+    }),
+  );
+
   const report: UpstreamReport = {
     marketData: classifyProbeStatus(marketStatus),
     chainData: classifyProbeStatus(chainStatus),
@@ -232,6 +313,7 @@ export const readUpstreamReport = async (
       others.map(({ chain }, index) => [chain, classifyProbeStatus(otherStatuses[index] ?? 0)]),
     ),
     subgraphs,
+    verifiers,
     atMs: nowMs,
   };
 
@@ -252,6 +334,19 @@ export const subgraphFailures = (
   Object.fromEntries(
     SUBGRAPHS.flatMap((name) => {
       const reading = report.subgraphs?.[name];
+      return reading === undefined || reading.failingSinceMs === null
+        ? []
+        : [[name, { status: reading.status, forMs: report.atMs - reading.failingSinceMs }]];
+    }),
+  );
+
+/** The verifiers failing in a report, and for how long by its own clock. */
+export const verifierFailures = (
+  report: UpstreamReport,
+): Partial<Record<VerifierName, { readonly status: VerifierStatus; readonly forMs: number }>> =>
+  Object.fromEntries(
+    VERIFIERS.flatMap((name) => {
+      const reading = report.verifiers?.[name];
       return reading === undefined || reading.failingSinceMs === null
         ? []
         : [[name, { status: reading.status, forMs: report.atMs - reading.failingSinceMs }]];

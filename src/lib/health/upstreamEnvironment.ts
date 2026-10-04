@@ -1,7 +1,11 @@
 import "server-only";
 
 import { v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
-import type { OtherChain, ProbeDependencies, SubgraphName } from "./upstreamProbe";
+import type { V4ChainId } from "../chains/chains";
+import { fetchBlockscoutAnswer } from "../verification/blockscout";
+import type { SourceAnswer } from "../verification/sourceAnswer";
+import { fetchSourcifyAnswer } from "../verification/sourcify";
+import type { OtherChain, ProbeDependencies, SubgraphName, VerifierName } from "./upstreamProbe";
 
 /*
  * The cheapest question that still proves a credential.
@@ -100,6 +104,35 @@ const probeSubgraph = (apiKey: string, subgraphId: string) => async (): Promise<
   }
 };
 
+/**
+ * Uniswap's own PoolManager on each network: the one contract every verifier
+ * the hook pages ask is known to hold verified there — each network's
+ * Blockscout for its own, and Sourcify for mainnet's (it holds none for
+ * Unichain's). Measured 2026-10-04.
+ */
+const POOL_MANAGERS = {
+  1: "0x000000000004444c5dc75cb358380d2e3de08a90",
+  8453: "0x498581ff718922c3f8e6a244956af099b2652b2b",
+  42161: "0x360e68faccca8ca495c1b759fd9eee466db9fb32",
+  130: "0x1f98400000000000000000000000000000000004",
+  10: "0x9a13f98cb987694c9f086b1f5eb990eea8264ec3",
+  137: "0x67366782805870060151383f4bbff9dab53e5cd6",
+} as const satisfies Record<V4ChainId, string>;
+
+const askBlockscout = (chainId: V4ChainId) => (): Promise<SourceAnswer> =>
+  fetchBlockscoutAnswer({ chainId, address: POOL_MANAGERS[chainId], fetchImpl: fetch, timeoutMs: PROBE_TIMEOUT_MS });
+
+/** Keyless, so always asked: nothing to configure, and nothing that could leave this module but a verdict. */
+const VERIFIER_PROBES: Record<VerifierName, () => Promise<SourceAnswer>> = {
+  sourcify: () => fetchSourcifyAnswer({ chainId: 1, address: POOL_MANAGERS[1], fetchImpl: fetch, timeoutMs: PROBE_TIMEOUT_MS }),
+  "blockscout-ethereum": askBlockscout(1),
+  "blockscout-base": askBlockscout(8453),
+  "blockscout-arbitrum": askBlockscout(42161),
+  "blockscout-unichain": askBlockscout(130),
+  "blockscout-optimism": askBlockscout(10),
+  "blockscout-polygon": askBlockscout(137),
+};
+
 export const upstreamProbes = (): ProbeDependencies | null => {
   const apiKey = process.env.THE_GRAPH_API_KEY?.trim();
   const subgraphId = process.env.UNISWAP_V3_ETHEREUM_SUBGRAPH_ID?.trim();
@@ -140,6 +173,7 @@ export const upstreamProbes = (): ProbeDependencies | null => {
         return id ? [[name, probeSubgraph(apiKey, id)]] : [];
       }),
     ),
+    probeVerifiers: VERIFIER_PROBES,
     now: () => new Date(),
   };
 };

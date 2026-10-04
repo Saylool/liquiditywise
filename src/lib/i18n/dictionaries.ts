@@ -693,7 +693,7 @@ const en = {
     intro:
       "Every v4 pool may name a hook: a contract the PoolManager calls at fixed moments in a swap, a deposit, a withdrawal. Which moments is not a promise anybody makes. It is mined into the hook's address — the low fourteen bits are the list, and the protocol refuses to call the contract for anything outside it.",
     onlyPermissions:
-      "That is the whole of what this page knows, and it is worth knowing precisely because it is enforced rather than claimed. What a hook does with a permission is in its code. This application does not read code, and it keeps no list of hooks anybody has vouched for — both would be a claim it could not check, next to figures it can.",
+      "That is the one thing here the protocol enforces rather than anybody claims, which is why it comes first. What a hook does with a permission is in its code. This application does not read code, and it keeps no list of hooks anybody has vouched for — both would be a claim it could not check, next to figures it can.",
     /*
      * Phrased so no count is followed by a noun that would have to agree with
      * it. A list of one pool is not a case this page will meet — the week's
@@ -1293,9 +1293,9 @@ const tr: Dictionary = {
     poolTitle: "Havuz aralığı analizi · LiquidityWise",
     poolDescription:
       "Bir Uniswap v3 havuzu için, fiyatının gerçekte ne kadar hareket ettiğinden çizilmiş bir fiyat aralığı.",
-    hooksTitle: "Uniswap v4 kancaları · LiquidityWise",
+    hooksTitle: "Uniswap v4 hook'ları · LiquidityWise",
     hooksDescription:
-      "Haftanın en yoğun Uniswap v4 havuzlarının adını verdiği her kanca ve her birinin neye izinli olduğu — kendi adresinden okunmuş hâliyle."
+      "Haftanın en yoğun Uniswap v4 havuzlarının adını verdiği her hook ve her birinin neye izinli olduğu — kendi adresinden okunmuş hâliyle."
   },
 
   preferences: {
@@ -1330,7 +1330,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için ve hâlihazırda tuttuğu Uniswap v3 ve v4 pozisyonları için sorgulanabilir — her biri hangi fiyatları kapsadığı ve havuzun şu anda içinde olup olmadığıyla birlikte. Sonra hepsinin gündelik dille açıklaması, okuduğun dilde. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün hook'ların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için ve hâlihazırda tuttuğu Uniswap v3 ve v4 pozisyonları için sorgulanabilir — her biri hangi fiyatları kapsadığı ve havuzun şu anda içinde olup olmadığıyla birlikte. Sonra hepsinin gündelik dille açıklaması, okuduğun dilde. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -1373,7 +1373,7 @@ const tr: Dictionary = {
           {
             name: "TWAMM tarzı stratejiler",
             summary:
-              "Büyük bir emri tek bir likidite noktasına karşı yürütmek yerine zamana yaymak. Bunun bir analiz sayfasının cevaplayabileceği yarısı artık var: güncel fiyattaki likiditeye karşı bir takasın ne kadara mal olduğu ve sayfanın hangi büyüklüğe kadarını fiyatlayabildiği. Emri zamana yaymak bir kancanın işi ve bu uygulama bir kancanın davranışını modellemiyor.",
+              "Büyük bir emri tek bir likidite noktasına karşı yürütmek yerine zamana yaymak. Bunun bir analiz sayfasının cevaplayabileceği yarısı artık var: güncel fiyattaki likiditeye karşı bir takasın ne kadara mal olduğu ve sayfanın hangi büyüklüğe kadarını fiyatlayabildiği. Emri zamana yaymak bir hook'un işi ve bu uygulama bir hook'un davranışını modellemiyor.",
           },
         ],
       },
@@ -1415,7 +1415,7 @@ const tr: Dictionary = {
     heading: "Bir yatırım ne toplardı",
     unavailable: "Bir yatırımın bu komisyonlardan alacağı pay bu havuz için hesaplanamıyor.",
     withheldNote:
-      "Üstündeki rakamla aynı sebepten: buradaki kanca takastan kendine pay alabilir ve kaynak, onun payını likidite sağlayıcılarınkinden ayırmıyor. Bu aralığa atfedilemeyen bir toplamın bir kesri de, o aralıktaki bir yatırıma atfedilemez.",
+      "Üstündeki rakamla aynı sebepten: buradaki hook takastan kendine pay alabilir ve kaynak, onun payını likidite sağlayıcılarınkinden ayırmıyor. Bu aralığa atfedilemeyen bir toplamın bir kesri de, o aralıktaki bir yatırıma atfedilemez.",
     deposited: "Yatırım",
     depositedNote: "Hesabın yapıldığı büyüklük. Yukarıdaki formdan değiştirilebilir.",
     collected: "Alacağı komisyon",
@@ -1793,22 +1793,22 @@ const tr: Dictionary = {
   },
 
   hooks: {
-    heading: "Uniswap v4'te çalışan kancalar",
+    heading: "Uniswap v4'te çalışan hook'lar",
     loading: "Bu haftanın en yoğun v4 havuzları okunuyor…",
     intro:
-      "Her v4 havuzu bir kancanın adını verebilir: PoolManager'ın bir takasın, bir yatırmanın, bir çekmenin belirli anlarında çağırdığı bir sözleşme. Hangi anlarda çağrılacağı kimsenin verdiği bir söz değil. Kancanın adresine kazınmış durumda — düşük on dört bit o listenin kendisi, ve protokol sözleşmeyi bunun dışında hiçbir şey için çağırmaz.",
+      "Her v4 havuzu bir hook'un adını verebilir: PoolManager'ın bir takasın, bir yatırmanın, bir çekmenin belirli anlarında çağırdığı bir sözleşme. Hangi anlarda çağrılacağı kimsenin verdiği bir söz değil. Hook'un adresine kazınmış durumda — düşük on dört bit o listenin kendisi, ve protokol sözleşmeyi bunun dışında hiçbir şey için çağırmaz.",
     onlyPermissions:
-      "Bu sayfanın bildiği şeyin tamamı bu, ve tam da iddia değil zorunluluk olduğu için bilmeye değer. Bir kancanın o izinle ne yaptığı kendi kodunda. Bu uygulama kod okumaz ve kimsenin kefil olduğu bir kanca listesi tutmaz — ikisi de, doğrulayabildiği rakamların yanına doğrulayamadığı bir iddia koymak olurdu.",
+      "Burada birinin iddiası değil protokolün zorunluluğu olan tek şey bu; o yüzden ilk o geliyor. Bir hook'un o izinle ne yaptığı kendi kodunda. Bu uygulama kod okumaz ve kimsenin kefil olduğu bir hook listesi tutmaz — ikisi de, doğrulayabildiği rakamların yanına doğrulayamadığı bir iddia koymak olurdu.",
     window: (pools: string, hooked: string, hookless: string) =>
-      `Bu haftanın en yoğun v4 günlerindeki ${pools} havuzdan okundu. Bunların ${hooked} tanesi bir kancanın adını veriyor; ${hookless} tanesi hiçbirini vermiyor ve bir v3 havuzu gibi davranıyor.`,
+      `Bu haftanın en yoğun v4 günlerindeki ${pools} havuzdan okundu. Bunların ${hooked} tanesi bir hook'un adını veriyor; ${hookless} tanesi hiçbirini vermiyor ve bir v3 havuzu gibi davranıyor.`,
     ordering:
-      "Her kancayı kaç havuzun çalıştırdığına göre sıralanmış. Bu yalnızca bir havuz sayısı: çok havuzda görünen bir kanca, birinin çok havuz açtığı bir kancadır, başka bir şey değil.",
+      "Her hook'u kaç havuzun çalıştırdığına göre sıralanmış. Bu yalnızca bir havuz sayısı: çok havuzda görünen bir hook, birinin çok havuz açtığı bir hook'tur, başka bir şey değil.",
     runs: (count: string) => `Bunların ${count} tanesini çalıştırıyor`,
     poolsHeading: "Nerede çalışıyor",
     moreNotShown: (count: string) => `ve ${count} tane daha`,
-    none: "Bu haftanın en yoğun v4 günlerindeki hiçbir havuz bir kancanın adını vermiyor.",
+    none: "Bu haftanın en yoğun v4 günlerindeki hiçbir havuz bir hook'un adını vermiyor.",
     unavailable: "Haftanın v4 havuzları okunamadı; gösterilecek bir dizin yok.",
-    fromHome: "Bütün kancaları gör →",
+    fromHome: "Bütün hook'ları gör →",
   },
 
   positions: {
@@ -2195,7 +2195,7 @@ const tr: Dictionary = {
       "out-of-sample-unverifiable":
         "Örneklem dışı kontrol, bu uygulamanın doğrulayamadığı bir sonuç üretti.",
       "hook-directory-unverifiable":
-        "Bu haftanın v4 havuzlarının kancaları kendi denetiminden geçemedi; bu yüzden dizin gösterilmiyor.",
+        "Bu haftanın v4 havuzlarının hook'ları kendi denetiminden geçemedi; bu yüzden dizin gösterilmiyor.",
       "positions-manager-unverified":
         "Uniswap v3 pozisyonlarını tutan sözleşme, bu uygulamanın karşısına aldığı kodla cevap vermedi; bu yüzden söylediklerinin hiçbiri gösterilmiyor.",
       "positions-unreadable":
@@ -2796,7 +2796,7 @@ const de: Dictionary = {
     intro:
       "Jeder v4-Pool darf einen Hook nennen: einen Vertrag, den der PoolManager an festen Momenten eines Tauschs, einer Einlage, einer Abhebung aufruft. Welche Momente das sind, ist kein Versprechen, das irgendwer gibt. Es ist in die Adresse des Hooks hineingeschürft — die untersten vierzehn Bit sind die Liste, und das Protokoll weigert sich, den Vertrag für irgendetwas außerhalb davon aufzurufen.",
     onlyPermissions:
-      "Das ist alles, was diese Seite weiß, und es lohnt sich zu wissen, gerade weil es durchgesetzt und nicht behauptet wird. Was ein Hook mit einem Recht tut, steht in seinem Code. Diese Anwendung liest keinen Code, und sie führt keine Liste von Hooks, für die jemand gebürgt hat — beides wäre eine Behauptung, die sie nicht prüfen könnte, neben Zahlen, die sie prüfen kann.",
+      "Das ist das Einzige hier, das das Protokoll durchsetzt, statt dass es jemand behauptet — deshalb steht es vorn. Was ein Hook mit einem Recht tut, steht in seinem Code. Diese Anwendung liest keinen Code, und sie führt keine Liste von Hooks, für die jemand gebürgt hat — beides wäre eine Behauptung, die sie nicht prüfen könnte, neben Zahlen, die sie prüfen kann.",
     window: (pools: string, hooked: string, hookless: string) =>
       `Gelesen aus den Pools der meistgehandelten v4-Tage dieser Woche — ${pools} an der Zahl. ${hooked} nennen einen Hook; ${hookless} nennen keinen und verhalten sich wie ein v3-Pool.`,
     ordering:
@@ -3770,7 +3770,7 @@ const es: Dictionary = {
     intro:
       "Todo pool v4 puede nombrar un hook: un contrato al que el PoolManager llama en momentos fijos de un intercambio, un depósito, una retirada. Qué momentos no es una promesa que haga nadie. Está minado en la dirección del hook — los catorce bits más bajos son la lista, y el protocolo se niega a llamar al contrato para cualquier cosa fuera de ella.",
     onlyPermissions:
-      "Eso es todo lo que esta página sabe, y merece saberse precisamente porque se impone en lugar de afirmarse. Lo que un hook hace con un permiso está en su código. Esta aplicación no lee código, y no mantiene ninguna lista de hooks por los que alguien haya respondido — ambas cosas serían una afirmación que no podría comprobar, junto a cifras que sí puede.",
+      "Eso es lo único aquí que el protocolo impone en lugar de que alguien lo afirme, y por eso va primero. Lo que un hook hace con un permiso está en su código. Esta aplicación no lee código, y no mantiene ninguna lista de hooks por los que alguien haya respondido — ambas cosas serían una afirmación que no podría comprobar, junto a cifras que sí puede.",
     window: (pools: string, hooked: string, hookless: string) =>
       `Leído de los pools de los días v4 más activos de esta semana — ${pools} de ellos. ${hooked} nombran un hook; ${hookless} no nombran ninguno, y se comportan como un pool v3.`,
     ordering:
@@ -4743,7 +4743,7 @@ const ar: Dictionary = {
     intro:
       "لكل تجمّع v4 أن يسمّي خطّافًا (hook): عقدًا يستدعيه PoolManager في لحظات محدّدة من التبادل والإيداع والسحب. وأيّ اللحظات ليس وعدًا يقطعه أحد. بل هو منقوش في عنوان الخطّاف — فالبتّات الأربع عشرة الدنيا هي القائمة، والبروتوكول يرفض استدعاء العقد لأي شيء خارجها.",
     onlyPermissions:
-      "هذا كل ما تعرفه هذه الصفحة، وهو جدير بأن يُعرف تحديدًا لأنه مفروض لا مدّعى. أما ما يفعله الخطّاف بصلاحية ما فموجود في شيفرته. وهذا التطبيق لا يقرأ الشيفرة، ولا يحتفظ بأي قائمة لخطّافات زكّاها أحد — وكلاهما ادّعاء لا يستطيع التحقق منه، بجوار أرقام يستطيع.",
+      "هذا هو الشيء الوحيد هنا الذي يفرضه البروتوكول ولا يدّعيه أحد، ولهذا يأتي أولًا. أما ما يفعله الخطّاف بصلاحية ما فموجود في شيفرته. وهذا التطبيق لا يقرأ الشيفرة، ولا يحتفظ بأي قائمة لخطّافات زكّاها أحد — وكلاهما ادّعاء لا يستطيع التحقق منه، بجوار أرقام يستطيع.",
     window: (pools: string, hooked: string, hookless: string) =>
       `مقروء من تجمّعات أكثر أيام v4 نشاطًا هذا الأسبوع — وعددها ${pools}. منها ${hooked} تسمّي خطّافًا؛ و${hookless} لا تسمّي شيئًا، وتتصرّف كما يتصرّف تجمّع v3.`,
     ordering:
@@ -5705,7 +5705,7 @@ const hi: Dictionary = {
     intro:
       "हर v4 पूल किसी hook का नाम ले सकता है: एक कॉन्ट्रैक्ट जिसे PoolManager स्वैप, जमा और निकासी के तय क्षणों पर बुलाता है। कौन-से क्षण, यह किसी का दिया वादा नहीं है। यह hook के पते में ही गढ़ा होता है — नीचे के चौदह बिट ही वह सूची हैं, और प्रोटोकॉल उससे बाहर की किसी भी बात के लिए कॉन्ट्रैक्ट को बुलाने से इनकार करता है।",
     onlyPermissions:
-      "यह पृष्ठ बस इतना ही जानता है, और यह जानने लायक़ ठीक इसलिए है क्योंकि इसे दावा नहीं किया जाता बल्कि लागू किया जाता है। किसी अनुमति से hook क्या करता है यह उसके कोड में है। यह ऐप्लिकेशन कोड नहीं पढ़ता, और उन hooks की कोई सूची नहीं रखता जिनकी किसी ने सिफ़ारिश की हो — दोनों ऐसे दावे होते जिन्हें वह जाँच नहीं सकता, उन आँकड़ों के बगल में जिन्हें वह जाँच सकता है।",
+      "यहाँ यही एक बात है जिसका कोई दावा नहीं करता बल्कि प्रोटोकॉल उसे लागू करता है, इसीलिए यह सबसे पहले आती है। किसी अनुमति से hook क्या करता है यह उसके कोड में है। यह ऐप्लिकेशन कोड नहीं पढ़ता, और उन hooks की कोई सूची नहीं रखता जिनकी किसी ने सिफ़ारिश की हो — दोनों ऐसे दावे होते जिन्हें वह जाँच नहीं सकता, उन आँकड़ों के बगल में जिन्हें वह जाँच सकता है।",
     window: (pools: string, hooked: string, hookless: string) =>
       `इस हफ़्ते के सबसे व्यस्त v4 दिनों के पूलों से पढ़ा गया — उनमें से ${pools}। ${hooked} किसी hook का नाम लेते हैं; ${hookless} किसी का नहीं, और वे वैसे ही बरतते हैं जैसे v3 का पूल।`,
     ordering:
@@ -6814,7 +6814,7 @@ const zh: Dictionary = {
     intro:
       "每一个 v4 资金池都可以指定一个 hook：一份合约，PoolManager 会在一笔兑换、一次存入、一次取出中的固定时刻调用它。至于是哪些时刻，那不是谁作出的承诺。它被挖进了这个 hook 的地址里——低十四位就是那份清单，而协议拒绝为清单之外的任何事去调用这份合约。",
     onlyPermissions:
-      "这就是这一页所知道的全部，而它之所以值得知道，恰恰因为它是被强制执行的而不是被声称的。一个 hook 拿这项权限做了什么，写在它的代码里。本应用不读代码，也不保存任何人背书过的 hook 名单——那两样都会是它无法核对的说法，却摆在它能核对的数字旁边。",
+      "这是这里唯一一项由协议强制执行、而不是由谁声称的东西，所以把它放在最前面。一个 hook 拿这项权限做了什么，写在它的代码里。本应用不读代码，也不保存任何人背书过的 hook 名单——那两样都会是它无法核对的说法，却摆在它能核对的数字旁边。",
     /*
      * Phrased so no count is followed by a noun that would have to agree with
      * it. A list of one pool is not a case this page will meet — the week's
@@ -8039,7 +8039,7 @@ const ru: Dictionary = {
     intro:
       "Каждый пул v4 может назвать hook — контракт, который PoolManager вызывает в определённые моменты свопа, вклада, изъятия. Какие именно это моменты — не чьё-то обещание. Это вмайнено в адрес hook’а: младшие четырнадцать бит и есть тот список, и протокол отказывается вызывать контракт ради чего-либо за его пределами.",
     onlyPermissions:
-      "Это всё, что знает эта страница, и знать это стоит именно потому, что оно принуждается к исполнению, а не заявляется. Что hook делает со своим правом — в его коде. Это приложение кода не читает и не держит списка hook’ов, за которых кто-то поручился: и то, и другое было бы утверждением, которое оно не может проверить, рядом с цифрами, которые может.",
+      "Это единственное здесь, что обеспечивает протокол, а не заявляет кто-то, — поэтому оно идёт первым. Что hook делает со своим правом — в его коде. Это приложение кода не читает и не держит списка hook’ов, за которых кто-то поручился: и то, и другое было бы утверждением, которое оно не может проверить, рядом с цифрами, которые может.",
     /*
      * Phrased so no count is followed by a noun that would have to agree with
      * it. A list of one pool is not a case this page will meet — the week's
@@ -9276,7 +9276,7 @@ const pt: Dictionary = {
     intro:
       "Todo pool v4 pode citar um hook: um contrato que o PoolManager chama em momentos fixos de um swap, de um depósito, de uma retirada. Quais momentos não é uma promessa que alguém faça. Isso está minerado no endereço do hook — os catorze bits mais baixos são a lista, e o protocolo se recusa a chamar o contrato para qualquer coisa fora dela.",
     onlyPermissions:
-      "Isso é tudo o que esta página sabe, e vale a pena saber justamente porque é imposto e não apenas alegado. O que um hook faz com uma permissão está no código dele. Este aplicativo não lê código e não mantém nenhuma lista de hooks por quem alguém tenha respondido — as duas coisas seriam uma afirmação que ele não consegue conferir, ao lado de números que consegue.",
+      "Essa é a única coisa aqui que o protocolo impõe em vez de alguém alegar, e por isso vem primeiro. O que um hook faz com uma permissão está no código dele. Este aplicativo não lê código e não mantém nenhuma lista de hooks por quem alguém tenha respondido — as duas coisas seriam uma afirmação que ele não consegue conferir, ao lado de números que consegue.",
     /*
      * Phrased so no count is followed by a noun that would have to agree with
      * it. A list of one pool is not a case this page will meet — the week's
@@ -10507,7 +10507,7 @@ const zhHant: Dictionary = {
     intro:
       "每一個 v4 資金池都可以指定一個 hook：一份合約，PoolManager 會在一筆兌換、一次存入、一次取出中的固定時刻呼叫它。至於是哪些時刻，那不是誰作出的承諾。它被挖進了這個 hook 的地址裡——最低的十四個位元就是那份清單，而協議拒絕為清單之外的任何事去呼叫這份合約。",
     onlyPermissions:
-      "這就是這一頁所知道的全部，而它之所以值得知道，恰恰因為它是被強制執行的而不是被聲稱的。一個 hook 拿這項權限做了什麼，寫在它的程式碼裡。本站不讀程式碼，也不儲存任何人背書過的 hook 名單——那兩樣都會是它無法核對的說法，卻擺在它能核對的數字旁邊。",
+      "這是這裡唯一一項由協議強制執行、而不是由誰聲稱的東西，所以把它放在最前面。一個 hook 拿這項權限做了什麼，寫在它的程式碼裡。本站不讀程式碼，也不儲存任何人背書過的 hook 名單——那兩樣都會是它無法核對的說法，卻擺在它能核對的數字旁邊。",
     /*
      * Phrased so no count is followed by a noun that would have to agree with
      * it. A list of one pool is not a case this page will meet — the week's

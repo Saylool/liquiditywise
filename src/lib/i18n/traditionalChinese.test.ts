@@ -6,6 +6,7 @@ import { getChainCopy } from "./chainCopy";
 import { getDictionary } from "./dictionaries";
 import { getEmbedCopy } from "./embedCopy";
 import { getHomeAlertsCopy } from "./homeAlertsCopy";
+import { getHookCheckCopy } from "./hookCheckCopy";
 import { getInterfaceCopy } from "./interface";
 import { getMostTradedCopy } from "./mostTradedCopy";
 import { getPairPoolsCopy } from "./pairPoolsCopy";
@@ -144,6 +145,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     smartLiquidity: getSmartLiquidityCopy,
     homeAlerts: getHomeAlertsCopy,
     embed: getEmbedCopy,
+    hookCheck: getHookCheckCopy,
   } as const;
 
   it("carries no character that only exists in the Simplified script, in any copy module", () => {

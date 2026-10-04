@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { composeHookDirectory } from "../lib/advisor/hookDirectory";
 import { getDictionary } from "../lib/i18n/dictionaries";
+import { getHookCheckCopy } from "../lib/i18n/hookCheckCopy";
 import type { Locale } from "../lib/i18n/locales";
 import type { V4Pool, V4PoolCandidateList } from "../schemas";
 import { HookDirectory } from "./HookDirectory";
@@ -141,5 +142,52 @@ describe("HookDirectory", () => {
     expect(markup).toContain("Bunların 1 tanesini çalıştırıyor");
     expect(markup).toContain("Nerede çalışıyor");
     expect(markup).not.toContain("Where it runs");
+  });
+
+  /* Said once, at the top, so forty hooks do not each repeat it — and said, so none of them can be read as vetted. */
+  it("says what is checked beside each hook, and what verified does and does not mean, once", () => {
+    const markup = render([pool(1, SWAP_HOOK), pool(2, LIQUIDITY_HOOK)]);
+    const copy = getHookCheckCopy("en");
+    const meaning = copy.meaning.replace(/'/g, "&#x27;");
+
+    expect(markup).toContain(copy.directoryIntro.replace(/'/g, "&#x27;"));
+    expect(markup.split(meaning)).toHaveLength(2);
+    expect(markup.indexOf(meaning)).toBeLessThan(markup.indexOf(SWAP_HOOK));
+  });
+
+  it("no longer says the permissions are the whole of what the page knows", () => {
+    expect(render([pool(1, SWAP_HOOK)])).not.toContain("whole of what this page knows");
+  });
+
+  it("places each hook's own check under its permissions and above where it runs, and nowhere else", () => {
+    const markup = renderToStaticMarkup(
+      <HookDirectory
+        result={directoryOf([pool(1, SWAP_HOOK), pool(2, LIQUIDITY_HOOK)])}
+        parameters={PARAMETERS}
+        t={getDictionary("en")}
+        locale="en"
+        checks={
+          new Map([
+            [SWAP_HOOK, <p key="swap">swap hook check</p>],
+            [LIQUIDITY_HOOK, <p key="liquidity">liquidity hook check</p>],
+          ])
+        }
+      />,
+    );
+    const swap = markup.indexOf(SWAP_HOOK);
+    const liquidity = markup.indexOf(LIQUIDITY_HOOK);
+    const swapCheck = markup.indexOf("swap hook check");
+    const liquidityCheck = markup.indexOf("liquidity hook check");
+
+    expect(swapCheck).toBeGreaterThan(markup.indexOf("Run before every swap"));
+    expect(swapCheck).toBeLessThan(markup.indexOf("Where it runs", swap));
+    expect(swapCheck).toBeGreaterThan(swap);
+    expect(swapCheck).toBeLessThan(liquidity);
+    expect(liquidityCheck).toBeGreaterThan(liquidity);
+    expect(markup).toContain(getHookCheckCopy("en").heading);
+  });
+
+  it("shows no check block for a hook nobody asked about", () => {
+    expect(render([pool(1, SWAP_HOOK)])).not.toContain(getHookCheckCopy("en").heading);
   });
 });

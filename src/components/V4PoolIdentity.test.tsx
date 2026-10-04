@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { getDictionary } from "../lib/i18n/dictionaries";
+import { getHookCheckCopy } from "../lib/i18n/hookCheckCopy";
 import type { Locale } from "../lib/i18n/locales";
 import { type DataResult, HOOK_PERMISSION_FLAGS, type V4Pool, type V4ProtocolFee } from "../schemas";
 import { V4PoolIdentity } from "./V4PoolIdentity";
@@ -219,5 +220,37 @@ describe("V4PoolIdentity and the chain's own currency", () => {
     expect(render(holdingNative(137, "POL"))).toContain("Native POL");
     expect(render(holdingNative(137, "POL"))).toContain("own currency, POL,");
     expect(render(holdingNative(137, "POL"))).not.toContain("Native ETH");
+  });
+});
+
+describe("V4PoolIdentity and what can be checked about the hook", () => {
+  const fixed = { kind: "static", feePpm: 500 } as const;
+  const noCut = { zeroForOnePpm: 0, oneForZeroPpm: 0 };
+  const withCheck = (result: DataResult<V4Pool>, locale: Locale = "en") =>
+    renderToStaticMarkup(
+      <V4PoolIdentity result={result} t={getDictionary(locale)} locale={locale} hookCheck={<p>the check</p>} />,
+    );
+
+  /* Below the permissions and what they are read from: "verified" first would be read as a verdict. */
+  it("comes after the permissions and their footnote, with what verified means beside it", () => {
+    const markup = withCheck(pool(fixed, noCut, SWAP_HOOK));
+    const copy = getHookCheckCopy("en");
+
+    expect(markup.indexOf("the check")).toBeGreaterThan(markup.indexOf("Run before every swap"));
+    expect(markup.indexOf("the check")).toBeGreaterThan(markup.indexOf("These are read out of the hook"));
+    expect(markup).toContain(copy.heading);
+    expect(markup).toContain("It is not an audit, and it is not a statement that the hook is safe");
+  });
+
+  it("is not shown for a pool with no hook, or where the page gave none", () => {
+    expect(withCheck(pool(fixed, noCut))).not.toContain("the check");
+    expect(render(pool(fixed, noCut, SWAP_HOOK))).not.toContain(getHookCheckCopy("en").heading);
+  });
+
+  it("is headed and explained in the reader's language", () => {
+    const markup = withCheck(pool(fixed, noCut, SWAP_HOOK), "ar");
+
+    expect(markup).toContain(getHookCheckCopy("ar").heading);
+    expect(markup).toContain("ليس تدقيقًا");
   });
 });

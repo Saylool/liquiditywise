@@ -85,17 +85,29 @@ const errorName = (error: unknown): string =>
  */
 export const SLOW_RESPONSE_MS = 3_000;
 
+const NO_STATUSES: ReadonlySet<number> = new Set();
+
 const GRAPH_GATEWAY_HOST = "gateway.thegraph.com";
 
 /**
- * Which kind of source a request went to, for a slow line: the subgraph
- * gateway or a chain endpoint. The one thing read from `input`, compared
- * against a public host name and never written down — the URL itself may
- * carry a key.
+ * The contract verifiers a hook is asked about (verification/): Sourcify, and
+ * each network's Blockscout — under blockscout.com, but for OP Mainnet's,
+ * which lives at the network's own explorer.
  */
-const sourceKind = (input: Parameters<FetchLike>[0]): "subgraph" | "chain" => {
+const isVerifierHost = (hostname: string): boolean =>
+  hostname === "sourcify.dev" || hostname.endsWith(".blockscout.com") || hostname === "explorer.optimism.io";
+
+/**
+ * Which kind of source a request went to, for a slow line: the subgraph
+ * gateway, a contract verifier or a chain endpoint. The one thing read from
+ * `input`, compared against public host names and never written down — the
+ * URL itself may carry a key.
+ */
+const sourceKind = (input: Parameters<FetchLike>[0]): "subgraph" | "verifier" | "chain" => {
   try {
-    return new URL(input).hostname === GRAPH_GATEWAY_HOST ? "subgraph" : "chain";
+    const { hostname } = new URL(input);
+    if (hostname === GRAPH_GATEWAY_HOST) return "subgraph";
+    return isVerifierHost(hostname) ? "verifier" : "chain";
   } catch {
     return "chain";
   }
@@ -117,6 +129,17 @@ export const loggingFetch = (
   label: string,
   fetchImpl: FetchLike = fetch,
   log: DiagnosticLog = consoleLog,
+  {
+    answers = NO_STATUSES,
+  }: {
+    /**
+     * Statuses that are the source's answer rather than its failure. Sourcify
+     * says "not verified" with a 404 (verification/sourcify.ts), and half the
+     * hooks on a network are not: an error line for each would be a log
+     * nobody reads.
+     */
+    readonly answers?: ReadonlySet<number>;
+  } = {},
 ): FetchLike => {
   return async (input, init) => {
     const startedAt = Date.now();
@@ -124,7 +147,7 @@ export const loggingFetch = (
     try {
       const response = await fetchImpl(input, init);
       const elapsed = Date.now() - startedAt;
-      if (!response.ok) {
+      if (!response.ok && !answers.has(response.status)) {
         // Always `error`: a provider answering with a failure status is never
         // ordinary use. An address that matches no pool comes back as a
         // perfectly successful 200 with an empty result.

@@ -90,4 +90,37 @@ describe("what the hourly check asks", () => {
 
     expect(upstreamProbes()).toBeNull();
   });
+
+  /* Keyless, so asked wherever the rest is: each about Uniswap's own PoolManager, on that network. */
+  it("asks Sourcify and every network's Blockscout about the PoolManager each is known to hold verified", async () => {
+    vi.stubEnv("THE_GRAPH_API_KEY", "key");
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
+    const asked: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        asked.push(url);
+        return new Response(JSON.stringify({ match: "match", is_verified: true, name: "PoolManager" }), { status: 200 });
+      }),
+    );
+
+    const probes = upstreamProbes();
+    const verdicts = await Promise.all(Object.values(probes?.probeVerifiers ?? {}).map((probe) => probe()));
+    vi.unstubAllGlobals();
+
+    expect(Object.keys(probes?.probeVerifiers ?? {})).toHaveLength(7);
+    expect(verdicts.every(({ kind }) => kind === "verified")).toBe(true);
+    expect(asked.sort()).toEqual(
+      [
+        "https://sourcify.dev/server/v2/contract/1/0x000000000004444c5dc75cb358380d2e3de08a90?fields=compilation.name",
+        "https://eth.blockscout.com/api/v2/addresses/0x000000000004444c5dc75cb358380d2e3de08a90",
+        "https://base.blockscout.com/api/v2/addresses/0x498581ff718922c3f8e6a244956af099b2652b2b",
+        "https://arbitrum.blockscout.com/api/v2/addresses/0x360e68faccca8ca495c1b759fd9eee466db9fb32",
+        "https://unichain.blockscout.com/api/v2/addresses/0x1f98400000000000000000000000000000000004",
+        "https://explorer.optimism.io/api/v2/addresses/0x9a13f98cb987694c9f086b1f5eb990eea8264ec3",
+        "https://polygon.blockscout.com/api/v2/addresses/0x67366782805870060151383f4bbff9dab53e5cd6",
+      ].sort(),
+    );
+  });
 });

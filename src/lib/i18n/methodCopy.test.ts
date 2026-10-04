@@ -93,6 +93,9 @@ describe("the figures the method page states", () => {
       ownerSets: "8",
       pairFloorUsd: "$100,000",
       v4OnlyChains: "Unichain",
+      hookPoolCap: "1,000",
+      hookCheckHours: "12",
+      hookCheckRetryMinutes: "10",
     });
   });
 

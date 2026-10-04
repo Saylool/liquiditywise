@@ -4,7 +4,7 @@ import { takeAppReadings } from "@/lib/health/appReadings";
 import { readOutsideReadings } from "@/lib/health/outsideReadings";
 import { problemsFrom } from "@/lib/health/problems";
 import { upstreamProbes } from "@/lib/health/upstreamEnvironment";
-import { readUpstreamReport, subgraphFailures } from "@/lib/health/upstreamProbe";
+import { readUpstreamReport, subgraphFailures, verifierFailures } from "@/lib/health/upstreamProbe";
 import { telegramSetup } from "@/lib/telegram/environment";
 import { sameSecret } from "@/lib/telegram/secrets";
 
@@ -57,6 +57,7 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
           chainDataStatus: upstream.chainData,
           otherChainStatus: upstream.otherChains,
           subgraphFailures: subgraphFailures(upstream),
+          verifierFailures: verifierFailures(upstream),
         }),
     ...readOutsideReadings(request.nextUrl.searchParams),
   });

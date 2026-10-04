@@ -1,6 +1,9 @@
+import type { ReactNode } from "react";
+
 import { nativeSymbolOf } from "../lib/chains/chains";
 import { formatFeePpm, formatPercent, formatWhole } from "../lib/format/displayFormats";
 import { priceStepRatio } from "../lib/format/priceStep";
+import { HookCheckFrame } from "./HookCheck";
 import { HookPermissions } from "./HookPermissions";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
@@ -90,10 +93,17 @@ export function V4PoolIdentity({
   result,
   t,
   locale,
+  hookCheck,
 }: {
   result: DataResult<V4Pool>;
   t: Dictionary;
   locale: Locale;
+  /**
+   * What can be checked about the hook from outside, as a streamed slot the
+   * route makes (app/v4/V4PoolSection.tsx), so this stays a component that
+   * reads nothing. Nothing is shown for it where it is absent.
+   */
+  hookCheck?: ReactNode;
 }) {
   if (result.status === "unavailable") {
     return (
@@ -198,6 +208,17 @@ export function V4PoolIdentity({
             <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted">
               {t.v4.hookAddressIsThePermission}
             </p>
+
+            {/*
+             * After the permissions and what they are read from, never before:
+             * "verified" first would be read by somebody who stops there as a
+             * verdict on the hook. What it means is said with it, every time.
+             */}
+            {hookCheck === undefined ? null : (
+              <HookCheckFrame locale={locale} explain>
+                {hookCheck}
+              </HookCheckFrame>
+            )}
           </>
         )}
       </section>
