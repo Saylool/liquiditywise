@@ -138,7 +138,7 @@ const COPY: Record<Locale, MostTradedCopy> = {
       "Ethereum पर पिछले सात दिनों में सबसे ज़्यादा कारोबार वाले Uniswap v3 और v4 पूल, हर एक का कारोबार और लिया गया शुल्क। हर आधे घंटे में अपडेट।",
     heading: "इस हफ़्ते सबसे ज़्यादा कारोबार",
     intro: (chain) =>
-      `${chain} पर पिछले सात दिनों में, आज का अब तक का समय मिलाकर, सबसे ज़्यादा कारोबार वाले पूल। क्रम केवल कारोबार की मात्रा का है: यह वह नहीं है जो कोई पोज़िशन कमाती, और इनमें से कोई सिफ़ारिश नहीं है। बाकी हर पूल के अपने पन्ने पर है।`,
+      `${chain} पर पिछले सात दिनों में, आज का अब तक का समय मिलाकर, सबसे ज़्यादा कारोबार वाले पूल। क्रम केवल कारोबार की मात्रा का है: यह वह नहीं है जो कोई पोज़िशन कमाती, और इनमें से कोई सिफ़ारिश नहीं है। बाक़ी हर पूल के अपने पृष्ठ पर है।`,
     titleOn: (chain, versions) => `इस हफ़्ते सबसे ज़्यादा कारोबार वाले Uniswap ${({ v3: "v3", both: "v3 और v4", v4: "v4" } as const)[versions]} पूल (${chain})`,
     descriptionOn: (chain, versions) =>
       `पिछले सात दिनों में सबसे ज़्यादा कारोबार वाले Uniswap ${({ v3: "v3", both: "v3 और v4", v4: "v4" } as const)[versions]} पूल (${chain}), हर एक का कारोबार और लिया गया शुल्क। हर आधे घंटे में अपडेट।`,
@@ -147,7 +147,7 @@ const COPY: Record<Locale, MostTradedCopy> = {
     days: (counted, total) => `${total} में से ${counted} दिन`,
     feesUnknown: "पढ़ा नहीं जा सका",
     unavailable: "इस हफ़्ते के पूल अभी पढ़े नहीं जा सके।",
-    empty: "इस अवधि में किसी पूल में कारोबार नहीं हुआ।",
+    empty: "इस खिड़की में किसी पूल में कारोबार नहीं हुआ।",
     loading: "इस हफ़्ते के सबसे व्यस्त पूल पढ़े जा रहे हैं…",
   },
   zh: {
@@ -209,13 +209,13 @@ const COPY: Record<Locale, MostTradedCopy> = {
   "zh-Hant": {
     link: "交易最活躍的資金池",
     title: "本週交易最活躍的 Uniswap 資金池（v3 與 v4）",
-    description: "Ethereum 上過去七天交易量最大的 Uniswap v3 和 v4 資金池，以及每個池的交易量和收取的手續費。每半小時更新一次。",
+    description: "Ethereum 上過去七天交易量最大的 Uniswap v3 和 v4 資金池，以及每個資金池的交易量和收取的手續費。每半小時更新一次。",
     heading: "本週交易最活躍",
     intro: (chain) =>
       `${chain} 上過去七天（含今天截至目前）交易量最大的資金池。排序只看交易量：它不是一個倉位本來能賺多少，其中任何一個都不是推薦。其餘內容見每個資金池自己的頁面。`,
     titleOn: (chain, versions) => `本週交易最活躍的 Uniswap ${({ v3: "v3", both: "v3 和 v4", v4: "v4" } as const)[versions]} 資金池（${chain}）`,
     descriptionOn: (chain, versions) =>
-      `過去七天交易量最大的 Uniswap ${({ v3: "v3", both: "v3 和 v4", v4: "v4" } as const)[versions]} 資金池（${chain}），以及每個池的交易量和收取的手續費。每半小時更新一次。`,
+      `過去七天交易量最大的 Uniswap ${({ v3: "v3", both: "v3 和 v4", v4: "v4" } as const)[versions]} 資金池（${chain}），以及每個資金池的交易量和收取的手續費。每半小時更新一次。`,
     volume: "交易量，7 天",
     fees: "收取的手續費，7 天",
     days: (counted, total) => `${total} 天中的 ${counted} 天`,

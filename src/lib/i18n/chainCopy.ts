@@ -63,9 +63,9 @@ const COPY: Record<Locale, ChainCopy> = {
     network: "الشبكة",
     unknown: "لا يقرأ LiquidityWise هذه الشبكة. الشبكات التي يقرؤها: Ethereum وBase وArbitrum One وUnichain وOP Mainnet وPolygon.",
     v4NotRead: (chain) =>
-      `لا يقرأ LiquidityWise مجمعات Uniswap v4 على ${chain} بعد.`,
+      `لا يقرأ LiquidityWise تجمّعات Uniswap v4 على ${chain} بعد.`,
     v3NotRead: (chain) =>
-      `يقرأ LiquidityWise مجمعات Uniswap v4 على ${chain}، لا مجمعات v3: لا يوجد مصدر يجيب عن مجمعات v3 هناك.`,
+      `يقرأ LiquidityWise تجمّعات Uniswap v4 على ${chain}، لا تجمّعات v3: لا يوجد مصدر يجيب عن تجمّعات v3 هناك.`,
     holdingsV4Only: (tokens, v4Pools, chain) =>
       `رصيد الرمز موجود داخل عقد الرمز نفسه، فلا توجد قائمة بما يملكه عنوان — بل رموز يمكن سؤالها، واحدًا واحدًا. وقد سُئل هنا ${tokens} منها: كل عملة في تجمّعات v4 الـ ${v4Pools} الأكثر تداولًا على ${chain} خلال الأيام السبعة الماضية، ومنها الإيثر الأصلي للسلسلة. وما يُملك خارج تلك المجموعة ليس غائبًا عن هذه الصفحة لأن العنوان لا يملكه.`,
   },
@@ -77,7 +77,7 @@ const COPY: Record<Locale, ChainCopy> = {
     v3NotRead: (chain) =>
       `LiquidityWise ${chain} पर Uniswap v4 पूल पढ़ता है, v3 पूल नहीं: वहाँ के v3 पूलों के लिए कोई स्रोत जवाब नहीं देता।`,
     holdingsV4Only: (tokens, v4Pools, chain) =>
-      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} पर पिछले सात दिनों में सबसे अधिक कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन का अपना ether भी है। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
+      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} पर पिछले सात दिनों में सबसे ज़्यादा कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन का अपना ether भी है। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
   },
   zh: {
     network: "网络",
@@ -113,9 +113,9 @@ const COPY: Record<Locale, ChainCopy> = {
     network: "網路",
     unknown: "LiquidityWise 不讀取該網路。它讀取 Ethereum、Base、Arbitrum One、Unichain、OP Mainnet 和 Polygon。",
     v4NotRead: (chain) =>
-      `LiquidityWise 尚未讀取 ${chain} 上的 Uniswap v4 池。`,
+      `LiquidityWise 尚未讀取 ${chain} 上的 Uniswap v4 資金池。`,
     v3NotRead: (chain) =>
-      `LiquidityWise 在 ${chain} 上讀取 Uniswap v4 池，不讀取 v3 池：沒有資料來源能提供那裡的 v3 池。`,
+      `LiquidityWise 在 ${chain} 上讀取 Uniswap v4 資金池，不讀取 v3 資金池：沒有資料來源能提供那裡的 v3 資金池。`,
     holdingsV4Only: (tokens, v4Pools, chain) =>
       `一個代幣的餘額存放在這個代幣自己的合約裡，所以並不存在一份「某地址擁有什麼」的清單——只有可以被逐個詢問的代幣。這次詢問了其中 ${tokens} 個：${chain}上最近七天成交最多的 ${v4Pools} 個 v4 資金池裡的每一種貨幣，其中也包括鏈自己的以太幣。持有在這個集合之外的東西，之所以沒有出現在這一頁上，並不是因為這個地址沒有它。`,
   },

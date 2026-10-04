@@ -85,7 +85,7 @@ const en = {
       ". Find a pool by its pair, read a price range worked out from how far that pair has actually moved, and get it explained in plain language. Every figure is computed and cross-checked before a model is allowed to describe it — and the model is never allowed to state one.",
     workingTodayHeading: "Working today",
     workingTodayBody:
-      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. What a swap through the pool costs, for the largest one that can be priced without assuming anything. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into, and for the Uniswap v3 positions it already holds — each with the prices it covers and whether the pool is inside them now. Then a plain-language explanation of all of it, in English or Turkish. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
+      "Search for a pool by its pair, or paste a v3 pool address or a v4 pool id. You get the pool's verified configuration and current state, the last month of daily prices drawn against a suggested range, how far the pair has actually moved, and the range that follows from it — with the horizon and the width yours to change. Beside it: what the pool charged and what it actually collected, how its recent days sat against the range, what the same method did on days it never saw, what a position gives up against simply holding, what each of the other widths would have done instead, and — for a deposit whose size is yours to set — what it would have taken of the fees charged on the days the price stayed inside the range. And the same range read the other way round: each of its halves is a one-sided position, and the page says what each would convert at if the price passed through it. What a swap through the pool costs, for the largest one that can be priced without assuming anything. And a directory of every hook the week's busiest v4 pools name, with what each is permitted to do read out of its own address. A v4 pool also says what its hook is permitted to do, in plain words, read out of the hook's own address. An address can be looked up for the pools its tokens can go into, and for the Uniswap v3 and v4 positions it already holds — each with the prices it covers and whether the pool is inside them now. Then a plain-language explanation of all of it, in the language you are reading. No model touches any of those figures, none of them is estimated to fill a gap, and the prose has nowhere to put a number of its own.",
     analysePool: "Find a pool →",
     methodHeading: "How it works",
     methodSteps: [
@@ -1330,7 +1330,7 @@ const tr: Dictionary = {
       "'e doğru büyüyen eğitim amaçlı bir danışman. Havuzu paritesinden bul, o paritenin geçmişte gerçekte ne kadar hareket ettiğinden çıkarılmış bir fiyat aralığını oku, ve bunun ne anlama geldiğini gündelik dille öğren. Her sayı, bir model onu anlatmaya başlamadan önce hesaplanır ve çapraz doğrulanır — modelin ise bir sayı yazmasına hiç izin verilmez.",
     workingTodayHeading: "Bugün çalışan kısım",
     workingTodayBody:
-      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için ve hâlihazırda tuttuğu Uniswap v3 pozisyonları için sorgulanabilir — her biri hangi fiyatları kapsadığı ve havuzun şu anda içinde olup olmadığıyla birlikte. Sonra hepsinin gündelik dille açıklaması, Türkçe ya da İngilizce. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
+      "Havuzu paritesinden ara, ya da bir v3 havuz adresi veya v4 havuz kimliği yapıştır. Havuzun doğrulanmış yapılandırmasını ve güncel durumunu, son bir ayın günlük fiyatlarını önerilen aralığa çizilmiş hâlde, paritenin gerçekte ne kadar hareket ettiğini ve bundan çıkan aralığı görürsün — ufuk da genişlik de senin elinde. Yanında: havuzun ne komisyon aldığı ve gerçekte ne topladığı, son günlerinin aralığa göre nerede durduğu, aynı yöntemin hiç görmediği günlerde ne yaptığı, bir pozisyonun sadece tutmaya kıyasla neyden vazgeçtiği, diğer genişliklerin her birinin ne yapacağı, ve — büyüklüğünü kendin belirlediğin bir yatırımın — fiyatın aralıkta kaldığı günlerde alınan komisyonlardan ne kadarını alacağı. Bir de aynı aralığın ters okunuşu: her yarısı tek taraflı bir pozisyon, ve sayfa fiyat içinden geçerse her birinin hangi fiyattan dönüşeceğini söylüyor. Havuzdan geçen bir takasın ne kadara mal olduğu — hiçbir şey varsayılmadan fiyatlanabilen en büyük takas için. Bir de haftanın en yoğun v4 havuzlarının adını verdiği bütün kancaların dizini, her birinin neye izinli olduğu kendi adresinden okunmuş hâliyle. Bir v4 havuzu ayrıca hook'unun neye izinli olduğunu, hook'un kendi adresinden okunmuş hâliyle sade cümlelerle söyler. Bir adres, tuttuğu tokenların girebileceği havuzlar için ve hâlihazırda tuttuğu Uniswap v3 ve v4 pozisyonları için sorgulanabilir — her biri hangi fiyatları kapsadığı ve havuzun şu anda içinde olup olmadığıyla birlikte. Sonra hepsinin gündelik dille açıklaması, okuduğun dilde. Bu sayıların hiçbirine model dokunmuyor, hiçbiri bir boşluğu doldurmak için tahmin edilmiyor, ve metnin kendi başına bir sayı koyacağı yer yok.",
     analysePool: "Havuz bul →",
     methodHeading: "Nasıl çalışıyor",
     methodSteps: [
@@ -4226,9 +4226,9 @@ const ar: Dictionary = {
   metadata: {
     title: "LiquidityWise",
     description:
-      "مرشد تعليمي مدعوم بالذكاء الاصطناعي لاستراتيجيات السيولة في Uniswap v3 و v4. إرشاد فقط — وليس نصيحة مالية.",
+      "مرشد تعليمي مدعوم بالذكاء الاصطناعي لاستراتيجيات السيولة في Uniswap v3 وv4. إرشاد فقط — وليس نصيحة مالية.",
     v4Title: "تجمّع Uniswap v4 · LiquidityWise",
-    v4Description: "ما هو هذا التجمّع في Uniswap v4، وما المسموح لـ hook الخاص به أن يفعله.",
+    v4Description: "ما هو هذا التجمّع في Uniswap v4، وما المسموح لخطّافه أن يفعله.",
     holdingsTitle: "ما الذي يملكه عنوان ما · LiquidityWise",
     holdingsDescription:
       "الرموز الموجودة في عنوان إيثيريوم واحد، وتجمّعات Uniswap v3 التي يمكن أن تذهب إليها.",
@@ -4239,7 +4239,7 @@ const ar: Dictionary = {
       "نطاق سعري لتجمّع Uniswap v3، مرسوم من مدى تحرّك سعره فعلًا.",
     hooksTitle: "خطّافات Uniswap v4 · LiquidityWise",
     hooksDescription:
-      "كل hook تسمّيه أكثر تجمّعات Uniswap v4 نشاطًا هذا الأسبوع، وما المسموح لكلٍّ منها أن يفعله — مقروءًا من عنوانه نفسه.",
+      "كل خطّاف تسمّيه أكثر تجمّعات Uniswap v4 نشاطًا هذا الأسبوع، وما المسموح لكلٍّ منها أن يفعله — مقروءًا من عنوانه نفسه.",
   },
 
   preferences: {
@@ -4254,7 +4254,7 @@ const ar: Dictionary = {
     themeDark: "داكن",
     rangeLabel: "تفضيلات النطاق",
     rangeIntro:
-      "الأفق والعرض والإيداع التي يُفتح بها كل مجمّع. الرابط الذي يحمل قيمه الخاصة يبقى له الأولوية، والنموذج أسفل كل تحليل يغيّر تلك الصفحة وحدها.",
+      "الأفق والاتساع والإيداع التي يُفتح بها كل تجمّع. الرابط الذي يحمل قيمه الخاصة يبقى له الأولوية، والاستمارة أسفل كل تحليل يغيّر تلك الصفحة وحدها.",
     rangeSave: "حفظ",
     rangeReset: "نسيان",
   },
@@ -4274,7 +4274,7 @@ const ar: Dictionary = {
       ". ابحث عن تجمّع عبر زوجه، واقرأ نطاقًا سعريًا مستخرجًا من مدى تحرّك ذلك الزوج فعلًا، واحصل على شرح له بلغة واضحة. كل رقم يُحسب ويُراجَع قبل أن يُسمح لنموذج بوصفه — ولا يُسمح للنموذج أبدًا بذكر رقم واحد.",
     workingTodayHeading: "ما يعمل اليوم",
     workingTodayBody:
-      "ابحث عن تجمّع عبر زوجه، أو ألصق عنوان تجمّع v3 أو معرّف تجمّع v4. ستحصل على إعدادات التجمّع المتحقَّق منها وحالته الراهنة، وأسعار الشهر الأخير اليومية مرسومة مقابل نطاق مقترح، ومدى تحرّك الزوج فعلًا، والنطاق المترتّب على ذلك — والأفق والاتساع لك أن تغيّرهما. وإلى جانب ذلك: ما تقاضاه التجمّع وما حصّله بالفعل، وكيف وقعت أيامه الأخيرة بالنسبة إلى النطاق، وماذا كانت الطريقة نفسها لتعطي في أيام لم ترها قط، وما الذي تتخلّى عنه المراكز مقابل الاحتفاظ البسيط، وماذا كان كل اتساع آخر ليفعل بدلًا من ذلك، و — لإيداع تحدّد أنت حجمه — كم كان ليأخذ من الرسوم المتقاضاة في الأيام التي بقي فيها السعر داخل النطاق. والنطاق نفسه مقروءًا بالمقلوب: كل نصف منه مركز أحادي الجانب، والصفحة تقول بأي سعر يتحوّل كل نصف لو عبره السعر. وكم يكلّف التبادل عبر التجمّع، لأكبر تبادل يمكن تسعيره دون افتراض أي شيء. ودليل لكل hook تسمّيه أكثر تجمّعات v4 نشاطًا هذا الأسبوع، مع ما يُسمح لكلٍّ منها أن يفعله، مقروءًا من عنوانه نفسه. كما يقول تجمّع v4 بكلمات واضحة ما المسموح لـ hook الخاص به أن يفعله، مقروءًا من عنوان الـ hook نفسه. ويمكن البحث عن عنوان لمعرفة التجمّعات التي يمكن لرموزه أن تذهب إليها، والمراكز التي يملكها بالفعل في Uniswap — كل مركز مع الأسعار التي يغطّيها وما إذا كان التجمّع داخلها الآن. ثم شرح لكل ذلك بلغة واضحة. لا يلمس أي نموذج أيًّا من هذه الأرقام، ولا يُقدَّر أي منها لسدّ فجوة، وليس في النص موضع يضع فيه رقمًا من عنده.",
+      "ابحث عن تجمّع عبر زوجه، أو ألصق عنوان تجمّع v3 أو معرّف تجمّع v4. ستحصل على إعدادات التجمّع المتحقَّق منها وحالته الراهنة، وأسعار الشهر الأخير اليومية مرسومة مقابل نطاق مقترح، ومدى تحرّك الزوج فعلًا، والنطاق المترتّب على ذلك — والأفق والاتساع لك أن تغيّرهما. وإلى جانب ذلك: ما تقاضاه التجمّع وما حصّله بالفعل، وكيف وقعت أيامه الأخيرة بالنسبة إلى النطاق، وماذا كانت الطريقة نفسها لتعطي في أيام لم ترها قط، وما الذي تتخلّى عنه المراكز مقابل الاحتفاظ البسيط، وماذا كان كل اتساع آخر ليفعل بدلًا من ذلك، و — لإيداع تحدّد أنت حجمه — كم كان ليأخذ من الرسوم المتقاضاة في الأيام التي بقي فيها السعر داخل النطاق. والنطاق نفسه مقروءًا بالمقلوب: كل نصف منه مركز أحادي الجانب، والصفحة تقول بأي سعر يتحوّل كل نصف لو عبره السعر. وكم يكلّف التبادل عبر التجمّع، لأكبر تبادل يمكن تسعيره دون افتراض أي شيء. ودليل لكل خطّاف تسمّيه أكثر تجمّعات v4 نشاطًا هذا الأسبوع، مع ما يُسمح لكلٍّ منها أن يفعله، مقروءًا من عنوانه نفسه. كما يقول تجمّع v4 بكلمات واضحة ما المسموح لخطّافه أن يفعله، مقروءًا من عنوان الخطّاف نفسه. ويمكن البحث عن عنوان لمعرفة التجمّعات التي يمكن لرموزه أن تذهب إليها، والمراكز التي يملكها بالفعل في Uniswap — كل مركز مع الأسعار التي يغطّيها وما إذا كان التجمّع داخلها الآن. ثم شرح لكل ذلك بلغة واضحة. لا يلمس أي نموذج أيًّا من هذه الأرقام، ولا يُقدَّر أي منها لسدّ فجوة، وليس في النص موضع يضع فيه رقمًا من عنده.",
     analysePool: "ابحث عن تجمّع ←",
     methodHeading: "كيف يعمل",
     methodSteps: [
@@ -4289,7 +4289,7 @@ const ar: Dictionary = {
           "يُحسب التقلّب وحزمة السعر ونطاق المركز في TypeScript عادي، فيعطي التجمّع نفسه الأرقام نفسها دائمًا.",
       },
       {
-        step: "تفسير بالذكاء الاصطناعي",
+        step: "شرح بالذكاء الاصطناعي",
         detail:
           "يشرح نموذج معنى هذه الأرقام. وهي تُسلَّم إليه متحقَّقًا منها سلفًا، والعقد الذي يجيب ضمنه لا يترك موضعًا لرقم.",
       },
@@ -4310,29 +4310,31 @@ const ar: Dictionary = {
         version: "Uniswap v4",
         features: [
           {
-            name: "ما يفعله الـ hook فعليًا",
+            name: "ما يفعله الخطّاف فعليًا",
             summary:
-              "تقول صفحة v4 ما المسموح لـ hook أن يفعله، لأن هذا القدر يفرضه البروتوكول ويُقرأ من عنوان الـ hook نفسه. أما قراءة العقد لقول ما يفعله بهذه الصلاحيات فمسألة أخرى، ولا يحاولها هذا التطبيق.",
+              "تقول صفحة v4 ما المسموح للخطّاف أن يفعله، لأن هذا القدر يفرضه البروتوكول ويُقرأ من عنوان الخطّاف نفسه. أما قراءة العقد لقول ما يفعله بهذه الصلاحيات فمسألة أخرى، ولا يحاولها هذا التطبيق.",
           },
           {
             name: "استراتيجيات على نمط TWAMM",
             summary:
-              "توزيع أمر كبير على الزمن بدل تنفيذه مقابل نقطة سيولة واحدة. والنصف الذي تستطيع صفحة تحليل الإجابة عنه موجود بالفعل: كم يكلّف التبادل مقابل السيولة عند السعر الحالي، وما أكبر تبادل يمكن تسعيره أصلًا. أما جدولته على الزمن فمن عمل الـ hook، وهذا التطبيق لا يحاكي سلوك الـ hook.",
+              "توزيع أمر كبير على الزمن بدل تنفيذه مقابل نقطة سيولة واحدة. والنصف الذي تستطيع صفحة تحليل الإجابة عنه موجود بالفعل: كم يكلّف التبادل مقابل السيولة عند السعر الحالي، وما أكبر تبادل يمكن تسعيره أصلًا. أما جدولته على الزمن فمن عمل الخطّاف، وهذا التطبيق لا يحاكي سلوك الخطّاف.",
           },
         ],
       },
     ],
     footer:
-      "لا شيء مما سبق موجود بعد. الموجود هو كل ما في أعلى هذه الصفحة: مجمّع يُعثر عليه باسمه، وأرقام تُحسب وتُراجَع، ونص يُتحقق منه قبل عرضه. يمكن ربط محفظة، وكل ما يُطلب منها هو عنوانها. الشيء الوحيد الذي يحتفظ به هذا التطبيق هو ربط تيليغرام ينشئه القارئ بنفسه — عنوان إلى جانب معرّف محادثة، يُمحى لحظة إرساله /stop إلى البوت ويخرج من النسخ الاحتياطية المشفّرة خلال سبعة أيام — ولا شيء هنا يستطيع توقيع معاملة أو إرسالها نيابةً عنك.",
+      "لا شيء مما سبق موجود بعد. الموجود هو كل ما في أعلى هذه الصفحة: تجمّع يُعثر عليه باسمه، وأرقام تُحسب وتُراجَع، ونص يُتحقق منه قبل عرضه. يمكن ربط محفظة، وكل ما يُطلب منها هو عنوانها. الشيء الوحيد الذي يحتفظ به هذا التطبيق هو ربط تيليغرام ينشئه القارئ بنفسه — عنوان إلى جانب معرّف محادثة، يُمحى لحظة إرساله /stop إلى البوت ويخرج من النسخ الاحتياطية المشفّرة خلال سبعة أيام — ولا شيء هنا يستطيع توقيع معاملة أو إرسالها نيابةً عنك.",
   },
 
   pool: {
     /*
      * Pointing right, not left. Reading runs right-to-left here, so the way
      * back is the way the arrow that means "onward" does not point — and every
-     * onward link in this dictionary carries the left-pointing one.
+     * onward link in this dictionary carries the left-pointing one. (It read
+     * "←" for a while after the product's name went in; measured in a browser
+     * on 2026-10-04, that arrow sat at the right end pointing on, not back.)
      */
-    back: "← LiquidityWise",
+    back: "→ LiquidityWise",
     invalidAddress:
       "هذا ليس عنوان إيثيريوم. العنوان هو 0x يتبعه 40 حرفًا ست عشريًا بالضبط.",
     loading: "تُقرأ بيانات Uniswap الحيّة…",
@@ -4353,7 +4355,7 @@ const ar: Dictionary = {
     feesWhileInside: "الرسوم المتقاضاة في الأيام الواقعة داخل النطاق بالكامل",
     feesWithheld: "لا يُعرض لهذا التجمّع",
     feesWithheldNote:
-      "يُسمح لـ hook هذا التجمّع بأخذ حصة من التبادل، ولا شيء في المصدر يفصل حصة الـ hook عن حصة مزوّدي السيولة. الرسوم أعلاه هي ما تقاضاه التجمّع، وهذه حقيقة؛ أما ربط جزء منها بهذا النطاق فادّعاء عن مركز لا يستطيع أحد التحقق منه.",
+      "يُسمح لخطّاف هذا التجمّع بأخذ حصة من التبادل، ولا شيء في المصدر يفصل حصة الخطّاف عن حصة مزوّدي السيولة. الرسوم أعلاه هي ما تقاضاه التجمّع، وهذه حقيقة؛ أما ربط جزء منها بهذا النطاق فادّعاء عن مركز لا يستطيع أحد التحقق منه.",
     inSample:
       "هذه هي الأيام نفسها التي رُسم منها النطاق، فهي تُظهر كيف جرت مواءمته لا كيف يصمد — والنطاق مركزه سعر اليوم، وهو سعر لم يكن بوسع أحد أن يفتح عليه قبل شهر. اقرأها بوصفها موقع حركة التجمّع الأخيرة من النطاق، لا بوصفها اختبارًا رجعيًا.",
     notYourEarnings:
@@ -4364,9 +4366,9 @@ const ar: Dictionary = {
     heading: "كم كان إيداع ليحصّل",
     unavailable: "ما كان إيداع ليأخذه من تلك الرسوم لا يمكن استخراجه لهذا التجمّع.",
     withheldNote:
-      "للسبب نفسه الذي يخصّ الرقم أعلاه: قد يأخذ hook هنا حصة من التبادل، ولا شيء في المصدر يفصل حصته عن حصة المزوّدين. وجزءٌ من مجموع لا يمكن نسبته إلى هذا النطاق لا يمكن نسبته إلى إيداع فيه أيضًا.",
+      "للسبب نفسه الذي يخصّ الرقم أعلاه: قد يأخذ خطّافٌ هنا حصة من التبادل، ولا شيء في المصدر يفصل حصته عن حصة المزوّدين. وجزءٌ من مجموع لا يمكن نسبته إلى هذا النطاق لا يمكن نسبته إلى إيداع فيه أيضًا.",
     deposited: "الإيداع",
-    depositedNote: "الحجم الذي حُسب على أساسه. غيّره في النموذج أعلاه.",
+    depositedNote: "الحجم الذي حُسب على أساسه. غيّره في الاستمارة أعلاه.",
     collected: "الرسوم التي كان ليأخذها",
     collectedNote: (days: string) => `على مدى الـ ${days} يومًا التي لم يغادر فيها السعر النطاق.`,
     ofDeposit: "من الإيداع",
@@ -4385,12 +4387,12 @@ const ar: Dictionary = {
   realizedFee: {
     heading: "كم تقاضى فعلًا",
     intro:
-      "الرسم الذي يعلنه التجمّع رقم واحد. أما هذا فما دفعه المبادلون فعلًا، مقسومًا من الأيام نفسها التي جاءت منها الأرقام أعلاه: رسوم اليوم على حجم تداول اليوم نفسه. لا يحتاج إلى طلب إضافي ولا إلى شيء من الـ hook.",
+      "الرسم الذي يعلنه التجمّع رقم واحد. أما هذا فما دفعه المبادلون فعلًا، مقسومًا من الأيام نفسها التي جاءت منها الأرقام أعلاه: رسوم اليوم على حجم تداول اليوم نفسه. لا يحتاج إلى طلب إضافي ولا إلى شيء من الخطّاف.",
     declared: "الرسم المعلَن",
     statedNote: (lp: string, protocol: string) =>
       `${lp} لمزوّدي السيولة و${protocol} للبروتوكول، مجموعين بالطريقة التي يتقاضاها بها PoolManager — وهو ما يدفعه المبادل، وما تتكوّن منه الرسوم أعلاه.`,
     noDeclared: "لا يوجد",
-    noDeclaredNote: "لا يحمل مفتاح هذا التجمّع أي رسم. فـ hook الخاص به يحدّد رسمًا لكل تبادل.",
+    noDeclaredNote: "لا يحمل مفتاح هذا التجمّع أي رسم. فخطّافه يحدّد رسمًا لكل تبادل.",
     median: "اليوم المعتاد",
     spread: "من أدنى يوم إلى أعلاه",
     spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
@@ -4404,9 +4406,9 @@ const ar: Dictionary = {
     verdictDiffers: (differing: string, measured: string) =>
       `لا يتطابقان. ففي ${differing} من ${measured} يومًا مقيسًا تقاضى التجمّع شيئًا غير معدّله المعلَن، وعليه فإن المستوى أعلاه يصف ما أُنشئ به التجمّع لا ما يكلّفه التبادل.`,
     verdictNoneDeclared:
-      "لا شيء للمقارنة به: هذا التجمّع لا يعلن أي معدّل أصلًا. والأرقام هنا هي ما حدّده الـ hook فعلًا.",
+      "لا شيء للمقارنة به: هذا التجمّع لا يعلن أي معدّل أصلًا. والأرقام هنا هي ما حدّده الخطّاف فعلًا.",
     notLpShare:
-      "لا شيء من هذا هو ما يصل إلى مزوّد السيولة. فـ hook هذا التجمّع مسموح له بأخذ حصة من التبادل، والمصدر لا يفصل حصة الـ hook عن حصة المزوّدين. ما تقوله هذه الأرقام هو كم كلّف التبادل، لا من الذي تلقّاه.",
+      "لا شيء من هذا هو ما يصل إلى مزوّد السيولة. فخطّاف هذا التجمّع مسموح له بأخذ حصة من التبادل، والمصدر لا يفصل حصة الخطّاف عن حصة المزوّدين. ما تقوله هذه الأرقام هو كم كلّف التبادل، لا من الذي تلقّاه.",
     unavailableHeading: "تعذّر قياس ما يتقاضاه هذا التجمّع",
   },
 
@@ -4419,7 +4421,7 @@ const ar: Dictionary = {
     fees: (deposit) => `الرسوم التي كان سيحصّلها، بإيداع ${deposit}`,
     feesOfDeposit: "تلك الرسوم مقارنةً بالإيداع",
     feesUnread: "تعذّر تقدير الرسوم: لم يمكن قراءة سعر الدولار للتجمّع.",
-    feesWithheld: "قد يغيّر خطافٌ في هذا التجمّع ما تدفعه التبادلات، لذا لا تُنسب الرسوم هنا إلى نطاق.",
+    feesWithheld: "قد يغيّر خطّافٌ في هذا التجمّع ما تدفعه التبادلات، لذا لا تُنسب الرسوم هنا إلى نطاق.",
     caveat: "القيمة مقارنةً بالاحتفاظ لا تحتاج أي رقم بالدولار. والرسوم هي رسوم التجمّع نفسه في الأيام التي بقي فيها السعر داخل النطاق بالكامل، موزّعة كما توزّعها لوحة الإيداع، مع تقدير الإيداع بسعر الدولار اليوم. لم يحتفظ أحد بهذا المركز: إنها الطريقة مُعادة على أيام مضت، ولا تقول شيئًا عن الأيام المقبلة.",
     showDays: "اعرض كل يوم",
     daysCaption: "كل يوم في الفترة، الأقدم أولًا",
@@ -4428,7 +4430,7 @@ const ar: Dictionary = {
     dayWorth: "القيمة مقارنةً بالاحتفاظ",
     placeInside: "داخل",
     placeOutside: "خارج",
-    placeCrossed: "عبر حدًّا",
+    placeCrossed: "عبر حافة",
   },
   customRange: {
     heading: "جرّب نطاقك الخاص",
@@ -4521,7 +4523,7 @@ const ar: Dictionary = {
     whyItDiffers:
       "الاتجاهان ليسا بالحجم نفسه لأن السعر يقع في موضع ما داخل خطوته لا في منتصفها. وما يستحق المقارنة بين التجمّعات هو الحجم نفسه: فهو ما يستوعبه هذا السوق قبل أن يتحرّك، وهو سبب تقسيم أي أحد أمرًا كبيرًا إلى أوامر صغيرة بدل إرساله دفعة واحدة.",
     hookMayAlter:
-      "يُسمح للـ hook في هذا التجمّع بتغيير تكلفة التبادل: أن يعيد كتابة الرسوم مع كل تبادل، أو أن يسعّر التبادل بنفسه بدل منحنى التجمّع، أو أن يأخذ حصة منه بعد ذلك؛ وقسم الـ hook أعلاه يبيّن أيّها. الأرقام هنا هي ما يتقاضاه منحنى التجمّع، ولا تصحّ إلا إذا لم يتدخّل الـ hook. ولا شيء مما قُرئ هنا يستطيع أن يقول إن كان يتدخّل.",
+      "يُسمح للخطّاف في هذا التجمّع بتغيير تكلفة التبادل: أن يعيد كتابة الرسوم مع كل تبادل، أو أن يسعّر التبادل بنفسه بدل منحنى التجمّع، أو أن يأخذ حصة منه بعد ذلك؛ وقسم الخطّاف أعلاه يبيّن أيّها. الأرقام هنا هي ما يتقاضاه منحنى التجمّع، ولا تصحّ إلا إذا لم يتدخّل الخطّاف. ولا شيء مما قُرئ هنا يستطيع أن يقول إن كان يتدخّل.",
     unavailable: "لا يمكن استخراج تكلفة التبادل لهذا التجمّع.",
   },
 
@@ -4561,7 +4563,7 @@ const ar: Dictionary = {
     onV3: "على Uniswap v3",
     onV4: "على Uniswap v4",
     v4Intro: (pair: string) =>
-      `تجمّعات v4 التي تتداول ${pair} — العقدان نفساهما. وزوج v4 قد يكون تجمّعات كثيرة: الرسم أي رقم، والخطوة السعرية حرّة، وكل hook ينشئ تجمّعًا آخر.`,
+      `تجمّعات v4 التي تتداول ${pair} — العقدان نفساهما. وزوج v4 قد يكون تجمّعات كثيرة: الرسم أي رقم، والخطوة السعرية حرّة، وكل خطّاف ينشئ تجمّعًا آخر.`,
     v4None: (pair: string) => `لا يتداول أي تجمّع في Uniswap v4 زوج ${pair} بهذين العقدين.`,
     v4OnlyThis: (pair: string) => `على v4، يُتداول ${pair} في هذا التجمّع وحده.`,
     v3Intro: (pair: string) =>
@@ -4572,8 +4574,8 @@ const ar: Dictionary = {
     depth: "العمق عند السعر الحالي",
     depthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     stateUnread: "تعذّرت قراءة سيولة التجمّع من السلسلة.",
-    hook: "hook",
-    noHook: "بلا hook",
+    hook: "خطّاف",
+    noHook: "بلا خطّاف",
     hookAltersSwaps: "قد يغيّر تكلفة التبادل",
     priceStep: (step: string) => `خطوة ${step}`,
     v4Ordering:
@@ -4586,7 +4588,7 @@ const ar: Dictionary = {
   widths: {
     heading: "الاتساعات الأخرى",
     intro:
-      "الطريقة نفسها عند كل اتساع يعرضه النموذج، ليُرى التنازل بدل أن يُحكى: النطاق الأوسع يحتوي أيامًا أكثر، ويوزّع الإيداع نفسه على أسعار أكثر — وهذا هو العمود الأخير، وهو حساب البروتوكول لا تقدير.",
+      "الطريقة نفسها عند كل اتساع تعرضه الاستمارة، لتُرى المفاضلة بدل أن تُحكى: النطاق الأوسع يحتوي أيامًا أكثر، ويوزّع الإيداع نفسه على أسعار أكثر — وهذا هو العمود الأخير، وهو حساب البروتوكول لا تقدير.",
     width: "الاتساع",
     range: "النطاق",
     recent: (days: string) => `داخل النطاق، من آخر ${days} يومًا`,
@@ -4618,20 +4620,20 @@ const ar: Dictionary = {
     fellBack:
       "تعذّرت قراءة جزء مما طُلب، فاستُخدم الإعداد الافتراضي حيث حدث ذلك. والأفق والاتساع المستخدمان فعلًا معروضان أعلاه.",
     preferenceHint:
-      "هذا يغيّر هذه الصفحة وحدها. لتغيير ما يُفتح به كل مجمّع، استخدم تفضيلات النطاق في الترويسة.",
+      "هذا يغيّر هذه الصفحة وحدها. لتغيير ما يُفتح به كل تجمّع، استخدم تفضيلات النطاق في الترويسة.",
   },
 
   holdings: {
     heading: "ما الذي يملكه هذا العنوان",
     intro:
-      "الرموز الموجودة في هذا العنوان، والمجمّعات التي يمكن أن تدخلها. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، والعنوان معلومة علنية — القائمة نفسها يراها كل من يبحث عنه.",
+      "الرموز الموجودة في هذا العنوان، والتجمّعات التي يمكن أن تدخلها. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، والعنوان معلومة علنية — القائمة نفسها يراها كل من يبحث عنه.",
     forAddress: "العنوان",
     loading: "تُسأل عقود الرموز عمّا يملكه هذا العنوان…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
       `رصيد الرمز موجود داخل عقد الرمز نفسه، فلا توجد قائمة بما يملكه عنوان — بل رموز يمكن سؤالها، واحدًا واحدًا. وقد سُئل هنا ${tokens} منها: كل رمز في أكثر ${v3Pools} تجمّعًا تداولًا في Uniswap v3 على ${chain}${v4Pools === null ? "" : `، وكل عملة في تجمّعات v4 الـ ${v4Pools} الأكثر تداولًا خلال الأيام السبعة الماضية، ومنها العملة الأصلية للسلسلة (${native})`}. وما يُملك خارج تلك المجموعة ليس غائبًا عن هذه الصفحة لأن العنوان لا يملكه.`,
     v4NotSearched: (native: string) =>
       `لم يُبحث في تجمّعات Uniswap v4: تعذّرت قراءة قائمتها. والعملة الأصلية للسلسلة (${native}) وعملات تجمّعات v4 غائبة عن هذه الصفحة لهذا السبب لا لغيره.`,
-    hookTag: "hook",
+    hookTag: "خطّاف",
     holdingsHeading: "الرموز الموجودة",
     nothingFound:
       "لم يُعثر على أي من الرموز المفحوصة في هذا العنوان. وهذا ليس كالمحفظة الفارغة — انظر أعلاه كيف جرى البحث.",
@@ -4655,7 +4657,7 @@ const ar: Dictionary = {
   v4: {
     heading: "تجمّع Uniswap v4",
     intro:
-      "ما هذا التجمّع، مقروءًا من مفتاحه نفسه. تجمّع v4 ليس عقدًا مستقلًا: فهو يعيش داخل PoolManager واحد ويُسمّى بتجزئة الأشياء الخمسة التي تعرّفه — العملتان، والرسم، والخطوة السعرية، والـ hook.",
+      "ما هذا التجمّع، مقروءًا من مفتاحه نفسه. تجمّع v4 ليس عقدًا مستقلًا: فهو يعيش داخل PoolManager واحد ويُسمّى بتجزئة الأشياء الخمسة التي تعرّفه — العملتان، والرسم، والخطوة السعرية، والخطّاف (hook).",
     poolId: "معرّف التجمّع",
     pair: "العملتان",
     fee: "الرسم",
@@ -4663,9 +4665,9 @@ const ar: Dictionary = {
       `مقروء من مفتاح التجمّع نفسه على السلسلة. يدفع التبادل ${swap}: منها ${lp} لمزوّدي السيولة، و${protocol} للبروتوكول فوق ذلك.`,
     feeNoteNoProtocol:
       "مقروء من مفتاح التجمّع نفسه على السلسلة. ولا يأخذ البروتوكول شيئًا فوقه، فهذا ما يدفعه التبادل.",
-    dynamicFee: "يحدّده الـ hook، لكل تبادل",
+    dynamicFee: "يحدّده الخطّاف، لكل تبادل",
     dynamicFeeNote:
-      "يحمل مفتاح هذا التجمّع علامة الرسم المتغيّر بدل رسم ثابت، فتكلفة التبادل يقرّرها الـ hook في لحظة وقوعه. ولم ترصد هذه القراءة أي تبادل، فليس هنا رسم يُذكر.",
+      "يحمل مفتاح هذا التجمّع علامة الرسم المتغيّر بدل رسم ثابت، فتكلفة التبادل يقرّرها الخطّاف في لحظة وقوعه. ولم ترصد هذه القراءة أي تبادل، فليس هنا رسم يُذكر.",
     feeUnread: "لم يُقرأ الرسم",
     feeUnreadNote:
       "رسم التجمّع موجود في المفتاح الذي أُنشئ به، على السلسلة، ولم تستطع هذه القراءة جلبه. ولا شيء آخر يقوم مقامه.",
@@ -4677,12 +4679,12 @@ const ar: Dictionary = {
       `يختلف باختلاف الاتجاه: الأول حين يُباع ${token0}، والثاني حين يُباع ${token1}.`,
     priceStep: "الخطوة السعرية",
     priceStepNote: (spacing: string) =>
-      `أدقّ خطوة يمكن أن تُوضع عندها حافّتا مركز في هذا التجمّع — تباعد الـ tick لديه وقدره ${spacing}. وهي جزء من مفتاح التجمّع في v4، فهي بخلاف v3 لا تحتاج إلى استدعاء عقد منفصل.`,
+      `أدقّ خطوة يمكن أن تُوضع عندها حافتا مركز في هذا التجمّع — تباعد الـ tick لديه وقدره ${spacing}. وهي جزء من مفتاح التجمّع في v4، فهي بخلاف v3 لا تحتاج إلى استدعاء عقد منفصل.`,
     nativeCurrency: (native: string) => `العملة الأصلية (${native})`,
     nativeCurrencyNote: (native: string) =>
       `العنوان الصفري هنا ليس حقلًا ناقصًا. فـ v4 تتيح للتجمّع أن يحمل العملة الأصلية للسلسلة (${native}) بدل رمز مغلّف، وهذا ما يحدث هنا.`,
-    hookHeading: "الـ hook",
-    noHook: "يعمل هذا التجمّع بلا hook.",
+    hookHeading: "الخطّاف",
+    noHook: "يعمل هذا التجمّع بلا خطّاف.",
     noHookNote: "لا يعمل شيء إلى جانب تبادلاته أو إيداعاته، فهو يتصرّف كما يتصرّف تجمّع v3.",
     hookMay: "ما المسموح له أن يفعله",
     permissionTopics: {
@@ -4710,22 +4712,22 @@ const ar: Dictionary = {
       afterDonate: "يعمل بعد التبرّع لمزوّدي التجمّع، وله هناك أن يرفض التبرّع بعد.",
     } satisfies Record<HookPermission, string>,
     noPermissions:
-      "لا شيء حول التبادلات أو الإيداعات أو التبرّعات: فالبروتوكول لا يستدعيه في أي من تلك اللحظات. وما يبقى في وسع hook كهذا هو تحديد رسم تجمّع رسمه متغيّر.",
+      "لا شيء حول التبادلات أو الإيداعات أو التبرّعات: فالبروتوكول لا يستدعيه في أي من تلك اللحظات. وما يبقى في وسع خطّاف كهذا هو تحديد رسم تجمّع رسمه متغيّر.",
     permissionNames: "أسماء البروتوكول نفسه لهذه",
     withdrawalWarning: (share: boolean): string =>
       share
-        ? "يعمل هذا الـ hook حين يسحب مزوّد. ويُسمح له برفض السحب وبأخذ حصة مما يُسحب. أما هل يفعل ذلك يومًا فلا سبيل إلى معرفته من هنا."
-        : "يعمل هذا الـ hook حين يسحب مزوّد، ويُسمح له برفض السحب. أما هل يفعل ذلك يومًا فلا سبيل إلى معرفته من هنا.",
+        ? "يعمل هذا الخطّاف حين يسحب مزوّد. ويُسمح له برفض السحب وبأخذ حصة مما يُسحب. أما هل يفعل ذلك يومًا فلا سبيل إلى معرفته من هنا."
+        : "يعمل هذا الخطّاف حين يسحب مزوّد، ويُسمح له برفض السحب. أما هل يفعل ذلك يومًا فلا سبيل إلى معرفته من هنا.",
     hookAddressIsThePermission:
-      "تُقرأ هذه من عنوان الـ hook نفسه. فـ v4 لا تخزّن صلاحيات الـ hook في أي مكان: إذ يُنشر الـ hook على عنوان تُملي بتّاته الأربع عشرة الأخيرة أي الاستدعاءات سينفّذها PoolManager، ويفحص PoolManager تلك البتّات بدل أن يسأل العقد. فهذا يقول ما يُسمح للـ hook أن يفعله، لا ما يفعله — فمن يُسمح له بإعادة كتابة الرسم في كل تبادل قد يُعيد الرسم نفسه دائمًا، وذلك ما لا سبيل إلى معرفته من هنا.",
+      "تُقرأ هذه من عنوان الخطّاف نفسه. فـ v4 لا تخزّن صلاحيات الخطّاف في أي مكان: إذ يُنشر الخطّاف على عنوان تُملي بتّاته الأربع عشرة الأخيرة أي الاستدعاءات سينفّذها PoolManager، ويفحص PoolManager تلك البتّات بدل أن يسأل العقد. فهذا يقول ما يُسمح للخطّاف أن يفعله، لا ما يفعله — فمن يُسمح له بإعادة كتابة الرسم في كل تبادل قد يُعيد الرسم نفسه دائمًا، وذلك ما لا سبيل إلى معرفته من هنا.",
     alterSwapWarning:
-      "يُسمح لهذا الـ hook بتغيير تكلفة التبادل أو عائده. وكل رقم مستخرج من تاريخ الأسعار — نطاق مقترح، مستوى رسوم، مقارنة بالاحتفاظ البسيط — يفترض أن التجمّع يتقاضى ما يعلنه ويدفع ما يقوله المنحنى. ولا أحد من الافتراضين آمن هنا، ولا شيء من ذلك ظاهر في سلسلة أسعار.",
+      "يُسمح لهذا الخطّاف بتغيير تكلفة التبادل أو عائده. وكل رقم مستخرج من تاريخ الأسعار — نطاق مقترح، مستوى رسوم، مقارنة بالاحتفاظ البسيط — يفترض أن التجمّع يتقاضى ما يعلنه ويدفع ما يقوله المنحنى. ولا أحد من الافتراضين آمن هنا، ولا شيء من ذلك ظاهر في سلسلة أسعار.",
     analysisScope:
-      "في الأسفل تحليل النطاق. والنطاق مستمدّ من أسعار وقعت بالفعل، فهو يصمد هنا تمامًا كما يصمد لتجمّع بلا hook — فالـ hook لا يستطيع تغيير أين ذهب السعر بأثر رجعي. أما ما يستطيع الـ hook تغييره فهو تكلفة التبادل، ولذلك يُقاس المعدّل الذي تقاضاه هذا التجمّع مما حصّله بدل أن يُؤخذ من الرسم أعلاه.",
+      "في الأسفل تحليل النطاق. والنطاق مستمدّ من أسعار وقعت بالفعل، فهو يصمد هنا تمامًا كما يصمد لتجمّع بلا خطّاف — فالخطّاف لا يستطيع تغيير أين ذهب السعر بأثر رجعي. أما ما يستطيع الخطّاف تغييره فهو تكلفة التبادل، ولذلك يُقاس المعدّل الذي تقاضاه هذا التجمّع مما حصّله بدل أن يُؤخذ من الرسم أعلاه.",
     unavailableHeading: "تعذّرت قراءة هذا التجمّع",
     invalidId:
       "هذا ليس معرّف تجمّع v4. فتجمّع v4 يُسمّى بتجزئة من 32 بايت — 0x يتبعها 64 حرفًا ست عشريًا — لا بعنوان عقد.",
-    noId: "ألصق معرّف تجمّع v4 لترى ما هو التجمّع وما الذي قد يفعله hook الخاص به.",
+    noId: "ألصق معرّف تجمّع v4 لترى ما هو التجمّع وما الذي قد يفعله خطّافه.",
     loading: "يُقرأ تجمّع v4 هذا، من المفهرس ومن السلسلة…",
   },
 
@@ -4739,17 +4741,17 @@ const ar: Dictionary = {
     heading: "الخطّافات العاملة على Uniswap v4",
     loading: "تُقرأ أكثر تجمّعات v4 نشاطًا هذا الأسبوع…",
     intro:
-      "لكل تجمّع v4 أن يسمّي hook: عقدًا يستدعيه PoolManager في لحظات محدّدة من التبادل والإيداع والسحب. وأيّ اللحظات ليس وعدًا يقطعه أحد. بل هو منقوش في عنوان الـ hook — فالبتّات الأربع عشرة الدنيا هي القائمة، والبروتوكول يرفض استدعاء العقد لأي شيء خارجها.",
+      "لكل تجمّع v4 أن يسمّي خطّافًا (hook): عقدًا يستدعيه PoolManager في لحظات محدّدة من التبادل والإيداع والسحب. وأيّ اللحظات ليس وعدًا يقطعه أحد. بل هو منقوش في عنوان الخطّاف — فالبتّات الأربع عشرة الدنيا هي القائمة، والبروتوكول يرفض استدعاء العقد لأي شيء خارجها.",
     onlyPermissions:
-      "هذا كل ما تعرفه هذه الصفحة، وهو جدير بأن يُعرف تحديدًا لأنه مفروض لا مدّعى. أما ما يفعله الـ hook بصلاحية ما فموجود في شيفرته. وهذا التطبيق لا يقرأ الشيفرة، ولا يحتفظ بأي قائمة لخطّافات زكّاها أحد — وكلاهما ادّعاء لا يستطيع التحقق منه، بجوار أرقام يستطيع.",
+      "هذا كل ما تعرفه هذه الصفحة، وهو جدير بأن يُعرف تحديدًا لأنه مفروض لا مدّعى. أما ما يفعله الخطّاف بصلاحية ما فموجود في شيفرته. وهذا التطبيق لا يقرأ الشيفرة، ولا يحتفظ بأي قائمة لخطّافات زكّاها أحد — وكلاهما ادّعاء لا يستطيع التحقق منه، بجوار أرقام يستطيع.",
     window: (pools: string, hooked: string, hookless: string) =>
-      `مقروء من تجمّعات أكثر أيام v4 نشاطًا هذا الأسبوع — وعددها ${pools}. منها ${hooked} تسمّي hook؛ و${hookless} لا تسمّي شيئًا، وتتصرّف كما يتصرّف تجمّع v3.`,
+      `مقروء من تجمّعات أكثر أيام v4 نشاطًا هذا الأسبوع — وعددها ${pools}. منها ${hooked} تسمّي خطّافًا؛ و${hookless} لا تسمّي شيئًا، وتتصرّف كما يتصرّف تجمّع v3.`,
     ordering:
-      "مرتّبة بعدد تلك التجمّعات التي يعمل فيها كل hook. وهذا عدّ للتجمّعات ولا شيء غيره: فالـ hook الموجود في كثير منها هو hook أنشأ به أحدهم تجمّعات كثيرة.",
+      "مرتّبة بعدد تلك التجمّعات التي يعمل فيها كل خطّاف. وهذا عدّ للتجمّعات ولا شيء غيره: فالخطّاف الموجود في كثير منها هو خطّاف أنشأ به أحدهم تجمّعات كثيرة.",
     runs: (count: string) => `يعمل في ${count} منها`,
     poolsHeading: "أين يعمل",
     moreNotShown: (count: string) => `و${count} أخرى`,
-    none: "لا يسمّي أي تجمّع من أكثر أيام v4 نشاطًا هذا الأسبوع أي hook.",
+    none: "لا يسمّي أي تجمّع من أكثر أيام v4 نشاطًا هذا الأسبوع أي خطّاف.",
     unavailable: "تعذّرت قراءة تجمّعات v4 لهذا الأسبوع، فلا دليل لعرضه.",
     fromHome: "اعرض كل الخطّافات ←",
   },
@@ -4792,7 +4794,7 @@ const ar: Dictionary = {
     showHoldings: "اعرض ما تملكه",
     forget: "انسَ هذا العنوان",
     readOnly:
-      "للقراءة فقط. يطلب هذا التطبيق من المحفظة عنوانها ولا يطلب توقيعًا أبدًا: لا يوجد هنا أي كود يستطيع توقيع رسالة أو إرسال معاملة، ولا يُحفظ شيء عن المحفظة بين الزيارات.",
+      "للقراءة فقط. يطلب هذا التطبيق من المحفظة عنوانها ولا يطلب توقيعًا أبدًا: لا توجد هنا أي شيفرة تستطيع توقيع رسالة أو إرسال معاملة، ولا يُحفظ شيء عن المحفظة بين الزيارات.",
     notices: {
       "wallet-not-found":
         "لم يُعثر على محفظة في هذا المتصفّح. وإضافة محفظة للمتصفّح تضع واحدة؛ وبدونها لا يتغيّر شيء في هذه الصفحة.",
@@ -4811,7 +4813,7 @@ const ar: Dictionary = {
     connected: (address: string) => `هذا المتصفح مربوط: يُراقَب ${address}.`,
     pending: "الرابط بانتظارك: افتح محادثة البوت في تيليغرام واضغط «ابدأ».",
     forget: "نسيان الرابط",
-    notConfigured: "تنبيهات تيليغرام غير مهيأة على هذا الخادم.",
+    notConfigured: "تنبيهات تيليغرام غير مهيّأة على هذا الخادم.",
     publicNote:
       "لا يحتاج أحد إلى امتلاك عنوان ليتابعه — المراكز علنية، والتنبيه لا يقول شيئًا لا تقوله هذه القائمة. البوت يقرأ السلسلة ويرسل رسالة؛ ولا يستطيع توقيع شيء ولا إرسال شيء.",
     linked: (address: string) =>
@@ -4880,7 +4882,7 @@ const ar: Dictionary = {
     v4DepthNote:
       "كم تساوي سيولة التجمّع النشطة الآن، مقروءةً من مخزن PoolManager نفسه — لا ما يحمله التجمّع، وهو ما لا يعلنه أي تجمّع v4 عن نفسه.",
     v4StateUnread: "تعذّرت قراءة سيولة التجمّع من السلسلة.",
-    v4Hook: "Hook",
+    v4Hook: "الخطّاف:",
     v4NoHook: "لا يوجد",
     v4HookAltersSwaps: "قد يغيّر تكلفة التبادل",
     v4Ordering:
@@ -4891,7 +4893,7 @@ const ar: Dictionary = {
     windowing:
       "هذه القائمة مستمدّة من التجمّعات التي يعلن مصدر البيانات أنها الأكثر تداولًا لمصطلحاتك، والتجمّع الهادئ بما يكفي ليقع خارج تلك المجموعة لا يبلغ الترتيب أعلاه أبدًا. وهذا هو الحدّ الأمين للترتيب داخل ما اختار مصدر أن يعيده: فالتجمّع الذي يحمل الكثير ويُتداول نادرًا قد يغيب عن هذه الصفحة.",
     dormantNote:
-      "المجمّع الذي لم يحدث فيه شيء منذ شهر لا يُدرج. النطاق يُرسم من أسعار الشهر الأخير، والمجمّع الذي لا شهر له لا شيء يُرسم منه — وفتحه لن يقول سوى ذلك.",
+      "التجمّع الذي لم يحدث فيه شيء منذ شهر لا يُدرج. النطاق يُرسم من أسعار الشهر الأخير، والتجمّع الذي لا شهر له لا شيء يُرسم منه — وفتحه لن يقول سوى ذلك.",
     v4Windowing:
       "هذه القائمة مستمدّة من تجمّعات v4 الأكثر تداولًا على شبكة إيثيريوم الرئيسية خلال الأيام السبعة الماضية — أي أنشط ألف يوم-تجمّع، وهي بضع مئات من التجمّعات — والتجمّع الأهدأ من ذلك لا يبلغ هذه الصفحة أبدًا. فالمصدر لا يستطيع الإجابة عن بحث في كل تجمّعات v4 قبل أن تكفّ هذه الصفحة عن الانتظار، ولذلك تقوم النافذة على النشاط الأخير لا على مصطلحاتك: فالتجمّع الموجود الذي لم يُتداول هذا الأسبوع ليس هنا.",
     symbolWarning:
@@ -4933,7 +4935,7 @@ const ar: Dictionary = {
     feePerSwap: (fee: string) => `رسم ${fee} على كل تبادل`,
     feePlusProtocol: (fee: string, protocol: string) =>
       `رسم ${fee} على كل تبادل، إضافةً إلى ${protocol} للبروتوكول`,
-    noDeclaredFee: "رسم يحدّده hook الخاص به في كل تبادل",
+    noDeclaredFee: "رسم يحدّده خطّافه في كل تبادل",
     caveatsHeading: (count: number) =>
       count === 1 ? "ينطبق تحفّظ واحد على هذه الأرقام." : `تنطبق ${count} تحفّظات على هذه الأرقام.`,
     caveatsAriaLabel: "التحفّظات",
@@ -4969,7 +4971,7 @@ const ar: Dictionary = {
 
     basisHeading: "كيف رُسم هذا النطاق",
     basisIntro: (base: string, days: string) =>
-      `من مدى تحرّك سعر ${base} فعلًا خلال آخر ${days} يومًا مكتملًا — لا من تنبّؤ بما سيؤول إليه.`,
+      `من مدى تحرّك سعر ${base} فعلًا خلال آخر ${days} يومًا مكتملًا — لا من تنبؤ بما سيؤول إليه.`,
     dailyMove: "الحركة اليومية المعتادة",
     dailyMoveNote: "الانحراف المعياري لتغيّر سعر يوم واحد، على مدى النافذة.",
     horizonMove: (days: string) => `على مدى ${days} يومًا`,
@@ -4981,7 +4983,7 @@ const ar: Dictionary = {
     measuredOver: "مقيس على",
     measuredOverNote: (returns: string) => `دخل فيه ${returns} تغيّرًا يوميًا.`,
     epilogue:
-      "النطاق مركزه سعر اليوم، ومرسوم بالمسافة نفسها صعودًا وهبوطًا من حيث النسبة — فالتنصيف والمضاعفة حركة واحدة — ولهذا تختلف النسبتان المئويتان. وهو يصف مدى تحرّك السعر، لا إلى أين سيذهب: فهو ليس تنبّؤًا، والاتساع ليس مستوى ثقة. ولا شيء هنا يحدّد حجم مركز ولا يقول كم يُودع من كل رمز.",
+      "النطاق مركزه سعر اليوم، ومرسوم بالمسافة نفسها صعودًا وهبوطًا من حيث النسبة — فالتنصيف والمضاعفة حركة واحدة — ولهذا تختلف النسبتان المئويتان. وهو يصف مدى تحرّك السعر، لا إلى أين سيذهب: فهو ليس تنبؤًا، والاتساع ليس مستوى ثقة. ولا شيء هنا يحدّد حجم مركز ولا يقول كم يُودع من كل رمز.",
   },
 
   technical: {
@@ -5001,7 +5003,7 @@ const ar: Dictionary = {
     bandLower: "الحدّ الأدنى للحزمة",
     bandUpper: "الحدّ الأعلى للحزمة",
     bandNote: "قبل الإسقاط على شبكة الـ ticks، في اتجاه التجمّع نفسه.",
-    annualised: "التقلّب السنوي",
+    annualised: "التقلّب على أساس سنوي",
     annualisedNote: "الانحراف المعياري العيّني للعوائد اللوغاريتمية اليومية، مقيسًا بـ sqrt(365).",
     coverage: "التغطية",
     coverageNote: "كم من النافذة كان وراءه أسعار يومية متتالية.",
@@ -5072,7 +5074,7 @@ const ar: Dictionary = {
       "pool-history-insufficient":
         "لا يملك هذا التجمّع بعدُ تاريخًا يوميًا مكتملًا كافيًا من الأسعار ليُحلَّل.",
       "pool-history-never-traded":
-        "هذا التجمّع موجود، لكن لم تجرِ فيه أي مبادلة قط، فلا توجد أسعار يومية يُقاس منها نطاق.",
+        "هذا التجمّع موجود، لكن لم يجرِ فيه أي تبادل قط، فلا توجد أسعار يومية يُقاس منها نطاق.",
       "pool-history-dormant":
         "توقّف التداول في هذا التجمّع قبل بداية الفترة التي تُقرأ منها هذه الأسعار اليومية، فلا يوجد تاريخ حديث يُقاس منه نطاق. الانتظار لن يغيّر ذلك؛ وحده استخدام التجمّع من جديد يغيّره.",
       "volatility-invalid-input":
@@ -5094,7 +5096,7 @@ const ar: Dictionary = {
       "range-tick-disagreement":
         "السعر الذي يعلنه المصدر لهذا التجمّع والحالة التي يعلنها لا يصفان اللحظة نفسها، فلا يُنشر أي نطاق.",
       "range-too-narrow":
-        "حزمة السعر أضيق من أصغر خطوة يسمح بها هذا التجمّع بين حافّتين، فهي لا تصف حدّي مركز متمايزين.",
+        "حزمة السعر أضيق من أصغر خطوة يسمح بها هذا التجمّع بين حافتين، فهي لا تصف حدّي مركز متمايزين.",
       "range-unverifiable": "أنتج حساب النطاق نتيجة لا يستطيع هذا التطبيق التحقق منها.",
       "divergence-unverifiable":
         "أنتجت المقارنة بالاحتفاظ نتيجة لا يستطيع هذا التطبيق التحقق منها.",
@@ -5216,7 +5218,7 @@ const hi: Dictionary = {
     themeDark: "गहरा",
     rangeLabel: "दायरे की प्राथमिकताएँ",
     rangeIntro:
-      "वह अवधि, चौड़ाई और राशि जिनसे हर पूल खुलता है। अपने मान लिए हुए लिंक फिर भी आगे रहता है, और हर विश्लेषण के नीचे का फ़ॉर्म केवल उसी पृष्ठ को बदलता है।",
+      "वह अवधि, चौड़ाई और जमा जिनसे हर पूल खुलता है। अपने मान लिए हुए लिंक फिर भी आगे रहता है, और हर विश्लेषण के नीचे का फ़ॉर्म केवल उसी पृष्ठ को बदलता है।",
     rangeSave: "सहेजें",
     rangeReset: "भूल जाएँ",
   },
@@ -5224,7 +5226,7 @@ const hi: Dictionary = {
   disclaimer: {
     ariaLabel: "महत्वपूर्ण सूचना",
     title: "शैक्षिक उपकरण — वित्तीय सलाह नहीं।",
-    body: "यह ऐप्लिकेशन Uniswap की कार्यप्रणाली समझाता है और पैरामीटर चुनने पर सोचने में मदद करता है। यह कीमतों का अनुमान नहीं लगाता, किसी प्रतिफल की गारंटी नहीं देता, और यह जाँच नहीं सकता कि कोई स्मार्ट कॉन्ट्रैक्ट सुरक्षित है। तरलता देने में वास्तविक जोखिम है, जिसमें अस्थायी हानि और पूरी पूँजी का नुकसान शामिल है। कॉन्ट्रैक्ट के पते हमेशा स्वयं जाँचें और अपनी ओर से शोध करें।",
+    body: "यह ऐप्लिकेशन Uniswap की कार्यप्रणाली समझाता है और पैरामीटर चुनने पर सोचने में मदद करता है। यह कीमतों का पूर्वानुमान नहीं लगाता, किसी प्रतिफल की गारंटी नहीं देता, और यह जाँच नहीं सकता कि कोई स्मार्ट कॉन्ट्रैक्ट सुरक्षित है। तरलता देने में वास्तविक जोखिम है, जिसमें अस्थायी हानि और पूरी पूँजी का नुकसान शामिल है। कॉन्ट्रैक्ट के पते हमेशा स्वयं जाँचें और अपनी ओर से शोध करें।",
   },
 
   home: {
@@ -5236,7 +5238,7 @@ const hi: Dictionary = {
       " की ओर बढ़ता हुआ। किसी पूल को उसकी जोड़ी से खोजिए, वह कीमत दायरा पढ़िए जो इस आधार पर निकला है कि वह जोड़ी वास्तव में कितनी हिली है, और उसका सरल भाषा में स्पष्टीकरण पाइए। हर आँकड़ा गणना और जाँच के बाद ही किसी मॉडल को बताने दिया जाता है — और मॉडल को कभी कोई आँकड़ा स्वयं कहने की अनुमति नहीं है।",
     workingTodayHeading: "आज जो काम करता है",
     workingTodayBody:
-      "किसी पूल को उसकी जोड़ी से खोजिए, या किसी v3 पूल का पता या किसी v4 पूल की id चिपकाइए। आपको मिलेगा: पूल का सत्यापित विन्यास और उसकी मौजूदा स्थिति, पिछले महीने की दैनिक कीमतें एक सुझाए गए दायरे के सामने खींची हुईं, जोड़ी वास्तव में कितनी हिली, और उससे निकलने वाला दायरा — जिसकी अवधि और चौड़ाई बदलना आपके हाथ में है। साथ में: पूल ने क्या शुल्क लिया और वास्तव में क्या वसूला, उसके हाल के दिन दायरे के सामने कैसे बैठे, वही तरीका उन दिनों पर क्या करता जो उसने कभी देखे ही नहीं, केवल टोकन रखने की तुलना में एक पोज़िशन क्या छोड़ती है, बाकी हर चौड़ाई इसके बजाय क्या करती, और — एक जमा के लिए जिसका आकार आप तय करते हैं — उन दिनों के शुल्कों में से उसने कितना लिया होता जिन दिनों कीमत दायरे के भीतर रही। और वही दायरा उल्टा पढ़ा हुआ: उसका हर आधा हिस्सा एक तरफ़ा पोज़िशन है, और पृष्ठ बताता है कि कीमत उससे गुज़रे तो हर आधा किस भाव पर बदलेगा। पूल से होकर एक स्वैप की लागत क्या है, उस सबसे बड़े स्वैप के लिए जिसकी कीमत बिना कुछ माने आँकी जा सके। और इस हफ़्ते के सबसे व्यस्त v4 पूल जिन hooks का नाम लेते हैं उन सबकी सूची, हर एक को क्या करने की अनुमति है यह उसके अपने पते से पढ़कर। कोई v4 पूल भी सरल शब्दों में बताता है कि उसके hook को क्या करने की अनुमति है, hook के अपने पते से पढ़कर। किसी पते के बारे में देखा जा सकता है कि उसके टोकन किन पूलों में जा सकते हैं, और उसके पास पहले से कौन-सी Uniswap पोज़िशन हैं — हर एक उन कीमतों के साथ जिन्हें वह घेरती है और यह कि पूल इस समय उनके भीतर है या नहीं। फिर इन सबका सरल भाषा में स्पष्टीकरण। इनमें से किसी आँकड़े को कोई मॉडल नहीं छूता, किसी को खाली जगह भरने के लिए अनुमान से नहीं गढ़ा जाता, और गद्य के पास अपना कोई आँकड़ा रखने की जगह ही नहीं है।",
+      "किसी पूल को उसकी जोड़ी से खोजिए, या किसी v3 पूल का पता या किसी v4 पूल की id चिपकाइए। आपको मिलेगा: पूल का सत्यापित विन्यास और उसकी मौजूदा स्थिति, पिछले महीने की दैनिक कीमतें एक सुझाए गए दायरे के सामने खींची हुईं, जोड़ी वास्तव में कितनी हिली, और उससे निकलने वाला दायरा — जिसकी अवधि और चौड़ाई बदलना आपके हाथ में है। साथ में: पूल ने क्या शुल्क लिया और वास्तव में क्या वसूला, उसके हाल के दिन दायरे के सामने कैसे बैठे, वही तरीका उन दिनों पर क्या करता जो उसने कभी देखे ही नहीं, केवल टोकन रखे रहने की तुलना में एक पोज़िशन क्या छोड़ती है, बाक़ी हर चौड़ाई इसके बजाय क्या करती, और — एक जमा के लिए जिसका आकार आप तय करते हैं — उन दिनों के शुल्कों में से उसने कितना लिया होता जिन दिनों कीमत दायरे के भीतर रही। और वही दायरा उल्टा पढ़ा हुआ: उसका हर आधा हिस्सा एकतरफ़ा पोज़िशन है, और पृष्ठ बताता है कि कीमत उससे गुज़रे तो हर आधा किस कीमत पर बदलेगा। पूल से होकर एक स्वैप की लागत क्या है, उस सबसे बड़े स्वैप के लिए जिसकी कीमत बिना कुछ माने आँकी जा सके। और इस हफ़्ते के सबसे व्यस्त v4 पूल जिन hooks का नाम लेते हैं उन सबकी सूची, हर एक को क्या करने की अनुमति है यह उसके अपने पते से पढ़कर। कोई v4 पूल भी सरल शब्दों में बताता है कि उसके hook को क्या करने की अनुमति है, hook के अपने पते से पढ़कर। किसी पते के बारे में देखा जा सकता है कि उसके टोकन किन पूलों में जा सकते हैं, और उसके पास पहले से कौन-सी Uniswap पोज़िशनें हैं — हर एक उन कीमतों के साथ जिन्हें वह ढकती है और यह कि पूल इस समय उनके भीतर है या नहीं। फिर इन सबका सरल भाषा में स्पष्टीकरण। इनमें से किसी आँकड़े को कोई मॉडल नहीं छूता, किसी को खाली जगह भरने के लिए अनुमान से नहीं गढ़ा जाता, और गद्य के पास अपना कोई आँकड़ा रखने की जगह ही नहीं है।",
     analysePool: "कोई पूल खोजें →",
     methodHeading: "यह कैसे काम करता है",
     methodSteps: [
@@ -5285,7 +5287,7 @@ const hi: Dictionary = {
       },
     ],
     footer:
-      "ऊपर लिखी कोई भी चीज़ अभी मौजूद नहीं है। जो मौजूद है, वह इस पृष्ठ के ऊपर का सब कुछ है: नाम से खोजा गया पूल, गणना करके और आपस में मिलाकर जाँचे गए आँकड़े, और दिखाने से पहले सत्यापित पाठ। एक वॉलेट जोड़ा जा सकता है, और उससे केवल उसका पता माँगा जाता है। यह ऐप जो एकमात्र चीज़ रखता है, वह पाठक का स्वयं बनाया हुआ Telegram लिंक है — एक चैट पहचान के साथ एक पता, जो बॉट को /stop भेजते ही मिट जाता है और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी हट जाता है — और यहाँ कुछ भी आपकी ओर से लेन-देन पर हस्ताक्षर या उसे प्रेषित नहीं कर सकता।",
+      "ऊपर लिखी कोई भी चीज़ अभी मौजूद नहीं है। जो मौजूद है, वह इस पृष्ठ के ऊपर का सब कुछ है: नाम से खोजा गया पूल, गणना करके और आपस में मिलाकर जाँचे गए आँकड़े, और दिखाने से पहले सत्यापित पाठ। एक वॉलेट जोड़ा जा सकता है, और उससे केवल उसका पता माँगा जाता है। यह ऐप्लिकेशन जो एकमात्र चीज़ रखता है, वह पाठक का स्वयं बनाया हुआ Telegram लिंक है — एक चैट पहचान के साथ एक पता, जो बॉट को /stop भेजते ही मिट जाता है और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी हट जाता है — और यहाँ कुछ भी आपकी ओर से लेन-देन पर हस्ताक्षर या उसे प्रेषित नहीं कर सकता।",
   },
 
   pool: {
@@ -5328,7 +5330,7 @@ const hi: Dictionary = {
     collectedNote: (days: string) => `उन ${days} दिनों में जब कीमत ने दायरा कभी नहीं छोड़ा।`,
     ofDeposit: "जमा के मुक़ाबले",
     ofDepositNote:
-      "वे शुल्क लगाई गई रकम के सामने, उन्हीं दिनों में और किसी और में नहीं। यह वार्षिक दर नहीं है, और यहाँ कुछ भी इसे दर में नहीं बदलता।",
+      "वे शुल्क लगाई गई रक़म के सामने, उन्हीं दिनों में और किसी और में नहीं। यह सालाना दर नहीं है, और यहाँ कुछ भी इसे दर में नहीं बदलता।",
     sentence: (deposit: string, days: string, poolFees: string, yourFees: string) =>
       `उन ${days} दिनों में जब कीमत ने यह दायरा कभी नहीं छोड़ा, पूल ने ${poolFees} शुल्क लिया। इस दायरे में रखी ${deposit} की जमा उसमें से लगभग ${yourFees} ले जाती — उसकी अपनी तरलता, उन दिनों में से हर दिन वास्तव में सक्रिय रही तरलता के हिस्से के रूप में।`,
     unmeasurableNote: (days: string) =>
@@ -5336,7 +5338,7 @@ const hi: Dictionary = {
     dilution:
       "बड़ी जमा अनुपात में अधिक नहीं वसूलती। हिस्सा है आपकी तरलता बटा सबकी तरलता, जिसमें आपकी भी शामिल है — इसलिए एक आकार के बाद आप जो जोड़ते हैं उसका अधिकांश आपके पहले से रखे हुए को ही पतला करता है। इसीलिए दी गई राशियाँ हज़ार गुना दूर हैं।",
     caveat:
-      "केवल शुल्क, और केवल वे दिन जो बीत चुके हैं। इसमें यह माना गया है कि पोज़िशन उनमें से हर दिन खुली थी और उसके जवाब में कुछ हिला नहीं, और यह अगले तीस दिनों के बारे में कुछ नहीं कहता। दोनों टोकन केवल रखने की तुलना में एक पोज़िशन क्या छोड़ती है, यह इसी पृष्ठ पर नीचे की तुलना है, और दोनों को साथ पढ़ना ज़रूरी है।",
+      "केवल शुल्क, और केवल वे दिन जो बीत चुके हैं। इसमें यह माना गया है कि पोज़िशन उनमें से हर दिन खुली थी और उसके जवाब में कुछ हिला नहीं, और यह अगले तीस दिनों के बारे में कुछ नहीं कहता। दोनों टोकन केवल रखे रहने की तुलना में एक पोज़िशन क्या छोड़ती है, यह इसी पृष्ठ पर नीचे की तुलना है, और दोनों को साथ पढ़ना ज़रूरी है।",
   },
 
   realizedFee: {
@@ -5369,7 +5371,7 @@ const hi: Dictionary = {
 
   backtest: {
     heading: "तीस दिन पहले खोली गई होती",
-    intro: "पिछले तीस दिनों की शुरुआत में, उस दायरे में खोली गई पोज़िशन क्या करती जो यह तरीक़ा तब खींचता — उस दिन से पहले के इकतीस बंद भावों से और उसके बाद के किसी से नहीं, इसलिए उसे बस उतना पता था जितना वहाँ खड़े किसी को।",
+    intro: "पिछले तीस दिनों की शुरुआत में, उस दायरे में खोली गई पोज़िशन क्या करती जो यह तरीका तब खींचता — उस दिन से पहले के इकतीस बंद भावों से और उसके बाद के किसी से नहीं, इसलिए उसे बस उतना पता था जितना वहाँ खड़े किसी को।",
     opened: (date, range) => `${date} के बंद भाव पर, ${range} में खोली गई।`,
     worth: "रखे रहने की तुलना में मूल्य, आख़िरी बंद भाव पर",
     worthNote: "पोज़िशन के पास जो है, बँटा उससे जिससे वह शुरू हुई; दोनों एक ही बंद भाव पर आँके गए। 100% से कम वह है जो कीमतों की हलचल ने दोनों टोकन बस रखे रहने की तुलना में ख़र्च कराया।",
@@ -5377,9 +5379,9 @@ const hi: Dictionary = {
     feesOfDeposit: "जमा की तुलना में वह शुल्क",
     feesUnread: "शुल्क का आकार नहीं निकल सका: पूल की डॉलर दर पढ़ी नहीं जा सकी।",
     feesWithheld: "इस पूल का एक hook बदल सकता है कि स्वैप क्या चुकाते हैं, इसलिए यहाँ शुल्क किसी दायरे के नाम नहीं किया जाता।",
-    caveat: "रखे रहने की तुलना वाले मूल्य को किसी डॉलर आँकड़े की ज़रूरत नहीं। शुल्क पूल का अपना है, उन दिनों का जब कीमत पूरी तरह भीतर रही, जमा वाले पैनल की तरह बाँटा गया, और जमा आज की डॉलर दर पर आँका गया। यह पोज़िशन किसी ने नहीं रखी: यह तरीक़ा बीत चुके दिनों पर दोहराया गया है, और आने वाले दिनों के बारे में कुछ नहीं कहता।",
+    caveat: "रखे रहने की तुलना वाले मूल्य को किसी डॉलर आँकड़े की ज़रूरत नहीं। शुल्क पूल का अपना है, उन दिनों का जब कीमत पूरी तरह भीतर रही, जमा वाले पैनल की तरह बाँटा गया, और जमा आज की डॉलर दर पर आँका गया। यह पोज़िशन किसी ने नहीं रखी: यह तरीका बीत चुके दिनों पर दोहराया गया है, और आने वाले दिनों के बारे में कुछ नहीं कहता।",
     showDays: "हर दिन दिखाएँ",
-    daysCaption: "अवधि का हर दिन, सबसे पुराना पहले",
+    daysCaption: "खिड़की का हर दिन, सबसे पुराना पहले",
     dayDate: "दिन",
     dayPlace: "कीमत कहाँ थी",
     dayWorth: "रखे रहने की तुलना में मूल्य",
@@ -5442,19 +5444,19 @@ const hi: Dictionary = {
   rangeOrder: {
     heading: "दायरे से होकर बेचना और ख़रीदना",
     intro:
-      "ऊपर का दायरा दोतरफ़ा है: कीमत के दोनों ओर पैसा, जो तब तक शुल्क कमाता है जब तक कीमत उनके बीच रहे। उसे कीमत पर बाँटिए और हर आधा एक अलग साधन बन जाता है। कीमत से पूरी तरह ऊपर बैठी पोज़िशन केवल एक टोकन रखती है, और जैसे-जैसे कीमत बैंड से होकर चढ़ती है पूल उस टोकन को दूसरे के बदले बेचता जाता है। कीमत से नीचे वह उल्टा करता है। यही एक रेंज ऑर्डर है, और इस दायरे के दोनों आधे वही हैं।",
+      "ऊपर का दायरा दोतरफ़ा है: कीमत के दोनों ओर पैसा, जो तब तक शुल्क कमाता है जब तक कीमत उनके बीच रहे। उसे कीमत पर बाँटिए और हर आधा एक अलग साधन बन जाता है। कीमत से पूरी तरह ऊपर बैठी पोज़िशन केवल एक टोकन रखती है, और जैसे-जैसे कीमत बैंड से होकर चढ़ती है पूल उस टोकन को दूसरे के बदले बेचता जाता है। कीमत से नीचे वह उल्टा करता है। यही एक दायरा ऑर्डर (range order) है, और इस दायरे के दोनों आधे वही हैं।",
     selling: (token: string) => `${token} बेचना`,
     buying: (token: string) => `${token} ख़रीदना`,
     band: "बैंड",
     bandNote:
       "पोज़िशन कहाँ बैठी है। उसका भीतरी किनारा उस क़दम के बाद का पहला कीमत-क़दम है जिसमें कीमत खड़ी है, इसलिए वह शुरुआत में उस चीज़ में से कुछ नहीं रखती जिसमें वह बदल रही है।",
     average: "औसत कीमत",
-    averageNote: "अगर कीमत पूरा बैंड पार कर जाए तो बदलाव किस भाव पर पड़ता है।",
+    averageNote: "अगर कीमत पूरा बैंड पार कर जाए तो बदलाव किस कीमत पर पड़ता है।",
     against: "मौजूदा कीमत के मुक़ाबले",
     exact:
-      "वह औसत दोनों सीमाओं का गुणोत्तर माध्य है — बिल्कुल सटीक, और कीमतें चाहे किसी भी दिशा में लिखी हों। यह प्रोटोकॉल के अपने सूत्रों से निकलता है कि पोज़िशन अपने बैंड के हर छोर पर क्या रखती है, और लगाई गई रकम उसमें से कट जाती है: सौ डॉलर और दस लाख एक ही भाव पर बदलते हैं।",
+      "वह औसत दोनों सीमाओं का गुणोत्तर माध्य है — बिल्कुल सटीक, और कीमतें चाहे किसी भी दिशा में लिखी हों। यह प्रोटोकॉल के अपने सूत्रों से निकलता है कि पोज़िशन अपने बैंड के हर छोर पर क्या रखती है, और लगाई गई रक़म उसमें से कट जाती है: सौ डॉलर और दस लाख एक ही कीमत पर बदलते हैं।",
     onlyIfThrough:
-      "और तभी जब कीमत पूरा बैंड पार करे। जो कीमत भीतर ही लौट जाए वह पोज़िशन को दोनों में से कुछ-कुछ के साथ छोड़ देती है, किसी एक भाव पर नहीं — जो ठीक वही चीज़ है जिसके लिए ऊपर का दायरा है, बस संयोग से पहुँची हुई।",
+      "और तभी जब कीमत पूरा बैंड पार करे। जो कीमत भीतर ही लौट जाए वह पोज़िशन को दोनों में से कुछ-कुछ के साथ छोड़ देती है, किसी एक कीमत पर नहीं — जो ठीक वही चीज़ है जिसके लिए ऊपर का दायरा है, बस संयोग से पहुँची हुई।",
     notAnOrderBook:
       "यहाँ कुछ भी इस बदलाव का समय तय नहीं करता और कुछ भी उसकी गारंटी नहीं देता। यह ऑर्डर बुक नहीं है: जिस ऑर्डर तक कीमत कभी पहुँचती ही नहीं, वह विफलता नहीं बल्कि सामान्य परिणाम है, और यहाँ न कोई क़तार है न कोई प्रतीक्षारत प्रतिपक्ष। इसके बदले जो है वह यह कि कीमत बैंड के भीतर रहने तक पोज़िशन पूल के शुल्क चुकाने के बजाय बटोरती है।",
     unavailable: "इस दायरे का कोई एकतरफ़ा आधा नहीं है जिसे बताया जा सके।",
@@ -5463,7 +5465,7 @@ const hi: Dictionary = {
   swapDepth: {
     heading: "यहाँ एक स्वैप की लागत क्या है",
     intro:
-      "ऊपर का सब कुछ तरलता देने के बारे में है। यह उसे इस्तेमाल करने के बारे में है। पूल की तरलता उन कीमत-क़दमों के बीच स्थिर रहती है जिन पर वह बना है, इसलिए जो स्वैप उसी क़दम के भीतर रहे जिसमें कीमत है, उसकी क़ीमत प्रोटोकॉल के अपने सूत्रों से बिना कुछ माने आँकी जा सकती है — और एक क़दम आगे वाले की नहीं, क्योंकि वहाँ किसी दूसरी पोज़िशन की तरलता शुरू हो सकती है और यह ऐप्लिकेशन हर कीमत पर तरलता नहीं पढ़ता।",
+      "ऊपर का सब कुछ तरलता देने के बारे में है। यह उसे इस्तेमाल करने के बारे में है। पूल की तरलता उन कीमत-क़दमों के बीच स्थिर रहती है जिन पर वह बना है, इसलिए जो स्वैप उसी क़दम के भीतर रहे जिसमें कीमत है, उसकी कीमत प्रोटोकॉल के अपने सूत्रों से बिना कुछ माने आँकी जा सकती है — और एक क़दम आगे वाले की नहीं, क्योंकि वहाँ किसी दूसरी पोज़िशन की तरलता शुरू हो सकती है और यह ऐप्लिकेशन हर कीमत पर तरलता नहीं पढ़ता।",
     selling: (token: string) => `पूल में ${token} बेचना`,
     amount: (amount: string, symbol: string) => `${amount} ${symbol}`,
     largest: "यहाँ आँका जा सकने वाला सबसे बड़ा स्वैप",
@@ -5478,7 +5480,7 @@ const hi: Dictionary = {
     whyItDiffers:
       "दोनों दिशाएँ एक आकार की नहीं हैं क्योंकि कीमत अपने क़दम के भीतर कहीं बैठी है, उसके बीच में नहीं। पूलों के बीच तुलने लायक़ चीज़ यह आकार ही है: यही वह है जो यह बाज़ार हिलने से पहले सोख लेता है, और यही वजह है कि कोई बड़ा ऑर्डर एक साथ भेजने के बजाय छोटे-छोटे टुकड़ों में तोड़ता है।",
     hookMayAlter:
-      "इस पूल के hook को यह बदलने की अनुमति है कि स्वैप की लागत क्या हो — हर स्वैप के समय शुल्क दोबारा लिखना, पूल के वक्र की जगह स्वैप की कीमत खुद तय करना, या बाद में उसमें से हिस्सा लेना; इनमें से कौन-सा, यह ऊपर hook वाला हिस्सा बताता है। यहाँ के आँकड़े वही हैं जो पूल का वक्र लेता है, और वे तभी सही हैं जब hook बीच में न आए। यहाँ पढ़ी गई कोई भी चीज़ यह नहीं बता सकती कि वह आता है या नहीं।",
+      "इस पूल के hook को यह बदलने की अनुमति है कि स्वैप की लागत क्या हो — हर स्वैप के समय शुल्क दोबारा लिखना, पूल के वक्र की जगह स्वैप की कीमत ख़ुद तय करना, या बाद में उसमें से हिस्सा लेना; इनमें से कौन-सा, यह ऊपर hook वाला हिस्सा बताता है। यहाँ के आँकड़े वही हैं जो पूल का वक्र लेता है, और वे तभी सही हैं जब hook बीच में न आए। यहाँ पढ़ी गई कोई भी चीज़ यह नहीं बता सकती कि वह आता है या नहीं।",
     unavailable: "एक स्वैप की लागत इस पूल के लिए निकाली नहीं जा सकती।",
   },
 
@@ -5543,7 +5545,7 @@ const hi: Dictionary = {
   widths: {
     heading: "दूसरी चौड़ाइयाँ",
     intro:
-      "फ़ॉर्म जो-जो चौड़ाई देता है उन सब पर वही तरीका, ताकि सौदेबाज़ी कही नहीं बल्कि देखी जा सके: चौड़ा दायरा अधिक दिन समेटता है, और वही जमा अधिक कीमतों पर फैलाता है — यही अंतिम स्तंभ है, और यह अनुमान नहीं बल्कि प्रोटोकॉल का गणित है।",
+      "फ़ॉर्म जो-जो चौड़ाई देता है उन सब पर वही तरीका, ताकि संतुलन कहा नहीं बल्कि देखा जा सके: चौड़ा दायरा अधिक दिन समेटता है, और वही जमा अधिक कीमतों पर फैलाता है — यही अंतिम स्तंभ है, और यह अनुमान नहीं बल्कि प्रोटोकॉल का गणित है।",
     width: "चौड़ाई",
     range: "दायरा",
     recent: (days: string) => `भीतर, पिछले ${days} दिनों में से`,
@@ -5556,7 +5558,7 @@ const hi: Dictionary = {
     columnsNote:
       "पहली गिनती उन दिनों पर है जिनसे हर दायरा खींचा गया, इसलिए वह बताती है कि वह चौड़ाई कैसे बिठाई गई, न कि वह कैसे टिकी। दूसरी ऊपर वाली जाँच है, हर चौड़ाई के लिए चलाई गई: तरीका एक अवधि पीछे ले जाकर आगे आने वाले दिनों पर रखा गया।",
     feeShareNote:
-      "अंतिम स्तंभ वह है जो वही जमा उस दिन के शुल्कों में से लेती जिस दिन कीमत उस दायरे के भीतर रहती, ऊपर दिखाई चौड़ाई के मुक़ाबले — इसीलिए वह एक के रूप में दिखती है। यह अनुमान नहीं बल्कि प्रोटोकॉल का अपना पोज़िशन-गणित है: संकरा दायरा उसी पैसे को कम कीमतों पर अधिक तरलता में बदल देता है। इसमें माना गया है कि पूल की बाकी तरलता अपरिवर्तित है, जो इतनी बड़ी जमा के बाद सच नहीं रहता जो उसे हिला दे, और यह उन दिनों के बारे में कुछ नहीं कहता जो कीमत बाहर बिताती है।",
+      "अंतिम स्तंभ वह है जो वही जमा उस दिन के शुल्कों में से लेती जिस दिन कीमत उस दायरे के भीतर रहती, ऊपर दिखाई चौड़ाई के मुक़ाबले — इसीलिए वह एक के रूप में दिखती है। यह अनुमान नहीं बल्कि प्रोटोकॉल का अपना पोज़िशन-गणित है: संकरा दायरा उसी पैसे को कम कीमतों पर अधिक तरलता में बदल देता है। इसमें माना गया है कि पूल की बाक़ी तरलता अपरिवर्तित है, जो इतनी बड़ी जमा के बाद सच नहीं रहता जो उसे हिला दे, और यह उन दिनों के बारे में कुछ नहीं कहता जो कीमत बाहर बिताती है।",
     notAdvice:
       "इनमें से कोई सिफ़ारिश नहीं है। संकरा दायरा उन दिनों बड़ा हिस्सा लेता है जिन दिनों वह टिकता है और उन दिनों कुछ भी नहीं जिन दिनों नहीं टिकता, और इनमें से कौन अधिक मायने रखता है यह इस पर निर्भर है कि पोज़िशन किसलिए है — जो यहाँ कुछ भी नहीं जानता।",
   },
@@ -5585,7 +5587,7 @@ const hi: Dictionary = {
     forAddress: "पता",
     loading: "टोकन कॉन्ट्रैक्ट से पूछा जा रहा है कि इस पते के पास क्या है…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
-      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} के ${v3Pools} सबसे अधिक कारोबार वाले Uniswap v3 पूलों का हर टोकन${v4Pools === null ? "" : `, और पिछले सात दिनों में सबसे अधिक कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन की अपनी मुद्रा (${native}) भी है`}। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
+      `किसी टोकन का शेष उसी टोकन के अपने कॉन्ट्रैक्ट में रहता है, इसलिए इसकी कोई सूची नहीं होती कि कोई पता क्या रखता है — केवल ऐसे टोकन होते हैं जिनसे एक-एक करके पूछा जा सके। यहाँ उनमें से ${tokens} से पूछा गया: ${chain} के ${v3Pools} सबसे ज़्यादा कारोबार वाले Uniswap v3 पूलों का हर टोकन${v4Pools === null ? "" : `, और पिछले सात दिनों में सबसे ज़्यादा कारोबार करने वाले ${v4Pools} v4 पूलों की हर मुद्रा, जिनमें चेन की अपनी मुद्रा (${native}) भी है`}। उस समूह के बाहर रखी कोई चीज़ इस पृष्ठ से इसलिए ग़ायब नहीं है कि पता उसे नहीं रखता।`,
     v4NotSearched: (native: string) =>
       `Uniswap v4 पूल खोजे नहीं गए: उनकी सूची पढ़ी नहीं जा सकी। चेन की अपनी मुद्रा (${native}) और v4 पूलों की मुद्राएँ इस पृष्ठ से इसी कारण से अनुपस्थित हैं, किसी और कारण से नहीं।`,
     hookTag: "hook",
@@ -5600,7 +5602,7 @@ const hi: Dictionary = {
     oneSideNote:
       "इस पूल के दो टोकनों में से एक मिला। यहाँ पोज़िशन के लिए दूसरी तरफ़ भी चाहिए, यानी जो आपके पास है उसका कुछ हिस्सा स्वैप करना।",
     moreNotShown: (count: string) =>
-      `${count} और नहीं दिखाए गए। ऊपर वाले उनमें सबसे अधिक कारोबार वाले हैं, उसी क्रम में जो डेटा स्रोत बताता है — जो इस बारे में दावा है कि पूल कितना व्यस्त है और किसी और बारे में नहीं।`,
+      `${count} और नहीं दिखाए गए। ऊपर वाले उनमें सबसे ज़्यादा कारोबार वाले हैं, उसी क्रम में जो डेटा स्रोत बताता है — जो इस बारे में दावा है कि पूल कितना व्यस्त है और किसी और बारे में नहीं।`,
     analyse: "इस पूल का विश्लेषण करें",
     notAdvice:
       "यह उसकी सूची है जो संभव है, उसकी नहीं जो करने लायक़ है। इनमें से कौन-सा पूल किसके लिए ठीक है यह हर पूल के अपने पृष्ठ के आँकड़ों पर और इस पर निर्भर है कि पोज़िशन किसलिए है — और यह सूची दोनों में से कुछ नहीं जानती।",
@@ -5717,7 +5719,7 @@ const hi: Dictionary = {
   },
 
   positions: {
-    heading: "इस पते के पास पहले से मौजूद पोज़िशन",
+    heading: "इस पते के पास पहले से मौजूद पोज़िशनें",
     intro:
       "ऊपर का सब कुछ वह है जो यह पता कर सकता था — उसके टोकन कौन-से पूल खोलते हैं। यह वह है जो वह पहले ही कर चुका है। दोनों प्रोटोकॉल में पोज़िशन एक टोकन है जिसे एक कॉन्ट्रैक्ट रखता है, और दोनों कॉन्ट्रैक्ट से पूछा जाता है कि हर टोकन क्या है। v3 वाला किसी पते के टोकन गिना भी सकता है; v4 वाला नहीं, इसलिए वह सूची एक इंडेक्सर से आती है और उसकी हर id चेन को वापस दी जाती है, जिससे पूछा जाता है कि वह किसकी है।",
     none: "इस पते के पास किसी भी प्रोटोकॉल का कोई Uniswap पोज़िशन टोकन नहीं है।",
@@ -5736,7 +5738,7 @@ const hi: Dictionary = {
     everyPrice: "हर वह कीमत जो यह पूल व्यक्त कर सकता है",
     moreNotShown: (count: string) => `${count} और खुली हैं और यहाँ सूचीबद्ध नहीं हैं।`,
     readCap: (read: string, held: string) =>
-      `${held} में से ${read} पढ़े गए। बाकी इस पृष्ठ पर नहीं हैं, जो पृष्ठ की सीमा है, पते की नहीं।`,
+      `${held} में से ${read} पढ़े गए। बाक़ी इस पृष्ठ पर नहीं हैं, जो पृष्ठ की सीमा है, पते की नहीं।`,
     unreadProtocol: (protocol: string) =>
       `Uniswap ${protocol} की पोज़िशनें इस बार पढ़ी नहीं जा सकीं, इसलिए यहाँ का हर आँकड़ा केवल दूसरे प्रोटोकॉल के बारे में है।`,
     unavailable: "इस पते की पोज़िशनें पढ़ी नहीं जा सकीं।",
@@ -5754,10 +5756,10 @@ const hi: Dictionary = {
     showHoldings: "दिखाइए कि उसके पास क्या है",
     forget: "यह पता भूल जाएँ",
     readOnly:
-      "केवल पढ़ने के लिए। यह ऐप वॉलेट से उसका पता माँगता है, हस्ताक्षर कभी नहीं: यहाँ ऐसा कोई कोड नहीं है जो कोई संदेश हस्ताक्षरित कर सके या लेन-देन भेज सके, और वॉलेट के बारे में कुछ भी दो यात्राओं के बीच रखा नहीं जाता।",
+      "केवल पढ़ने के लिए। यह ऐप्लिकेशन वॉलेट से उसका पता माँगता है, हस्ताक्षर कभी नहीं: यहाँ ऐसा कोई कोड नहीं है जो कोई संदेश हस्ताक्षरित कर सके या लेन-देन भेज सके, और वॉलेट के बारे में कुछ भी दो यात्राओं के बीच रखा नहीं जाता।",
     notices: {
       "wallet-not-found":
-        "इस ब्राउज़र में कोई वॉलेट नहीं मिली। ब्राउज़र की वॉलेट एक्सटेंशन एक रखती है; उसके बिना इस पृष्ठ पर कुछ नहीं बदलता।",
+        "इस ब्राउज़र में कोई वॉलेट नहीं मिला। ब्राउज़र की वॉलेट एक्सटेंशन एक रखती है; उसके बिना इस पृष्ठ पर कुछ नहीं बदलता।",
       "wallet-request-declined":
         "वॉलेट में अनुरोध अस्वीकार कर दिया गया। न कुछ पढ़ा गया, न कुछ भेजा गया।",
       "wallet-request-failed":
@@ -5781,7 +5783,7 @@ const hi: Dictionary = {
     linked: (address: string) =>
       `जुड़ गया। ${address} की कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचेगी, उससे बाहर जाएगी या लौटेगी तो यहाँ पता चलेगा। समाप्त करने के लिए /stop भेजें।`,
     unknownStart:
-      "यह लिंक पहचाना नहीं गया या इसकी अवधि बीत चुकी है। साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
+      "यह लिंक पहचाना नहीं गया या इसकी मियाद ख़त्म हो चुकी है। साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
     alreadyClaimed:
       "यह लिंक किसी और चैट ने पहले ही इस्तेमाल कर लिया है। नए लिंक के लिए साइट पर “Telegram जोड़ें” फिर से दबाएँ।",
     stopped: "रोक दिया गया। यह चैट अब किसी पर नज़र नहीं रखती। रिकॉर्ड सर्वर से मिटा दिया गया है, और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी मिट जाएगा।",
@@ -5793,12 +5795,12 @@ const hi: Dictionary = {
       "स्मार्ट पैसे की सूचनाएँ चालू हैं। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता की जगह बहुत खिसक जाए तो आपको यहीं पता चलेगा। इसके लिए बॉट यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था, और कुछ नहीं। इन्हें बंद करने के लिए /smart फिर से भेजें।",
     smartOff: "स्मार्ट पैसे की सूचनाएँ बंद हैं, और उनके लिए जो रखा गया था वह मिटा दिया गया है।",
     smartNoLink:
-      "यह चैट अभी किसी पते को फ़ॉलो नहीं कर रही। पहले साइट पर «Telegram जोड़ें» दबाएँ।",
+      "यह चैट अभी किसी पते पर नज़र नहीं रख रही। पहले साइट पर “Telegram जोड़ें” दबाएँ।",
     smartShift: (pair: string, protocol: string, then: string, now: string) => `🔀 ${pair} (${protocol}) में सबसे ज़्यादा कमाने वाली तरलता खिसक गई है। वह ${then} पर थी; अब ${now} पर है। उन पोज़िशनों की जगह यही है, चेन से मापी हुई — आपकी पोज़िशन के लिए सुझाव नहीं।`,
     weeklyOn:
       "साप्ताहिक सारांश चालू है। हर सोमवार 08:00 UTC से आपको यहीं पता चलेगा कि हफ़्ते भर में स्मार्ट पैसा कहाँ खिसका, आपके जोड़े गए पते के नेटवर्क पर: कौन-सी जोड़ियाँ स्मार्ट पैसा पा रही हैं और कौन-सी खो रही हैं, और कौन-से आम दायरे खिसके। इसके लिए बॉट यह रखता है कि आख़िरी सारांश कब भेजा गया, और कुछ नहीं। इसे बंद करने के लिए /weekly फिर से भेजें।",
     weeklyOff: "साप्ताहिक सारांश बंद है, और उसके लिए जो रखा गया था वह मिटा दिया गया है।",
-    weeklyHeading: (chain: string, days: string) => `📅 स्मार्ट लिक्विडिटी · ${chain}\nपिछले ${days} दिनों में यह कैसे खिसकी`,
+    weeklyHeading: (chain: string, days: string) => `📅 स्मार्ट तरलता · ${chain}\nपिछले ${days} दिनों में यह कैसे खिसकी`,
     weeklyGaining: "स्मार्ट पैसा पा रही हैं",
     weeklyLosing: "स्मार्ट पैसा खो रही हैं",
     weeklyMover: (pair: string, from: string, to: string) => `${pair}: ${from} → ${to}`,
@@ -5815,7 +5817,7 @@ const hi: Dictionary = {
     opened: (pair: string, protocol: string, range: string) => `नई पोज़िशन: ${pair} (${protocol}), ${range}।`,
     closed: (protocol: string, tokenId: string) => `बंद हुई: ${protocol} पोज़िशन #${tokenId}।`,
     footer:
-      "केवल जानकारी — वित्तीय सलाह नहीं। सार्वजनिक ऑन-चेन डेटा से पढ़ा गया; यहाँ कुछ भी आपकी ओर से कार्रवाई नहीं कर सकता।",
+      "केवल जानकारी — वित्तीय सलाह नहीं। चेन के सार्वजनिक डेटा से पढ़ा गया; यहाँ कुछ भी आपकी ओर से कार्रवाई नहीं कर सकता।",
   },
 
   search: {
@@ -5847,11 +5849,11 @@ const hi: Dictionary = {
     ordering:
       "जिन पूलों का नाम ठीक वही है जो आपने खोजा, वे पहले आते हैं। उसके बाद क्रम इस अनुसार चलता है कि हर पूल वास्तव में क्या रखता है, टोकन कॉन्ट्रैक्ट से ही पढ़कर और डेटा स्रोत की निकाली कीमतों से एक ही पैमाने पर लाकर। पहले यह उस मूल्य के अनुसार चलता था जिसे स्रोत हर पूल में जमा बताता है, और वह आँकड़ा इतना ग़लत था कि इस सूची का क्रम ही बदल जाता: एक पूल यहाँ नब्बे लाख डॉलर की बताई गई तरलता के साथ छपा था जबकि उसके कॉन्ट्रैक्ट नौ हज़ार रखे थे।",
     windowing:
-      "यह सूची उन पूलों से बनी है जिन्हें डेटा स्रोत आपके शब्दों के लिए सबसे अधिक कारोबार वाला बताता है, और जो पूल इतना शांत है कि उस समूह से बाहर रह जाए वह ऊपर के क्रम तक कभी नहीं पहुँचता। किसी स्रोत ने जो लौटाना चुना उसी के भीतर क्रम लगाने की यही ईमानदार सीमा है: जो पूल बहुत कुछ रखता है पर कम कारोबार करता है, वह इस पृष्ठ से ग़ायब हो सकता है।",
+      "यह सूची उन पूलों से बनी है जिन्हें डेटा स्रोत आपके शब्दों के लिए सबसे ज़्यादा कारोबार वाला बताता है, और जो पूल इतना शांत है कि उस समूह से बाहर रह जाए वह ऊपर के क्रम तक कभी नहीं पहुँचता। किसी स्रोत ने जो लौटाना चुना उसी के भीतर क्रम लगाने की यही ईमानदार सीमा है: जो पूल बहुत कुछ रखता है पर कम कारोबार करता है, वह इस पृष्ठ से ग़ायब हो सकता है।",
     dormantNote:
       "जिस पूल में एक महीने से कुछ नहीं हुआ, वह सूची में नहीं आता। दायरा पिछले एक महीने की कीमतों से खींचा जाता है, और जिस पूल के पास वह महीना नहीं, उसके पास खींचने को कुछ नहीं — उसे खोलना केवल यही कहता।",
     v4Windowing:
-      "यह सूची उन v4 पूलों से बनी है जिन्होंने पिछले सात दिनों में Ethereum मेननेट पर सबसे अधिक कारोबार किया — सबसे व्यस्त एक हज़ार पूल-दिन, जो कुछ सौ पूल बनते हैं — और इससे शांत पूल इस पृष्ठ तक कभी नहीं पहुँचता। स्रोत हर v4 पूल में खोज का उत्तर इस पृष्ठ के प्रतीक्षा छोड़ने से पहले नहीं दे सकता, इसलिए खिड़की आपके शब्दों के बजाय हाल की सक्रियता से तय होती है: जो पूल मौजूद है पर इस हफ़्ते कारोबार नहीं किया, वह यहाँ नहीं है।",
+      "यह सूची उन v4 पूलों से बनी है जिन्होंने पिछले सात दिनों में Ethereum मेननेट पर सबसे ज़्यादा कारोबार किया — सबसे व्यस्त एक हज़ार पूल-दिन, जो कुछ सौ पूल बनते हैं — और इससे शांत पूल इस पृष्ठ तक कभी नहीं पहुँचता। स्रोत हर v4 पूल में खोज का उत्तर इस पृष्ठ के प्रतीक्षा छोड़ने से पहले नहीं दे सकता, इसलिए खिड़की आपके शब्दों के बजाय हाल की सक्रियता से तय होती है: जो पूल मौजूद है पर इस हफ़्ते कारोबार नहीं किया, वह यहाँ नहीं है।",
     symbolWarning:
       "चिह्न टोकन के अपने कॉन्ट्रैक्ट से आता है, और ऐसा टोकन तैनात करने में कुछ नहीं लगता जो ख़ुद को USDC कहे। हर जोड़ी के नीचे दिए कॉन्ट्रैक्ट पते ही दो टोकनों को अलग बताते हैं।",
 
@@ -5859,7 +5861,7 @@ const hi: Dictionary = {
     holds: "रखता है",
     reservesUnread: "यह पूल क्या रखता है, यह चेन से पढ़ा नहीं जा सका।",
     moreNotShown: (count: string) =>
-      `${count} और नहीं दिखाए गए। ऊपर वाले उनमें सबसे अधिक कारोबार वाले हैं, उसी क्रम में जो डेटा स्रोत बताता है — जो इस बारे में दावा है कि पूल कितना व्यस्त है और किसी और बारे में नहीं।`,
+      `${count} और नहीं दिखाए गए। ऊपर वाले उनमें सबसे ज़्यादा कारोबार वाले हैं, उसी क्रम में जो डेटा स्रोत बताता है — जो इस बारे में दावा है कि पूल कितना व्यस्त है और किसी और बारे में नहीं।`,
     analyse: "इस पूल का विश्लेषण करें",
     v4FeeNote:
       "हर पूल का शुल्क उसी कुंजी से पढ़ा जाता है जिससे वह बना था, चेन पर, न कि डेटा स्रोत से — जिसका शुल्क आँकड़ा मापने पर वह कुल निकला जो पिछले स्वैप ने चुकाया, प्रोटोकॉल का हिस्सा मिलाकर, न कि पूल का अपना शुल्क। जिस पंक्ति की कुंजी पढ़ी नहीं जा सकी वह यह बताती है।",
@@ -5942,7 +5944,7 @@ const hi: Dictionary = {
     measuredOver: "किस पर मापा गया",
     measuredOverNote: (returns: string) => `इसमें ${returns} दैनिक परिवर्तन गए।`,
     epilogue:
-      "दायरा आज की कीमत पर केंद्रित है और अनुपात के हिसाब से ऊपर-नीचे बराबर दूरी पर खींचा गया है — आधा होना और दुगुना होना एक ही हलचल है — इसीलिए दोनों प्रतिशत अलग निकलते हैं। यह बताता है कि कीमत कितनी हिली है, यह नहीं कि वह कहाँ जाएगी: यह कोई भविष्यवाणी नहीं है, और चौड़ाई कोई विश्वास-स्तर नहीं है। यहाँ कुछ भी पोज़िशन का आकार तय नहीं करता और न यह बताता है कि किस टोकन का कितना जमा करें।",
+      "दायरा आज की कीमत पर केंद्रित है और अनुपात के हिसाब से ऊपर-नीचे बराबर दूरी पर खींचा गया है — आधा होना और दोगुना होना एक ही हलचल है — इसीलिए दोनों प्रतिशत अलग निकलते हैं। यह बताता है कि कीमत कितनी हिली है, यह नहीं कि वह कहाँ जाएगी: यह कोई पूर्वानुमान नहीं है, और चौड़ाई कोई विश्वास-स्तर नहीं है। यहाँ कुछ भी पोज़िशन का आकार तय नहीं करता और न यह बताता है कि किस टोकन का कितना जमा करें।",
   },
 
   technical: {
@@ -5962,7 +5964,7 @@ const hi: Dictionary = {
     bandLower: "बैंड की निचली सीमा",
     bandUpper: "बैंड की ऊपरी सीमा",
     bandNote: "tick जाल पर बिठाने से पहले, पूल की अपनी दिशा में।",
-    annualised: "वार्षिकीकृत अस्थिरता",
+    annualised: "सालाना अस्थिरता",
     annualisedNote:
       "दैनिक लघुगणकीय प्रतिफलों का प्रतिदर्श मानक विचलन, sqrt(365) से गुणित।",
     coverage: "कवरेज",
@@ -6035,9 +6037,9 @@ const hi: Dictionary = {
       "pool-history-insufficient":
         "विश्लेषण के लिए इस पूल के पास अभी पर्याप्त पूरा दैनिक कीमत इतिहास नहीं है।",
       "pool-history-never-traded":
-        "यह पूल मौजूद है, पर इसमें कभी कोई अदला-बदली हुई ही नहीं, इसलिए दायरा मापने के लिए कोई दैनिक कीमत नहीं है।",
+        "यह पूल मौजूद है, पर इसमें कभी कोई कारोबार हुआ ही नहीं, इसलिए दायरा मापने के लिए कोई दैनिक कीमत नहीं है।",
       "pool-history-dormant":
-        "जिस अवधि से ये दैनिक कीमतें पढ़ी जाती हैं, वह शुरू होने से पहले ही इस पूल में लेन-देन रुक गया था, इसलिए दायरा मापने के लिए हाल का कोई इतिहास नहीं है। इंतज़ार करने से यह नहीं बदलेगा — पूल दोबारा इस्तेमाल होने पर ही बदलेगा।",
+        "जिस खिड़की से ये दैनिक कीमतें पढ़ी जाती हैं, वह शुरू होने से पहले ही इस पूल में लेन-देन रुक गया था, इसलिए दायरा मापने के लिए हाल का कोई इतिहास नहीं है। इंतज़ार करने से यह नहीं बदलेगा — पूल दोबारा इस्तेमाल होने पर ही बदलेगा।",
       "volatility-invalid-input":
         "इस गणना के लिए दिया गया कीमत इतिहास वैध सामान्यीकृत इतिहास नहीं है।",
       "volatility-insufficient-history":
@@ -6210,7 +6212,7 @@ const zh: Dictionary = {
       " 延伸。按交易对找到一个资金池，读到一个由该交易对实际走了多远推算出来的价格区间，并用平实的语言把它讲清楚。每一个数字都先被计算并交叉核对，模型才被允许去描述它——而模型永远不被允许说出任何一个数字。",
     workingTodayHeading: "现在就能用的",
     workingTodayBody:
-      "按交易对搜索一个资金池，或者粘贴一个 v3 池地址、一个 v4 池 id。你会得到这个池已核验的配置与当前状态、最近一个月的每日价格画在建议区间上的图、这个交易对实际走了多远，以及由此得出的区间——时间跨度和宽度都由你来改。旁边还有：这个池收了多少手续费、实际又收到了多少，它最近这些天相对区间处在什么位置，同一套方法在它从未见过的日子里表现如何，一个仓位相比单纯持有放弃了什么，其他每一种宽度换作它们会怎样，以及——对于一笔由你决定大小的资金——在价格始终停留在区间内的那些日子里，它本可以从所收取的手续费中分到多少。还有把同一个区间反过来读：它的每一半都是一个单边仓位，页面会说明价格若整段穿过，每一半会按什么价格完成转换。以及通过这个池做一笔兑换要付出什么代价——取的是在不假设任何东西的前提下还能定价的最大一笔。再加上一份名录，收录本周最活跃的 v4 资金池所指定的每一个 hook，每一个被允许做什么都从它自己的地址中读出。一个 v4 池还会用平实的话说明它的 hook 被允许做什么，同样读自 hook 自己的地址。一个地址可以被查询：它持有的代币能进入哪些资金池，以及它已经持有的 Uniswap v3 仓位——每一个都附带它覆盖的价格，以及这个池此刻是否落在其中。最后是把这一切用平实语言讲一遍的说明，英文或土耳其文。没有任何模型碰过上述任何一个数字，没有一个数字是为了填补空缺而估出来的，那段文字里也没有地方能放进它自己编的数字。",
+      "按交易对搜索一个资金池，或者粘贴一个 v3 池地址、一个 v4 池 id。你会得到这个池已核验的配置与当前状态、最近一个月的每日价格画在建议区间上的图、这个交易对实际走了多远，以及由此得出的区间——时间跨度和宽度都由你来改。旁边还有：这个池收了多少手续费、实际又收到了多少，它最近这些天相对区间处在什么位置，同一套方法在它从未见过的日子里表现如何，一个仓位相比单纯持有放弃了什么，其他每一种宽度换作它们会怎样，以及——对于一笔由你决定大小的资金——在价格始终停留在区间内的那些日子里，它本可以从所收取的手续费中分到多少。还有把同一个区间反过来读：它的每一半都是一个单边仓位，页面会说明价格若整段穿过，每一半会按什么价格完成转换。以及通过这个池做一笔兑换要付出什么代价——取的是在不假设任何东西的前提下还能定价的最大一笔。再加上一份名录，收录本周最活跃的 v4 资金池所指定的每一个 hook，每一个被允许做什么都从它自己的地址中读出。一个 v4 池还会用平实的话说明它的 hook 被允许做什么，同样读自 hook 自己的地址。一个地址可以被查询：它持有的代币能进入哪些资金池，以及它已经持有的 Uniswap v3 和 v4 仓位——每一个都附带它覆盖的价格，以及这个池此刻是否落在其中。最后是把这一切用平实语言讲一遍的说明，用的就是你正在阅读的语言。没有任何模型碰过上述任何一个数字，没有一个数字是为了填补空缺而估出来的，那段文字里也没有地方能放进它自己编的数字。",
     analysePool: "找一个资金池 →",
     methodHeading: "它是怎么工作的",
     methodSteps: [
@@ -7434,7 +7436,7 @@ const ru: Dictionary = {
       ". Найдите пул по его паре, посмотрите ценовой диапазон, выведенный из того, насколько эта пара действительно двигалась, и получите объяснение простыми словами. Каждая цифра вычисляется и перепроверяется прежде, чем модели разрешат её описать, — а называть цифры модели не разрешено никогда.",
     workingTodayHeading: "Что работает сегодня",
     workingTodayBody:
-      "Найдите пул по паре или вставьте адрес пула v3 либо id пула v4. Вы получите проверенную конфигурацию пула и его текущее состояние, дневные цены за последний месяц, наложенные на предлагаемый диапазон, то, насколько пара действительно двигалась, и вытекающий отсюда диапазон — причём горизонт и ширину вы меняете сами. Рядом: сколько пул брал комиссии и сколько собрал на самом деле, как его недавние дни легли относительно диапазона, что тот же метод дал на днях, которых он не видел, что позиция теряет по сравнению с простым хранением, что дала бы каждая из других ширин и — для суммы, которую вы задаёте сами, — сколько она забрала бы из комиссий, начисленных в дни, когда цена не выходила за диапазон. И тот же диапазон, прочитанный наоборот: каждая его половина — односторонняя позиция, и страница говорит, по какой цене каждая из них конвертировала бы, если цена прошла бы её насквозь. Сколько стоит своп через пул — для самого крупного, который можно оценить, ничего не предполагая. И каталог всех hook’ов, которые называют самые активные пулы v4 недели, с тем, что каждому разрешено, прочитанным из его собственного адреса. Страница пула v4 тоже говорит простыми словами, что разрешено его hook’у, читая это из адреса самого hook’а. Адрес можно проверить на пулы, в которые могут войти его токены, и на позиции Uniswap v3, которые он уже держит, — каждая с ценами, которые она покрывает, и с тем, внутри них ли пул сейчас. А затем объяснение всего этого простыми словами. Ни одна из этих цифр не проходит через модель, ни одна не оценена наугад ради заполнения пробела, и в тексте попросту негде появиться собственной цифре.",
+      "Найдите пул по паре или вставьте адрес пула v3 либо id пула v4. Вы получите проверенную конфигурацию пула и его текущее состояние, дневные цены за последний месяц, наложенные на предлагаемый диапазон, то, насколько пара действительно двигалась, и вытекающий отсюда диапазон — причём горизонт и ширину вы меняете сами. Рядом: сколько пул брал комиссии и сколько собрал на самом деле, как его недавние дни легли относительно диапазона, что тот же метод дал на днях, которых он не видел, что позиция теряет по сравнению с простым хранением, что дала бы каждая из других ширин и — для суммы, которую вы задаёте сами, — сколько она забрала бы из комиссий, начисленных в дни, когда цена не выходила за диапазон. И тот же диапазон, прочитанный наоборот: каждая его половина — односторонняя позиция, и страница говорит, по какой цене каждая из них конвертировала бы, если цена прошла бы её насквозь. Сколько стоит своп через пул — для самого крупного, который можно оценить, ничего не предполагая. И каталог всех hook’ов, которые называют самые активные пулы v4 недели, с тем, что каждому разрешено, прочитанным из его собственного адреса. Страница пула v4 тоже говорит простыми словами, что разрешено его hook’у, читая это из адреса самого hook’а. Адрес можно проверить на пулы, в которые могут войти его токены, и на позиции Uniswap v3 и v4, которые он уже держит, — каждая с ценами, которые она покрывает, и с тем, внутри них ли пул сейчас. А затем объяснение всего этого простыми словами. Ни одна из этих цифр не проходит через модель, ни одна не оценена наугад ради заполнения пробела, и в тексте попросту негде появиться собственной цифре.",
     analysePool: "Найти пул →",
     methodHeading: "Как это работает",
     methodSteps: [
@@ -8670,7 +8672,7 @@ const pt: Dictionary = {
       ". Encontre um pool pelo par, veja uma faixa de preço calculada a partir de quanto esse par realmente andou e leia a explicação em linguagem simples. Todo número é calculado e conferido antes de um modelo ter permissão para descrevê-lo — e o modelo nunca tem permissão para dizer um número.",
     workingTodayHeading: "O que já funciona",
     workingTodayBody:
-      "Busque um pool pelo par, ou cole o endereço de um pool v3 ou o id de um pool v4. Você recebe a configuração verificada do pool e o estado atual dele, o último mês de preços diários desenhado sobre uma faixa sugerida, quanto o par realmente andou e a faixa que sai disso — com o horizonte e a largura nas suas mãos. Ao lado: quanto o pool cobrou e quanto de fato recolheu, como os dias recentes dele ficaram em relação à faixa, o que o mesmo método fez em dias que ele nunca viu, o que uma posição abre mão em comparação com simplesmente segurar, o que cada uma das outras larguras teria feito e — para um valor de depósito que você define — quanto ele teria ficado das taxas cobradas nos dias em que o preço não saiu da faixa. E a mesma faixa lida ao contrário: cada metade dela é uma posição de um lado só, e a página diz a que preço cada uma converteria se o preço a atravessasse. Quanto custa um swap pelo pool, para o maior que dá para precificar sem supor nada. E um diretório de cada hook citado pelos pools v4 mais movimentados da semana, com o que cada um tem permissão para fazer, lido do próprio endereço dele. Uma página de pool v4 também diz, em palavras simples, o que o hook dele pode fazer, lendo isso do endereço do próprio hook. Dá para consultar um endereço para ver os pools em que os tokens dele podem entrar e as posições Uniswap v3 que ele já tem — cada uma com os preços que cobre e se o pool está dentro deles agora. E então uma explicação de tudo isso em linguagem simples. Nenhum modelo encosta em nenhum desses números, nenhum deles é estimado para tapar buraco, e o texto não tem onde colocar um número próprio.",
+      "Busque um pool pelo par, ou cole o endereço de um pool v3 ou o id de um pool v4. Você recebe a configuração verificada do pool e o estado atual dele, o último mês de preços diários desenhado sobre uma faixa sugerida, quanto o par realmente andou e a faixa que sai disso — com o horizonte e a largura nas suas mãos. Ao lado: quanto o pool cobrou e quanto de fato recolheu, como os dias recentes dele ficaram em relação à faixa, o que o mesmo método fez em dias que ele nunca viu, o que uma posição abre mão em comparação com simplesmente segurar, o que cada uma das outras larguras teria feito e — para um valor de depósito que você define — quanto ele teria ficado das taxas cobradas nos dias em que o preço não saiu da faixa. E a mesma faixa lida ao contrário: cada metade dela é uma posição de um lado só, e a página diz a que preço cada uma converteria se o preço a atravessasse. Quanto custa um swap pelo pool, para o maior que dá para precificar sem supor nada. E um diretório de cada hook citado pelos pools v4 mais movimentados da semana, com o que cada um tem permissão para fazer, lido do próprio endereço dele. Uma página de pool v4 também diz, em palavras simples, o que o hook dele pode fazer, lendo isso do endereço do próprio hook. Dá para consultar um endereço para ver os pools em que os tokens dele podem entrar e as posições Uniswap v3 e v4 que ele já tem — cada uma com os preços que cobre e se o pool está dentro deles agora. E então uma explicação de tudo isso em linguagem simples. Nenhum modelo encosta em nenhum desses números, nenhum deles é estimado para tapar buraco, e o texto não tem onde colocar um número próprio.",
     analysePool: "Encontrar um pool →",
     methodHeading: "Como funciona",
     methodSteps: [
@@ -9857,7 +9859,7 @@ const zhHant: Dictionary = {
     holdingsDescription:
       "在某個以太坊地址上找到的代幣，以及這些代幣可以進入的 Uniswap v3 資金池。",
     compareTitle: "費率檔並排 · LiquidityWise",
-    compareDescription: "一個交易對的所有 Uniswap v3 費率檔，用同樣的時長、寬度和資金讀取。",
+    compareDescription: "一個交易對的所有 Uniswap v3 費率檔，用同樣的時間跨度、寬度和資金讀取。",
     poolTitle: "資金池區間分析 · LiquidityWise",
     poolDescription:
       "為某個 Uniswap v3 資金池給出的價格區間，由它的價格實際走了多遠推算而來。",
@@ -9883,7 +9885,7 @@ const zhHant: Dictionary = {
     themeDark: "深色",
     rangeLabel: "區間偏好",
     rangeIntro:
-      "每個資金池開啟時所用的時間跨度、寬度和投入金額。自帶參數的連結仍然優先；每份分析下方的表單只改變那一頁。",
+      "每個資金池開啟時所用的時間跨度、寬度和存入金額。自帶參數的連結仍然優先；每份分析下方的表單只改變那一頁。",
     rangeSave: "儲存",
     rangeReset: "忘記",
   },
@@ -9891,7 +9893,7 @@ const zhHant: Dictionary = {
   disclaimer: {
     ariaLabel: "重要聲明",
     title: "教學工具——不構成財務建議。",
-    body: "本應用講解 Uniswap 的運作機制，幫助你思考參數的選擇。它不預測價格，不保證任何收益，也無法驗證某個智慧合約是否安全。提供流動性存在真實風險，包括無常損失以及本金的全部損失。請始終自行核對合約地址，並獨立研究。",
+    body: "本站講解 Uniswap 的運作機制，幫助你思考參數的選擇。它不預測價格，不保證任何收益，也無法驗證某個智慧合約是否安全。提供流動性存在真實風險，包括無常損失以及本金的全部損失。請始終自行核對合約地址，並獨立研究。",
   },
 
   home: {
@@ -9903,19 +9905,19 @@ const zhHant: Dictionary = {
       " 延伸。按交易對找到一個資金池，讀到一個由該交易對實際走了多遠推算出來的價格區間，並用平實的語言把它講清楚。每一個數字都先被計算並交叉核對，模型才被允許去描述它——而模型永遠不被允許說出任何一個數字。",
     workingTodayHeading: "現在就能用的",
     workingTodayBody:
-      "按交易對搜尋一個資金池，或者貼上一個 v3 池地址、一個 v4 池 id。你會得到這個池已核驗的配置與當前狀態、最近一個月的每日價格畫在建議區間上的圖、這個交易對實際走了多遠，以及由此得出的區間——時間跨度和寬度都由你來改。旁邊還有：這個池收了多少手續費、實際又收到了多少，它最近這些天相對區間處在什麼位置，同一套方法在它從未見過的日子裡表現如何，一個倉位相比單純持有放棄了什麼，其他每一種寬度換作它們會怎樣，以及——對於一筆由你決定大小的資金——在價格始終停留在區間內的那些日子裡，它本可以從所收取的手續費中分到多少。還有把同一個區間反過來讀：它的每一半都是一個單邊倉位，頁面會說明價格若整段穿過，每一半會按什麼價格完成轉換。以及透過這個池做一筆兌換要付出什麼代價——取的是在不假設任何東西的前提下還能定價的最大一筆。再加上一份名錄，收錄本週最活躍的 v4 資金池所指定的每一個 hook，每一個被允許做什麼都從它自己的地址中讀出。一個 v4 池還會用平實的話說明它的 hook 被允許做什麼，同樣讀自 hook 自己的地址。一個地址可以被查詢：它持有的代幣能進入哪些資金池，以及它已經持有的 Uniswap v3 倉位——每一個都附帶它覆蓋的價格，以及這個池此刻是否落在其中。最後是把這一切用平實語言講一遍的說明，英文或土耳其文。沒有任何模型碰過上述任何一個數字，沒有一個數字是為了填補空缺而估出來的，那段文字裡也沒有地方能放進它自己編的數字。",
+      "按交易對搜尋一個資金池，或者貼上一個 v3 池地址、一個 v4 池 id。你會得到這個池子已核驗的設定與當前狀態、最近一個月的每日價格畫在建議區間上的圖、這個交易對實際走了多遠，以及由此得出的區間——時間跨度和寬度都由你來改。旁邊還有：這個池子收了多少手續費、實際又收到了多少，它最近這些天相對區間處在什麼位置，同一套方法在它從未見過的日子裡表現如何，一個倉位相比單純持有放棄了什麼，其他每一種寬度換作它們會怎樣，以及——對於一筆由你決定大小的資金——在價格始終停留在區間內的那些日子裡，它本可以從所收取的手續費中分到多少。還有把同一個區間反過來讀：它的每一半都是一個單邊倉位，頁面會說明價格若整段穿過，每一半會按什麼價格完成轉換。以及透過這個池子做一筆兌換要付出什麼代價——取的是在不假設任何東西的前提下還能定價的最大一筆。再加上一份名錄，收錄本週最活躍的 v4 資金池所指定的每一個 hook，每一個被允許做什麼都從它自己的地址中讀出。一個 v4 池子還會用平實的話說明它的 hook 被允許做什麼，同樣讀自 hook 自己的地址。一個地址可以被查詢：它持有的代幣能進入哪些資金池，以及它已經持有的 Uniswap v3 和 v4 倉位——每一個都附帶它覆蓋的價格，以及這個池子此刻是否落在其中。最後是把這一切用平實語言講一遍的說明，用的就是你正在閱讀的語言。沒有任何模型碰過上述任何一個數字，沒有一個數字是為了填補空缺而估出來的，那段文字裡也沒有地方能放進它自己編的數字。",
     analysePool: "找一個資金池 →",
     methodHeading: "它是怎麼工作的",
     methodSteps: [
       {
         step: "已核驗的資料",
         detail:
-          "資金池的事實來自 Uniswap 子圖並在鏈上讀取，從不靠假設。價格會與這個池自己報告的狀態交叉核對。",
+          "資金池的事實來自 Uniswap 子圖並在鏈上讀取，從不靠假設。價格會與這個池子自己報告的狀態交叉核對。",
       },
       {
         step: "確定性的計算",
         detail:
-          "波動率、價格帶和倉位區間都用純粹的 TypeScript 計算，所以同一個池永遠得出同樣的數字。",
+          "波動率、價格帶和倉位區間都用純粹的 TypeScript 計算，所以同一個池子永遠得出同樣的數字。",
       },
       {
         step: "AI 的解讀",
@@ -9941,24 +9943,24 @@ const zhHant: Dictionary = {
           {
             name: "一個 hook 實際上做了什麼",
             summary:
-              "v4 頁面會說一個 hook 被允許做什麼，因為協議強制的就是這一層，而且它讀自 hook 自己的地址。讀懂合約程式碼、說出它拿這些權限做了什麼，是另一個問題，本應用不去嘗試。",
+              "v4 頁面會說一個 hook 被允許做什麼，因為協議強制的就是這一層，而且它讀自 hook 自己的地址。讀懂合約程式碼、說出它拿這些權限做了什麼，是另一個問題，本站不去嘗試。",
           },
           {
             name: "TWAMM 式的策略",
             summary:
-              "把一筆大單攤到一段時間裡執行，而不是一次性撞向某一個價格點上的流動性。其中分析頁已經能回答的那一半就在這裡：一筆兌換相對當前價格處的流動性要付出什麼，以及它最多能給多大一筆兌換定價。把一筆單子排到時間上去執行是 hook 的事，而本應用不對 hook 的行為建模。",
+              "把一筆大單攤到一段時間裡執行，而不是一次性撞向某一個價格點上的流動性。其中分析頁已經能回答的那一半就在這裡：一筆兌換相對當前價格處的流動性要付出什麼，以及它最多能給多大一筆兌換定價。把一筆單子排到時間上去執行是 hook 的事，而本站不對 hook 的行為建模。",
           },
         ],
       },
     ],
     footer:
-      "以上這些都還不存在。存在的是這一頁上面的全部內容：按名字找到的資金池、經過計算並交叉核對的數字，以及在展示之前已被核驗的文字。錢包可以連接，而它被要求提供的只有地址。本應用儲存的唯一東西，是讀者自己建立的 Telegram 綁定——一個地址和一個對話 id，向機器人傳送 /stop 的那一刻即被刪除，七天內也會從加密備份中消失——這裡也沒有任何東西能代你簽名或傳送交易。",
+      "以上這些都還不存在。存在的是這一頁上面的全部內容：按名字找到的資金池、經過計算並交叉核對的數字，以及在展示之前已被核驗的文字。錢包可以連接，而它被要求提供的只有地址。本站儲存的唯一東西，是讀者自己建立的 Telegram 綁定——一個地址和一個對話 id，向機器人傳送 /stop 的那一刻即被刪除，七天內也會從加密備份中消失——這裡也沒有任何東西能代你簽名或傳送交易。",
   },
 
   pool: {
     back: "← LiquidityWise",
     invalidAddress:
-      "那不是一個以太坊地址。地址是 0x 後面正好跟 40 個十六進位制字元。",
+      "那不是一個以太坊地址。地址是 0x 後面正好跟 40 個十六進位字元。",
     loading: "正在讀取 Uniswap 的即時資料……",
   },
 
@@ -9970,9 +9972,9 @@ const zhHant: Dictionary = {
    */
   activity: {
     heading: "這個資金池實際做了什麼",
-    volume24h: "成交量，24 小時",
-    volume7d: "成交量，7 天",
-    volume30d: "成交量，30 天",
+    volume24h: "交易量，24 小時",
+    volume7d: "交易量，7 天",
+    volume30d: "交易量，30 天",
     fees30d: "收取的手續費，30 天",
     feesNote: "整個池子的，由當時流動性處於活躍狀態的所有人分享。",
     tvl: "總鎖倉價值",
@@ -10008,17 +10010,17 @@ const zhHant: Dictionary = {
     unavailable: "對這個池子，算不出一筆資金本可以從那些手續費中分到多少。",
     withheldNote:
       "原因和上面那個數字一樣：這裡的 hook 可能從兌換中抽走一份，而資料來源沒有把它的份額和提供者的份額分開。一個無法歸到這個區間上的總額，其中的一部分同樣無法歸到投進這個區間的一筆資金上。",
-    deposited: "投入金額",
+    deposited: "存入金額",
     depositedNote: "這一塊是按這個金額算出來的。在上面的表單裡改它。",
     collected: "它本可以分到的手續費",
     collectedNote: (days: string) => `在價格從未離開區間的那 ${days} 天裡。`,
-    ofDeposit: "相對投入金額",
+    ofDeposit: "相對存入金額",
     ofDepositNote:
       "這些手續費相對投進去的錢，只針對那些日子，別的日子不算。這不是年化利率，這裡也沒有任何東西把它變成年化。",
     sentence: (deposit: string, days: string, poolFees: string, yourFees: string) =>
       `在價格從未離開這個區間的那 ${days} 天裡，這個池子收取了 ${poolFees} 的手續費。投進這個區間的 ${deposit} 資金本可以分到其中大約 ${yourFees}——按它自己的流動性佔那幾天裡實際處於活躍狀態的流動性的份額計算。`,
     unmeasurableNote: (days: string) =>
-      `另有 ${days} 天也落在區間內，但資料來源沒有公佈這些天的手續費或活躍流動性，所以它們沒有計入總額。`,
+      `另有 ${days} 天也落在區間內，但資料來源沒有公布這些天的手續費或活躍流動性，所以它們沒有計入總額。`,
     dilution:
       "投得更多，並不會按比例收到更多。份額是你的流動性除以包括你自己在內的所有人的流動性，所以超過一定規模之後，你新加進去的大部分只是在稀釋你已經有的那部分——這也正是為什麼可選的金額之間相差一千倍。",
     caveat:
@@ -10028,7 +10030,7 @@ const zhHant: Dictionary = {
   realizedFee: {
     heading: "它實際收取了多少",
     intro:
-      "這個池子聲明的費率是一個數字。而這裡是兌換者實際付出的：用上面同樣那批日子，把它反除回去——某一天的手續費除以那一天的成交量。它不需要額外的請求，也不需要 hook 提供任何東西。",
+      "這個池子聲明的費率是一個數字。而這裡是兌換者實際付出的：用上面同樣那批日子，把它反除回去——某一天的手續費除以那一天的交易量。它不需要額外的請求，也不需要 hook 提供任何東西。",
     declared: "聲明的費率",
     /** How a stated fee was arrived at, where the protocol takes a cut on top. */
     statedNote: (lp: string, protocol: string) =>
@@ -10038,12 +10040,12 @@ const zhHant: Dictionary = {
     median: "典型的一天",
     spread: "最低到最高的一天",
     spreadValue: (lowest: string, highest: string) => `${lowest} – ${highest}`,
-    aggregate: "整個窗口",
+    aggregate: "整個期間",
     aggregateNote:
-      "整個窗口的手續費除以整個窗口的成交量，所以繁忙的一天比清淡的一天權重更大。",
+      "整個期間的手續費除以整個期間的交易量，所以繁忙的一天比清淡的一天權重更大。",
     daysMeasured: "被測到的天數",
     daysMeasuredNote: (skipped: string) =>
-      `窗口裡另有 ${skipped} 天沒有任何成交，或者缺少某個數字，所以無法從中除出一個費率。`,
+      `期間內另有 ${skipped} 天沒有任何成交，或者缺少某個數字，所以無法從中除出一個費率。`,
     /*
      * The three verdicts. They exist as separate sentences rather than one with
      * a number in it because they are three different things to know, and the
@@ -10113,7 +10115,7 @@ const zhHant: Dictionary = {
     foldVerdict: "內 / 外 / 越過",
     foldsCaption: "這套方法被檢驗過的每一段，最早的在前",
     foldColumns:
-      "每一行是一輪：它被檢驗過的天數、它自己那次擬合測出的波動率——不是上面那個數字——以及那些日子相對這次擬合產出的價格帶處在什麼位置。",
+      "每一列是一輪：它被檢驗過的天數、它自己那次擬合測出的波動率——不是上面那個數字——以及那些日子相對這次擬合產出的價格帶處在什麼位置。",
     /*
      * The two sentences that stop a total becoming a claim about the method.
      * Nobody held these bands, and the folds are not independent of each other.
@@ -10155,11 +10157,11 @@ const zhHant: Dictionary = {
     averageNote: "如果價格整段穿過這條帶子，這次轉換折算下來是什麼價。",
     against: "相對當前價格",
     exact:
-      "那個平均值是兩個邊界的幾何平均數——精確如此，而且不管兩個價格寫成哪個方向都一樣。它由協議自己關於一個倉位在帶子兩端各持有什麼的公式推出，而投入的金額會從中約掉：一百美元和一百萬美元按同樣的價格轉換。",
+      "那個平均值是兩個邊界的幾何平均數——精確如此，而且不管兩個價格寫成哪個方向都一樣。它由協議自己關於一個倉位在帶子兩端各持有什麼的公式推出，而存入的金額會從中約掉：一百美元和一百萬美元按同樣的價格轉換。",
     onlyIfThrough:
       "而且只有價格整段穿過這條帶子才成立。中途折返的價格會讓這個倉位兩種代幣各持有一些，根本沒有單一的成交價——而那恰恰就是它上面那個區間要做的事，只不過是誤打誤撞碰上的。",
     notAnOrderBook:
-      "這裡沒有任何東西為這次轉換排期，也沒有任何東西保證它發生。這不是訂單簿：價格永遠沒走到的一筆單子是再正常不過的結果，而不是失敗，這裡既沒有排隊也沒有等著的對手方。取而代之的是：當價格在帶子內時，這個倉位是在收取這個池子的手續費，而不是在支付它們。",
+      "這裡沒有任何東西為這次轉換安排時程，也沒有任何東西保證它發生。這不是訂單簿：價格永遠沒走到的一筆單子是再正常不過的結果，而不是失敗，這裡既沒有排隊也沒有等著的對手方。取而代之的是：當價格在帶子內時，這個倉位是在收取這個池子的手續費，而不是在支付它們。",
     unavailable: "這個區間沒有可以描述的單邊部分。",
   },
 
@@ -10173,7 +10175,7 @@ const zhHant: Dictionary = {
   swapDepth: {
     heading: "在這裡做一筆兌換要付出什麼",
     intro:
-      "上面的一切都是關於提供流動性的。這一塊是關於使用它的。一個池子的流動性在它所依託的兩個價格步長之間是恆定的，所以只要一筆兌換停留在當前價格所在的那一格之內，就能用協議自己的公式給它定價、不必假設任何東西——而再往外一格就不行了，因為另一個倉位的流動性可能從那裡開始，而本應用並不讀取每一個價格上的流動性。",
+      "上面的一切都是關於提供流動性的。這一塊是關於使用它的。一個池子的流動性在它所依託的兩個價格步長之間是恆定的，所以只要一筆兌換停留在當前價格所在的那一格之內，就能用協議自己的公式給它定價、不必假設任何東西——而再往外一格就不行了，因為另一個倉位的流動性可能從那裡開始，而本站並不讀取每一個價格上的流動性。",
     /*
      * "into the pool", because the panel above this one also has a leg called
      * "Selling WETH" and it means something else there: a position that sells as
@@ -10188,7 +10190,7 @@ const zhHant: Dictionary = {
     cost: "它放棄了什麼",
     costNote: "這筆兌換的平均成交價離螢幕上那個價格有多遠。",
     oneSideOnly:
-      "只顯示了一個方向。價格離它所在那一格的盡頭已經近到：另一個方向剩下的餘地是個捨入誤差而不是一筆兌換，而這一頁不會列印它無法核對的數字。",
+      "只顯示了一個方向。價格離它所在那一格的盡頭已經近到：另一個方向剩下的餘地是個捨入誤差而不是一筆兌換，而這一頁不會顯示它無法核對的數字。",
     geometric:
       "那個平均值是當前價格與這筆兌換結束時價格的幾何平均數——和上面那些單邊倉位所依據的是同一個恆等式，只是從交易的另一側看過去。穿過一條帶子的兌換支付它；坐在那條帶子裡的倉位收取它。",
     whyItDiffers:
@@ -10201,12 +10203,12 @@ const zhHant: Dictionary = {
   compare: {
     heading: "這個交易對的所有費率檔，並排放在一起",
     intro: (pair: string) =>
-      `下面每個 ${pair} 池子都用同樣的時長、同樣的寬度和同樣的資金來讀取，所以它們的數字站在同一個基礎上。它們描述的是已經過去的日子，而不是將來的日子。v3 池子按費率排列，v4 池子按深度從深到淺排列，下方的說明解釋了原因；沒有一個是按它本可以賺多少來排名的。`,
+      `下面每個 ${pair} 池子都用同樣的時間跨度、同樣的寬度和同樣的資金來讀取，所以它們的數字站在同一個基礎上。它們描述的是已經過去的日子，而不是將來的日子。v3 池子按費率排列，v4 池子按深度從深到淺排列，下方的說明解釋了原因；沒有一個是按它本可以賺多少來排名的。`,
     depositFeesNote: (days: string) => `在價格停留在區間內的 ${days} 天裡。`,
     daysInside: "完全在區間內的天數",
     daysInsideValue: (inside: string, measured: string) => `${measured} 天中的 ${inside} 天`,
     unavailable: "這個費率檔現在讀取不到。",
-    open: "打開完整分析",
+    open: "開啟完整分析",
     link: "把費率檔並排放在一起",
     onlyOne: (pair: string) =>
       `${pair} 只在一個 v3 池子裡交易，沒有別的可以放在旁邊。`,
@@ -10260,7 +10262,7 @@ const zhHant: Dictionary = {
     hookAltersSwaps: "可能改變一筆兌換的代價",
     priceStep: (step: string) => `步長 ${step}`,
     v4Ordering:
-      "按當前價格處的深度排序——也就是這個池子的活躍流動性與價格，讀自 PoolManager 的儲存——因為一個 v4 交易對大多是些有人初始化之後就撂下的池子，而深度正是能把它們區分開的東西。它說明一筆兌換能動用多少，卻完全沒說哪個池子更好：更深的池子只是有更大一群人在分同樣那些手續費。",
+      "按當前價格處的深度排序——也就是這個池子的活躍流動性與價格，讀自 PoolManager 的儲存——因為一個 v4 交易對大多是些有人初始化之後就丟著不管的池子，而深度正是能把它們區分開的東西。它說明一筆兌換能動用多少，卻完全沒說哪個池子更好：更深的池子只是有更大一群人在分同樣那些手續費。",
     moreNotShown: (count: string) => `另有 ${count} 個未顯示；它們比這些更淺。`,
     v4Unavailable: "這個交易對的 v4 資金池無法讀取",
     v3Unavailable: "這個交易對的 v3 資金池無法讀取",
@@ -10274,7 +10276,7 @@ const zhHant: Dictionary = {
   widths: {
     heading: "其他幾種寬度",
     intro:
-      "同一套方法在表單提供的每一種寬度上各跑一遍，這樣取捨是看得見的而不是被告知的：更寬的區間能容納更多的日子，也把同樣一筆資金攤到更多價格上——那就是最後一列，而它是協議的算術而非估算。",
+      "同一套方法在表單提供的每一種寬度上各跑一遍，這樣取捨是看得見的而不是被告知的：更寬的區間能容納更多的日子，也把同樣一筆資金攤到更多價格上——那就是最後一欄，而它是協議的算術而非估算。",
     width: "寬度",
     range: "區間",
     recent: (days: string) => `在內，佔最近 ${days} 天`,
@@ -10293,7 +10295,7 @@ const zhHant: Dictionary = {
      * half the column beside it measures.
      */
     feeShareNote:
-      "最後一列是：在價格停留在那個區間內的一天裡，同樣一筆資金會分到多少手續費，相對上面顯示的那種寬度——所以那一行是 1 倍。這是協議自己的倉位算術而不是估算：更窄的區間把同樣的錢變成更多流動性，鋪在更少的價格上。它假設這個池子其餘的流動性沒有變化，而一筆大到足以撼動它的資金不會讓這句話繼續成立；它也完全沒有說價格待在區間外的那些日子。",
+      "最後一欄是：在價格停留在那個區間內的一天裡，同樣一筆資金會分到多少手續費，相對上面顯示的那種寬度——所以那一列是 1 倍。這是協議自己的倉位算術而不是估算：更窄的區間把同樣的錢變成更多流動性，鋪在更少的價格上。它假設這個池子其餘的流動性沒有變化，而一筆大到足以撼動它的資金不會讓這句話繼續成立；它也完全沒有說價格待在區間外的那些日子。",
     notAdvice:
       "這些沒有一個是推薦。更窄的區間在它撐住的那些日子裡分到更大的份額，在它沒撐住的日子裡則什麼都分不到，而這兩者哪一個更要緊，取決於這個倉位是為了什麼——那是這裡任何東西都不知道的。",
   },
@@ -10314,11 +10316,11 @@ const zhHant: Dictionary = {
     widthChoice: (sigma: string, word: string | null) =>
       word === null ? sigma : `${word}（${sigma}）`,
     widthWords: { tight: "窄", medium: "中等", wide: "寬", veryWide: "很寬" },
-    note: "時間跨度說的是把測出來的走勢往前攤多遠。它不改變測量本身：無論選哪個時間跨度，波動率始終來自最近 30 個完整的日子。寬度則把那個走勢乘上一個倍數；更寬的區間被離開的次數更少，而它不是一個置信水平。",
+    note: "時間跨度說的是把測出來的走勢往前攤多遠。它不改變測量本身：無論選哪個時間跨度，波動率始終來自最近 30 個完整的日子。寬度則把那個走勢乘上一個倍數；更寬的區間被離開的次數更少，而它不是一個信賴水準。",
     fellBack:
       "所請求的內容有一部分無法讀取，所以在那些地方用了預設值。實際用到的時間跨度和寬度顯示在上面。",
     preferenceHint:
-      "這隻改變本頁。要改變每個資金池開啟時的參數，請使用頁首裡的區間偏好。",
+      "這只改變本頁。要改變每個資金池開啟時的參數，請使用頁首裡的區間偏好。",
   },
 
   holdings: {
@@ -10404,7 +10406,7 @@ const zhHant: Dictionary = {
     hookHeading: "這個 hook",
     noHook: "這個池子在執行時沒有 hook。",
     noHookNote:
-      "沒有任何東西伴隨它的兌換或存取執行，所以它的行為和一個 v3 池子一樣。",
+      "沒有任何東西伴隨它的兌換、存入或取出執行，所以它的行為和一個 v3 池子一樣。",
     hookMay: "它被允許做什麼",
     /*
      * One sentence per permission, under the moment a reader can picture it
@@ -10442,7 +10444,7 @@ const zhHant: Dictionary = {
         "在向這個池子的提供者捐贈之後執行，它在此仍然可以拒絕這次捐贈。",
     } satisfies Record<HookPermission, string>,
     noPermissions:
-      "圍繞兌換、存取或捐贈都沒有任何權限：協議在這些時刻一個都不會呼叫它。像這樣的 hook 仍然能做的，是為一個費率為動態的池子設定費率。",
+      "圍繞兌換、存入、取出或捐贈都沒有任何權限：協議在這些時刻一個都不會呼叫它。像這樣的 hook 仍然能做的，是為一個費率為動態的池子設定費率。",
     permissionNames: "協議對這些東西自己的叫法",
     /*
      * The other side of the swap warning. A hook that runs when a provider
@@ -10461,7 +10463,7 @@ const zhHant: Dictionary = {
      * claim about a hook that can be made without trusting somebody.
      */
     hookAddressIsThePermission:
-      "這些都是從這個 hook 自己的地址裡讀出來的。v4 不把一個 hook 的權限存放在任何地方：一個 hook 被部署到某個地址上，這個地址的最後十四個位元就拼寫出 PoolManager 會呼叫哪些回調，而 PoolManager 檢查的是這些位元，並不去問合約。所以這裡說的是這個 hook 可以做什麼，絕不是它做了什麼——一個被允許在每筆兌換上重寫費率的 hook，完全可能永遠返回同一個費率，而那從這裡是無從得知的。",
+      "這些都是從這個 hook 自己的地址裡讀出來的。v4 不把一個 hook 的權限存放在任何地方：一個 hook 被部署到某個地址上，這個地址的最後十四個位元就拼寫出 PoolManager 會呼叫哪些回呼，而 PoolManager 檢查的是這些位元，並不去問合約。所以這裡說的是這個 hook 可以做什麼，絕不是它做了什麼——一個被允許在每筆兌換上重寫費率的 hook，完全可能永遠回傳同一個費率，而那從這裡是無從得知的。",
     alterSwapWarning:
       "這個 hook 被允許改變一筆兌換的成本或收益。任何從價格歷史推出來的數字——一個建議區間、一個費率檔、一個與單純持有的對比——都假設這個池子按它聲明的收費、按曲線所說的支付。在這裡這兩個假設都不安全，而這一切在一串價格序列裡都看不見。",
     /*
@@ -10474,7 +10476,7 @@ const zhHant: Dictionary = {
       "下面是區間分析。這個區間來自已經發生過的價格，所以它在這裡和在一個沒有 hook 的池子上一樣成立——hook 沒法追溯地改變價格走到過哪裡。hook 能改變的是一筆兌換的代價，所以這個池子實際收取的費率，是從它收到了多少測出來的，而不是取自上面那個費率。",
     unavailableHeading: "這個資金池無法讀取",
     invalidId:
-      "那不是一個 v4 池 id。一個 v4 池子由一個 32 位元組的雜湊來命名——0x 後面跟 64 個十六進位制字元——而不是由一個合約地址來命名。",
+      "那不是一個 v4 池 id。一個 v4 池子由一個 32 位元組的雜湊來命名——0x 後面跟 64 個十六進位字元——而不是由一個合約地址來命名。",
     noId: "貼上一個 v4 池 id，就能看到這個池子是什麼、它的 hook 可以做什麼。",
     loading: "正在從索引器和鏈上讀取這個 v4 資金池……",
   },
@@ -10487,7 +10489,7 @@ const zhHant: Dictionary = {
    */
   notFound: {
     title: "這裡沒有頁面",
-    body: "你跟過來的這個地址，沒有指向本應用提供的任何東西。一個資金池是透過它的地址、或者對 v4 來說透過它的 id 開啟的——這兩者都填進搜尋框，而不是填進路徑裡。",
+    body: "你跟過來的這個地址，沒有指向本站提供的任何東西。一個資金池是透過它的地址、或者對 v4 來說透過它的 id 開啟的——這兩者都填進搜尋框，而不是填進路徑裡。",
     search: "找一個資金池 →",
   },
 
@@ -10503,9 +10505,9 @@ const zhHant: Dictionary = {
     heading: "正在 Uniswap v4 上執行的那些 hook",
     loading: "正在讀取本週最活躍的 v4 資金池……",
     intro:
-      "每一個 v4 資金池都可以指定一個 hook：一份合約，PoolManager 會在一筆兌換、一次存入、一次取出中的固定時刻呼叫它。至於是哪些時刻，那不是誰作出的承諾。它被挖進了這個 hook 的地址裡——低十四位就是那份清單，而協議拒絕為清單之外的任何事去呼叫這份合約。",
+      "每一個 v4 資金池都可以指定一個 hook：一份合約，PoolManager 會在一筆兌換、一次存入、一次取出中的固定時刻呼叫它。至於是哪些時刻，那不是誰作出的承諾。它被挖進了這個 hook 的地址裡——最低的十四個位元就是那份清單，而協議拒絕為清單之外的任何事去呼叫這份合約。",
     onlyPermissions:
-      "這就是這一頁所知道的全部，而它之所以值得知道，恰恰因為它是被強制執行的而不是被聲稱的。一個 hook 拿這項權限做了什麼，寫在它的程式碼裡。本應用不讀程式碼，也不儲存任何人背書過的 hook 名單——那兩樣都會是它無法核對的說法，卻擺在它能核對的數字旁邊。",
+      "這就是這一頁所知道的全部，而它之所以值得知道，恰恰因為它是被強制執行的而不是被聲稱的。一個 hook 拿這項權限做了什麼，寫在它的程式碼裡。本站不讀程式碼，也不儲存任何人背書過的 hook 名單——那兩樣都會是它無法核對的說法，卻擺在它能核對的數字旁邊。",
     /*
      * Phrased so no count is followed by a noun that would have to agree with
      * it. A list of one pool is not a case this page will meet — the week's
@@ -10536,7 +10538,7 @@ const zhHant: Dictionary = {
       "上面的一切都是這個地址可以做什麼——它的代幣能開啟哪些池子。這一塊則是它已經做了什麼。兩個協議的倉位都是被某一份合約持有的一個代幣，而這兩份合約都會被問到每一個代幣是什麼。v3 那一份還能列出一個地址名下的代幣；v4 那一份不能，所以那份清單來自索引器，而其中每一個 id 都會被放回鏈上，去問它歸誰所有。",
     none: "這個地址不持有任何一個協議的 Uniswap 倉位代幣。",
     noneOpen:
-      "這個地址持有的每一個倉位代幣都已經關閉了。已關閉的那個是一張「曾經有過一個倉位」的憑據，而不是一個倉位。",
+      "這個地址持有的每一個倉位代幣都已經關閉了。已關閉的那個是一張「曾經有過一個倉位」的憑證，而不是一個倉位。",
     counts: (held: string, open: string, closed: string) =>
       `${held} 個倉位代幣，其中 ${open} 個裡面還有流動性，${closed} 個已經關閉。`,
     inRange: "此刻正在賺取",
@@ -10582,10 +10584,10 @@ const zhHant: Dictionary = {
      * still true is the half worth keeping, and it is the half that matters.
      */
     readOnly:
-      "唯讀。本應用向錢包索取的是它的地址，從不索取簽名：這裡沒有任何程式碼能簽署一條訊息或傳送一筆交易，兩次訪問之間也不儲存任何關於錢包的東西。",
+      "唯讀。本站向錢包索取的是它的地址，從不索取簽名：這裡沒有任何程式碼能簽署一條訊息或傳送一筆交易，兩次造訪之間也不儲存任何關於錢包的東西。",
     notices: {
       "wallet-not-found":
-        "在這個瀏覽器裡沒有找到錢包。瀏覽器錢包擴展會放一個進去；沒有它，這一頁上什麼都不會變。",
+        "在這個瀏覽器裡沒有找到錢包。瀏覽器錢包擴充功能會放一個進去；沒有它，這一頁上什麼都不會變。",
       "wallet-request-declined":
         "這個請求在錢包裡被拒絕了。什麼都沒有讀取，也什麼都沒有傳送。",
       "wallet-request-failed":
@@ -10605,26 +10607,26 @@ const zhHant: Dictionary = {
     forget: "忘記綁定",
     notConfigured: "這臺伺服器上沒有設定 Telegram 提醒。",
     publicNote:
-      "關注一個地址不需要擁有它——倉位是公開的，提醒說的也不會超出這份清單所說的。機器人讀取鏈上資料併傳送訊息；它無法簽署或傳送任何東西。",
+      "關注一個地址不需要擁有它——倉位是公開的，提醒說的也不會超出這份清單所說的。機器人讀取鏈上資料並傳送訊息；它無法簽署或傳送任何東西。",
     linked: (address: string) =>
       `已綁定。當 ${address} 的某個倉位接近區間邊緣、離開區間或回到區間內時，你會在這裡收到訊息。傳送 /stop 結束。`,
     unknownStart:
-      "這個連結無法識別或已過期。請在網站上再按一次「連接 Telegram」。",
+      "這個連結無法辨識或已過期。請在網站上再按一次「連接 Telegram」。",
     alreadyClaimed:
-      "這個連結已被另一個對話使用。請在網站上再按一次「連接 Telegram」獲取新的連結。",
+      "這個連結已被另一個對話使用。請在網站上再按一次「連接 Telegram」取得新的連結。",
     stopped: "已停止。這個對話現在不再關注任何東西。記錄已從伺服器刪除，七天內也會從加密備份中消失。",
     nothingToStop: "這個對話本來就沒有關注任何東西。",
     help:
       "這個機器人只關注你在網站上綁定的地址，也只在某個倉位接近區間邊緣、離開或重新進入它的區間時說話。傳送 /stop 結束。傳送 /smart，當你持有倉位的池子裡收益最高的流動性移動時，也會收到通知。傳送 /weekly，每週一收到聰明資金流向的摘要。",
     storeDown: "現在無法檢查綁定。請一分鐘後再試。",
     smartOn:
-      "聰明資金提醒已開啟。如果你持有倉位的某個池子裡收益最高的流動性所在的位置大幅移動，你會在這裡收到通知。為此，機器人只儲存上次通知你時那個區間在哪裡，別的什麼都不儲存。再發一次 /smart 即可關閉。",
+      "聰明資金提醒已開啟。如果你持有倉位的某個池子裡收益最高的流動性所在的位置大幅移動，你會在這裡收到通知。為此，機器人只儲存上次通知你時那個區間在哪裡，別的什麼都不儲存。再傳送一次 /smart 即可關閉。",
     smartOff: "聰明資金提醒已關閉，為此儲存的內容也已刪除。",
     smartNoLink:
-      "這個聊天還沒有關注任何地址。請先在網站上點「連接 Telegram」。",
+      "這個對話還沒有關注任何地址。請先在網站上按「連接 Telegram」。",
     smartShift: (pair: string, protocol: string, then: string, now: string) => `🔀 ${pair}（${protocol}）裡收益最高的流動性移動了。它原來在 ${then}，現在在 ${now}。這是這些倉位所在的位置，由鏈上測得——不是對你的倉位的建議。`,
     weeklyOn:
-      "每週摘要已開啟。每週一 UTC 08:00 起，你會在這裡收到一份摘要，說明過去一週你綁定的地址所在網路上的聰明資金流向：哪些交易對有聰明資金流入、哪些流出，以及哪些典型區間移動了。為此，機器人只儲存上一份摘要的傳送時間，別的什麼都不儲存。再發一次 /weekly 即可關閉。",
+      "每週摘要已開啟。每週一 UTC 08:00 起，你會在這裡收到一份摘要，說明過去一週你綁定的地址所在網路上的聰明資金流向：哪些交易對有聰明資金流入、哪些流出，以及哪些典型區間移動了。為此，機器人只儲存上一份摘要的傳送時間，別的什麼都不儲存。再傳送一次 /weekly 即可關閉。",
     weeklyOff: "每週摘要已關閉，為此儲存的內容也已刪除。",
     weeklyHeading: (chain: string, days: string) => `📅 聰明的流動性 · ${chain}\n過去 ${days} 天裡它是怎麼移動的`,
     weeklyGaining: "聰明資金在流入",
@@ -10637,7 +10639,7 @@ const zhHant: Dictionary = {
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair}（${protocol}）已離開它的區間：${range}。在價格回來之前，它只持有一種代幣，什麼也賺不到。`,
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
-      `⏳ ${pair}（${protocol}）已接近它的區間邊緣：${range}。目前價格為 ${price}；越過 ${edge} 後，它將只持有一種代幣，什麼也賺不到。`,
+      `⏳ ${pair}（${protocol}）已接近它的區間邊緣：${range}。當前價格為 ${price}；越過 ${edge} 後，它將只持有一種代幣，什麼也賺不到。`,
     entered: (pair: string, protocol: string, range: string) =>
       `✅ ${pair}（${protocol}）回到了它的區間內：${range}。又在賺取了。`,
     opened: (pair: string, protocol: string, range: string) => `新倉位：${pair}（${protocol}），${range}。`,
@@ -10649,14 +10651,14 @@ const zhHant: Dictionary = {
   search: {
     label: "一個交易對、一個 v3 池地址，或一個 v4 池 id",
     placeholder: "WETH/USDC",
-    help: "輸入一個像 WETH/USDC 這樣的交易對，貼上一份 v3 池合約的地址，或者貼上一個 v4 池 id——也就是一個 v4 池子被命名所用的那個 32 位元組雜湊。唯讀：本應用從不簽署任何東西，也從不傳送交易。",
+    help: "輸入一個像 WETH/USDC 這樣的交易對，貼上一份 v3 池合約的地址，或者貼上一個 v4 池 id——也就是一個 v4 池子被命名所用的那個 32 位元組雜湊。唯讀：本站從不簽署任何東西，也從不傳送交易。",
     submit: "查詢資金池",
 
-    heading: "匹配的 Uniswap v3 資金池",
-    resultsFor: (terms: string) => `代幣與 ${terms} 匹配的資金池。`,
+    heading: "相符的 Uniswap v3 資金池",
+    resultsFor: (terms: string) => `代幣與 ${terms} 相符的資金池。`,
     empty: (terms: string, chain: string) =>
-      `${chain}上沒有任何 Uniswap v3 資金池的代幣與 ${terms} 匹配。`,
-    emptyHint: "請檢查拼寫，或者直接貼上該池的地址。",
+      `${chain}上沒有任何 Uniswap v3 資金池的代幣與 ${terms} 相符。`,
+    emptyHint: "請檢查拼寫，或者直接貼上該資金池的地址。",
 
     /*
      * The v4 list, beneath the v3 one. Two lists rather than one merged list,
@@ -10664,9 +10666,9 @@ const zhHant: Dictionary = {
      * what its active liquidity is worth — and one order over both would be
      * comparing them.
      */
-    v4Heading: "匹配的 Uniswap v4 資金池",
+    v4Heading: "相符的 Uniswap v4 資金池",
     v4Empty: (terms: string) =>
-      `以太坊主網上沒有任何 Uniswap v4 資金池的貨幣與 ${terms} 匹配。`,
+      `以太坊主網上沒有任何 Uniswap v4 資金池的貨幣與 ${terms} 相符。`,
     v4Depth: "當前價格處的深度",
     v4DepthValue: (amount: string, native: string) => `≈ ${amount} ${native}`,
     v4DepthNote:
@@ -10676,16 +10678,16 @@ const zhHant: Dictionary = {
     v4NoHook: "無",
     v4HookAltersSwaps: "可能改變一筆兌換的代價",
     v4Ordering:
-      "名字與你所搜尋的完全一致的池子排在最前。之後的順序按每個池子在其當前價格處的深度——也就是它的活躍流動性與價格，讀自 PoolManager 的儲存，並用資料來源推匯出的價格換算到同一把尺子上。這不是這個池子持有什麼：每一個 v4 池子的代幣都一起躺在同一個 PoolManager 裡，鏈上沒有任何東西按池子報告它們。索引器自己的流動性數字曾與鏈上對照過，在其中一個最活躍的池子上差了百分之十五，這就是它不被採用的原因。",
+      "名字與你所搜尋的完全一致的池子排在最前。之後的順序按每個池子在其當前價格處的深度——也就是它的活躍流動性與價格，讀自 PoolManager 的儲存，並用資料來源推導出的價格換算到同一把尺子上。這不是這個池子持有什麼：每一個 v4 池子的代幣都一起躺在同一個 PoolManager 裡，鏈上沒有任何東西按池子報告它們。索引器自己的流動性數字曾與鏈上對照過，在其中一個最活躍的池子上差了百分之十五，這就是它不被採用的原因。",
 
     /*
      * The ordering is the one claim a list makes, so it is stated rather than
      * left to be inferred from the order itself.
      */
     ordering:
-      "名字與你所搜尋的完全一致的池子排在最前。之後的順序按每個池子實際持有什麼——讀自代幣合約本身，並用資料來源推匯出的價格換算到同一把尺子上。它以前按資料來源報告的各池鎖倉價值排序，而那個數字錯得足以把這份清單重新排一遍：曾有一個池子被以九百萬美元的報告流動性發布在這裡，而它的合約裡只有九千。",
+      "名字與你所搜尋的完全一致的池子排在最前。之後的順序按每個池子實際持有什麼——讀自代幣合約本身，並用資料來源推導出的價格換算到同一把尺子上。它以前按資料來源報告的各池鎖倉價值排序，而那個數字錯得足以把這份清單重新排一遍：曾有一個池子被以九百萬美元的報告流動性發布在這裡，而它的合約裡只有九千。",
     windowing:
-      "這份清單取自資料來源針對你的搜尋詞報告為成交最活躍的那些池子，而一個清淡到落在那個集合之外的池子，根本走不到上面那個排序裡。這就是「在一個來源選擇返回的東西裡做排名」這件事老老實實的邊界：一個持有很多但很少成交的池子，可能根本不在這一頁上。",
+      "這份清單取自資料來源針對你的搜尋詞報告為成交最活躍的那些池子，而一個清淡到落在那個集合之外的池子，根本走不到上面那個排序裡。這就是「在一個來源選擇回傳的東西裡做排名」這件事老老實實的邊界：一個持有很多但很少成交的池子，可能根本不在這一頁上。",
     dormantNote:
       "一個月內沒有任何活動的資金池不會列出。區間是從最近一個月的價格畫出來的，沒有這一個月的池子無從畫起——開啟它也只會告訴你這一點。",
     /*
@@ -10695,7 +10697,7 @@ const zhHant: Dictionary = {
      * did not say so would let a reader conclude a pool does not exist.
      */
     v4Windowing:
-      "這份清單取自最近七天在以太坊主網上成交最多的那些 v4 資金池——最活躍的一千個「池子·日」，合起來是幾百個池子——而比這更清淡的池子走不到這一頁上。資料來源沒法在這一頁停止等待之前，答完一次橫跨每一個 v4 池子的搜尋，所以這個窗口是按近期活躍度劃的，而不是按你的搜尋詞劃的：一個存在但本週沒有成交的池子，不在這裡。",
+      "這份清單取自最近七天在以太坊主網上成交最多的那些 v4 資金池——最活躍的一千個「池子·日」，合起來是幾百個池子——而比這更清淡的池子走不到這一頁上。資料來源沒法在這一頁停止等待之前，答完一次橫跨每一個 v4 池子的搜尋，所以這個範圍是按近期活躍度劃的，而不是按你的搜尋詞劃的：一個存在但本週沒有成交的池子，不在這裡。",
     /*
      * The sentence that does the real work on this page. Search is what lets
      * someone reach a pool they did not go looking for.
@@ -10711,7 +10713,7 @@ const zhHant: Dictionary = {
     analyse: "分析這個資金池",
     /** Under the v4 list: where each row's fee came from, and why the row can say it was not read. */
     v4FeeNote:
-      "每個池子的費率讀自鏈上它被建立時的 key，而不是讀自資料來源——資料來源那個費率數字曾被測出是最近一筆兌換所付的總額、包含協議抽成在內，並不是這個池子自己的費率。key 讀不出來的那一行會明說。",
+      "每個池子的費率讀自鏈上它被建立時的 key，而不是讀自資料來源——資料來源那個費率數字曾被測出是最近一筆兌換所付的總額、包含協議抽成在內，並不是這個池子自己的費率。key 讀不出來的那一列會明說。",
 
     unavailableHeading: "這次搜尋無法執行",
     rejected: {
@@ -10725,14 +10727,14 @@ const zhHant: Dictionary = {
 
   report: {
     steps: {
-      pool: "讀取這個池子的配置",
+      pool: "讀取這個池子的設定",
       snapshot: "讀取這個池子當前的市場狀態",
       history: "讀取這個池子的每日價格歷史",
       volatility: "測量價格走了多少",
-      band: "構建價格帶",
+      band: "建立價格帶",
       range: "把價格帶對齊到這個池子能表達的價格上",
       divergence: "把這個區間與持有兩種代幣作對比",
-      activity: "讀取這個池子在所測窗口內做了什麼",
+      activity: "讀取這個池子在所測期間內做了什麼",
     },
     noRangeHeading: "這個池子沒有區間",
     stoppedWhile: (step: string) => `這件事在${step}時停了下來。`,
@@ -10760,7 +10762,7 @@ const zhHant: Dictionary = {
     contentsLabel: "這份分析的各個部分",
     rangeHeading: "建議價格區間",
     rangeIntro: (base: string, quote: string) =>
-      `這個池子裡的一個倉位會在哪裡處於活躍狀態，以 1 ${base} 摺合多少 ${quote} 來表示。`,
+      `這個池子裡的一個倉位會在哪裡處於活躍狀態，以 1 ${base} 折合多少 ${quote} 來表示。`,
     rangeValue: (lower: string, upper: string, quote: string, base: string) =>
       `${lower} – ${upper} ${quote}/${base}`,
     rangeDistances: (down: string, up: string) =>
@@ -10800,17 +10802,17 @@ const zhHant: Dictionary = {
     basisIntro: (base: string, days: string) =>
       `來自 ${base} 的價格在最近 ${days} 個完整的日子裡實際走了多少——而不是來自對它接下來往哪走的預測。`,
     dailyMove: "典型的單日波動",
-    dailyMoveNote: "在這個窗口內，一天價格變化的標準差。",
+    dailyMoveNote: "在這段期間內，一天價格變化的標準差。",
     horizonMove: (days: string) => `在 ${days} 天裡`,
     horizonMoveNote:
       "把同樣的波動攤到下面所選的時間跨度上：一個標準差，上下各一個。",
     widthValue: (multiplier: string) => `上下各為其 ${multiplier} 倍`,
     widthNote:
       "在下面選擇。更寬的區間被離開的次數更少，而攤在上面的同樣一筆資金，在任何單個價格上都更薄。",
-    measuredOver: "測量範圍",
+    measuredOver: "測量期間",
     measuredOverNote: (returns: string) => `有 ${returns} 個單日變化進入了計算。`,
     epilogue:
-      "這個區間以今天的價格為中心，並按比例向上和向下畫出同樣的距離——減半和翻倍是同一種幅度——這也是那兩個百分比不一樣的原因。它描述的是價格已經走了多遠，而不是它會走到哪裡：它不是預測，寬度也不是置信水平。這裡沒有任何東西為一個倉位定規模，也沒有說該存入多少哪一種代幣。",
+      "這個區間以今天的價格為中心，並按比例向上和向下畫出同樣的距離——減半和翻倍是同一種幅度——這也是那兩個百分比不一樣的原因。它描述的是價格已經走了多遠，而不是它會走到哪裡：它不是預測，寬度也不是信賴水準。這裡沒有任何東西為一個倉位定規模，也沒有說該存入多少哪一種代幣。",
   },
 
   /*
@@ -10839,13 +10841,13 @@ const zhHant: Dictionary = {
     bandNote: "對齊到 tick 網格之前的值，按這個池子自己的方向。",
     annualised: "年化波動率",
     annualisedNote:
-      "每日對數收益率的樣本標準差，乘以 sqrt(365) 放大。",
+      "每日對數報酬的樣本標準差，乘以 sqrt(365) 放大。",
     coverage: "覆蓋率",
-    coverageNote: "這個窗口裡有多少是有連續每日價格支撐的。",
+    coverageNote: "這段期間裡有多少是有連續每日價格支撐的。",
     sourceBlock: "來源區塊",
     noBlockTime: "沒有報出區塊時間。",
     fetchedAt: "取得於",
-    fetchedAtNote: "這是響應到達的時間，而不是它所描述的時間。",
+    fetchedAtNote: "這是回應到達的時間，而不是它所描述的時間。",
     lowerEdge: "下邊緣",
     upperEdge: "上邊緣",
     truncated: "已截斷",
@@ -10891,27 +10893,27 @@ const zhHant: Dictionary = {
   notices: {
     failure: {
       "invalid-pool-address":
-        "池地址必須是 0x 後面跟 40 個十六進位制字元，而且不能是零地址。",
+        "池地址必須是 0x 後面跟 40 個十六進位字元，而且不能是零地址。",
       "invalid-search-terms":
         "一次資金池搜尋接受一到兩個短的搜尋詞，由字母、數字，以及出現在代幣符號裡的那些標記組成。",
       "market-data-not-configured":
-        "這臺伺服器上沒有配置 Uniswap v3 的行情資料。",
+        "這臺伺服器上沒有設定 Uniswap v3 的行情資料。",
       "chain-data-not-configured":
-        "這臺伺服器上沒有配置鏈上讀取。",
+        "這臺伺服器上沒有設定鏈上讀取。",
       "explanation-not-configured":
-        "本應用沒有被配置為撰寫說明，所以不顯示任何說明。",
+        "本站沒有被設定為撰寫說明，所以不顯示任何說明。",
       "market-data-timed-out":
-        "行情資料請求超時。",
+        "行情資料請求逾時。",
       "market-data-unreachable":
         "無法連接到行情資料來源。",
       "market-data-credentials-rejected":
-        "行情資料來源拒絕了所配置的憑據。",
+        "行情資料來源拒絕了所設定的憑證。",
       "market-data-rate-limited":
         "超出了行情資料來源的速率限制。",
       "market-data-unreadable":
-        "行情資料來源返回了一個無法讀取的響應。",
+        "行情資料來源傳回了一個無法讀取的回應。",
       "market-data-malformed":
-        "行情資料來源返回了一個本應用無法核驗的響應。",
+        "行情資料來源傳回了一個本站無法核驗的回應。",
       "market-data-indexing-errors":
         "行情資料來源報告了索引錯誤，所以它的數字不能當作已核驗的。",
       "market-data-stale":
@@ -10919,25 +10921,25 @@ const zhHant: Dictionary = {
       "market-data-future-block-time":
         "行情資料來源報出的區塊時間比這臺伺服器的時鐘還靠前，所以它的數字無法核驗。",
       "chain-data-timed-out":
-        "鏈上資料請求超時。",
+        "鏈上資料請求逾時。",
       "chain-data-unreachable":
         "無法連接到鏈上資料來源。",
       "chain-data-credentials-rejected":
-        "鏈上資料來源拒絕了所配置的憑據。",
+        "鏈上資料來源拒絕了所設定的憑證。",
       "chain-data-rate-limited":
         "超出了鏈上資料來源的速率限制。",
       "chain-data-unreadable":
-        "鏈上資料來源返回了一個無法讀取的響應。",
+        "鏈上資料來源傳回了一個無法讀取的回應。",
       "chain-data-malformed":
-        "鏈上資料來源返回了一個本應用無法核驗的響應。",
+        "鏈上資料來源傳回了一個本站無法核驗的回應。",
       "chain-aggregator-unverified":
-        "餘額是透過鏈上的一份輔助合約讀取的，而那個地址上的程式碼不是本應用當初信任的那份程式碼，所以沒有透過它讀取任何東西。",
+        "餘額是透過鏈上的一份輔助合約讀取的，而那個地址上的程式碼不是本站當初信任的那份程式碼，所以沒有透過它讀取任何東西。",
       "pool-not-found":
         "在以太坊主網上，沒有為這個地址找到任何 Uniswap v3 資金池。",
       "pool-contract-not-found":
         "在以太坊主網上，這個地址上沒有任何 Uniswap v3 池合約作出回應。",
       "pool-configuration-inconsistent":
-        "從兩個來源拼出來的池配置無法核驗。",
+        "從兩個來源拼出來的池子設定無法核驗。",
       "pool-history-insufficient":
         "這個池子還沒有足夠多的完整每日價格歷史可供分析。",
       "pool-history-never-traded":
@@ -10945,33 +10947,33 @@ const zhHant: Dictionary = {
       "pool-history-dormant":
         "這個池子在讀取這些每日價格的那段期間開始之前就停止了交易，所以沒有可用來測量區間的近期歷史。等待不會改變這一點——只有池子重新被使用才會。",
       "volatility-invalid-input":
-        "為這次計算提供的價格歷史，不是一份有效的規範化歷史。",
+        "為這次計算提供的價格歷史，不是一份有效的正規化歷史。",
       "volatility-insufficient-history":
         "這個池子沒有足夠多連續的每日價格來測量波動率。",
       "volatility-unverifiable":
-        "波動率計算得出了一個本應用無法核驗的結果。",
+        "波動率計算得出了一個本站無法核驗的結果。",
       "band-invalid-input":
         "為這條價格帶提供的行情資料無效，或者快照和波動率描述的不是同一個池子。",
       "band-no-current-price":
         "這個池子的當前價格不可用，所以無法為一條價格帶定中心。",
       "band-unverifiable":
-        "價格帶計算得出了一個本應用無法核驗的結果。",
+        "價格帶計算得出了一個本站無法核驗的結果。",
       "range-invalid-input":
         "為這個區間提供的池子、價格帶和快照無效，或者它們描述的不全是同一個池子和同一次觀測。",
       "range-price-unrepresentable":
-        "這個池子的當前價格落在 Uniswap 所能表達的範圍之外，所以無法由它構建任何倉位區間。",
+        "這個池子的當前價格落在 Uniswap 所能表達的範圍之外，所以無法由它建立任何倉位區間。",
       "range-tick-disagreement":
-        "資料來源為這個池子報出的價格和它報出的狀態描述的不是同一個時刻，所以不發佈任何區間。",
+        "資料來源為這個池子報出的價格和它報出的狀態描述的不是同一個時刻，所以不發布任何區間。",
       "range-too-narrow":
         "這條價格帶比這個池子允許的兩條邊緣之間最小的步長還要窄，所以它並不描述兩條互不相同的倉位邊界。",
       "range-unverifiable":
-        "區間計算得出了一個本應用無法核驗的結果。",
+        "區間計算得出了一個本站無法核驗的結果。",
       "divergence-unverifiable":
-        "與持有的對比得出了一個本應用無法核驗的結果。",
+        "與持有的對比得出了一個本站無法核驗的結果。",
       "activity-unverifiable":
-        "這個池子近期的活動得出了一個本應用無法核驗的結果。",
+        "這個池子近期的活動得出了一個本站無法核驗的結果。",
       "fee-rate-unmeasurable":
-        "在這個窗口裡被索引到的每一天，這個池子都沒有任何成交，所以無法從它收到的金額中除出它收取的費率。",
+        "在這段期間裡被索引到的每一天，這個池子都沒有任何成交，所以無法從它收到的金額中除出它收取的費率。",
       "deposit-share-unpriceable":
         "資料來源沒有為這個池子持有的東西定價，所以無法把一筆以美元計的資金換算成這裡的一個倉位。",
       "deposit-share-no-days":
@@ -10991,23 +10993,23 @@ const zhHant: Dictionary = {
       "out-of-sample-insufficient-history":
         "這個池子被索引到的歷史不夠長，無法既在過去擬合出一條價格帶，又留下一個完整時間跨度的日子來檢驗它。",
       "out-of-sample-unverifiable":
-        "樣本外檢驗得出了一個本應用無法核驗的結果。",
+        "樣本外檢驗得出了一個本站無法核驗的結果。",
       "hook-directory-unverifiable":
         "本週這些 v4 資金池的 hook 沒有通過它們自己的檢查，所以不顯示這份名錄。",
       "positions-manager-unverified":
-        "持有 Uniswap v3 倉位的那份合約，回應時給出的程式碼不是本應用當初據以構建的那份，所以它說的任何東西都不予顯示。",
+        "持有 Uniswap v3 倉位的那份合約，回應時給出的程式碼不是本站當初據以建置的那份，所以它說的任何東西都不予顯示。",
       "positions-unreadable":
         "鏈沒有為這個地址的倉位作出回應，所以一個也不顯示——這和「一個都沒有持有」不是一回事。",
       "positions-unverifiable":
         "這個地址的倉位沒有通過它們自己的檢查，所以不予顯示。",
       "holdings-unverifiable":
-        "這個地址持有什麼，得出了一個本應用無法核驗的結果。",
+        "這個地址持有什麼，得出了一個本站無法核驗的結果。",
       "explanation-key-rejected":
-        "說明服務不接受所配置的金鑰，所以不顯示任何說明。",
+        "說明服務不接受所設定的金鑰，所以不顯示任何說明。",
       "explanation-model-not-permitted":
-        "所配置的金鑰沒有被允許使用所選的模型，所以不顯示任何說明。",
+        "所設定的金鑰沒有被允許使用所選的模型，所以不顯示任何說明。",
       "explanation-model-unknown":
-        "所選的模型對所配置的金鑰不可用，所以不顯示任何說明。",
+        "所選的模型對所設定的金鑰不可用，所以不顯示任何說明。",
       "explanation-rate-limited":
         "說明服務此刻處於速率限制中，所以不顯示任何說明。",
       "explanation-hourly-cap":
@@ -11021,18 +11023,18 @@ const zhHant: Dictionary = {
       "explanation-truncated":
         "這段說明在寫完之前就被截斷了，所以不予顯示。",
       "explanation-malformed":
-        "這段說明返回時的形式是本應用無法核驗的，所以不予顯示。",
+        "這段說明傳回時的形式是本站無法核驗的，所以不予顯示。",
     } satisfies Record<DataFailureNotice, string>,
 
     warning: {
       "block-time-unreported":
         "資料來源沒有報出區塊時間，所以無法核驗這些數字有多新。",
       "history-window-incomplete":
-        "資料來源沒有為這個窗口裡的每一天都報出價格；缺失的那些日子是缺著的，而不是估出來的。",
+        "資料來源沒有為這段期間裡的每一天都報出價格；缺失的那些日子是缺著的，而不是估出來的。",
       "volatility-window-incomplete":
-        "這個窗口裡有些日子沒有價格，所以波動率是用比窗口所覆蓋的更少的單日收益率測出來的；缺失的那些日子被跳過了，而不是估出來的。",
+        "這段期間裡有些日子沒有價格，所以波動率是用比這段期間所涵蓋的更少的單日報酬測出來的；缺失的那些日子被跳過了，而不是估出來的。",
       "band-window-incomplete":
-        "波動率窗口裡有些日子沒有價格，所以這條價格帶所依據的單日收益率比窗口所覆蓋的要少。",
+        "波動率期間裡有些日子沒有價格，所以這條價格帶所依據的單日報酬比這段期間所涵蓋的要少。",
       "band-price-block-time-unreported":
         "當前價格的來源沒有報出區塊時間，所以無法獨立核驗它有多新。",
       "band-volatility-block-time-unreported":
@@ -11057,7 +11059,7 @@ const zhHant: Dictionary = {
   rateLimited: {
     title: "請求過多",
     body: (limit: number) =>
-      `這一頁每次訪問都會讀取 Uniswap 的即時資料，所以它被限制為每分鐘 ${limit} 次分析。`,
+      `這一頁每次造訪都會讀取 Uniswap 的即時資料，所以它被限制為每分鐘 ${limit} 次分析。`,
     retry: (seconds: number) => `請在 ${seconds} 秒後重試。`,
     back: "返回顧問首頁",
   },

@@ -74,22 +74,17 @@ const SPANISH_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
 ]);
 
 /**
- * And for Arabic, where the word for a hook stays in Latin script.
- *
- * Deliberate rather than untranslated: a hook is named by its address in the
- * protocol's own documentation, and a reader following that term across to here
- * meets the same letters. Transliterating it would put a word between them and
- * the thing it names.
+ * And for Arabic — without the hook labels the other languages keep in Latin
+ * script. Arabic prose on this site writes خطّاف (2026-10-04: a native-reader
+ * pass found the prose and the labels saying it two ways, and the prose had
+ * the word long before), so its labels say it too. Nor the way back: it points
+ * right here (see pool.back), so it is not the English string.
  */
 const ARABIC_SAME_AS_ENGLISH: ReadonlyMap<string, string> = new Map([
   [".metadata.title", "the product's name, which is not translated"],
   [".home.title", "the product's name, which is not translated"],
-  [".pool.back", "the product's name behind an arrow, which is not translated"],
   [".home.coverage[0].version", "the protocol's own name, which is not translated"],
   [".home.coverage[1].version", "the protocol's own name, which is not translated"],
-  [".feeTiers.hook", "the term Arabic writing about v4 keeps in Latin script"],
-  [".holdings.hookTag", "the term Arabic writing about v4 keeps in Latin script"],
-  [".search.v4Hook", "the term Arabic writing about v4 keeps in Latin script"],
   [".search.placeholder", "two token symbols, which are not words"],
 ]);
 

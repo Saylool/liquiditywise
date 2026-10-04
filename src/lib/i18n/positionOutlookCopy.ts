@@ -35,7 +35,7 @@ const COPY: Record<Locale, PositionOutlookCopy> = {
   },
   ar: {
     days: (days, inside, outside, crossed) =>
-      `الأيام الأخيرة (${days}) — داخل هذا النطاق بالكامل: ${inside} · خارجه بالكامل: ${outside} · عبر أحد حدّيه: ${crossed}`,
+      `الأيام الأخيرة (${days}) — داخل هذا النطاق بالكامل: ${inside} · خارجه بالكامل: ${outside} · عبر إحدى حافتيه: ${crossed}`,
     suggested: (range) => `النطاق الذي يقترحه هذا الموقع للتجمّع الآن: ${range}`,
   },
   hi: {
