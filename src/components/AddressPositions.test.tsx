@@ -178,14 +178,16 @@ describe("AddressPositions", () => {
   });
 
   /*
-   * The one panel here about somebody's own money. It says the list is public
-   * and that nothing on it is a valuation.
+   * The one panel here about somebody's own money. It says the list is public,
+   * that a range is not a valuation, and that the records that do value a
+   * position are a measurement at today's price.
    */
   it("says what the list is and what it is not", () => {
     const markup = render(answer());
 
     expect(markup).toContain("this list is public");
     expect(markup).toContain("is not what a position is worth");
+    expect(markup).toContain("they are a measurement, not advice");
   });
 
   it("names the v4 pool, its fee and the protocol it is in", () => {
@@ -416,5 +418,113 @@ describe("beside where the pool's best-earning liquidity sits", () => {
 
   it("speaks the reader's language", () => {
     expect(withSmart(answer({ positions: [narrow()] }), keyed(), "tr")).toContain("Bu havuzda en çok kazanan likiditenin durduğu yer (7 pozisyonun medyanı)");
+  });
+});
+
+/*
+ * The record under each open v3 position. Round figures, so each line can be
+ * checked by hand: one XOR is worth half a WETH.
+ */
+describe("the record under a position", () => {
+  const RECORD = {
+    openedAt: "2024-05-01T10:00:00.000Z",
+    deposited: { token0: 100, token1: 10 },
+    withdrawn: { token0: 0, token1: 1 },
+    now: { token0: 80, token1: 15 },
+    fees: { token0: 3, token1: 1 },
+    price: 0.5,
+  };
+  const verified = new Map([["1112391", { status: "verified", record: RECORD } as const]]);
+  const withRecords = (
+    records: ReadonlyMap<string, unknown> | undefined,
+    positions: unknown[] = [position()],
+    locale: Locale = "en",
+  ) => {
+    const result = answer({ positions });
+    const withThem = records === undefined ? result : ({ ...result, records } as AddressPositionsResult);
+    return renderToStaticMarkup(
+      <AddressPositions result={withThem} parameters={PARAMETERS} t={getDictionary(locale)} locale={locale} />,
+    );
+  };
+
+  /*
+   * This row quotes WETH in XOR, so the record is valued in XOR:
+   * held 100 + 10 / 0.5 = 120, now 80 + 30 = 110, withdrawn 2, fees 3 + 2 = 5,
+   * so 110 + 2 - 120 = -8 before fees and -3 after.
+   */
+  it("values every line in the token the row quotes its prices in", () => {
+    const markup = withRecords(verified);
+
+    expect(markup).toContain("Since it was opened on 2024-05-01, at today&#x27;s price in XOR");
+    expect(markup).toContain("100 XOR + 10 WETH");
+    expect(markup).toContain("0 XOR + 1 WETH");
+    expect(markup).toContain("80 XOR + 15 WETH");
+    expect(markup).toContain("3 XOR + 1 WETH");
+    expect(markup).toContain("120 XOR");
+    expect(markup).toContain("-3 XOR");
+    expect(markup).toContain("fees +5 XOR, range effect -8 XOR");
+  });
+
+  /* The same record on a row quoted the pool's own way round is valued in WETH: held 100 x 0.5 + 10 = 60. */
+  it("values it in token1 when the row quotes token0 in token1", () => {
+    const markup = withRecords(verified, [position({ lowerPrice: 2, upperPrice: 8 })]);
+
+    expect(markup).toContain("at today&#x27;s price in WETH");
+    expect(markup).toContain("60 WETH");
+    /* now 40 + 15 = 55, withdrawn 1, fees 1.5 + 1 = 2.5: 55 + 1 - 60 = -4, and -1.5 with fees. */
+    expect(markup).toContain("-1.5 WETH");
+    expect(markup).toContain("fees +2.5 WETH, range effect -4 WETH");
+  });
+
+  it("says what it leaves out, under the figures", () => {
+    const markup = withRecords(verified);
+
+    expect(markup).toContain("It leaves out the gas paid");
+    expect(markup).toContain("under every owner it has had");
+    expect(markup).toContain("A measurement, not advice.");
+  });
+
+  /* Label and value, stacked on a phone and side by side where there is room: no table to run off the screen. */
+  it("is laid out to fit a phone's width, with no table", () => {
+    const markup = withRecords(verified);
+
+    expect(markup).not.toContain("<table");
+    expect(markup).toContain('class="grid grid-cols-1');
+    expect(markup).toContain("break-words");
+  });
+
+  it.each([
+    ["unverified", { status: "unverified", reason: "liquidity-differs" }, "could not be checked against the chain"],
+    ["unread", { status: "unread" }, "Not everything this record needs could be read"],
+  ])("shows no figures for a record that is %s, and says why", (_label, record, expected) => {
+    const markup = withRecords(new Map([["1112391", record]]));
+
+    expect(markup).toContain(expected);
+    expect(markup).not.toContain("Deposited");
+    expect(markup).not.toContain("range effect");
+  });
+
+  it("says a v4 position has no history to work one out from", () => {
+    expect(withRecords(new Map(), [v4Position()])).toContain("The v4 indexers keep no history for each position");
+  });
+
+  it("says nothing about records that were never asked for, of either protocol", () => {
+    const markup = withRecords(undefined, [position(), v4Position()]);
+
+    expect(markup).not.toContain("v4 indexers keep no history");
+    expect(markup).not.toContain("Since it was opened");
+    expect(markup).not.toContain("could not be checked against the chain");
+    expect(markup).not.toContain("Not everything this record needs");
+  });
+
+  it("says nothing for a v3 position with no record in an answer that has them", () => {
+    expect(withRecords(new Map(), [position()])).not.toContain("Since it was opened");
+  });
+
+  it("speaks the reader's language", () => {
+    const markup = withRecords(verified, [position()], "tr");
+
+    expect(markup).toContain("2024-05-01 tarihinde açıldığından beri, bugünkü fiyatla XOR cinsinden");
+    expect(markup).toContain("komisyon +5 XOR, aralık etkisi -8 XOR");
   });
 });

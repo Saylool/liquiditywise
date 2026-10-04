@@ -1,17 +1,21 @@
 import type { AddressPositionsResult } from "../lib/advisor/addressPositions";
 import type { PositionOutlook } from "../lib/advisor/positionOutlook";
+import { type PositionRecord, type PositionRecordResult, type TokenAmounts, valueRecord } from "../lib/advisor/positionRecord";
 import { type SmartRange, smartRangeKey } from "../lib/advisor/smartRanges";
 import { type RangeAround, rangeAroundInverted, signedPercent } from "../lib/format/rangeAround";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
 import { getPositionOutlookCopy } from "../lib/i18n/positionOutlookCopy";
+import { getPositionRecordCopy } from "../lib/i18n/positionRecordCopy";
 import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import {
   formatFeePpm,
   formatPrice,
   formatTokenAmount,
+  formatTokenQuantity,
+  formatUtcDate,
   formatWhole,
 } from "../lib/format/displayFormats";
-import { choosePriceQuote, quotedInterval } from "../lib/format/priceQuote";
+import { choosePriceQuote, type PriceQuote, quotedInterval } from "../lib/format/priceQuote";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
 import {
@@ -75,15 +79,113 @@ const earningFirst = (positions: readonly Position[]): readonly Position[] =>
     (left, right) => Number(right.inRange === true) - Number(left.inRange === true),
   );
 
+/**
+ * How an open v3 position has done since it was opened, at today's price (see
+ * advisor/positionRecord.ts).
+ *
+ * Valued in the token the row already quotes its prices in, so the record and
+ * the range above it read in the same units. Laid out as label and value, one
+ * under the other on a phone and side by side where there is room — never as
+ * a table, because six figures across would not fit a phone's width and
+ * whatever did not fit would be clipped without a word.
+ *
+ * The result is shown with its two parts, fees and the range effect, so a
+ * reader can see which one made it; and what it leaves out is said under it
+ * every time, not only on the method page.
+ */
+const RecordFigures = ({
+  record,
+  quote,
+  pool,
+  locale,
+}: {
+  record: PositionRecord;
+  quote: PriceQuote;
+  pool: Position["pool"];
+  locale: Locale;
+}) => {
+  const copy = getPositionRecordCopy(locale);
+  const values = valueRecord(record, quote.inverted ? "token0" : "token1");
+  const symbol = quote.quote.symbol;
+  const quantity = (value: number) => formatTokenQuantity(value, locale);
+  const amounts = ({ token0, token1 }: TokenAmounts) =>
+    `${quantity(token0)} ${pool.token0.symbol} + ${quantity(token1)} ${pool.token1.symbol}`;
+  const signed = (value: number) => `${value > 0 ? "+" : ""}${quantity(value)} ${symbol}`;
+  const rows: readonly (readonly [string, React.ReactNode])[] = [
+    [copy.deposited, amounts(record.deposited)],
+    [copy.withdrawn, amounts(record.withdrawn)],
+    [copy.now, amounts(record.now)],
+    [copy.fees, amounts(record.fees)],
+    [copy.held, `${quantity(values.held)} ${symbol}`],
+    [
+      copy.result,
+      <>
+        {signed(values.result)}
+        <span className="block text-muted">{copy.parts(signed(values.fees), signed(values.rangeEffect))}</span>
+      </>,
+    ],
+  ];
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-2 text-xs leading-relaxed">
+      <p className="font-medium">{copy.heading(formatUtcDate(record.openedAt), symbol)}</p>
+      <dl className="grid grid-cols-1 gap-x-4 sm:grid-cols-[max-content_minmax(0,1fr)]">
+        {rows.map(([label, value]) => (
+          <div key={label} className="contents">
+            <dt className="mt-1 text-muted sm:mt-0">{label}</dt>
+            <dd className="min-w-0 break-words font-mono">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-muted">{copy.note}</p>
+    </div>
+  );
+};
+
+/**
+ * The record under a position, or the one line that says why there is none:
+ * not verified, not read, or — for v4, whose indexers keep no history for a
+ * position — not something that can be worked out here at all.
+ */
+const RecordSection = ({
+  position,
+  record,
+  quote,
+  locale,
+}: {
+  position: Position;
+  record: PositionRecordResult | undefined;
+  quote: PriceQuote;
+  locale: Locale;
+}) => {
+  const copy = getPositionRecordCopy(locale);
+  const line = (text: string) => (
+    <p className="border-t border-border pt-2 text-xs leading-relaxed text-muted">{text}</p>
+  );
+
+  if (position.pool.protocolVersion === "v4") return line(copy.v4);
+  if (record === undefined) return null;
+  if (record.status === "unverified") return line(copy.unverified);
+  if (record.status === "unread") return line(copy.unread);
+
+  return <RecordFigures record={record.record} quote={quote} pool={position.pool} locale={locale} />;
+};
+
 const PositionRow = ({
   position,
   outlook,
   smartRange,
+  record,
+  recordsAsked,
   parameters,
   t,
   locale,
 }: {
   position: Position;
+  /** How it has done since it was opened, when it is v3 and its history was asked for. */
+  record: PositionRecordResult | undefined;
+  /** Whether records were asked for at all; when not, no row says anything about one. */
+  recordsAsked: boolean;
   /** How it has fared against its pool's last days, when the pool's history could be read. */
   outlook: PositionOutlook | undefined;
   /** Where the pool's best-earning liquidity sits, when the pool is one that was measured. */
@@ -218,6 +320,7 @@ const PositionRow = ({
           </div>
         )}
         {smartLine === null ? null : <p className="text-xs leading-relaxed text-muted">{smartLine}</p>}
+        {recordsAsked ? <RecordSection position={position} record={record} quote={quote} locale={locale} /> : null}
         <p className="text-xs text-accent">{t.positions.analyse}</p>
       </GuardedLink>
     </li>
@@ -255,6 +358,7 @@ export function AddressPositions({
   }
 
   const { positions, held, read, open, closed, unread } = result.data;
+  const { records } = result;
   const whole = (value: number) => formatWhole(value, locale);
   const shown = earningFirst(positions);
 
@@ -298,6 +402,8 @@ export function AddressPositions({
                       ? smartRanges.get(smartRangeKey(position.pool.chainId, position.pool.id))
                       : undefined
                   }
+                  record={position.pool.protocolVersion === "v3" ? records?.get(position.tokenId) : undefined}
+                  recordsAsked={records !== undefined}
                   parameters={parameters}
                   t={t}
                   locale={locale}

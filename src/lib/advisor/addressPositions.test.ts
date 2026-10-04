@@ -422,3 +422,119 @@ describe("positions on a v4-only chain", () => {
     expect(succeed(v4Only).unread).toEqual(["v3"]);
   });
 });
+
+/*
+ * The record under each listed v3 position, built beside the answer from the
+ * same reads. Only its wiring is checked here — which position gets which
+ * history, fees and price — and positionRecord.test.ts checks the arithmetic.
+ */
+describe("each listed v3 position's record", () => {
+  const LIQUIDITY = BigInt(position().liquidity);
+  /* Opened once, never touched: the subgraph's only row is the manager's record now. */
+  const opened = {
+    blockNumber: 18_000_000n,
+    at: "2023-08-01T00:00:00.000Z",
+    liquidity: LIQUIDITY,
+    deposited0: 1_000_000,
+    deposited1: 0,
+    withdrawn0: 0,
+    withdrawn1: 0,
+    feeGrowthInside0: 0n,
+    feeGrowthInside1: 0n,
+  };
+  const histories = (snapshots = [opened]) =>
+    ({
+      status: "success",
+      data: { asked: new Set(["1112391"]), snapshots: new Map([["1112391", snapshots]]), unreadable: new Set<string>() },
+    }) as const;
+  const fees = new Map([["1112391", { token0: "5", token1: "6" }]]);
+  /* Tick -200,000, inside the range. */
+  const sqrtPrices = new Map([["1112391", BigInt(Math.round(1.0001 ** -100_000 * 2 ** 96))]]);
+  const v3 = (overrides: Record<string, unknown> = {}) => ({
+    raw: rawV3(),
+    pools: [pool()],
+    fees,
+    sqrtPrices,
+    history: histories(),
+    ...overrides,
+  });
+
+  const records = (input: Partial<Input>) => {
+    const result = compose(input);
+    if (result.status === "unavailable") throw new Error(`expected positions: ${result.notice}`);
+    return result.records;
+  };
+
+  it("is built from the history, the fees and the price read for that position", () => {
+    const record = records({ v3: v3() })?.get("1112391");
+
+    expect(record?.status).toBe("verified");
+    if (record?.status !== "verified") return;
+    expect(record.record.deposited).toEqual({ token0: 1_000_000, token1: 0 });
+    /* Nothing between changes, so its fees are the chain's since the last one, in XOR's and WETH's eighteen decimals. */
+    expect(record.record.fees).toEqual({ token0: 5e-18, token1: 6e-18 });
+    expect(record.record.price).toBeCloseTo(1.0001 ** -200_000, 12);
+  });
+
+  it("is left off the answer entirely when no history was asked for", () => {
+    const result = compose({ v3: { raw: rawV3(), pools: [pool()], fees } });
+
+    expect(result.status === "success" && "records" in result).toBe(false);
+  });
+
+  it("is unread when the history read failed, and the list is the same", () => {
+    const failed = { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" } as const;
+
+    expect(records({ v3: v3({ history: failed }) })?.get("1112391")).toEqual({ status: "unread" });
+    expect(succeed({ v3: v3({ history: failed }) }).positions).toEqual(succeed({ v3: v3() }).positions);
+  });
+
+  it("is unread when the price was not read with the fees", () => {
+    expect(records({ v3: v3({ sqrtPrices: new Map() }) })?.get("1112391")).toEqual({ status: "unread" });
+  });
+
+  it("is unverified when the history is not the manager's record now", () => {
+    expect(records({ v3: v3({ history: histories([{ ...opened, liquidity: LIQUIDITY - 1n }]) }) })?.get("1112391")).toEqual({
+      status: "unverified",
+      reason: "liquidity-differs",
+    });
+  });
+
+  it("is only for a position that is listed", () => {
+    expect(records({ v3: v3({ pools: [] }) })).toEqual(new Map());
+  });
+
+  /* Asked for and with no v3 to build from: there are none, and the page still knows they were asked for. */
+  it("is an empty set, not a missing one, when histories were asked for on a chain with no v3 read", () => {
+    expect(records({ v3: null, v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees }, historyAsked: true })).toEqual(new Map());
+  });
+
+  it("is never made for a v4 position", () => {
+    expect(records({ v3: v3(), v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees } })?.has("408162")).toBe(false);
+  });
+
+  /*
+   * The two managers number their tokens apart, so one address can hold v3
+   * #408162 and v4 #408162 at once. The record under that id is the v3 one's,
+   * and the v4 position is not given it — nor allowed to overwrite it.
+   */
+  it("is the v3 position's when a v4 position carries the same token id", () => {
+    const shared = "408162";
+    const keyed = <T,>(map: ReadonlyMap<string, T>) => new Map([...map.values()].map((value) => [shared, value]));
+    const twin = {
+      raw: rawV3({ open: [position({ tokenId: shared })] }),
+      pools: [pool()],
+      fees: keyed(fees),
+      sqrtPrices: keyed(sqrtPrices),
+      history: {
+        status: "success",
+        data: { asked: new Set([shared]), snapshots: new Map([[shared, [opened]]]), unreadable: new Set<string>() },
+      } as const,
+    };
+
+    const built = records({ v3: twin, v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees } });
+
+    expect(built?.size).toBe(1);
+    expect(built?.get(shared)?.status).toBe("verified");
+  });
+});

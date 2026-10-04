@@ -197,6 +197,18 @@ export const formatEtherAmount = (value: number, locale: Locale = DEFAULT_FORMAT
   formatPrice(value, locale);
 
 /**
+ * An amount of any token worked out as a double — what a liquidity holds at a
+ * price, or several amounts valued in one token — and so possibly negative.
+ *
+ * The same six figures as a price. Not {@link formatTokenAmount}, which cuts
+ * an exact balance read in base units: these were never exact, and showing
+ * them to the last base unit would claim a precision the arithmetic does not
+ * have. Negative zero is written as zero, since a sign on nothing says nothing.
+ */
+export const formatTokenQuantity = (value: number, locale: Locale = DEFAULT_FORMAT_LOCALE): string =>
+  formatPrice(value === 0 ? 0 : value, locale);
+
+/**
  * A tick index. Identical to {@link formatWhole} today, but named separately
  * because a tick is a coordinate rather than a quantity, and a reader scanning
  * the markup should be able to tell which one a figure is.

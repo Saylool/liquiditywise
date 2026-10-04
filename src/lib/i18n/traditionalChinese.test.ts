@@ -10,6 +10,7 @@ import { getInterfaceCopy } from "./interface";
 import { getMostTradedCopy } from "./mostTradedCopy";
 import { getPairPoolsCopy } from "./pairPoolsCopy";
 import { getPositionOutlookCopy } from "./positionOutlookCopy";
+import { getPositionRecordCopy } from "./positionRecordCopy";
 import { getSmartLiquidityCopy } from "./smartLiquidityCopy";
 
 /*
@@ -137,6 +138,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     mostTraded: getMostTradedCopy,
     pairPools: getPairPoolsCopy,
     positionOutlook: getPositionOutlookCopy,
+    positionRecord: getPositionRecordCopy,
     smartLiquidity: getSmartLiquidityCopy,
     homeAlerts: getHomeAlertsCopy,
     embed: getEmbedCopy,

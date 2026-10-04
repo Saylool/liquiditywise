@@ -9,6 +9,7 @@ import {
   formatWholePercent,
   formatPrice,
   formatTick,
+  formatTokenQuantity,
   formatUsd,
   formatUtcDate,
   formatUtcMinute,
@@ -50,6 +51,20 @@ describe("formatPrice", () => {
     for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
       expect(formatPrice(value)).toBe(ABSENT);
     }
+  });
+});
+
+describe("formatTokenQuantity", () => {
+  it("writes six figures, a sign when negative, and none on a zero that came out negative", () => {
+    expect(formatTokenQuantity(1234.56789)).toBe("1,234.57");
+    expect(formatTokenQuantity(-140.123456)).toBe("-140.123");
+    expect(formatTokenQuantity(-0)).toBe("0");
+    expect(formatTokenQuantity(-0, "tr")).toBe("0");
+  });
+
+  it("goes scientific where a price would, and is absent when not a number", () => {
+    expect(formatTokenQuantity(1.5e21)).toBe("1.5E21");
+    expect(formatTokenQuantity(Number.NaN)).toBe("—");
   });
 });
 

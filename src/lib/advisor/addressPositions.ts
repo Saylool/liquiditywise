@@ -2,6 +2,7 @@ import {
   AddressPositionsSchema,
   type AddressPositions,
   type DataFailureNotice,
+  type DataResult,
   type HoldingsSource,
   type Position,
   POSITIONS_SHOWN,
@@ -10,6 +11,7 @@ import {
   ZERO_ADDRESS,
 } from "../../schemas";
 import type { RawV3Positions } from "../uniswap/ethereumV3Positions";
+import type { V3PositionHistories } from "../uniswap/ethereumV3PositionSnapshots";
 import type { V3PoolWithTick } from "../uniswap/ethereumV3PoolsByIds";
 import type { RawV4Positions } from "../uniswap/ethereumV4Positions";
 import type { V4PoolTokens } from "../uniswap/ethereumV4PoolsByIds";
@@ -18,6 +20,7 @@ import { v3PoolAddress } from "../uniswap/v3PoolAddress";
 import { DYNAMIC_FEE_FLAG } from "../uniswap/v4PoolKey";
 import type { PositionFees } from "../uniswap/feeGrowth";
 import type { RawV4Position } from "../uniswap/v4PositionManager";
+import { composePositionRecord, historyOf, type PositionRecordResult } from "./positionRecord";
 
 /*
  * What the chain said an address holds, turned into something a page can say.
@@ -39,12 +42,26 @@ import type { RawV4Position } from "../uniswap/v4PositionManager";
  * **A protocol that could not be read is named rather than skipped.** Two
  * protocols mean two ways to fail, and an answer that quietly covered one would
  * let the page tell an address with positions that it has none.
+ *
+ * **A shown v3 position can carry its record** — how it has done since it was
+ * opened (see positionRecord.ts) — when its history was asked for. The record
+ * rides beside the answer rather than inside it: it is built from what the
+ * answer was built from, it can only be added, and nothing about it can drop a
+ * position or fail the list.
  */
 
 const UNVERIFIABLE = "positions-unverifiable";
 
 export type AddressPositionsResult =
-  | { readonly status: "success"; readonly data: AddressPositions }
+  | {
+      readonly status: "success";
+      readonly data: AddressPositions;
+      /**
+       * Each listed v3 position's record, by token id; absent when no history
+       * was asked for. A listed v3 position missing from it has none to show.
+       */
+      readonly records?: ReadonlyMap<string, PositionRecordResult>;
+    }
   | { readonly status: "unavailable"; readonly notice: DataFailureNotice };
 
 /** One protocol's answer, or `null` when that protocol could not be read at all. */
@@ -57,6 +74,14 @@ export type V3Side = {
    * addition to this answer, and losing it must not lose the answer.
    */
   readonly fees: ReadonlyMap<string, PositionFees>;
+  /** The pool's price each position's fees were worked out at, by token id, from the same read. */
+  readonly sqrtPrices?: ReadonlyMap<string, bigint>;
+  /**
+   * The positions' histories, when they were asked for: absent when not, and
+   * an unavailable result when the read failed — which costs the records and
+   * nothing else.
+   */
+  readonly history?: DataResult<V3PositionHistories>;
 };
 
 export type V4Side = {
@@ -76,6 +101,12 @@ export type AddressPositionsInput = {
   readonly v4Asked?: boolean;
   /** Likewise for v3, which is not read on a v4-only chain (see chains.ts). */
   readonly v3Asked?: boolean;
+  /**
+   * Whether the v3 histories were asked for, for the records. A v3 side that
+   * was not read has none even when they were, and its positions are not
+   * listed either.
+   */
+  readonly historyAsked?: boolean;
   readonly fetchedAt: string;
 };
 
@@ -207,6 +238,45 @@ const describeV4 = (
 };
 
 /**
+ * Each listed v3 position's record, when the history was asked for at all —
+ * and nothing, not an empty map, when it was not, so the page can tell a
+ * record nobody asked for from one there was none of.
+ *
+ * Built from the manager's own record of the position — the read the list
+ * came from — and from the figures the list shows beside it: the pool's
+ * decimals as verified, and the fees as read.
+ */
+const recordsFor = (
+  listed: readonly Position[],
+  v3: V3Side | null,
+  historyAsked: boolean,
+): ReadonlyMap<string, PositionRecordResult> | undefined => {
+  if (!historyAsked) return undefined;
+  const records = new Map<string, PositionRecordResult>();
+  if (v3 === null) return records;
+
+  const byTokenId = new Map(v3.raw.open.map((position) => [position.tokenId, position]));
+  for (const position of listed) {
+    if (position.pool.protocolVersion !== "v3") continue;
+    const manager = byTokenId.get(position.tokenId);
+    if (manager === undefined) continue;
+
+    records.set(
+      position.tokenId,
+      composePositionRecord({
+        position: manager,
+        decimals: { token0: position.pool.token0.decimals, token1: position.pool.token1.decimals },
+        history: historyOf(v3.history, position.tokenId),
+        uncollected: position.uncollected,
+        sqrtPriceX96: v3.sqrtPrices?.get(position.tokenId) ?? null,
+      }),
+    );
+  }
+
+  return records;
+};
+
+/**
  * Composes one address's answer from whichever protocols were read.
  *
  * The counts describe everything that was read, of both protocols together; the
@@ -221,6 +291,7 @@ export const composeAddressPositions = ({
   v4,
   v4Asked = true,
   v3Asked = true,
+  historyAsked = v3?.history !== undefined,
   fetchedAt,
 }: AddressPositionsInput): AddressPositionsResult => {
   /* Nothing read is not a partial answer, and the caller reports the failure. */
@@ -266,7 +337,9 @@ export const composeAddressPositions = ({
   const verified = AddressPositionsSchema.safeParse(candidate);
   if (!verified.success) return { status: "unavailable", notice: UNVERIFIABLE };
 
-  return { status: "success", data: verified.data };
+  const records = recordsFor(verified.data.positions, v3, historyAsked);
+
+  return { status: "success", data: verified.data, ...(records === undefined ? {} : { records }) };
 };
 
 /** The pool addresses one v3 read's positions derive to, for the source lookup. */

@@ -753,7 +753,7 @@ const en = {
       `Uniswap ${protocol} positions could not be read this time, so every figure here is about the other protocol alone.`,
     unavailable: "This address's positions could not be read.",
     publicNote:
-      "A position's owner is on chain, so this list is public: anybody can read the same one for the same address, and it says nothing this address has not already published by holding these tokens. Nothing here is stored unless you ask for Telegram alerts below, and no figure on this page is a valuation — a range is not what a position is worth.",
+      "A position's owner is on chain, so this list is public: anybody can read the same one for the same address, and it says nothing this address has not already published by holding these tokens. Nothing here is stored unless you ask for Telegram alerts below. A range is not what a position is worth: the only figures here that value a position are in the record under it, at today's price, and they are a measurement, not advice.",
   },
 
   wallet: {
@@ -1836,7 +1836,7 @@ const tr: Dictionary = {
       `Bu sefer Uniswap ${protocol} pozisyonları okunamadı; buradaki bütün rakamlar yalnızca diğer protokole ait.`,
     unavailable: "Bu adresin pozisyonları okunamadı.",
     publicNote:
-      "Bir pozisyonun sahibi zincirdedir, dolayısıyla bu liste herkese açıktır: aynı adres için aynı listeyi herkes okuyabilir ve bu liste, adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve bu sayfadaki hiçbir rakam bir değerleme değildir — bir aralık, bir pozisyonun ne ettiği değildir.",
+      "Bir pozisyonun sahibi zincirdedir, dolayısıyla bu liste herkese açıktır: aynı adres için aynı listeyi herkes okuyabilir ve bu liste, adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz. Bir aralık, bir pozisyonun ne ettiği değildir: burada bir pozisyonu değerleyen tek rakamlar altındaki hesaptadır, bugünkü fiyatla, ve bunlar bir ölçümdür, yatırım tavsiyesi değildir.",
   },
 
   wallet: {
@@ -2835,7 +2835,7 @@ const de: Dictionary = {
       `Uniswap-${protocol}-Positionen ließen sich diesmal nicht lesen, jede Zahl hier betrifft daher allein das andere Protokoll.`,
     unavailable: "Die Positionen dieser Adresse ließen sich nicht lesen.",
     publicNote:
-      "Der Eigentümer einer Position steht on-chain, also ist diese Liste öffentlich: jeder kann für dieselbe Adresse dieselbe lesen, und sie sagt nichts, was diese Adresse nicht schon durch das Halten dieser Token veröffentlicht hat. Nichts hier wird gespeichert, sofern du unten keine Telegram-Hinweise anforderst, und keine Zahl auf dieser Seite ist eine Bewertung — ein Bereich ist nicht, was eine Position wert ist.",
+      "Der Eigentümer einer Position steht on-chain, also ist diese Liste öffentlich: jeder kann für dieselbe Adresse dieselbe lesen, und sie sagt nichts, was diese Adresse nicht schon durch das Halten dieser Token veröffentlicht hat. Nichts hier wird gespeichert, sofern du unten keine Telegram-Hinweise anforderst. Ein Bereich ist nicht, was eine Position wert ist: die einzigen Zahlen hier, die eine Position bewerten, stehen in der Rechnung unter ihr, zum heutigen Preis, und sie sind eine Messung, keine Finanzberatung.",
   },
 
   wallet: {
@@ -3808,7 +3808,7 @@ const es: Dictionary = {
       `Las posiciones de Uniswap ${protocol} no pudieron leerse esta vez, así que todas las cifras de aquí se refieren únicamente al otro protocolo.`,
     unavailable: "Las posiciones de esta dirección no pudieron leerse.",
     publicNote:
-      "El dueño de una posición está en la cadena, así que esta lista es pública: cualquiera puede leer la misma para la misma dirección, y no dice nada que esta dirección no haya publicado ya al tener estos tokens. Nada de esto se guarda salvo que pidas avisos por Telegram más abajo, y ninguna cifra de esta página es una valoración — un rango no es lo que vale una posición.",
+      "El dueño de una posición está en la cadena, así que esta lista es pública: cualquiera puede leer la misma para la misma dirección, y no dice nada que esta dirección no haya publicado ya al tener estos tokens. Nada de esto se guarda salvo que pidas avisos por Telegram más abajo. Un rango no es lo que vale una posición: las únicas cifras de aquí que valoran una posición están en el cálculo bajo ella, al precio de hoy, y son una medición, no asesoramiento financiero.",
   },
 
   wallet: {
@@ -4781,7 +4781,7 @@ const ar: Dictionary = {
       `تعذّرت قراءة مراكز Uniswap ${protocol} هذه المرة، فكل رقم هنا يخصّ البروتوكول الآخر وحده.`,
     unavailable: "تعذّرت قراءة مراكز هذا العنوان.",
     publicNote:
-      "مالك المركز مسجّل على السلسلة، فهذه القائمة علنية: يمكن لأي أحد قراءة القائمة نفسها للعنوان نفسه، وهي لا تقول شيئًا لم ينشره هذا العنوان أصلًا بحيازته هذه الرموز. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه، ولا رقم في هذه الصفحة هو تقييم — النطاق ليس قيمة المركز.",
+      "مالك المركز مسجّل على السلسلة، فهذه القائمة علنية: يمكن لأي أحد قراءة القائمة نفسها للعنوان نفسه، وهي لا تقول شيئًا لم ينشره هذا العنوان أصلًا بحيازته هذه الرموز. لا يُحفظ هنا شيء ما لم تطلب تنبيهات تيليغرام أدناه. والنطاق ليس قيمة المركز: والأرقام الوحيدة هنا التي تقوّم مركزًا هي التي في الحساب أسفله، بسعر اليوم، وهي قياس لا نصيحة مالية.",
   },
 
   wallet: {
@@ -5743,7 +5743,7 @@ const hi: Dictionary = {
       `Uniswap ${protocol} की पोज़िशनें इस बार पढ़ी नहीं जा सकीं, इसलिए यहाँ का हर आँकड़ा केवल दूसरे प्रोटोकॉल के बारे में है।`,
     unavailable: "इस पते की पोज़िशनें पढ़ी नहीं जा सकीं।",
     publicNote:
-      "पोज़िशन का मालिक चेन पर दर्ज है, इसलिए यह सूची सार्वजनिक है: कोई भी उसी पते के लिए वही सूची पढ़ सकता है, और यह ऐसा कुछ नहीं कहती जो इस पते ने इन टोकनों को रखकर पहले ही प्रकाशित न कर दिया हो। जब तक आप नीचे Telegram सूचनाएँ न माँगें, यहाँ कुछ भी रखा नहीं जाता, और इस पृष्ठ का कोई आँकड़ा मूल्यांकन नहीं है — दायरा वह नहीं है जो पोज़िशन की कीमत है।",
+      "पोज़िशन का मालिक चेन पर दर्ज है, इसलिए यह सूची सार्वजनिक है: कोई भी उसी पते के लिए वही सूची पढ़ सकता है, और यह ऐसा कुछ नहीं कहती जो इस पते ने इन टोकनों को रखकर पहले ही प्रकाशित न कर दिया हो। जब तक आप नीचे Telegram सूचनाएँ न माँगें, यहाँ कुछ भी रखा नहीं जाता। दायरा वह नहीं है जो पोज़िशन की कीमत है: इस पृष्ठ पर किसी पोज़िशन का मूल्य आँकने वाले एकमात्र आँकड़े उसके नीचे के हिसाब में हैं, आज की कीमत पर, और वे एक माप हैं, वित्तीय सलाह नहीं।",
   },
 
   wallet: {
@@ -6874,7 +6874,7 @@ const zh: Dictionary = {
       `这次没能读出 Uniswap ${protocol} 的仓位，所以这里的每一个数字都只关乎另一个协议。`,
     unavailable: "这个地址的仓位无法读取。",
     publicNote:
-      "一个仓位的所有者在链上，所以这份清单是公开的：任何人都能为同一个地址读出同样的一份，而且它没有透露任何这个地址不曾因为持有这些代币而公开过的东西。除非你在下方要求 Telegram 提醒，这里不存储任何东西；这一页上也没有任何数字是估值——一个区间不是一个仓位值多少钱。",
+      "一个仓位的所有者在链上，所以这份清单是公开的：任何人都能为同一个地址读出同样的一份，而且它没有透露任何这个地址不曾因为持有这些代币而公开过的东西。除非你在下方要求 Telegram 提醒，这里不存储任何东西。一个区间不是一个仓位值多少钱：这一页上为仓位估值的数字只有它下方那份计算里的那些，按今天的价格计，而且它们是一项测量，不构成财务建议。",
   },
 
   wallet: {
@@ -8099,7 +8099,7 @@ const ru: Dictionary = {
       `Позиции Uniswap ${protocol} в этот раз прочитать не удалось, поэтому каждая цифра здесь — только о другом протоколе.`,
     unavailable: "Позиции этого адреса не удалось прочитать.",
     publicNote:
-      "Владелец позиции записан в сети, поэтому этот список публичен: любой может прочитать такой же для того же адреса, и он не говорит ничего, чего этот адрес уже не опубликовал бы, держа эти токены. Здесь ничего не хранится, если вы не попросите уведомления в Telegram ниже, и ни одна цифра на этой странице не является оценкой стоимости: диапазон — это не то, сколько стоит позиция.",
+      "Владелец позиции записан в сети, поэтому этот список публичен: любой может прочитать такой же для того же адреса, и он не говорит ничего, чего этот адрес уже не опубликовал бы, держа эти токены. Здесь ничего не хранится, если вы не попросите уведомления в Telegram ниже. Диапазон — это не то, сколько стоит позиция: единственные цифры здесь, которые оценивают позицию, стоят в расчёте под ней, по сегодняшней цене, и это измерение, а не финансовый совет.",
   },
 
   wallet: {
@@ -9336,7 +9336,7 @@ const pt: Dictionary = {
       `Desta vez não foi possível ler as posições Uniswap ${protocol}, então todo número aqui é sobre o outro protocolo apenas.`,
     unavailable: "Não foi possível ler as posições deste endereço.",
     publicNote:
-      "O dono de uma posição está na rede, então esta lista é pública: qualquer um consegue ler a mesma para o mesmo endereço, e ela não diz nada que este endereço já não tenha publicado ao ter estes tokens. Nada aqui é guardado, a menos que você peça os avisos por Telegram abaixo, e nenhum número desta página é uma avaliação — uma faixa não é quanto vale uma posição.",
+      "O dono de uma posição está na rede, então esta lista é pública: qualquer um consegue ler a mesma para o mesmo endereço, e ela não diz nada que este endereço já não tenha publicado ao ter estes tokens. Nada aqui é guardado, a menos que você peça os avisos por Telegram abaixo. Uma faixa não é quanto vale uma posição: os únicos números daqui que avaliam uma posição estão no cálculo abaixo dela, ao preço de hoje, e são uma medição, não uma recomendação financeira.",
   },
 
   wallet: {
@@ -10567,7 +10567,7 @@ const zhHant: Dictionary = {
       `這次沒能讀出 Uniswap ${protocol} 的倉位，所以這裡的每一個數字都只關乎另一個協議。`,
     unavailable: "這個地址的倉位無法讀取。",
     publicNote:
-      "一個倉位的所有者在鏈上，所以這份清單是公開的：任何人都能為同一個地址讀出同樣的一份，而且它沒有透露任何這個地址不曾因為持有這些代幣而公開過的東西。除非你在下方要求 Telegram 提醒，這裡不儲存任何東西；這一頁上也沒有任何數字是估值——一個區間不是一個倉位值多少錢。",
+      "一個倉位的所有者在鏈上，所以這份清單是公開的：任何人都能為同一個地址讀出同樣的一份，而且它沒有透露任何這個地址不曾因為持有這些代幣而公開過的東西。除非你在下方要求 Telegram 提醒，這裡不儲存任何東西。一個區間不是一個倉位值多少錢：這一頁上為倉位估值的數字只有它下方那份計算裡的那些，按今天的價格計，而且它們是一項測量，不構成財務建議。",
   },
 
   wallet: {

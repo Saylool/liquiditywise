@@ -6,6 +6,7 @@ import {
   maxUsableTick,
   minUsableTick,
   priceAtTick,
+  sqrtRatioAtTick,
   TICK_BASE,
   tickAtOrAbovePrice,
   tickAtOrBelowPrice,
@@ -279,6 +280,38 @@ describe("priceAtTick", () => {
 
   it("rejects decimals outside ERC-20's uint8", () => {
     expect(priceAtTick({ tick: 0, token0Decimals: 256, token1Decimals: 18 })).toBeNull();
+  });
+});
+
+/*
+ * Against `TickMath`'s own constants, which are the protocol's integers for the
+ * two ends of the range, and against the position fixture's ticks: what the
+ * contract returns, divided by 2^96, to a double's precision.
+ */
+describe("sqrtRatioAtTick", () => {
+  const Q96 = 2 ** 96;
+
+  it("is one at tick zero", () => {
+    expect(sqrtRatioAtTick(0)).toBe(1);
+  });
+
+  it("reproduces MIN_SQRT_RATIO and MAX_SQRT_RATIO at the ends of the range", () => {
+    const lowest = sqrtRatioAtTick(MIN_TICK) ?? 0;
+    const highest = sqrtRatioAtTick(MAX_TICK) ?? 0;
+
+    expect(lowest / (4_295_128_739 / Q96)).toBeCloseTo(1, 9);
+    expect(highest / (Number(1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_342n) / Q96)).toBeCloseTo(1, 9);
+  });
+
+  it("is the square root of the raw price the tick encodes", () => {
+    const root = sqrtRatioAtTick(197_645) ?? 0;
+
+    expect((root * root) / TICK_BASE ** 197_645).toBeCloseTo(1, 10);
+    expect((sqrtRatioAtTick(-414_400) ?? 0) * (sqrtRatioAtTick(414_400) ?? 0)).toBeCloseTo(1, 10);
+  });
+
+  it.each([MIN_TICK - 1, MAX_TICK + 1, 0.5, Number.NaN])("refuses %s", (tick) => {
+    expect(sqrtRatioAtTick(tick)).toBeNull();
   });
 });
 

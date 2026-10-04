@@ -289,3 +289,25 @@ export const priceAtTick = (input: TickToPriceInput): number | null => {
   const { tick, token0Decimals, token1Decimals } = parsed.data;
   return Math.exp(tick * LN_TICK_BASE - (token1Decimals - token0Decimals) * Math.LN10);
 };
+
+/**
+ * The square root of the *raw* price a tick encodes, `1.0001^(tick / 2)` —
+ * what `TickMath.getSqrtRatioAtTick` returns, as a double rather than a
+ * Q64.96 fixed-point integer.
+ *
+ * Raw, with no decimals in it, because this is the coordinate the protocol's
+ * position formulas are written in: the amounts a liquidity holds come out of
+ * it in each token's smallest unit, and the decimals are applied to those.
+ * Exact to a double's precision across the whole range — the exponent is at
+ * most about 443.6, far inside what `Math.exp` represents — which is ample for
+ * an amount shown to six figures, and is not offered as the contract's own
+ * rounding.
+ *
+ * `null` when the tick is outside TickMath's range or is not an integer.
+ */
+export const sqrtRatioAtTick = (tick: number): number | null => {
+  const parsed = TickSchema.safeParse(tick);
+  if (!parsed.success) return null;
+
+  return Math.exp((parsed.data * LN_TICK_BASE) / 2);
+};

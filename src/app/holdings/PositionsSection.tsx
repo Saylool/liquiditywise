@@ -32,7 +32,8 @@ export async function PositionsSection({
   locale: Locale;
   t: Dictionary;
 }) {
-  const result = await getAddressPositions(address, chainId);
+  /* With the v3 histories, for the record under each position; the alert check reads without them. */
+  const result = await getAddressPositions(address, chainId, { history: true });
   /* Each open position against its pool's last days, from the histories the pool pages already read. */
   const outlooks = result.status === "success" ? await getPositionOutlooks(result.data.positions, parameters) : new Map();
 

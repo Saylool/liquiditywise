@@ -43,7 +43,7 @@ export const decodeFeeGrowthGlobal = (data: unknown): bigint | null => {
 };
 
 /**
- * `slot0()`: only the tick is read from it.
+ * `slot0()`: the tick, for the fee arithmetic.
  *
  * Seven words — the square-root price, the tick, three observation fields, the
  * protocol fee and the unlocked flag — and exactly seven is required, because
@@ -54,6 +54,36 @@ export const decodePoolTick = (data: unknown): number | null => {
   const parts = words(data);
 
   return parts === null || parts.length !== 7 ? null : decodeInt24(data, 1);
+};
+
+/** `TickMath.MIN_SQRT_RATIO` and `MAX_SQRT_RATIO`: the only square-root prices a pool can hold. */
+const MIN_SQRT_RATIO = 4_295_128_739n;
+const MAX_SQRT_RATIO = 1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_342n;
+
+/**
+ * `slot0()` again, for its first word: the pool's price as the protocol keeps
+ * it, `sqrt(token1 per token0) * 2^96` in raw units.
+ *
+ * Read from the same answer as the tick, so what a position holds at this
+ * price and what it has earned at this tick are one moment's figures. The
+ * tick floors the price to a grid one basis point wide, and a position whose
+ * range is a few ticks wide changes its mix of the two tokens by tens of
+ * percent across one of them — so the tick alone is not the price.
+ *
+ * Exactly seven words, as above, and inside the range `TickMath` allows: the
+ * pool cannot hold a price outside it, so a word that is outside it is not a
+ * price. Zero is outside it, and is what an uninitialised pool reports.
+ */
+export const decodePoolSqrtPrice = (data: unknown): bigint | null => {
+  const parts = words(data);
+  if (parts === null || parts.length !== 7) return null;
+
+  const value = decodeUint(data, 0);
+  if (value === null) return null;
+
+  const sqrtPrice = BigInt(value);
+
+  return sqrtPrice >= MIN_SQRT_RATIO && sqrtPrice < MAX_SQRT_RATIO ? sqrtPrice : null;
 };
 
 /** What one tick records about fees, which is the far-side total per token. */

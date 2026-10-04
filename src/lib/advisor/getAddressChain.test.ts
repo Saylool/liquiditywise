@@ -17,13 +17,31 @@ const asked = vi.hoisted(() => ({
   days: [] as number[],
   balances: [] as Record<string, unknown>[],
   tradedPools: 0,
+  /* The open v3 positions the manager reports, and what the history read is asked and does. */
+  v3Open: [] as { tokenId: string }[],
+  histories: [] as { tokenIds: readonly string[]; source: Record<string, unknown> }[],
+  historyThrows: false,
 }));
 const unavailable = { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" } as const;
 
 vi.mock("../uniswap/ethereumV3Positions", () => ({
   fetchEthereumV3Positions: async (request: Record<string, unknown>) => {
     asked.positions.push(request);
-    return { status: "success", data: { factory: `0x${"f".repeat(40)}`, held: 0, read: 0, open: [], closed: 0 } };
+    const open = asked.v3Open;
+    return {
+      status: "success",
+      data: { factory: `0x${"f".repeat(40)}`, held: open.length, read: open.length, open, closed: 0 },
+    };
+  },
+}));
+vi.mock("../uniswap/ethereumV3PositionFees", () => ({
+  fetchEthereumV3PositionFees: async () => ({ status: "success", data: { fees: new Map(), sqrtPrices: new Map() } }),
+}));
+vi.mock("../uniswap/ethereumV3PositionSnapshots", () => ({
+  fetchEthereumV3PositionHistories: async (tokenIds: readonly string[], source: Record<string, unknown>) => {
+    asked.histories.push({ tokenIds, source });
+    if (asked.historyThrows) throw new Error("the gateway went away");
+    return { status: "success", data: { asked: new Set(tokenIds), snapshots: new Map(), unreadable: new Set() } };
   },
 }));
 vi.mock("../uniswap/ethereumV3PoolsByIds", () => ({
@@ -80,6 +98,7 @@ beforeEach(() => {
   vi.stubEnv("UNICHAIN_RPC_URL", "https://unichain.example");
   vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
   vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+  vi.stubEnv("UNISWAP_V3_BASE_POSITIONS_SUBGRAPH_ID", "base-positions");
   asked.positions = [];
   asked.poolsByIds = [];
   asked.v4Ids = [];
@@ -88,6 +107,9 @@ beforeEach(() => {
   asked.days = [];
   asked.balances = [];
   asked.tradedPools = 0;
+  asked.v3Open = [];
+  asked.histories = [];
+  asked.historyThrows = false;
 });
 
 afterEach(() => {
@@ -116,6 +138,48 @@ describe("an address's positions on a chain", () => {
     expect(asked.positions[0]).toMatchObject({ chainId: 1, rpcUrl: "https://mainnet.example" });
     expect(asked.v4Ids[0]).toMatchObject({ subgraphId: "mainnet-v4" });
     expect(asked.v4Positions[0]).toMatchObject({ chainId: 1, rpcUrl: "https://mainnet.example" });
+  });
+});
+
+/*
+ * The histories behind each v3 position's record: asked for by the page that
+ * shows them and by nothing else, of the chain's positions subgraph, for the
+ * positions a page can show — and never at the cost of the list.
+ */
+describe("an address's v3 position histories", () => {
+  const open = (count: number) => Array.from({ length: count }, (_unused, index) => ({ tokenId: String(index + 1) }));
+
+  it("are asked of that chain's positions subgraph, for the first positions a page can show", async () => {
+    asked.v3Open = open(14);
+    const { getAddressPositions } = await import("./getAddressPositions");
+
+    const result = await getAddressPositions(OWNER, 8453, { history: true });
+
+    expect(asked.histories).toHaveLength(1);
+    expect(asked.histories[0]?.tokenIds).toEqual(open(12).map(({ tokenId }) => tokenId));
+    expect(asked.histories[0]?.source).toMatchObject({ chainId: 8453, subgraphId: "base-positions" });
+    expect(result.status === "success" && result.records).toEqual(new Map());
+  });
+
+  it("are not asked for unless the caller asks, and the answer then carries no records", async () => {
+    asked.v3Open = open(2);
+    const { getAddressPositions } = await import("./getAddressPositions");
+
+    const result = await getAddressPositions(OWNER, 8453);
+
+    expect(asked.histories).toEqual([]);
+    expect(result.status === "success" && "records" in result).toBe(false);
+  });
+
+  it("cost the records and nothing else when the read throws", async () => {
+    asked.v3Open = open(2);
+    asked.historyThrows = true;
+    const { getAddressPositions } = await import("./getAddressPositions");
+
+    const result = await getAddressPositions(OWNER, 8453, { history: true });
+
+    expect(result.status).toBe("success");
+    expect(result.status === "success" && result.data.open).toBe(2);
   });
 });
 

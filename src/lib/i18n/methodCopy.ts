@@ -8,8 +8,9 @@ import type { Locale } from "./locales";
  * sentence below summarises an implementation and the block comment above it
  * — the volatility in analytics/historicalVolatility.ts, the band in
  * logSymmetricBand.ts, the deposit's share in depositFeeShare.ts, the hook
- * rule in advisor/feeDisclosure.ts, the smart fifth in smartLiquidity.ts, the
- * explanation's contract in schemas/interpretation.ts — and where one of those
+ * rule in advisor/feeDisclosure.ts, the smart fifth in smartLiquidity.ts, an
+ * open position's record in advisor/positionRecord.ts, the explanation's
+ * contract in schemas/interpretation.ts — and where one of those
  * changes, the sentence here is wrong until it is changed too.
  *
  * The figures a sentence names that the code holds as constants — the
@@ -30,6 +31,7 @@ export const METHOD_SECTION_IDS = [
   "fees",
   "hooks",
   "smart-liquidity",
+  "position-record",
   "pair",
   "language-model",
   "data-sources",
@@ -147,6 +149,14 @@ const en: MethodCopy = {
         `Each measurement is kept, so the page can say how things moved over the last week once a day of measurements exists. A pair's range is compared as prices, never as distances from the current price, because those move whenever the price does even if nobody touches a position. "Holders that keep showing up" are addresses in the top ${f.smartShare} in at least half of the measurements, once there are ${f.ownerSets} or more. Each is marked a wallet or a contract from whether the chain holds code at its address: a contract is a vault, a bot or another program, and its yield is that program's.`,
       ],
     },
+    "position-record": {
+      title: "How an open position has done",
+      paragraphs: () => [
+        "Where an address is looked up, each open v3 position it holds carries a record of how it has done since it was opened. What was deposited, and what was withdrawn as principal, are the running totals the network's positions subgraph keeps at each change to the position. What is in it now is worked out from its liquidity, its two ticks and the pool's square-root price, all read from the chain. Its fees are not taken from the subgraph's fee fields, which are unusable: between one change and the next a position's liquidity does not move, so what it earned in that stretch is its liquidity times the fee growth inside its range between the snapshots the position manager wrote at either end. The stretch since the last change is read from the chain, as the fees not yet collected are.",
+        "A record is shown only when the history provably reaches the present: the newest change the subgraph holds must carry exactly the liquidity and the fee-growth snapshot the position manager holds now, the history must include a deposit, and every row of it must have been read. Otherwise the position says its history could not be checked, and shows no figures rather than a partial sum. The v4 indexers keep no history for each position, so a v4 position has no record.",
+        "Everything in a record is valued at today's price, in the token the page quotes the pair in. Against what the deposits would be worth had they simply been held, it sets what the position holds now, plus what was withdrawn, plus its fees; the difference is split into the fees and the range effect, which is the position against holding before fees — what is usually called impermanent loss. Deposits and withdrawals are valued at today's price, not at the price on their day, and gas is not counted. A record covers the position's whole life, under every owner it has had, and it is a measurement, not advice.",
+      ],
+    },
     pair: {
       title: "One pair, every pool",
       paragraphs: (f) => [
@@ -228,6 +238,14 @@ const tr: MethodCopy = {
         "Subgraph pozisyonları listeler ve her birinin son değişikliğini tarihler, başka bir şey değil. Komisyon alanları kullanılmaz: 2026-09-30'da kontrol edildiğinde, otuz iki milyon dolar yatırmış bir pozisyonun iki milyar dolar topladığını bildiriyorlardı. Pozisyon yöneticisinin borçlu olduğu tutarlar da sayılmaz, çünkü bir çekimden sonra toplanana kadar çekilen anaparayı tutarlar.",
         "Verimin dışarıda bıraktıkları: yalnızca komisyondur ve bir pozisyonun iki tokenı tutmaya göre kaybettiği bunun içinde değildir. Pozisyon başına tek bir pencereyi kapsar, yalnızca şu an aralık içindeki pozisyonları okur ve hiçbirinin bundan sonra ne kazanacağı ya da kimin elinde olduğu hakkında hiçbir şey söylemez.",
         `Her ölçüm saklanır; böylece bir günlük ölçüm biriktiğinde sayfa son haftada işlerin nasıl kaydığını söyleyebilir. Bir paritenin aralığı fiyat olarak karşılaştırılır, asla güncel fiyata uzaklık olarak değil; çünkü o uzaklıklar kimse bir pozisyona dokunmasa da fiyat her hareket ettiğinde değişir. "Listede sürekli görünen sahipler", ölçümlerin en az yarısında en yüksek ${f.smartShare} içinde olan adreslerdir; ölçüm sayısı ${f.ownerSets} veya daha fazla olduğunda. Her biri, zincirin o adreste kod tutup tutmadığına göre cüzdan ya da sözleşme olarak işaretlenir: sözleşme bir kasa, bir bot ya da başka bir programdır ve verimi o programın verimidir.`,
+      ],
+    },
+    "position-record": {
+      title: "Açık bir pozisyon nasıl gitti",
+      paragraphs: () => [
+        "Bir adres sorgulandığında, tuttuğu her açık v3 pozisyonu açıldığından beri nasıl gittiğinin hesabını taşır. Yatırılan ve anapara olarak çekilen, ağın pozisyon subgraph'ının pozisyondaki her değişiklikte tuttuğu birikimli toplamlardır. Şu an içinde olan; likiditesinden, iki tick'inden ve havuzun karekök fiyatından hesaplanır, hepsi zincirden okunur. Komisyonu subgraph'ın komisyon alanlarından alınmaz, çünkü onlar kullanılamaz: bir değişiklikten bir sonrakine kadar pozisyonun likiditesi kıpırdamaz, dolayısıyla o süre içinde kazandığı, likiditesi çarpı pozisyon yöneticisinin iki uçta yazdığı anlık kayıtlar arasındaki, aralığı içindeki komisyon büyümesidir. Son değişiklikten bu yana olan kısım, henüz çekilmemiş komisyon gibi zincirden okunur.",
+        "Hesap yalnızca geçmişin bugüne kadar uzandığı kanıtlanabildiğinde gösterilir: subgraph'taki en yeni değişiklik, pozisyon yöneticisinin şu an tuttuğu likiditeyi ve komisyon büyümesi kaydını birebir taşımalı, geçmişte bir yatırma bulunmalı ve her satırı okunmuş olmalıdır. Aksi halde pozisyon, geçmişinin doğrulanamadığını söyler ve yarım bir toplam yerine hiç rakam göstermez. v4 indeksleyicileri pozisyon başına geçmiş tutmaz, bu yüzden v4 pozisyonlarının böyle bir hesabı yoktur.",
+        "Hesaptaki her şey bugünkü fiyatla, sayfanın pariteyi fiyatladığı token cinsinden değerlenir. Yatırılanlar sadece tutulsaydı edeceği değerin karşısına pozisyonun şu an tuttuğunu, artı çekileni, artı komisyonunu koyar; fark, komisyon ve aralık etkisi olarak ikiye ayrılır. Aralık etkisi, komisyondan önce pozisyonun tutmaya kıyasla durumudur: genelde geçici kayıp denen şey. Yatırmalar ve çekmeler kendi günlerindeki fiyatla değil bugünkü fiyatla değerlenir ve gas sayılmaz. Hesap, pozisyon hangi adreste durmuş olursa olsun bütün ömrünü kapsar ve bir ölçümdür, yatırım tavsiyesi değildir.",
       ],
     },
     pair: {
@@ -313,6 +331,14 @@ const de: MethodCopy = {
         `Jede Messung wird gespeichert, damit die Seite sagen kann, wie sich die Dinge in der letzten Woche bewegt haben, sobald ein Tag an Messungen vorliegt. Der Bereich eines Paars wird als Preise verglichen, nie als Abstand vom aktuellen Preis, denn dieser Abstand ändert sich bei jeder Preisbewegung, auch wenn niemand eine Position anfasst. „Halter, die immer wieder auftauchen" sind Adressen, die in mindestens der Hälfte der Messungen unter den obersten ${f.smartShare} waren, sobald es ${f.ownerSets} oder mehr gibt. Jede wird als Wallet oder Vertrag markiert, je nachdem, ob die Chain an ihrer Adresse Code hält: ein Vertrag ist ein Tresor, ein Bot oder ein anderes Programm, und seine Rendite ist die dieses Programms.`,
       ],
     },
+    "position-record": {
+      title: "Wie sich eine offene Position geschlagen hat",
+      paragraphs: () => [
+        "Wo eine Adresse nachgeschlagen wird, trägt jede offene v3-Position, die sie hält, eine Rechnung darüber, wie sie sich seit ihrer Eröffnung geschlagen hat. Einlagen und als Kapital Entnommenes sind die laufenden Summen, die der Positions-Subgraph des Netzwerks bei jeder Änderung der Position führt. Was jetzt in ihr steckt, wird aus ihrer Liquidität, ihren beiden Ticks und dem Quadratwurzelpreis des Pools berechnet, alles von der Chain gelesen. Ihre Gebühren stammen nicht aus den Gebührenfeldern des Subgraphs, die unbrauchbar sind: zwischen einer Änderung und der nächsten bewegt sich die Liquidität einer Position nicht, also ist, was sie in diesem Abschnitt verdient hat, ihre Liquidität mal das Gebührenwachstum innerhalb ihres Bereichs zwischen den Schnappschüssen, die der Positionsmanager an beiden Enden geschrieben hat. Der Abschnitt seit der letzten Änderung wird von der Chain gelesen, wie die noch nicht eingesammelten Gebühren.",
+        "Eine Rechnung wird nur gezeigt, wenn der Verlauf nachweislich bis in die Gegenwart reicht: die neueste Änderung, die der Subgraph kennt, muss genau die Liquidität und den Schnappschuss des Gebührenwachstums tragen, die der Positionsmanager jetzt hält, der Verlauf muss eine Einlage enthalten, und jede seiner Zeilen muss gelesen worden sein. Andernfalls sagt die Position, dass ihr Verlauf nicht geprüft werden konnte, und zeigt lieber keine Zahlen als eine Teilsumme. Die v4-Indexer führen keinen Verlauf je Position, deshalb hat eine v4-Position keine Rechnung.",
+        "Alles in einer Rechnung wird zum heutigen Preis bewertet, in dem Token, in dem die Seite das Paar notiert. Dem, was die Einlagen wert wären, hätte man sie einfach gehalten, stellt sie gegenüber, was die Position jetzt hält, plus das Entnommene, plus ihre Gebühren; die Differenz wird in die Gebühren und den Bereichseffekt aufgeteilt, also die Position gegenüber dem Halten vor Gebühren — das, was man gewöhnlich Impermanent Loss nennt. Einlagen und Entnahmen werden zum heutigen Preis bewertet, nicht zum Preis an ihrem Tag, und Gas ist nicht mitgezählt. Eine Rechnung umfasst die ganze Laufzeit der Position, unter jedem Eigentümer, den sie hatte, und sie ist eine Messung, keine Finanzberatung.",
+      ],
+    },
     pair: {
       title: "Ein Paar, jeder Pool",
       paragraphs: (f) => [
@@ -394,6 +420,14 @@ const es: MethodCopy = {
         "El subgraph lista las posiciones y fecha el último cambio de cada una, y nada más. Sus campos de comisiones no se usan: comprobados el 2026-09-30, informaban de dos mil millones de dólares cobrados por una posición que había depositado treinta y dos millones. Tampoco se cuentan los importes adeudados del gestor de posiciones, porque tras una retirada contienen el capital retirado hasta que se cobra.",
         "Lo que el rendimiento deja fuera: son solo comisiones, y lo que una posición cedió frente a mantener los dos tokens no está incluido. Cubre una ventana por posición, solo lee posiciones dentro de rango ahora, y no dice nada de lo que ninguna ganará después ni de quién las tiene.",
         `Cada medición se guarda, para que la página pueda decir cómo se movieron las cosas en la última semana en cuanto haya un día de mediciones. El rango de un par se compara como precios, nunca como distancias al precio actual, porque esas distancias cambian cada vez que el precio se mueve aunque nadie toque una posición. Los "Titulares que siguen apareciendo" son las direcciones que estuvieron en el ${f.smartShare} superior en al menos la mitad de las mediciones, una vez que hay ${f.ownerSets} o más. Cada una se marca como billetera o contrato según si la cadena guarda código en su dirección: un contrato es una bóveda, un bot u otro programa, y su rendimiento es el de ese programa.`,
+      ],
+    },
+    "position-record": {
+      title: "Cómo le ha ido a una posición abierta",
+      paragraphs: () => [
+        "Cuando se consulta una dirección, cada posición v3 abierta que tiene lleva un cálculo de cómo le ha ido desde que se abrió. Lo depositado y lo retirado como principal son los totales acumulados que el subgraph de posiciones de la red guarda en cada cambio de la posición. Lo que hay en ella ahora se calcula a partir de su liquidez, sus dos ticks y el precio en raíz cuadrada del pool, todo leído de la cadena. Sus comisiones no se toman de los campos de comisiones del subgraph, que no sirven: entre un cambio y el siguiente la liquidez de una posición no se mueve, así que lo que ganó en ese tramo es su liquidez por el crecimiento de comisiones dentro de su rango entre las instantáneas que el gestor de posiciones escribió en cada extremo. El tramo desde el último cambio se lee de la cadena, igual que las comisiones aún sin cobrar.",
+        "El cálculo solo se muestra cuando el historial llega de forma demostrable al presente: el cambio más reciente que tiene el subgraph debe llevar exactamente la liquidez y la instantánea de crecimiento de comisiones que el gestor de posiciones tiene ahora, el historial debe incluir un depósito y cada una de sus filas debe haberse leído. Si no, la posición dice que su historial no pudo comprobarse, y no muestra cifras en lugar de mostrar una suma parcial. Los indexadores de v4 no guardan un historial por posición, así que una posición v4 no tiene cálculo.",
+        "Todo en el cálculo se valora al precio de hoy, en el token en que la página cotiza el par. Frente a lo que valdrían los depósitos si simplemente se hubieran mantenido, pone lo que la posición tiene ahora, más lo retirado, más sus comisiones; la diferencia se divide en las comisiones y el efecto del rango, que es la posición frente a mantener antes de comisiones: lo que se suele llamar pérdida impermanente. Los depósitos y retiros se valoran al precio de hoy, no al de su día, y el gas no se cuenta. El cálculo abarca toda la vida de la posición, con cada dueño que haya tenido, y es una medición, no asesoramiento financiero.",
       ],
     },
     pair: {
@@ -479,6 +513,14 @@ const ar: MethodCopy = {
         `يُحتفظ بكل قياس، حتى تستطيع الصفحة أن تقول كيف تحرّكت الأمور في الأسبوع الأخير متى توفّر يوم من القياسات. ويُقارن نطاق الزوج بوصفه أسعارًا، لا بوصفه مسافات عن السعر الحالي أبدًا، لأن تلك المسافات تتغيّر كلما تحرّك السعر حتى لو لم يلمس أحد أي مركز. و«حائزون يظهرون باستمرار» هم العناوين التي كانت ضمن أعلى ${f.smartShare} في نصف القياسات على الأقل، متى بلغ عدد القياسات ${f.ownerSets} أو أكثر. ويُوسم كل منها محفظةً أو عقدًا بحسب ما إذا كانت السلسلة تحفظ شيفرة عند عنوانه: العقد خزنة أو بوت أو برنامج آخر، وعائده عائد ذلك البرنامج.`,
       ],
     },
+    "position-record": {
+      title: "كيف كان أداء مركز مفتوح",
+      paragraphs: () => [
+        "حين يُبحث عن عنوان، يحمل كل مركز v3 مفتوح يملكه حسابًا لأدائه منذ فُتح. فالمودَع والمسحوب من رأس المال هما المجموعان التراكميان اللذان يحفظهما الـ subgraph الخاص بمراكز الشبكة عند كل تغيير في المركز. وما فيه الآن يُحسب من سيولته وحافتيه والسعر الجذري للتجمّع، وكلها مقروءة من السلسلة. ولا تؤخذ رسومه من حقول الرسوم في الـ subgraph، فهي غير صالحة للاستعمال: بين تغيير والذي يليه لا تتحرك سيولة المركز، فما كسبه في تلك الفترة هو سيولته مضروبةً في نمو الرسوم داخل نطاقه بين اللقطتين اللتين كتبهما مدير المراكز عند طرفيها. أما الفترة منذ آخر تغيير فتُقرأ من السلسلة، كما تُقرأ الرسوم التي لم تُحصَّل بعد.",
+        "لا يُعرض الحساب إلا حين يثبت أن السجل يصل إلى الحاضر: يجب أن يحمل أحدث تغيير لدى الـ subgraph السيولة ولقطة نمو الرسوم اللتين يحفظهما مدير المراكز الآن بالضبط، وأن يتضمن السجل إيداعًا، وأن يكون كل صف منه قد قُرئ. وإلا قال المركز إن سجله تعذّر التحقق منه، ولم يعرض أي رقم بدل مجموع ناقص. ومفهرسات v4 لا تحتفظ بسجل لكل مركز، فلا حساب لمركز في v4.",
+        "كل ما في الحساب يُقوَّم بسعر اليوم، بالرمز الذي تسعّر به الصفحة الزوج. ففي مقابل ما كانت ستساويه الإيداعات لو احتُفظ بها ببساطة، يضع ما يحمله المركز الآن، مضافًا إليه المسحوب، ومضافًا إليه رسومه؛ ويُقسم الفرق إلى الرسوم وأثر النطاق، وهو المركز مقابل الاحتفاظ قبل الرسوم — ما يُسمّى عادةً الخسارة غير الدائمة. وتُقوَّم الإيداعات والسحوبات بسعر اليوم لا بسعر يومها، ولا يُحتسب الغاز. ويشمل الحساب عمر المركز كله، مع كل مالك كان له، وهو قياس لا نصيحة مالية.",
+      ],
+    },
     pair: {
       title: "زوج واحد، كل تجمّعاته",
       paragraphs: (f) => [
@@ -560,6 +602,14 @@ const hi: MethodCopy = {
         "subgraph पोज़िशनों की सूची देता है और हर एक के पिछले बदलाव की तारीख़, इससे ज़्यादा कुछ नहीं। उसके शुल्क वाले फ़ील्ड इस्तेमाल नहीं होते: 2026-09-30 को जाँचने पर वे एक ऐसी पोज़िशन के लिए दो अरब डॉलर वसूले जाने की बात कह रहे थे जिसने तीन करोड़ बीस लाख डॉलर जमा किए थे। पोज़िशन मैनेजर की बकाया रक़में भी नहीं गिनी जातीं, क्योंकि निकासी के बाद वे वसूली होने तक निकाली गई मूल रक़म रखती हैं।",
         "आय क्या छोड़ देती है: यह केवल शुल्क है, और दोनों टोकन रखे रहने की तुलना में पोज़िशन ने जो गँवाया वह इसमें नहीं है। यह हर पोज़िशन की एक खिड़की को ढकती है, केवल अभी दायरे के भीतर की पोज़िशनें पढ़ती है, और यह कुछ नहीं कहती कि उनमें से कोई आगे क्या कमाएगी या उनका धारक कौन है।",
         `हर माप सहेजा जाता है, ताकि एक दिन के माप जमा होते ही पृष्ठ बता सके कि पिछले हफ़्ते चीज़ें कैसे खिसकीं। किसी जोड़ी के दायरे की तुलना कीमतों के रूप में की जाती है, मौजूदा कीमत से दूरी के रूप में कभी नहीं, क्योंकि वह दूरी कीमत हिलते ही बदल जाती है, भले किसी ने पोज़िशन को छुआ तक न हो। "जो धारक बार-बार दिखते हैं" वे पते हैं जो कम से कम आधे मापों में सबसे ऊपर के ${f.smartShare} में रहे, जब माप ${f.ownerSets} या उससे ज़्यादा हों। हर एक को वॉलेट या कॉन्ट्रैक्ट चिह्नित किया जाता है, इस आधार पर कि चेन उसके पते पर कोड रखती है या नहीं: कॉन्ट्रैक्ट एक वॉल्ट, एक बॉट या कोई और प्रोग्राम है, और उसकी आय उसी प्रोग्राम की है।`,
+      ],
+    },
+    "position-record": {
+      title: "खुली पोज़िशन का अब तक का हाल",
+      paragraphs: () => [
+        "जब किसी पते को देखा जाता है, उसकी हर खुली v3 पोज़िशन के साथ यह हिसाब होता है कि खुलने के बाद से उसका हाल कैसा रहा। जमा की गई राशि और मूलधन के रूप में निकाली गई राशि वे चलते योग हैं जो नेटवर्क का पोज़िशन subgraph पोज़िशन के हर बदलाव पर रखता है। अभी उसमें क्या है, यह उसकी तरलता, उसके दो ticks और पूल की वर्गमूल कीमत से निकाला जाता है, सब चेन से पढ़ा हुआ। उसका शुल्क subgraph के शुल्क वाले फ़ील्ड से नहीं लिया जाता, जो काम के नहीं हैं: एक बदलाव से अगले बदलाव तक पोज़िशन की तरलता नहीं हिलती, इसलिए उस दौर में उसने जो कमाया वह उसकी तरलता गुणा उसके दायरे के भीतर शुल्क की बढ़त है, उन दो स्नैपशॉट के बीच जो पोज़िशन मैनेजर ने दोनों सिरों पर लिखे। पिछले बदलाव के बाद का दौर चेन से पढ़ा जाता है, जैसे अभी तक न निकाला गया शुल्क।",
+        "हिसाब तभी दिखाया जाता है जब यह साबित हो कि इतिहास आज तक पहुँचता है: subgraph में सबसे नया बदलाव ठीक वही तरलता और शुल्क की बढ़त का स्नैपशॉट रखे जो पोज़िशन मैनेजर के पास अभी है, इतिहास में कोई जमा हो, और उसकी हर पंक्ति पढ़ी गई हो। वरना पोज़िशन कहती है कि उसका इतिहास जाँचा नहीं जा सका, और अधूरे योग की जगह कोई आँकड़ा नहीं दिखाती। v4 के इंडेक्सर हर पोज़िशन का इतिहास नहीं रखते, इसलिए v4 पोज़िशन का कोई हिसाब नहीं होता।",
+        "हिसाब में सब कुछ आज की कीमत पर आँका जाता है, उस टोकन में जिसमें यह पृष्ठ जोड़ी की कीमत बताता है। अगर जमा राशि बस रखी रहती तो जितनी होती, उसके सामने यह रखता है कि पोज़िशन में अभी क्या है, उसमें निकाली गई राशि और उसका शुल्क जोड़कर; अंतर को शुल्क और दायरे के असर में बाँटा जाता है — दायरे का असर शुल्क से पहले पोज़िशन बनाम रखे रहना है, जिसे आमतौर पर अस्थायी हानि कहते हैं। जमा और निकासी को उनके दिन की कीमत पर नहीं, आज की कीमत पर आँका जाता है, और गैस नहीं गिनी जाती। हिसाब पोज़िशन के पूरे जीवनकाल को, उसके हर मालिक के दौर समेत, समेटता है, और यह एक माप है, वित्तीय सलाह नहीं।",
       ],
     },
     pair: {
@@ -645,6 +695,14 @@ const zh: MethodCopy = {
         `每次测量都会被保存，所以一旦积累了一天的测量，页面就能说明过去一周的变化。交易对的区间按价格比较，从不按与当前价格的距离比较，因为只要价格一动，这个距离就会变，哪怕没人碰过任何仓位。"一再出现的持有者"是在至少一半测量中都位于前 ${f.smartShare} 的地址，前提是测量已有 ${f.ownerSets} 次或更多。每个地址按链上该地址是否存有代码被标为钱包或合约：合约是金库、机器人或别的程序，它的收益率属于那个程序。`,
       ],
     },
+    "position-record": {
+      title: "一个未平仓仓位的表现",
+      paragraphs: () => [
+        "查询一个地址时，它持有的每一个未平仓 v3 仓位都会附上一份计算，说明它自开仓以来表现如何。存入的和作为本金取出的，是该网络的仓位子图在仓位每次变动时记下的累计总数。它现在里面有什么，由它的流动性、两个 tick 和资金池的平方根价格算出，全部从链上读取。它的手续费不取自子图的手续费字段，那些字段不可用：从一次变动到下一次变动，仓位的流动性不变，所以它在这一段里赚到的，就是它的流动性乘以仓位管理器在两端写入的快照之间其区间内的手续费增长。自上次变动以来的那一段从链上读取，和尚未收取的手续费一样。",
+        "只有在能证明历史一直延续到现在时才显示这份计算：子图里最新的一次变动必须与仓位管理器现在持有的流动性和手续费增长快照完全一致，历史里必须有一笔存入，而且每一行都必须读到。否则这个仓位会说明它的历史无法核对，不显示任何数字，而不是一个不完整的总和。v4 的索引器不为每个仓位保留历史，所以 v4 仓位没有这份计算。",
+        "计算中的一切都按今天的价格、以本页给这个交易对报价的那种代币计。它把存入的代币若只是持有今天值多少，与仓位现在持有的、加上取出的、再加上手续费放在一起比较；差额分成手续费和区间影响两部分——区间影响是不计手续费时仓位相对持有的差额，也就是通常所说的无常损失。存入和取出都按今天的价格计算，而不是按当天的价格，gas 也不计入。这份计算涵盖仓位的整个存续期间，包括它在每一位持有者手中的时候；它是一项测量，不构成财务建议。",
+      ],
+    },
     pair: {
       title: "一个交易对，所有资金池",
       paragraphs: (f) => [
@@ -726,6 +784,14 @@ const ru: MethodCopy = {
         "Subgraph перечисляет позиции и датирует последнее изменение каждой — и только. Его поля комиссий не используются: при проверке 2026-09-30 они сообщали о двух миллиардах долларов, собранных позицией, внёсшей тридцать два миллиона. Суммы к выплате в менеджере позиций тоже не учитываются, потому что после вывода в них лежит выведенный основной капитал, пока его не заберут.",
         "Чего доходность не учитывает: это только комиссии, и то, чем позиция поступилась по сравнению с хранением двух токенов, в неё не входит. Она охватывает одно окно на позицию, читает только позиции, находящиеся в диапазоне сейчас, и ничего не говорит о том, сколько любая из них заработает дальше или кто ею владеет.",
         `Каждое измерение сохраняется, чтобы страница могла сказать, как всё сдвинулось за последнюю неделю, как только накопится день измерений. Диапазон пары сравнивается в ценах, а не в расстояниях от текущей цены, потому что эти расстояния меняются при каждом движении цены, даже если никто не трогал позицию. «Держатели, которые появляются снова и снова» — это адреса, бывшие в верхних ${f.smartShare} как минимум в половине измерений, когда их ${f.ownerSets} или больше. Каждый помечается как кошелёк или контракт по тому, хранит ли сеть код по его адресу: контракт — это хранилище, бот или другая программа, и его доходность — доходность этой программы.`,
+      ],
+    },
+    "position-record": {
+      title: "Как показала себя открытая позиция",
+      paragraphs: () => [
+        "Когда адрес просматривают, у каждой открытой позиции v3, которую он держит, есть расчёт того, как она показала себя с момента открытия. Внесённое и выведенное как основной капитал — это накопленные итоги, которые subgraph позиций этой сети записывает при каждом изменении позиции. То, что в ней сейчас, вычисляется из её ликвидности, двух её tick’ов и квадратного корня цены пула — всё прочитано из сети. Её комиссии не берутся из полей комиссий subgraph, которые непригодны: между одним изменением и следующим ликвидность позиции не меняется, поэтому заработанное за этот отрезок — это её ликвидность, умноженная на рост комиссий внутри её диапазона между снимками, которые менеджер позиций записал на обоих концах. Отрезок с последнего изменения читается из сети, так же как ещё не собранные комиссии.",
+        "Расчёт показывается, только если доказано, что история доходит до настоящего: самое новое изменение, известное subgraph, должно нести ровно те ликвидность и снимок роста комиссий, которые менеджер позиций держит сейчас, в истории должен быть взнос, и каждая её строка должна быть прочитана. Иначе позиция сообщает, что её историю не удалось проверить, и не показывает цифр вместо неполной суммы. Индексаторы v4 не хранят историю каждой позиции, поэтому у позиции v4 расчёта нет.",
+        "Всё в расчёте оценено по сегодняшней цене, в том токене, в котором страница котирует пару. Тому, сколько стоили бы взносы, если бы их просто держали, он противопоставляет то, что позиция держит сейчас, плюс выведенное, плюс её комиссии; разница делится на комиссии и эффект диапазона — позицию против хранения до комиссий, то, что обычно называют непостоянными потерями. Взносы и выводы оценены по сегодняшней цене, а не по цене своего дня, и gas не учтён. Расчёт охватывает всю жизнь позиции, при каждом её владельце, и это измерение, а не финансовый совет.",
       ],
     },
     pair: {
@@ -811,6 +877,14 @@ const pt: MethodCopy = {
         `Cada medição é guardada, para que a página possa dizer como as coisas se moveram na última semana assim que houver um dia de medições. A faixa de um par é comparada como preços, nunca como distâncias do preço atual, porque essas distâncias mudam sempre que o preço se move, mesmo que ninguém toque numa posição. "Titulares que continuam aparecendo" são os endereços que estiveram nos ${f.smartShare} do topo em pelo menos metade das medições, quando elas são ${f.ownerSets} ou mais. Cada um é marcado como carteira ou contrato conforme a rede guarde ou não código no endereço: um contrato é um cofre, um bot ou outro programa, e o rendimento é desse programa.`,
       ],
     },
+    "position-record": {
+      title: "Como uma posição aberta se saiu",
+      paragraphs: () => [
+        "Quando um endereço é consultado, cada posição v3 aberta que ele tem traz um cálculo de como ela se saiu desde que foi aberta. O depositado e o retirado como principal são os totais acumulados que o subgraph de posições da rede guarda a cada mudança da posição. O que há nela agora é calculado a partir da liquidez dela, dos seus dois ticks e do preço em raiz quadrada do pool, tudo lido da rede. As taxas dela não vêm dos campos de taxas do subgraph, que não servem: entre uma mudança e a seguinte a liquidez de uma posição não se mexe, então o que ela ganhou nesse trecho é a liquidez dela vezes o crescimento das taxas dentro da sua faixa entre os instantâneos que o gerenciador de posições gravou em cada ponta. O trecho desde a última mudança é lido da rede, como as taxas ainda não coletadas.",
+        "O cálculo só aparece quando o histórico comprovadamente chega ao presente: a mudança mais recente que o subgraph tem precisa trazer exatamente a liquidez e o instantâneo de crescimento das taxas que o gerenciador de posições tem agora, o histórico precisa incluir um depósito e cada linha dele precisa ter sido lida. Caso contrário, a posição diz que o histórico dela não pôde ser conferido e não mostra números em vez de uma soma parcial. Os indexadores do v4 não guardam um histórico por posição, então uma posição v4 não tem cálculo.",
+        "Tudo no cálculo é avaliado ao preço de hoje, no token em que a página cota o par. Diante do que os depósitos valeriam se tivessem sido só segurados, ele põe o que a posição tem agora, mais o retirado, mais as taxas dela; a diferença é dividida entre as taxas e o efeito da faixa, que é a posição contra segurar antes das taxas — o que costuma ser chamado de perda impermanente. Depósitos e retiradas são avaliados ao preço de hoje, não ao do dia deles, e o gas não é contado. O cálculo cobre a vida inteira da posição, com cada dono que ela teve, e é uma medição, não uma recomendação financeira.",
+      ],
+    },
     pair: {
       title: "Um par, todos os pools",
       paragraphs: (f) => [
@@ -892,6 +966,14 @@ const zhHant: MethodCopy = {
         "子圖只用來列出倉位、標出每個倉位上次變動的日期，別的都不用。它的手續費欄位不被採用：在 2026-09-30 核對時，這些欄位顯示一個只存入了三千二百萬美元的倉位收取了二十億美元。倉位管理器中的應付金額也不計入，因為在提取之後、被領取之前，它們包含的是被提取的本金。",
         "收益率遺漏了什麼：它只是手續費，倉位相對於持有兩種代幣所放棄的部分不在其中。它只涵蓋每個倉位的一段期間，只讀取此刻處於區間內的倉位，對任何倉位接下來會賺多少、由誰持有，什麼也沒說。",
         `每次測量都會被儲存，所以一旦累積了一天的測量，頁面就能說明過去一週的變化。交易對的區間按價格比較，從不按與當前價格的距離比較，因為只要價格一動，這個距離就會變，哪怕沒人碰過任何倉位。「一再出現的持有者」是在至少一半測量中都位於前 ${f.smartShare} 的地址，前提是測量已有 ${f.ownerSets} 次或更多。每個地址按鏈上該地址是否存有程式碼被標為錢包或合約：合約是金庫、機器人或別的程式，它的收益率屬於那個程式。`,
+      ],
+    },
+    "position-record": {
+      title: "一個未平倉倉位的表現",
+      paragraphs: () => [
+        "查詢一個地址時，它持有的每一個未平倉 v3 倉位都會附上一份計算，說明它自開倉以來表現如何。存入的和作為本金取出的，是該網路的倉位子圖在倉位每次變動時記下的累計總數。它現在裡面有什麼，由它的流動性、兩個 tick 和資金池的平方根價格算出，全部從鏈上讀取。它的手續費不取自子圖的手續費欄位，那些欄位不可用：從一次變動到下一次變動，倉位的流動性不變，所以它在這段期間賺到的，就是它的流動性乘以倉位管理器在兩端寫入的快照之間其區間內的手續費成長。自上次變動以來的那段期間從鏈上讀取，和尚未收取的手續費一樣。",
+        "只有在能證明歷史一直延續到現在時才顯示這份計算：子圖裡最新的一次變動必須與倉位管理器現在持有的流動性和手續費成長快照完全一致，歷史裡必須有一筆存入，而且每一行都必須讀到。否則這個倉位會說明它的歷史無法核對，不顯示任何數字，而不是一個不完整的總和。v4 的索引器不為每個倉位保留歷史，所以 v4 倉位沒有這份計算。",
+        "計算中的一切都按今天的價格、以本頁給這個交易對報價的那種代幣計。它把存入的代幣若只是持有今天值多少，與倉位現在持有的、加上取出的、再加上手續費放在一起比較；差額分成手續費和區間影響兩部分——區間影響是不計手續費時倉位相對持有的差額，也就是通常所說的無常損失。存入和取出都按今天的價格計算，而不是按當天的價格，gas 也不計入。這份計算涵蓋倉位的整個存續期間，包括它在每一位持有者手中的時候；它是一項測量，不構成財務建議。",
       ],
     },
     pair: {

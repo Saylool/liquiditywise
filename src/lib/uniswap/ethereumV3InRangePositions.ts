@@ -146,7 +146,12 @@ export type InRangePool = {
   readonly positions: readonly InRangePosition[];
 };
 
-type Source = {
+/**
+ * Where a chain's positions are listed, and how to ask. Shared with the
+ * holdings page's position histories (ethereumV3PositionSnapshots.ts), which
+ * read the same subgraph with the same key.
+ */
+export type PositionsSource = {
   readonly chainId: ChainId;
   readonly apiKey: string | undefined;
   readonly subgraphId: string | undefined;
@@ -168,8 +173,9 @@ type Asked =
   | { readonly ok: true; readonly payload: unknown }
   | { readonly ok: false; readonly reason: DataFailureReason; readonly notice: DataFailureNotice };
 
-const ask = async (
-  source: Source,
+/** One question to a chain's positions subgraph, or why it could not be asked. */
+export const askPositionsSubgraph = async (
+  source: PositionsSource,
   query: string,
   variables: Readonly<Record<string, string | number | readonly string[]>>,
 ): Promise<Asked> => {
@@ -201,12 +207,12 @@ const usdPer = (derivedEth: string, ethUsd: number | null): number | null => {
  */
 export const fetchEthereumV3InRangePositions = async (
   poolAddress: string,
-  source: Source,
+  source: PositionsSource,
 ): Promise<DataResult<InRangePool>> => {
   const id = poolAddress.toLowerCase();
   if (!/^0x[0-9a-f]{40}$/.test(id)) return unavailable("invalid-input", "invalid-pool-address");
 
-  const first = await ask(source, V3_POOL_STATE_QUERY, { pool: id });
+  const first = await askPositionsSubgraph(source, V3_POOL_STATE_QUERY, { pool: id });
   if (!first.ok) return unavailable(first.reason, first.notice);
   const state = PoolStateResponseSchema.safeParse(first.payload);
   if (!state.success || state.data.data == null || (state.data.errors?.length ?? 0) > 0) {
@@ -237,7 +243,7 @@ export const fetchEthereumV3InRangePositions = async (
   const ethUsd = bundle === undefined ? null : convertNonNegativeDecimal(bundle.ethPriceUSD, { allowZero: false });
   const ethUsdValue = ethUsd !== null && ethUsd.ok ? ethUsd.value : null;
 
-  const second = await ask(source, source.ticks === "scalar" ? V3_IN_RANGE_POSITIONS_SCALAR_QUERY : V3_IN_RANGE_POSITIONS_QUERY, {
+  const second = await askPositionsSubgraph(source, source.ticks === "scalar" ? V3_IN_RANGE_POSITIONS_SCALAR_QUERY : V3_IN_RANGE_POSITIONS_QUERY, {
     pool: id,
     tick: String(tick.value),
     limit: IN_RANGE_POSITION_LIMIT,
@@ -278,12 +284,12 @@ export const fetchEthereumV3InRangePositions = async (
  */
 export const fetchEthereumV3LastChanges = async (
   tokenIds: readonly string[],
-  source: Source,
+  source: PositionsSource,
 ): Promise<DataResult<ReadonlyMap<string, number>>> => {
   const last = new Map<string, number>();
   for (let start = 0; start < tokenIds.length; start += SNAPSHOT_BATCH) {
     const ids = tokenIds.slice(start, start + SNAPSHOT_BATCH);
-    const answer = await ask(source, V3_LAST_CHANGES_QUERY, { ids, limit: IN_RANGE_POSITION_LIMIT });
+    const answer = await askPositionsSubgraph(source, V3_LAST_CHANGES_QUERY, { ids, limit: IN_RANGE_POSITION_LIMIT });
     if (!answer.ok) return unavailable(answer.reason, answer.notice);
     const parsed = SnapshotsResponseSchema.safeParse(answer.payload);
     if (!parsed.success || parsed.data.data == null || (parsed.data.errors?.length ?? 0) > 0) {

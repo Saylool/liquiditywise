@@ -1,10 +1,11 @@
 import "server-only";
 
-import type { DataFailureNotice, DataResult } from "../../schemas";
+import { type DataFailureNotice, type DataResult, POSITIONS_SHOWN } from "../../schemas";
 import { logUnavailable, loggingFetch } from "../observability/serverDiagnostics";
 import { fetchEthereumV3PoolsByIds } from "../uniswap/ethereumV3PoolsByIds";
-import { fetchEthereumV3PositionFees } from "../uniswap/ethereumV3PositionFees";
+import { fetchEthereumV3PositionFees, type V3PositionFeesRead } from "../uniswap/ethereumV3PositionFees";
 import { fetchEthereumV3Positions } from "../uniswap/ethereumV3Positions";
+import { fetchEthereumV3PositionHistories, type V3PositionHistories } from "../uniswap/ethereumV3PositionSnapshots";
 import { fetchEthereumV4PoolsByIds } from "../uniswap/ethereumV4PoolsByIds";
 import { fetchEthereumV4PositionFees } from "../uniswap/ethereumV4PositionFees";
 import { fetchEthereumV4PositionIds } from "../uniswap/ethereumV4PositionIds";
@@ -18,7 +19,8 @@ import {
   type V3Side,
   type V4Side,
 } from "./addressPositions";
-import { rpcUrlFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
+import { rpcUrlFor, v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
+import type { RawV3Position } from "../uniswap/v3PositionManager";
 import { type ChainId, readsV3, readsV4, type V3ChainId, type V4ChainId } from "../chains/chains";
 
 /** Identifies this reader in server-side diagnostics. */
@@ -37,6 +39,12 @@ const LABEL = "address-positions";
  * still see them when the v4 indexer is down. What is not read is named in the
  * answer, so the page can say which half is missing rather than implying none.
  *
+ * **The v3 positions' histories are asked for only by the page that shows
+ * them.** They are what the record under each position is made of (see
+ * positionRecord.ts), they cost a subgraph question the alert check has no use
+ * for, and they are an addition in the same way the fees are: a history that
+ * cannot be read costs the records and nothing else.
+ *
  * The address is public data, it is not stored, and nothing here remembers it.
  */
 
@@ -49,20 +57,51 @@ type SideResult<Side> =
  *
  * A failed fee read is not a failed answer. The panel's subject is which
  * positions an address holds; what they have earned is an addition to it, and
- * losing the addition must not lose the list. So this reports the empty map
- * rather than an error, and the page shows those positions without the figure.
+ * losing the addition must not lose the list. So this reports nothing rather
+ * than an error, and the page shows those positions without the figure.
  */
-const orNothing = async (
-  label: string,
-  read: Promise<DataResult<ReadonlyMap<string, PositionFees>>>,
-): Promise<ReadonlyMap<string, PositionFees>> => {
+const orNothing = async <Read>(label: string, read: Promise<DataResult<Read>>, nothing: Read): Promise<Read> => {
   const fees = await read;
   if (fees.status === "unavailable") {
     await logUnavailable(label, fees);
-    return new Map();
+    return nothing;
   }
 
   return fees.data;
+};
+
+const NO_V3_FEES: V3PositionFeesRead = { fees: new Map(), sqrtPrices: new Map() };
+
+/**
+ * The histories of the v3 positions a page can show.
+ *
+ * Those are the first of them: v3 positions come first in the list, and the
+ * list stops at `POSITIONS_SHOWN`. One whose pool fails its check lets a later
+ * one onto the page, and that one is shown with its record unread rather than
+ * made to wait for a second question.
+ *
+ * Never throws and never fails the answer. What it returns when the read
+ * fails is the failure, which the composition turns into unread records.
+ */
+const readHistories = async (
+  open: readonly RawV3Position[],
+  chainId: V3ChainId,
+): Promise<DataResult<V3PositionHistories>> => {
+  try {
+    const histories = await fetchEthereumV3PositionHistories(
+      open.slice(0, POSITIONS_SHOWN).map((position) => position.tokenId),
+      {
+        chainId,
+        apiKey: process.env.THE_GRAPH_API_KEY,
+        subgraphId: v3PositionsSubgraphIdFor(chainId),
+        fetchImpl: loggingFetch(LABEL),
+      },
+    );
+    if (histories.status === "unavailable") await logUnavailable(`${LABEL}-v3-history`, histories);
+    return histories;
+  } catch {
+    return { status: "unavailable", reason: "unknown", notice: "market-data-unreachable" };
+  }
 };
 
 /**
@@ -71,7 +110,7 @@ const orNothing = async (
  * the pair and the fee each one names. The last two both hang off the
  * positions, so they go out together.
  */
-const readV3 = async (address: string, chainId: V3ChainId): Promise<SideResult<V3Side>> => {
+const readV3 = async (address: string, chainId: V3ChainId, history: boolean): Promise<SideResult<V3Side>> => {
   const positions = await fetchEthereumV3Positions({
     owner: address,
     chainId,
@@ -84,7 +123,7 @@ const readV3 = async (address: string, chainId: V3ChainId): Promise<SideResult<V
     return { ok: false, notice: positions.notice };
   }
 
-  const [pools, fees] = await Promise.all([
+  const [pools, read, histories] = await Promise.all([
     fetchEthereumV3PoolsByIds({
       poolAddresses: derivedPoolAddresses(positions.data),
       chainId,
@@ -100,14 +139,25 @@ const readV3 = async (address: string, chainId: V3ChainId): Promise<SideResult<V
         rpcUrl: rpcUrlFor(chainId),
         fetchImpl: fetch,
       }),
+      NO_V3_FEES,
     ),
+    history ? readHistories(positions.data.open, chainId) : undefined,
   ]);
   if (pools.status === "unavailable") {
     await logUnavailable(`${LABEL}-v3`, pools);
     return { ok: false, notice: pools.notice };
   }
 
-  return { ok: true, side: { raw: positions.data, pools: pools.data, fees } };
+  return {
+    ok: true,
+    side: {
+      raw: positions.data,
+      pools: pools.data,
+      fees: read.fees,
+      sqrtPrices: read.sqrtPrices,
+      ...(histories === undefined ? {} : { history: histories }),
+    },
+  };
 };
 
 /**
@@ -160,6 +210,7 @@ const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V
         fetchImpl: fetch,
         chainId,
       }),
+      new Map<string, PositionFees>(),
     ),
   ]);
   if (pools.status === "unavailable") {
@@ -174,12 +225,19 @@ const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V
  * One address's positions on one chain — mainnet unless `chainId` says
  * otherwise. On a chain v4 is not read on, its side is left out as not asked,
  * which the page does not report as a failure.
+ *
+ * `history` asks for the v3 positions' histories as well, for their records;
+ * only the page that shows them asks.
  */
-export const getAddressPositions = async (address: string, chainId: ChainId = 1): Promise<AddressPositionsResult> => {
+export const getAddressPositions = async (
+  address: string,
+  chainId: ChainId = 1,
+  { history = false }: { readonly history?: boolean } = {},
+): Promise<AddressPositionsResult> => {
   const v4Asked = readsV4(chainId);
   const v3Asked = readsV3(chainId);
   const [v3, v4] = await Promise.all([
-    readsV3(chainId) ? readV3(address, chainId) : ({ ok: false, notice: "market-data-not-configured" } as const),
+    readsV3(chainId) ? readV3(address, chainId, history) : ({ ok: false, notice: "market-data-not-configured" } as const),
     readsV4(chainId) ? readV4(address, chainId) : ({ ok: false, notice: "market-data-not-configured" } as const),
   ]);
 
@@ -197,6 +255,7 @@ export const getAddressPositions = async (address: string, chainId: ChainId = 1)
     v4: v4.ok ? v4.side : null,
     v4Asked,
     v3Asked,
+    historyAsked: history,
     fetchedAt: new Date().toISOString(),
   });
 };

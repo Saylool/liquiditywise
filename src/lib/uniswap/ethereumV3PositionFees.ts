@@ -4,6 +4,7 @@ import { feeGrowthInside, type PositionFees, uncollectedFee } from "./feeGrowth"
 import type { Aggregate3Result } from "./multicall3";
 import {
   decodeFeeGrowthGlobal,
+  decodePoolSqrtPrice,
   decodePoolTick,
   decodeTickFeeGrowth,
   FEE_GROWTH_GLOBAL0_SELECTOR,
@@ -27,6 +28,11 @@ import type { FetchLike } from "./v3SubgraphTransport";
  * **A position whose pool would not answer is left out rather than shown as
  * zero.** Nothing earned and nothing read are different facts, and this is the
  * panel where a reader might act on the difference.
+ *
+ * **The price comes back with the fees.** `slot0` is asked for the tick the
+ * fee arithmetic needs, and its first word is the pool's price; a position's
+ * record (see advisor/positionRecord.ts) values what it holds at that price,
+ * so the two are one moment's reading rather than two reads apart.
  */
 
 const UNREADABLE = "positions-unreadable";
@@ -43,11 +49,30 @@ export type EthereumV3PositionFeesRequest = {
   readonly timeoutMs?: number;
 };
 
-/** What one pool had to say about itself, before any position is applied to it. */
-type PoolReading = {
+/** What the fee arithmetic needs from one pool, before any position is applied to it. */
+type FeeReading = {
   readonly tickCurrent: number;
   readonly global0: bigint;
   readonly global1: bigint;
+};
+
+/**
+ * And what this reader asked it for besides: its price, from the same answer.
+ * `null` when the word is not a price, which costs the record and not the fees.
+ */
+type PoolReading = FeeReading & {
+  readonly sqrtPriceX96: bigint | null;
+};
+
+/** What one read produced, by token id. */
+export type V3PositionFeesRead = {
+  /** What each position has earned and not yet taken out. */
+  readonly fees: ReadonlyMap<string, PositionFees>;
+  /**
+   * The square-root price of the pool each position is in, as `slot0`
+   * reported it in the answer its fees were worked out from.
+   */
+  readonly sqrtPrices: ReadonlyMap<string, bigint>;
 };
 
 const readPool = (results: readonly Aggregate3Result[], index: number): PoolReading | null => {
@@ -59,11 +84,12 @@ const readPool = (results: readonly Aggregate3Result[], index: number): PoolRead
   if (slot0?.success !== true || global0?.success !== true || global1?.success !== true) return null;
 
   const tickCurrent = decodePoolTick(slot0.data);
+  const sqrtPriceX96 = decodePoolSqrtPrice(slot0.data);
   const first = decodeFeeGrowthGlobal(global0.data);
   const second = decodeFeeGrowthGlobal(global1.data);
   if (tickCurrent === null || first === null || second === null) return null;
 
-  return { tickCurrent, global0: first, global1: second };
+  return { tickCurrent, sqrtPriceX96, global0: first, global1: second };
 };
 
 /**
@@ -82,7 +108,7 @@ export const collectV3PositionFees = ({
   /** Each position's pool address, in the same order. */
   readonly pools: readonly string[];
   /** One reading per distinct pool, by address. */
-  readonly poolResults: ReadonlyMap<string, PoolReading>;
+  readonly poolResults: ReadonlyMap<string, FeeReading>;
   /** Two answers per position, in order: the lower tick then the upper. */
   readonly tickResults: readonly Aggregate3Result[];
 }): ReadonlyMap<string, PositionFees> => {
@@ -144,7 +170,9 @@ export const collectV3PositionFees = ({
 const unavailable = (
   reason: DataFailureReason,
   notice: DataFailureNotice,
-): DataResult<ReadonlyMap<string, PositionFees>> => ({ status: "unavailable", reason, notice });
+): DataResult<V3PositionFeesRead> => ({ status: "unavailable", reason, notice });
+
+const NOTHING: V3PositionFeesRead = { fees: new Map(), sqrtPrices: new Map() };
 
 export const fetchEthereumV3PositionFees = async ({
   positions,
@@ -152,8 +180,8 @@ export const fetchEthereumV3PositionFees = async ({
   rpcUrl,
   fetchImpl,
   timeoutMs = DEFAULT_FEES_TIMEOUT_MS,
-}: EthereumV3PositionFeesRequest): Promise<DataResult<ReadonlyMap<string, PositionFees>>> => {
-  if (positions.length === 0) return { status: "success", data: new Map() };
+}: EthereumV3PositionFeesRequest): Promise<DataResult<V3PositionFeesRead>> => {
+  if (positions.length === 0) return { status: "success", data: NOTHING };
 
   const endpoint = rpcUrl?.trim();
   if (endpoint === undefined || endpoint === "") {
@@ -186,7 +214,7 @@ export const fetchEthereumV3PositionFees = async ({
       }) as string,
   );
   const distinct = [...new Set(pools)];
-  if (distinct.length === 0) return { status: "success", data: new Map() };
+  if (distinct.length === 0) return { status: "success", data: NOTHING };
 
   const batch = await postAggregatedCalls({
     rpcUrl: endpoint,
@@ -213,13 +241,22 @@ export const fetchEthereumV3PositionFees = async ({
   }
   if (poolResults.size === 0) return unavailable("invalid-response", UNREADABLE);
 
+  const sqrtPrices = new Map<string, bigint>();
+  for (const [index, position] of askable.entries()) {
+    const price = poolResults.get(pools[index] as string)?.sqrtPriceX96 ?? null;
+    if (price !== null) sqrtPrices.set(position.tokenId, price);
+  }
+
   return {
     status: "success",
-    data: collectV3PositionFees({
-      positions: askable,
-      pools,
-      poolResults,
-      tickResults: batch.results.slice(distinct.length * 3),
-    }),
+    data: {
+      fees: collectV3PositionFees({
+        positions: askable,
+        pools,
+        poolResults,
+        tickResults: batch.results.slice(distinct.length * 3),
+      }),
+      sqrtPrices,
+    },
   };
 };

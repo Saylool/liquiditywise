@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { keccak256, utf8Bytes } from "../crypto/keccak256";
 import {
   decodeFeeGrowthGlobal,
+  decodePoolSqrtPrice,
   decodePoolTick,
   decodeTickFeeGrowth,
   FEE_GROWTH_GLOBAL0_SELECTOR,
@@ -118,5 +119,38 @@ describe("reading where the price is", () => {
     ["a revert", null],
   ])("refuses %s", (_label, data) => {
     expect(decodePoolTick(data)).toBeNull();
+  });
+});
+
+describe("reading the price itself", () => {
+  /* The same seven words, with the square-root price in the first. */
+  const slot0 = (sqrtPrice: bigint) =>
+    `0x${sqrtPrice.toString(16).padStart(64, "0")}${(197_645).toString(16).padStart(64, "0")}${"0".repeat(64 * 5)}`;
+
+  it("takes the price from the first word, exactly", () => {
+    /* USDC/WETH at 0.05% near tick 197,645: about 1.0001^(197645/2) * 2^96. */
+    const near = 1_550_499_574_899_706_142_130_401_485_783_040n;
+
+    expect(decodePoolSqrtPrice(slot0(near))).toBe(near);
+  });
+
+  /* `TickMath`'s own bounds: the lower one is a price a pool can hold, the upper one is not. */
+  it("accepts the lowest price a pool can hold and refuses what none can", () => {
+    expect(decodePoolSqrtPrice(slot0(4_295_128_739n))).toBe(4_295_128_739n);
+    expect(decodePoolSqrtPrice(slot0(4_295_128_738n))).toBeNull();
+    expect(decodePoolSqrtPrice(slot0(1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_341n))).toBe(
+      1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_341n,
+    );
+    expect(decodePoolSqrtPrice(slot0(1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_342n))).toBeNull();
+  });
+
+  /* A price that would pass in the first word, in an answer of the wrong width: another function's answer. */
+  it.each([
+    ["an uninitialised pool's zero", slot0(0n)],
+    ["eight words", `${slot0(4_295_128_739n)}${"0".repeat(64)}`],
+    ["six words", slot0(4_295_128_739n).slice(0, 2 + 64 * 6)],
+    ["a revert", null],
+  ])("refuses %s", (_label, data) => {
+    expect(decodePoolSqrtPrice(data)).toBeNull();
   });
 });

@@ -96,7 +96,9 @@ export const readsV3 = (chainId: ChainId): chainId is V3ChainId => chainById(cha
 
 /**
  * Where the positions inside v3 pools can be listed — which the smart-money
- * page needs and nothing else does. Measured 2026-09-30: mainnet's and
+ * page needs, and the record under an open position on the holdings page,
+ * which reads each position's snapshots from the same subgraph (measured
+ * 2026-10-04: every one of these keeps them). Measured 2026-09-30: mainnet's and
  * Polygon's v3 subgraphs keep positions, and so does a second, separate
  * subgraph on Base and on OP Mainnet — the ones the pool pages read there
  * have no such entity, or refuse the query on a busy pool with "bad
