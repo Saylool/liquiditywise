@@ -1,4 +1,6 @@
+import type { Position } from "../../schemas";
 import type { AddressPositionsResult } from "../advisor/addressPositions";
+import type { PairPoolReaders } from "../advisor/readPairPools";
 import type { Dictionary } from "../i18n/dictionaries";
 import type { Locale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
@@ -11,6 +13,8 @@ import { smartShifts } from "./smartShift";
 import type { KeyValueStore } from "../store/keyValueStore";
 import type { ChainId } from "../chains/chains";
 import { digestChainOf, isDigestDue, weeklyDigestOf } from "./weeklyDigest";
+import { type LeftRangeLines, recentreCost } from "./leftRange";
+import { feeYieldReader } from "./leftRangeReads";
 
 /*
  * One pass over every linked address.
@@ -32,6 +36,14 @@ import { digestChainOf, isDigestDue, weeklyDigestOf } from "./weeklyDigest";
  * its address could be read, since it is about the chain's measurements and
  * not the address. Each chain's kept series is read once per pass, and only
  * when somebody is due.
+ *
+ * An alert that a position has left its range carries two lines more where
+ * they can be made (see leftRange.ts): the pool's fee yield, from the pair
+ * page's own reads, and what re-centring would cost in swap fees, from the
+ * position as it was just read. Those reads are made only for a leave, once
+ * per pool per pass, and nothing they do can hold the alert back: a read that
+ * fails or a figure that throws costs its line, and the alert goes out as it
+ * always did.
  */
 
 export type CheckSummary = {
@@ -61,6 +73,20 @@ export type WatchChecking = {
   readonly readSmartSeries: (chainId: ChainId) => Promise<readonly SmartSnapshot[] | null>;
   /** The time, handed in so a test can stand on any Monday. */
   readonly now: () => Date;
+  /**
+   * The pair page's reads, for the fee yield a left-range alert gives. Absent,
+   * that line is never made.
+   */
+  readonly pairReaders?: PairPoolReaders;
+};
+
+/** Whatever goes wrong in making one of the lines costs that line and nothing else. */
+const quietly = async <T>(make: () => T | Promise<T>): Promise<T | null> => {
+  try {
+    return await make();
+  } catch {
+    return null;
+  }
 };
 
 export const checkWatches = async ({
@@ -71,6 +97,7 @@ export const checkWatches = async ({
   readSmartPairs,
   readSmartSeries,
   now,
+  pairReaders,
 }: WatchChecking): Promise<CheckSummary> => {
   const watches = await listWatches(store);
   if (watches === null) {
@@ -90,6 +117,13 @@ export const checkWatches = async ({
     series.set(chainId, kept);
     return kept;
   };
+
+  /* One reader per pass: what it reads for one alert, the next one in the same pool is spared. */
+  const feeYieldOf = pairReaders === undefined ? null : feeYieldReader(pairReaders);
+  const leftRangeLines = async (position: Position, chainId: ChainId): Promise<LeftRangeLines> => ({
+    feeYield: feeYieldOf === null ? null : await quietly(() => feeYieldOf(position, chainId)),
+    recentre: await quietly(() => recentreCost(position)),
+  });
 
   for (const { token, link: listed } of watches) {
     const chatId = listed.chatId;
@@ -120,9 +154,12 @@ export const checkWatches = async ({
     checked += 1;
 
     const t = dictionary(link.locale);
+    const chainId = link.chainId ?? 1;
     for (const change of positionChanges(link.snapshot, result.data.positions)) {
       alerts += 1;
-      if (await bot.sendMessage(chatId, alertText(change, t, link.locale, link.chainId ?? 1))) sent += 1;
+      /* Only a leave carries the lines; every other alert is made as it always was. */
+      const lines = change.kind === "left" ? await leftRangeLines(change.position, chainId) : undefined;
+      if (await bot.sendMessage(chatId, alertText(change, t, link.locale, chainId, lines))) sent += 1;
     }
 
     /*

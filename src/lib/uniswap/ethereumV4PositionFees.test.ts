@@ -61,3 +61,34 @@ describe("reading the fees on a chain", () => {
     expect(await asked()).toEqual(expect.arrayContaining(slots(V4_POSITION_MANAGER_ADDRESS)));
   });
 });
+
+describe("the protocol's cut, read with the fees", () => {
+  /** A `slot0` word: price, tick zero, the protocol's cut each way, and the LP fee. */
+  const slot0 = (sqrtPriceX96: bigint, zeroForOnePpm: number, oneForZeroPpm: number): string =>
+    `0x${(sqrtPriceX96 | (BigInt(zeroForOnePpm | (oneForZeroPpm << 12)) << 184n) | (500n << 208n)).toString(16).padStart(64, "0")}`;
+
+  const read = async (word: string) => {
+    const result = await fetchEthereumV4PositionFees({
+      positions: [POSITION],
+      poolManager: POOL_MANAGER,
+      rpcUrl: "https://node.example.invalid/key",
+      fetchImpl: rpcEndpoint({
+        /* The pool's three words come first, `slot0` the first of them; every other slot holds nothing. */
+        call: (_call, index) => ({ success: true, data: index === 0 ? word : `0x${"0".repeat(64)}` }),
+      }),
+      timeoutMs: 1_000,
+    });
+    if (result.status !== "success") throw new Error("the read failed");
+    return result.data.protocolFees;
+  };
+
+  it("is the pool's own, per direction, from the word the tick came from", async () => {
+    expect((await read(slot0(1n << 96n, 100, 125))).get(POSITION.poolId)).toEqual({ zeroForOnePpm: 100, oneForZeroPpm: 125 });
+    expect((await read(slot0(1n << 96n, 0, 0))).get(POSITION.poolId)).toEqual({ zeroForOnePpm: 0, oneForZeroPpm: 0 });
+  });
+
+  it("is not read from a slot nobody wrote, or from one past the protocol's cap", async () => {
+    expect((await read(slot0(0n, 100, 125))).has(POSITION.poolId)).toBe(false);
+    expect((await read(slot0(1n << 96n, 4_000, 125))).has(POSITION.poolId)).toBe(false);
+  });
+});

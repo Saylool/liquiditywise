@@ -1,5 +1,11 @@
 import type { V4ChainId } from "../chains/chains";
-import type { DataFailureNotice, DataFailureReason, DataResult } from "../../schemas";
+import {
+  type DataFailureNotice,
+  type DataFailureReason,
+  type DataResult,
+  type V4ProtocolFee,
+  V4ProtocolFeeSchema,
+} from "../../schemas";
 import { postAggregatedCalls } from "./ethereumAggregatedCalls";
 import { feeGrowthInside, type PositionFees, uncollectedFee } from "./feeGrowth";
 import type { Aggregate3Result } from "./multicall3";
@@ -26,6 +32,13 @@ import { V4_POSITION_MANAGER_ADDRESS, V4_POSITION_MANAGERS, type RawV4Position }
  * v4 keeps nothing like v3's `tokensOwed`: fees are settled when liquidity is
  * modified and nothing is credited in between, so the amount owed at the last
  * touch is zero and the whole figure is the growth since.
+ *
+ * **The protocol's cut comes back with the fees.** The first of each pool's
+ * three words is its `slot0`, asked for the tick; the same word holds the
+ * protocol's share of a swap, per direction, and it is handed back beside the
+ * fees rather than read again elsewhere. It is what a swap in that pool pays on
+ * top of the key's fee — the figure an alert needs to say what a re-centre's
+ * swap would cost — and it costs this read nothing more.
  */
 
 const UNREADABLE = "positions-unreadable";
@@ -47,6 +60,18 @@ type PoolReading = {
   readonly tickCurrent: number;
   readonly global0: bigint;
   readonly global1: bigint;
+};
+
+/** What one read of several positions brings back. */
+export type V4PositionFeesRead = {
+  /** What each position has earned, by token id. */
+  readonly fees: ReadonlyMap<string, PositionFees>;
+  /**
+   * The protocol's cut of a swap in each pool, by pool id, from the same
+   * `slot0` word. A pool missing from it was not read — or held a figure past
+   * what the PoolManager can store, which is not a cut but a misread word.
+   */
+  readonly protocolFees: ReadonlyMap<string, V4ProtocolFee>;
 };
 
 /**
@@ -147,7 +172,9 @@ export const collectV4PositionFees = ({
 const unavailable = (
   reason: DataFailureReason,
   notice: DataFailureNotice,
-): DataResult<ReadonlyMap<string, PositionFees>> => ({ status: "unavailable", reason, notice });
+): DataResult<V4PositionFeesRead> => ({ status: "unavailable", reason, notice });
+
+const NOTHING: V4PositionFeesRead = { fees: new Map(), protocolFees: new Map() };
 
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 
@@ -158,8 +185,8 @@ export const fetchEthereumV4PositionFees = async ({
   fetchImpl,
   timeoutMs = DEFAULT_V4_FEES_TIMEOUT_MS,
   chainId = 1,
-}: EthereumV4PositionFeesRequest): Promise<DataResult<ReadonlyMap<string, PositionFees>>> => {
-  if (positions.length === 0) return { status: "success", data: new Map() };
+}: EthereumV4PositionFeesRequest): Promise<DataResult<V4PositionFeesRead>> => {
+  if (positions.length === 0) return { status: "success", data: NOTHING };
   if (!ADDRESS.test(poolManager)) return unavailable("invalid-response", UNREADABLE);
 
   const endpoint = rpcUrl?.trim();
@@ -170,7 +197,7 @@ export const fetchEthereumV4PositionFees = async ({
   const manager = V4_POSITION_MANAGERS[chainId].address;
   const askable = positions.filter((position) => v4FeeSlots(position, manager) !== null);
   const distinct = [...new Set(askable.map((position) => position.poolId))];
-  if (distinct.length === 0) return { status: "success", data: new Map() };
+  if (distinct.length === 0) return { status: "success", data: NOTHING };
 
   const poolSlots = distinct.map((poolId) => [0, 1, 2].map((offset) => poolStateSlot(poolId, offset)));
   if (poolSlots.some((slots) => slots.some((slot) => slot === null))) {
@@ -194,21 +221,29 @@ export const fetchEthereumV4PositionFees = async ({
   if (!batch.ok) return unavailable(batch.reason, batch.notice);
 
   const pools = new Map<string, PoolReading>();
+  const protocolFees = new Map<string, V4ProtocolFee>();
   for (const [index, poolId] of distinct.entries()) {
     const slot0 = word(batch.results[index * 3]);
     const global0 = word(batch.results[index * 3 + 1]);
     const global1 = word(batch.results[index * 3 + 2]);
     if (slot0 === null || global0 === null || global1 === null) continue;
-    pools.set(poolId, { tickCurrent: unpackSlot0(slot0).tick, global0, global1 });
+    const state = unpackSlot0(slot0);
+    pools.set(poolId, { tickCurrent: state.tick, global0, global1 });
+    /* A slot nobody wrote has no price and no cut to speak of; neither does a cut past the protocol's own cap. */
+    const cut = V4ProtocolFeeSchema.safeParse(state.protocolFee);
+    if (state.sqrtPriceX96 !== 0n && cut.success) protocolFees.set(poolId, cut.data);
   }
   if (pools.size === 0) return unavailable("invalid-response", UNREADABLE);
 
   return {
     status: "success",
-    data: collectV4PositionFees({
-      positions: askable,
-      pools,
-      words: batch.results.slice(distinct.length * 3),
-    }),
+    data: {
+      fees: collectV4PositionFees({
+        positions: askable,
+        pools,
+        words: batch.results.slice(distinct.length * 3),
+      }),
+      protocolFees,
+    },
   };
 };

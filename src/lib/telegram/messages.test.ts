@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { Position } from "../../schemas";
-import { formatFeePpm, formatPercent, formatPrice } from "../format/displayFormats";
+import { formatFeePpm, formatPercent, formatPrice, formatTokenQuantity } from "../format/displayFormats";
 import { getDictionary } from "../i18n/dictionaries";
 import { LOCALES } from "../i18n/locales";
 import type { SmartPair } from "../analytics/smartLiquidity";
 import { getSmartLiquidityCopy } from "../i18n/smartLiquidityCopy";
+import type { LeftRangeLines } from "./leftRange";
 import { alertText, smartMoneyUrl, smartShiftText, weeklyDigestText } from "./messages";
 import type { WeeklyDigest } from "./weeklyDigest";
 
@@ -242,6 +243,162 @@ describe("the Monday digest's words", () => {
         expect(telegram[key], `${locale} ${key}`).not.toBe(english[key]);
       }
       expect(telegram.weeklyLink("URL"), locale).not.toBe(english.weeklyLink("URL"));
+    }
+  });
+});
+
+describe("the alert that a position has left its range", () => {
+  /* The position above, now past its upper tick: the pool's prices fell below 0.0003 WETH per USDC... quoted, above 3,333 USDC per WETH. */
+  const left = { ...position, currentTick: 6000, inRange: false } as Position;
+  const recentre = {
+    sold: "token1",
+    amountIn: 1.2,
+    feePpm: 500,
+    fee: 0.0006,
+    lowerPrice: 0.00038,
+    upperPrice: 0.00042,
+    hookMayAlterSwaps: false,
+  } as const;
+  const lines: LeftRangeLines = { feeYield: 0.2345, recentre };
+  const en = getDictionary("en").telegram;
+
+  it("says what happened, what the range is missing, what coming back would cost, and ends with the footer", () => {
+    expect(alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, lines)).toBe(
+      [
+        "⚠️ USDC/WETH (Uniswap v3) has left its range: 2,000 – 3,333.33 USDC/WETH. It holds a single token and earns nothing until the price comes back.",
+        "Over the last seven days, liquidity in range in this pool was paid fees at about 23.45% a year of what is in the pool; out of range, this position earns none of it.",
+        "Re-centring it on the current price at the same width, as 2,380.95 – 2,631.58 USDC/WETH, would mean swapping about 1.2 WETH; the pool's 0.05% fee on that is about 0.0006 WETH. Price impact and gas are not counted.",
+        "Information only — not financial advice. Read from public on-chain data; nothing here can act for you.",
+      ].join("\n\n"),
+    );
+  });
+
+  it("goes out exactly as it always did when neither line could be made", () => {
+    const plain = `${en.left("USDC/WETH", "Uniswap v3", `${formatPrice(1 / 0.0005, "en")} – ${formatPrice(1 / 0.0003, "en")} USDC/WETH`)}\n\n${en.footer}`;
+
+    expect(alertText({ kind: "left", position: left }, getDictionary("en"), "en")).toBe(plain);
+    expect(alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, { feeYield: null, recentre: null })).toBe(plain);
+  });
+
+  it("carries whichever line could be made, alone, in its place", () => {
+    const yieldOnly = alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, { feeYield: 0.2345, recentre: null });
+    const costOnly = alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, { feeYield: null, recentre });
+
+    expect(yieldOnly).toContain(en.leftFeeYield(formatPercent(0.2345, "en")));
+    expect(yieldOnly).not.toContain("Re-centring");
+    expect(yieldOnly.endsWith(`\n\n${en.footer}`)).toBe(true);
+    expect(costOnly).not.toContain("seven days");
+    expect(costOnly).toContain("about 1.2 WETH");
+    expect(costOnly.endsWith(`\n\n${en.footer}`)).toBe(true);
+  });
+
+  it("names the token sold, and the fee in it", () => {
+    const usdc = alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, {
+      feeYield: null,
+      recentre: { ...recentre, sold: "token0", amountIn: 5_000, fee: 3 },
+    });
+
+    expect(usdc).toContain(`swapping about ${formatTokenQuantity(5_000, "en")} USDC; the pool's 0.05% fee on that is about 3 USDC.`);
+  });
+
+  it("adds the site's qualifier where a hook may change what a swap costs", () => {
+    const hooked = alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, {
+      feeYield: null,
+      recentre: { ...recentre, hookMayAlterSwaps: true },
+    });
+
+    expect(hooked).toContain(`Price impact and gas are not counted. ${en.leftRecentreHook}`);
+    expect(alertText({ kind: "left", position: left }, getDictionary("en"), "en", 1, lines)).not.toContain(en.leftRecentreHook);
+  });
+
+  it("is in the reader's language", () => {
+    expect(alertText({ kind: "left", position: left }, getDictionary("tr"), "tr", 1, lines)).toBe(
+      [
+        "⚠️ USDC/WETH (Uniswap v3) aralığından çıktı: 2.000 – 3.333,33 USDC/WETH. Fiyat geri gelene kadar tek token tutuyor ve hiçbir şey kazanmıyor.",
+        "Son yedi günde bu havuzda aralık içindeki likiditeye, havuzda olana oranla yıllık yaklaşık %23,45 komisyon ödendi; aralık dışındayken bu pozisyon bundan hiçbir şey kazanmaz.",
+        "Pozisyonu şimdiki fiyatta, aynı genişlikte yeniden ortalamak (2.380,95 – 2.631,58 USDC/WETH) yaklaşık 1,2 WETH takas etmek demek olurdu; havuzun bunun üzerinden aldığı %0,05 komisyon yaklaşık 0,0006 WETH ederdi. Fiyat etkisi ve gas sayılmadı.",
+        getDictionary("tr").telegram.footer,
+      ].join("\n\n"),
+    );
+  });
+
+  /* The lines are a leave's alone: a warning near an edge, or the news that it is back, says what it always said. */
+  it.each([
+    ["near an edge", { kind: "nearing", position, edge: "upper" }],
+    ["back inside", { kind: "entered", position }],
+    ["opened", { kind: "opened", position }],
+  ] as const)("is not added to an alert that a position is %s", (_label, change) => {
+    const text = alertText(change, getDictionary("en"), "en", 1, lines);
+
+    expect(text).toBe(alertText(change, getDictionary("en"), "en"));
+    expect(text).not.toContain("seven days");
+    expect(text).not.toContain("Re-centring");
+  });
+
+  it("fits in one Telegram message in every language, with the longest figures and the qualifier", () => {
+    const long = {
+      ...left,
+      pool: { ...left.pool, token0: { symbol: "X".repeat(40), decimals: 6 }, token1: { symbol: "Y".repeat(40), decimals: 18 } },
+    } as Position;
+    const widest: LeftRangeLines = {
+      feeYield: 123.456,
+      recentre: { ...recentre, amountIn: 123_456_789.123, fee: 1_234_567.891, hookMayAlterSwaps: true },
+    };
+
+    for (const locale of LOCALES) {
+      const text = alertText({ kind: "left", position: long }, getDictionary(locale), locale, 8453, widest);
+      expect([...text].length, locale).toBeLessThan(4096);
+      expect(text.endsWith(getDictionary(locale).telegram.footer), locale).toBe(true);
+    }
+  });
+});
+
+describe("the left-range lines' words", () => {
+  it.each(LOCALES)("in %s, put every figure in its place", (locale) => {
+    const { telegram } = getDictionary(locale);
+
+    expect(telegram.leftFeeYield("RATE")).toContain("RATE");
+    const line = telegram.leftRecentre("RANGE", "AMOUNT", "FEE", "PAID");
+    for (const value of ["RANGE", "AMOUNT", "FEE", "PAID"]) expect(line, value).toContain(value);
+    expect(telegram.leftRecentreHook.trim().length).toBeGreaterThan(20);
+  });
+
+  it("are not left in English", () => {
+    const english = getDictionary("en").telegram;
+
+    for (const locale of LOCALES.filter((locale) => locale !== "en")) {
+      const { telegram } = getDictionary(locale);
+      expect(telegram.leftFeeYield("R"), locale).not.toBe(english.leftFeeYield("R"));
+      expect(telegram.leftRecentre("A", "B", "C", "D"), locale).not.toBe(english.leftRecentre("A", "B", "C", "D"));
+      expect(telegram.leftRecentreHook, locale).not.toBe(english.leftRecentreHook);
+    }
+  });
+
+  /*
+   * In the words each language's alerts and pages already use for a range, a
+   * fee, a position, a pool, liquidity and a swap — so the new lines read as
+   * the rest of the bot does.
+   */
+  it.each([
+    ["tr", ["aralık", "komisyon", "pozisyon", "takas", "havuz", "likidite"]],
+    ["ar", ["نطاق", "رسوم", "مركز", "تجمّع", "تبادل", "سيولة"]],
+    ["hi", ["दायर", "शुल्क", "पोज़िशन", "तरलता", "स्वैप"]],
+    ["zh-Hant", ["區間", "手續費", "倉位", "兌換", "資金池", "流動性"]],
+    ["zh", ["区间", "手续费", "仓位", "兑换", "资金池", "流动性"]],
+  ] as const)("in %s, use the site's own terms", (locale, terms) => {
+    const { telegram } = getDictionary(locale);
+    const text = [telegram.leftFeeYield("R"), telegram.leftRecentre("A", "B", "C", "D"), telegram.leftRecentreHook].join(" ").toLowerCase();
+
+    for (const term of terms) expect(text, term).toContain(term);
+  });
+
+  it("tell the reader what a leave adds, in the site's panel and in the bot's help, in every language", () => {
+    for (const locale of LOCALES) {
+      const { telegram } = getDictionary(locale);
+
+      for (const text of [telegram.intro, telegram.help]) {
+        expect(text, locale).toMatch(/seven days|yedi gün|sieben Tage|siete días|السبعة|सात दिन|七天|семь дней|sete dias/);
+      }
     }
   });
 });

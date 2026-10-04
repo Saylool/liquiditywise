@@ -792,7 +792,7 @@ const en = {
   telegram: {
     heading: "Alerts on Telegram",
     intro:
-      "Be told, on Telegram, when one of this address's positions comes close to the edge of its range, leaves it, or comes back into it. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both are deleted from this server the moment you send the bot /stop or forget the link here, and drop out of its encrypted backups within seven days. How often it is checked is up to the server this runs on. If you ask the bot with /smart, it also says when the best-earning liquidity in a pool you hold a position in moves; then it keeps, per such pool, where that range sat when you were last told. With /weekly it also sends, each Monday, a digest of where the smart money moved on that network; for that it keeps only when the last one went out.",
+      "Be told, on Telegram, when one of this address's positions comes close to the edge of its range, leaves it, or comes back into it. When one leaves, the alert also says what liquidity in range in that pool was paid over the last seven days, as a yearly rate, and what re-centring the position at the current price would cost in swap fees: both measured, neither a forecast. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both are deleted from this server the moment you send the bot /stop or forget the link here, and drop out of its encrypted backups within seven days. How often it is checked is up to the server this runs on. If you ask the bot with /smart, it also says when the best-earning liquidity in a pool you hold a position in moves; then it keeps, per such pool, where that range sat when you were last told. With /weekly it also sends, each Monday, a digest of where the smart money moved on that network; for that it keeps only when the last one went out.",
     connect: "Connect Telegram",
     connected: (address: string) => `This browser is linked: ${address} is being watched.`,
     pending: "The link is waiting: open the bot's chat in Telegram and press Start.",
@@ -809,7 +809,7 @@ const en = {
     stopped: "Stopped. This chat follows nothing now. The record is deleted from the server, and within seven days from its encrypted backups too.",
     nothingToStop: "This chat was not following anything.",
     help:
-      "This bot only follows the address you linked on the site, and only says when a position comes close to the edge of its range, leaves it, or re-enters it. Send /stop to end it. Send /smart to be told, too, when the best-earning liquidity in a pool you hold moves. Send /weekly for a Monday digest of where the smart money moved.",
+      "This bot only follows the address you linked on the site, and only says when a position comes close to the edge of its range, leaves it, or re-enters it. When one leaves, it also says what the pool paid its liquidity in range over the last seven days and what re-centring would cost in swap fees. Send /stop to end it. Send /smart to be told, too, when the best-earning liquidity in a pool you hold moves. Send /weekly for a Monday digest of where the smart money moved.",
     storeDown: "The link could not be checked right now. Try again in a minute.",
     smartOn:
       "Smart-money alerts are on. If where the best-earning liquidity sits in a pool you hold a position in moves a long way, you will hear it here. For this the bot keeps where that range sat when you were last told, and nothing more. Send /smart again to turn them off.",
@@ -834,6 +834,15 @@ const en = {
     weeklyLink: (url: string) => `All of it on the site: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) has left its range: ${range}. It holds a single token and earns nothing until the price comes back.`,
+    /*
+     * The two lines a left-range alert can add (see telegram/leftRange.ts):
+     * past fees, in the pair page's own terms, and the exact cost of one swap.
+     */
+    leftFeeYield: (rate: string) =>
+      `Over the last seven days, liquidity in range in this pool was paid fees at about ${rate} a year of what is in the pool; out of range, this position earns none of it.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `Re-centring it on the current price at the same width, as ${range}, would mean swapping about ${amount}; the pool's ${fee} fee on that is about ${feeAmount}. Price impact and gas are not counted.`,
+    leftRecentreHook: "This pool's hook is permitted to change what a swap costs, so a real swap may pay something else.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair} (${protocol}) is close to the edge of its range: ${range}. The price is ${price}; past ${edge} it holds a single token and earns nothing.`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -1430,7 +1439,7 @@ const tr: Dictionary = {
     dilution:
       "Daha büyük bir yatırım orantılı olarak daha fazla toplamaz. Pay, senin likiditenin herkesinkine — seninki dahil — oranı; yani belli bir büyüklükten sonra eklediğinin çoğu, hâlihazırda koyduğunu seyreltir. Sunulan tutarların uçtan uca bin kat farklı olmasının sebebi bu.",
     caveat:
-      "Yalnızca komisyon ve yalnızca geçmiş günler. Pozisyonun bu günlerin hepsinde açık olduğunu ve buna karşılık piyasada hiçbir şeyin kıpırdamadığını varsayar; önümüzdeki otuz günün ne ödeyeceği hakkında hiçbir şey söylemez. Bir pozisyonun, iki jetonu öylece tutmaya kıyasla neyden vazgeçtiği bu sayfanın aşağısındaki karşılaştırmada; ikisi birlikte okunmalı.",
+      "Yalnızca komisyon ve yalnızca geçmiş günler. Pozisyonun bu günlerin hepsinde açık olduğunu ve buna karşılık piyasada hiçbir şeyin kıpırdamadığını varsayar; önümüzdeki otuz günün ne ödeyeceği hakkında hiçbir şey söylemez. Bir pozisyonun, iki tokenı öylece tutmaya kıyasla neyden vazgeçtiği bu sayfanın aşağısındaki karşılaştırmada; ikisi birlikte okunmalı.",
   },
 
   realizedFee: {
@@ -1537,12 +1546,12 @@ const tr: Dictionary = {
   rangeOrder: {
     heading: "Aralıktan geçerken satmak ve almak",
     intro:
-      "Yukarıdaki aralık iki taraflı: paranın bir kısmı fiyatın altında, bir kısmı üstünde, ve fiyat ikisinin arasında kaldığı sürece komisyon topluyor. Aralığı fiyattan ikiye böl, her yarısı bambaşka bir araç olur. Tamamen fiyatın üstünde duran bir pozisyon tek bir jetondan başka bir şey tutmaz; fiyat o bandın içinden yukarı geçerken havuz o jetonu diğeriyle takas eder. Fiyatın altında ise tersi olur. Aralık emri dedikleri budur, ve bu aralığın iki yarısı da birer tanesidir.",
+      "Yukarıdaki aralık iki taraflı: paranın bir kısmı fiyatın altında, bir kısmı üstünde, ve fiyat ikisinin arasında kaldığı sürece komisyon topluyor. Aralığı fiyattan ikiye böl, her yarısı bambaşka bir araç olur. Tamamen fiyatın üstünde duran bir pozisyon tek bir tokendan başka bir şey tutmaz; fiyat o bandın içinden yukarı geçerken havuz o tokenı diğeriyle takas eder. Fiyatın altında ise tersi olur. Aralık emri dedikleri budur, ve bu aralığın iki yarısı da birer tanesidir.",
     selling: (token: string) => `${token} satmak`,
     buying: (token: string) => `${token} almak`,
     band: "Bant",
     bandNote:
-      "Pozisyonun durduğu yer. İç kenarı, fiyatın içinde bulunduğu adımdan bir sonraki fiyat adımı — böylece dönüşeceği jetondan başlangıçta hiç tutmaz.",
+      "Pozisyonun durduğu yer. İç kenarı, fiyatın içinde bulunduğu adımdan bir sonraki fiyat adımı — böylece dönüşeceği tokendan başlangıçta hiç tutmaz.",
     average: "Ortalama fiyat",
     averageNote: "Fiyat bandın tamamını geçerse, dönüşümün denk geldiği fiyat.",
     against: "Güncel fiyata göre",
@@ -1590,7 +1599,7 @@ const tr: Dictionary = {
     onlyOne: (pair: string) =>
       `${pair} yalnızca tek bir v3 havuzunda işlem görüyor; yanına konacak başka bir havuz yok.`,
     readTogether:
-      "Komisyon işin yarısı. Bir aralığın, iki jetonu öylece tutmaya göre neyi kaybettirdiği her havuzun kendi sayfasında; ikisi birlikte okunmalı.",
+      "Komisyon işin yarısı. Bir aralığın, iki tokenı öylece tutmaya göre neyi kaybettirdiği her havuzun kendi sayfasında; ikisi birlikte okunmalı.",
   },
 
   feeTiers: {
@@ -1676,7 +1685,7 @@ const tr: Dictionary = {
   holdings: {
     heading: "Bu adres ne tutuyor",
     intro:
-      "Bu adreste bulunan jetonlar ve girebilecekleri havuzlar. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve adres herkese açık bir bilgidir — aynı liste onu arayan herkese görünür.",
+      "Bu adreste bulunan tokenlar ve girebilecekleri havuzlar. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz ve adres herkese açık bir bilgidir — aynı liste onu arayan herkese görünür.",
     forAddress: "Adres",
     loading: "Bu adresin ne tuttuğu token sözleşmelerine soruluyor…",
     howItLooked: (tokens: string, v3Pools: string, v4Pools: string | null, chain: string, native: string) =>
@@ -1814,12 +1823,12 @@ const tr: Dictionary = {
   positions: {
     heading: "Bu adresin hâlihazırda tuttuğu pozisyonlar",
     intro:
-      "Yukarıdakilerin hepsi bu adresin ne yapabileceğiydi — tuttuğu jetonların hangi havuzları açtığı. Bu ise çoktan ne yaptığı. Her iki protokolde de bir pozisyon, tek bir sözleşmenin tuttuğu bir jetondur ve her jetonun ne olduğu o sözleşmeye sorulur. v3 sözleşmesi bir adresin jetonlarını ayrıca sıralayabiliyor; v4 sözleşmesi sıralayamıyor, bu yüzden o liste bir indeksleyiciden geliyor ve içindeki her kimlik zincire geri götürülüp sahibi soruluyor.",
-    none: "Bu adres hiçbir protokolde Uniswap pozisyon jetonu tutmuyor.",
+      "Yukarıdakilerin hepsi bu adresin ne yapabileceğiydi — tuttuğu tokenların hangi havuzları açtığı. Bu ise çoktan ne yaptığı. Her iki protokolde de bir pozisyon, tek bir sözleşmenin tuttuğu bir tokendır ve her tokenın ne olduğu o sözleşmeye sorulur. v3 sözleşmesi bir adresin tokenlarını ayrıca sıralayabiliyor; v4 sözleşmesi sıralayamıyor, bu yüzden o liste bir indeksleyiciden geliyor ve içindeki her kimlik zincire geri götürülüp sahibi soruluyor.",
+    none: "Bu adres hiçbir protokolde Uniswap pozisyon tokenı tutmuyor.",
     noneOpen:
-      "Bu adresin tuttuğu bütün pozisyon jetonları kapatılmış. Kapalı bir jeton, vaktiyle var olan bir pozisyonun makbuzudur, pozisyon değil.",
+      "Bu adresin tuttuğu bütün pozisyon tokenları kapatılmış. Kapalı bir token, vaktiyle var olan bir pozisyonun makbuzudur, pozisyon değil.",
     counts: (held: string, open: string, closed: string) =>
-      `${held} pozisyon jetonu; bunların ${open} tanesinde hâlâ likidite var, ${closed} tanesi kapatılmış.`,
+      `${held} pozisyon tokenı; bunların ${open} tanesinde hâlâ likidite var, ${closed} tanesi kapatılmış.`,
     inRange: "Şu anda kazanıyor",
     outOfRange: "Aralığının dışında",
     rangeUnknown: "Burada hiç takas olmamış",
@@ -1836,7 +1845,7 @@ const tr: Dictionary = {
       `Bu sefer Uniswap ${protocol} pozisyonları okunamadı; buradaki bütün rakamlar yalnızca diğer protokole ait.`,
     unavailable: "Bu adresin pozisyonları okunamadı.",
     publicNote:
-      "Bir pozisyonun sahibi zincirdedir, dolayısıyla bu liste herkese açıktır: aynı adres için aynı listeyi herkes okuyabilir ve bu liste, adresin bu jetonları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz. Bir aralık, bir pozisyonun ne ettiği değildir: burada bir pozisyonu değerleyen tek rakamlar altındaki hesaptadır, bugünkü fiyatla, ve bunlar bir ölçümdür, yatırım tavsiyesi değildir.",
+      "Bir pozisyonun sahibi zincirdedir, dolayısıyla bu liste herkese açıktır: aynı adres için aynı listeyi herkes okuyabilir ve bu liste, adresin bu tokenları tutarak zaten yayımlamadığı hiçbir şeyi söylemez. Aşağıdan Telegram bildirimi istemediğin sürece burada hiçbir şey saklanmaz. Bir aralık, bir pozisyonun ne ettiği değildir: burada bir pozisyonu değerleyen tek rakamlar altındaki hesaptadır, bugünkü fiyatla, ve bunlar bir ölçümdür, yatırım tavsiyesi değildir.",
   },
 
   wallet: {
@@ -1865,7 +1874,7 @@ const tr: Dictionary = {
   telegram: {
     heading: "Telegram'dan bildirim",
     intro:
-      "Bu adresteki bir pozisyon aralığının sınırına yaklaştığında, aralıktan çıktığında ya da geri girdiğinde Telegram'dan haber al. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de sunucudan silinir, yedi gün içinde de şifreli yedeklerden düşer. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır. Bota /smart ile istersen, pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da söyler; o zaman her böyle havuz için, o aralığın sana son bildirildiğinde nerede durduğunu saklar. /weekly ile her pazartesi o ağda akıllı paranın nereye kaydığına dair bir özet de gönderir; bunun için yalnızca son özetin ne zaman gittiğini saklar.",
+      "Bu adresteki bir pozisyon aralığının sınırına yaklaştığında, aralıktan çıktığında ya da geri girdiğinde Telegram'dan haber al. Biri aralığından çıktığında bildirim, o havuzda aralık içindeki likiditeye son yedi günde yıllık oran olarak ne kadar komisyon ödendiğini ve pozisyonu şimdiki fiyatta yeniden ortalamanın takas komisyonu olarak neye mal olacağını da söyler: ikisi de ölçümdür, hiçbiri tahmin değildir. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de sunucudan silinir, yedi gün içinde de şifreli yedeklerden düşer. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır. Bota /smart ile istersen, pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da söyler; o zaman her böyle havuz için, o aralığın sana son bildirildiğinde nerede durduğunu saklar. /weekly ile her pazartesi o ağda akıllı paranın nereye kaydığına dair bir özet de gönderir; bunun için yalnızca son özetin ne zaman gittiğini saklar.",
     connect: "Telegram'a bağla",
     connected: (address: string) => `Bu tarayıcı bağlı: ${address} izleniyor.`,
     pending: "Bağlantı bekliyor: Telegram'da botun sohbetini aç ve Başlat'a bas.",
@@ -1882,7 +1891,7 @@ const tr: Dictionary = {
     stopped: "Durduruldu. Bu sohbet artık hiçbir şeyi izlemiyor. Kayıt sunucudan silindi; şifreli yedeklerden de yedi gün içinde düşecek.",
     nothingToStop: "Bu sohbet zaten hiçbir şeyi izlemiyordu.",
     help:
-      "Bu bot yalnızca sitede bağladığın adresi izler ve yalnızca bir pozisyon aralığının sınırına yaklaşınca, aralıktan çıkınca ya da geri girince konuşur. Bitirmek için /stop gönder. Pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da haber almak için /smart gönder. Akıllı paranın nereye kaydığını her pazartesi özet olarak almak için /weekly gönder.",
+      "Bu bot yalnızca sitede bağladığın adresi izler ve yalnızca bir pozisyon aralığının sınırına yaklaşınca, aralıktan çıkınca ya da geri girince konuşur. Biri çıktığında, havuzun son yedi günde aralık içindeki likiditeye ne ödediğini ve yeniden ortalamanın takas komisyonu olarak neye mal olacağını da söyler. Bitirmek için /stop gönder. Pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da haber almak için /smart gönder. Akıllı paranın nereye kaydığını her pazartesi özet olarak almak için /weekly gönder.",
     storeDown: "Bağlantı şu anda kontrol edilemedi. Bir dakika sonra yeniden dene.",
     smartOn:
       "Akıllı para uyarıları açık. Pozisyonun olan bir havuzda en çok kazanan likiditenin durduğu yer çok kayarsa burada duyarsın. Bunun için bot, o aralığın sana son bildirildiğinde nerede durduğunu saklar, başka bir şey değil. Kapatmak için /smart'ı yeniden gönder.",
@@ -1902,9 +1911,14 @@ const tr: Dictionary = {
     weeklyNote: "Bu, en çok kazanan likiditenin zincirden ölçülen yeridir; seninkine bir öneri değil.",
     weeklyLink: (url: string) => `Tamamı sitede: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
-      `⚠️ ${pair} (${protocol}) aralığından çıktı: ${range}. Fiyat geri gelene kadar tek jeton tutuyor ve hiçbir şey kazanmıyor.`,
+      `⚠️ ${pair} (${protocol}) aralığından çıktı: ${range}. Fiyat geri gelene kadar tek token tutuyor ve hiçbir şey kazanmıyor.`,
+    leftFeeYield: (rate: string) =>
+      `Son yedi günde bu havuzda aralık içindeki likiditeye, havuzda olana oranla yıllık yaklaşık ${rate} komisyon ödendi; aralık dışındayken bu pozisyon bundan hiçbir şey kazanmaz.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `Pozisyonu şimdiki fiyatta, aynı genişlikte yeniden ortalamak (${range}) yaklaşık ${amount} takas etmek demek olurdu; havuzun bunun üzerinden aldığı ${fee} komisyon yaklaşık ${feeAmount} ederdi. Fiyat etkisi ve gas sayılmadı.`,
+    leftRecentreHook: "Bu havuzun hook'u bir takasın maliyetini değiştirmeye izinli; gerçek bir takas başka bir tutar ödeyebilir.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
-      `⏳ ${pair} (${protocol}) aralığının sınırına yaklaştı: ${range}. Fiyat ${price}; ${edge} aşılırsa tek jeton tutar ve hiçbir şey kazanmaz.`,
+      `⏳ ${pair} (${protocol}) aralığının sınırına yaklaştı: ${range}. Fiyat ${price}; ${edge} aşılırsa tek token tutar ve hiçbir şey kazanmaz.`,
     entered: (pair: string, protocol: string, range: string) =>
       `✅ ${pair} (${protocol}) yeniden aralığında: ${range}. Yeniden kazanıyor.`,
     opened: (pair: string, protocol: string, range: string) => `Yeni pozisyon: ${pair} (${protocol}), ${range}.`,
@@ -2864,7 +2878,7 @@ const de: Dictionary = {
   telegram: {
     heading: "Hinweise per Telegram",
     intro:
-      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder hineinkommt. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides wird vom Server gelöscht, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst, und verschwindet binnen sieben Tagen auch aus seinen verschlüsselten Sicherungen. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft. Wenn du den Bot mit /smart darum bittest, meldet er auch, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst; dann merkt er sich je Pool, wo dieser Bereich lag, als du zuletzt benachrichtigt wurdest. Mit /weekly schickt er außerdem jeden Montag einen Überblick, wohin sich das kluge Geld in diesem Netzwerk bewegt hat; dafür merkt er sich nur, wann der letzte verschickt wurde.",
+      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder hineinkommt. Verlässt eine ihn, sagt der Hinweis auch, welche Gebühren die Liquidität im Bereich dieses Pools in den letzten sieben Tagen erhielt, als Jahressatz, und was eine Neuzentrierung der Position zum jetzigen Preis an Tauschgebühren kosten würde: beides gemessen, keine Prognose. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides wird vom Server gelöscht, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst, und verschwindet binnen sieben Tagen auch aus seinen verschlüsselten Sicherungen. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft. Wenn du den Bot mit /smart darum bittest, meldet er auch, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst; dann merkt er sich je Pool, wo dieser Bereich lag, als du zuletzt benachrichtigt wurdest. Mit /weekly schickt er außerdem jeden Montag einen Überblick, wohin sich das kluge Geld in diesem Netzwerk bewegt hat; dafür merkt er sich nur, wann der letzte verschickt wurde.",
     connect: "Telegram verbinden",
     connected: (address: string) => `Dieser Browser ist verknüpft: ${address} wird beobachtet.`,
     pending: "Die Verknüpfung wartet: öffne den Chat mit dem Bot in Telegram und drücke auf Start.",
@@ -2881,7 +2895,7 @@ const de: Dictionary = {
     stopped: "Beendet. Dieser Chat folgt nun nichts mehr. Der Eintrag ist vom Server gelöscht und verschwindet binnen sieben Tagen auch aus den verschlüsselten Sicherungen.",
     nothingToStop: "Dieser Chat ist nichts gefolgt.",
     help:
-      "Dieser Bot folgt nur der Adresse, die du auf der Seite verknüpft hast, und meldet sich nur, wenn eine Position dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder betritt. Schick /stop, um das zu beenden. Sende /smart, um zusätzlich informiert zu werden, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst. Sende /weekly für einen Überblick jeden Montag, wohin sich das kluge Geld bewegt hat.",
+      "Dieser Bot folgt nur der Adresse, die du auf der Seite verknüpft hast, und meldet sich nur, wenn eine Position dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder betritt. Verlässt eine ihn, sagt er auch, was der Pool der Liquidität im Bereich in den letzten sieben Tagen gezahlt hat und was eine Neuzentrierung an Tauschgebühren kosten würde. Schick /stop, um das zu beenden. Sende /smart, um zusätzlich informiert zu werden, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst. Sende /weekly für einen Überblick jeden Montag, wohin sich das kluge Geld bewegt hat.",
     storeDown: "Die Verknüpfung konnte gerade nicht geprüft werden. Versuch es in einer Minute noch einmal.",
     smartOn:
       "Benachrichtigungen zum klugen Geld sind an. Wenn sich in einem Pool, in dem du eine Position hältst, die Lage der bestverdienenden Liquidität weit verschiebt, erfährst du es hier. Dafür merkt sich der Bot, wo dieser Bereich lag, als du zuletzt benachrichtigt wurdest, und sonst nichts. Sende /smart noch einmal, um sie auszuschalten.",
@@ -2902,6 +2916,11 @@ const de: Dictionary = {
     weeklyLink: (url: string) => `Alles auf der Seite: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) hat seinen Bereich verlassen: ${range}. Es hält nur noch einen Token und verdient nichts, bis der Preis zurückkommt.`,
+    leftFeeYield: (rate: string) =>
+      `In den letzten sieben Tagen erhielt die Liquidität im Bereich dieses Pools Gebühren von rund ${rate} pro Jahr, gemessen an dem, was im Pool liegt; außerhalb ihres Bereichs verdient diese Position nichts davon.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `Die Position zum jetzigen Preis in gleicher Breite neu zu zentrieren, also auf ${range}, hieße, rund ${amount} zu tauschen; die Gebühr des Pools von ${fee} darauf läge bei rund ${feeAmount}. Preiseinfluss und Gas sind nicht gezählt.`,
+    leftRecentreHook: "Der Hook dieses Pools darf ändern, was ein Tausch kostet; ein echter Tausch kann also etwas anderes zahlen.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair} (${protocol}) nähert sich dem Rand seines Bereichs: ${range}. Der Preis steht bei ${price}; jenseits von ${edge} hält es nur noch einen Token und verdient nichts.`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -3837,7 +3856,7 @@ const es: Dictionary = {
   telegram: {
     heading: "Avisos por Telegram",
     intro:
-      "Entérate por Telegram cuando una posición de esta dirección se acerque al borde de su rango, salga de él o vuelva a entrar. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos se borran del servidor en cuanto envías /stop al bot u olvidas el enlace aquí, y de sus copias de seguridad cifradas en un plazo de siete días. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto. Si se lo pides al bot con /smart, también avisa cuando se mueve la liquidez que más gana en un pool donde tienes una posición; entonces guarda, por cada pool así, dónde estaba ese rango cuando te avisó por última vez. Con /weekly también envía cada lunes un resumen de adónde se movió el dinero inteligente en esa red; para eso solo guarda cuándo se envió el último.",
+      "Entérate por Telegram cuando una posición de esta dirección se acerque al borde de su rango, salga de él o vuelva a entrar. Cuando una sale, el aviso dice también qué comisiones recibió en los últimos siete días la liquidez dentro de rango de ese pool, como tasa anual, y cuánto costaría en comisiones de intercambio recentrar la posición en el precio actual: ambas cosas medidas, ninguna una previsión. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos se borran del servidor en cuanto envías /stop al bot u olvidas el enlace aquí, y de sus copias de seguridad cifradas en un plazo de siete días. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto. Si se lo pides al bot con /smart, también avisa cuando se mueve la liquidez que más gana en un pool donde tienes una posición; entonces guarda, por cada pool así, dónde estaba ese rango cuando te avisó por última vez. Con /weekly también envía cada lunes un resumen de adónde se movió el dinero inteligente en esa red; para eso solo guarda cuándo se envió el último.",
     connect: "Conectar Telegram",
     connected: (address: string) => `Este navegador está enlazado: se vigila ${address}.`,
     pending: "El enlace está a la espera: abre el chat del bot en Telegram y pulsa Iniciar.",
@@ -3854,7 +3873,7 @@ const es: Dictionary = {
     stopped: "Detenido. Este chat ya no sigue nada. El registro se ha borrado del servidor y desaparecerá de las copias de seguridad cifradas en un plazo de siete días.",
     nothingToStop: "Este chat no seguía nada.",
     help:
-      "Este bot solo sigue la dirección que enlazaste en el sitio, y solo habla cuando una posición se acerca al borde de su rango, sale de él o vuelve a entrar. Envía /stop para terminar. Envía /smart para que también te avise cuando se mueva la liquidez que más gana en un pool donde tienes una posición. Envía /weekly para recibir cada lunes un resumen de adónde se movió el dinero inteligente.",
+      "Este bot solo sigue la dirección que enlazaste en el sitio, y solo habla cuando una posición se acerca al borde de su rango, sale de él o vuelve a entrar. Cuando una sale, también dice cuánto pagó el pool a su liquidez dentro de rango en los últimos siete días y cuánto costaría recentrarla en comisiones de intercambio. Envía /stop para terminar. Envía /smart para que también te avise cuando se mueva la liquidez que más gana en un pool donde tienes una posición. Envía /weekly para recibir cada lunes un resumen de adónde se movió el dinero inteligente.",
     storeDown: "No se pudo comprobar el enlace ahora mismo. Inténtalo de nuevo en un minuto.",
     smartOn:
       "Las alertas de dinero inteligente están activadas. Si el lugar donde está la liquidez que más gana en un pool donde tienes una posición se desplaza mucho, te enterarás aquí. Para eso el bot guarda dónde estaba ese rango cuando te avisó por última vez, y nada más. Envía /smart otra vez para desactivarlas.",
@@ -3875,6 +3894,11 @@ const es: Dictionary = {
     weeklyLink: (url: string) => `Todo en el sitio: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) ha salido de su rango: ${range}. Mantiene un solo token y no gana nada hasta que el precio vuelva.`,
+    leftFeeYield: (rate: string) =>
+      `En los últimos siete días, la liquidez dentro de rango de este pool recibió comisiones de alrededor del ${rate} al año sobre lo que contiene el pool; fuera de rango, esta posición no gana nada de eso.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `Recentrarla en el precio actual con el mismo ancho, en ${range}, supondría intercambiar unos ${amount}; la comisión del ${fee} del pool sobre eso sería de unos ${feeAmount}. No se cuentan el impacto en el precio ni el gas.`,
+    leftRecentreHook: "El hook de este pool tiene permitido cambiar lo que cuesta un intercambio, así que un intercambio real puede pagar otra cosa.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair} (${protocol}) está cerca del borde de su rango: ${range}. El precio está en ${price}; más allá de ${edge} mantiene un solo token y no gana nada.`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -4808,7 +4832,7 @@ const ar: Dictionary = {
   telegram: {
     heading: "تنبيهات عبر تيليغرام",
     intro:
-      "اعرف عبر تيليغرام متى يقترب أحد مراكز هذا العنوان من حافة نطاقه أو يخرج منه أو يعود إليه. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما من الخادم لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا، ومن نسخه الاحتياطية المشفّرة خلال سبعة أيام. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا. وإن طلبتَ ذلك من البوت بالأمر /smart فسيقول أيضًا متى انتقلت السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا؛ وعندئذ يحفظ لكل تجمّع من هذا النوع أين كان ذلك النطاق حين أُبلغتَ آخر مرة. وبالأمر /weekly يرسل أيضًا كل يوم اثنين ملخصًا عن المكان الذي انتقل إليه المال الذكي على تلك الشبكة؛ ولهذا لا يحفظ إلا وقت إرسال آخر ملخص.",
+      "اعرف عبر تيليغرام متى يقترب أحد مراكز هذا العنوان من حافة نطاقه أو يخرج منه أو يعود إليه. وحين يخرج أحدها، يذكر التنبيه أيضًا ما دُفع للسيولة داخل النطاق في ذلك التجمّع خلال الأيام السبعة الماضية، كمعدل سنوي، وما ستكلّفه إعادة توسيط المركز عند السعر الحالي من رسوم التبادل: كلاهما مقيس، ولا أيّ منهما تنبؤ. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما من الخادم لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا، ومن نسخه الاحتياطية المشفّرة خلال سبعة أيام. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا. وإن طلبتَ ذلك من البوت بالأمر /smart فسيقول أيضًا متى انتقلت السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا؛ وعندئذ يحفظ لكل تجمّع من هذا النوع أين كان ذلك النطاق حين أُبلغتَ آخر مرة. وبالأمر /weekly يرسل أيضًا كل يوم اثنين ملخصًا عن المكان الذي انتقل إليه المال الذكي على تلك الشبكة؛ ولهذا لا يحفظ إلا وقت إرسال آخر ملخص.",
     connect: "ربط تيليغرام",
     connected: (address: string) => `هذا المتصفح مربوط: يُراقَب ${address}.`,
     pending: "الرابط بانتظارك: افتح محادثة البوت في تيليغرام واضغط «ابدأ».",
@@ -4825,7 +4849,7 @@ const ar: Dictionary = {
     stopped: "توقّف. هذه المحادثة لا تتابع شيئًا الآن. مُحي السجل من الخادم، وسيُمحى من النسخ الاحتياطية المشفّرة خلال سبعة أيام.",
     nothingToStop: "هذه المحادثة لم تكن تتابع شيئًا.",
     help:
-      "هذا البوت يتابع فقط العنوان الذي ربطته في الموقع، ولا يتكلم إلا عندما يقترب مركز من حافة نطاقه أو يخرج منه أو يعود إليه. أرسل /stop للإنهاء. أرسل /smart لتُبلَغ أيضًا حين تنتقل السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا. أرسل /weekly ليصلك كل يوم اثنين ملخص عن المكان الذي انتقل إليه المال الذكي.",
+      "هذا البوت يتابع فقط العنوان الذي ربطته في الموقع، ولا يتكلم إلا عندما يقترب مركز من حافة نطاقه أو يخرج منه أو يعود إليه. وحين يخرج أحدها، يذكر أيضًا ما دفعه التجمّع للسيولة داخل النطاق خلال الأيام السبعة الماضية وما ستكلّفه إعادة التوسيط من رسوم التبادل. أرسل /stop للإنهاء. أرسل /smart لتُبلَغ أيضًا حين تنتقل السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا. أرسل /weekly ليصلك كل يوم اثنين ملخص عن المكان الذي انتقل إليه المال الذكي.",
     storeDown: "تعذّر فحص الرابط الآن. حاول مجددًا بعد دقيقة.",
     smartOn:
       "تنبيهات المال الذكي مفعّلة. إذا انتقل بعيدًا موضع السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا، فستعرف ذلك هنا. ولهذا يحفظ البوت أين كان ذلك النطاق حين أُبلغتَ آخر مرة، ولا يحفظ شيئًا غير ذلك. أرسل /smart مرة أخرى لإيقافها.",
@@ -4852,6 +4876,11 @@ const ar: Dictionary = {
     weeklyLink: (url: string) => `كل ذلك في الموقع: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ خرج ${pair} (${protocol}) من نطاقه: ${range}. يحمل رمزًا واحدًا ولا يكسب شيئًا حتى يعود السعر.`,
+    leftFeeYield: (rate: string) =>
+      `خلال الأيام السبعة الماضية دُفعت للسيولة داخل النطاق في هذا التجمّع رسوم بنحو ${rate} سنويًا مما في التجمّع؛ وخارج نطاقه لا يكسب هذا المركز شيئًا منها.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `إعادة توسيطه عند السعر الحالي بالاتساع نفسه، أي على ${range}، تتطلب تبادل نحو ${amount}؛ ورسوم التجمّع البالغة ${fee} على ذلك تبلغ نحو ${feeAmount}. أثر السعر والغاز غير محتسبين.`,
+    leftRecentreHook: "يُسمح للخطّاف في هذا التجمّع بتغيير تكلفة التبادل، فقد يدفع تبادل حقيقي شيئًا آخر.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ اقترب ${pair} (${protocol}) من حافة نطاقه: ${range}. السعر الآن ${price}؛ وبعد ${edge} يحمل رمزًا واحدًا ولا يكسب شيئًا.`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -5772,7 +5801,7 @@ const hi: Dictionary = {
   telegram: {
     heading: "Telegram पर सूचनाएँ",
     intro:
-      "जब इस पते की कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए, Telegram पर जानें। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों सर्वर से मिट जाते हैं, और सात दिनों के भीतर उसके एन्क्रिप्टेड बैकअप से भी। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है। यदि आप बॉट से /smart कहकर माँगें, तो वह यह भी बताएगा कि जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता कब खिसकी; तब वह हर ऐसे पूल के लिए यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था। /weekly से वह हर सोमवार यह सारांश भी भेजता है कि उस नेटवर्क पर स्मार्ट पैसा कहाँ खिसका; इसके लिए वह केवल यह रखता है कि आख़िरी सारांश कब गया।",
+      "जब इस पते की कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए, Telegram पर जानें। जब कोई बाहर जाती है, तो सूचना यह भी बताती है कि पिछले सात दिनों में उस पूल में दायरे के भीतर की तरलता को सालाना दर से कितना शुल्क मिला, और मौजूदा कीमत पर पोज़िशन को फिर से केंद्रित करने में स्वैप शुल्क कितना लगेगा: दोनों मापे हुए, कोई भी पूर्वानुमान नहीं। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों सर्वर से मिट जाते हैं, और सात दिनों के भीतर उसके एन्क्रिप्टेड बैकअप से भी। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है। यदि आप बॉट से /smart कहकर माँगें, तो वह यह भी बताएगा कि जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता कब खिसकी; तब वह हर ऐसे पूल के लिए यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था। /weekly से वह हर सोमवार यह सारांश भी भेजता है कि उस नेटवर्क पर स्मार्ट पैसा कहाँ खिसका; इसके लिए वह केवल यह रखता है कि आख़िरी सारांश कब गया।",
     connect: "Telegram जोड़ें",
     connected: (address: string) => `यह ब्राउज़र जुड़ा है: ${address} पर नज़र रखी जा रही है।`,
     pending: "लिंक प्रतीक्षा में है: Telegram में बॉट की चैट खोलें और Start दबाएँ।",
@@ -5789,7 +5818,7 @@ const hi: Dictionary = {
     stopped: "रोक दिया गया। यह चैट अब किसी पर नज़र नहीं रखती। रिकॉर्ड सर्वर से मिटा दिया गया है, और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी मिट जाएगा।",
     nothingToStop: "यह चैट किसी पर नज़र नहीं रख रही थी।",
     help:
-      "यह बॉट केवल उस पते पर नज़र रखता है जो आपने साइट पर जोड़ा है, और केवल तभी बोलता है जब कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए। समाप्त करने के लिए /stop भेजें। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता खिसकने पर भी सूचना पाने के लिए /smart भेजें। स्मार्ट पैसा कहाँ खिसका, इसका हर सोमवार सारांश पाने के लिए /weekly भेजें।",
+      "यह बॉट केवल उस पते पर नज़र रखता है जो आपने साइट पर जोड़ा है, और केवल तभी बोलता है जब कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए। जब कोई बाहर जाती है, तो यह भी बताता है कि पिछले सात दिनों में पूल ने दायरे के भीतर की तरलता को कितना शुल्क दिया और फिर से केंद्रित करने में स्वैप शुल्क कितना लगेगा। समाप्त करने के लिए /stop भेजें। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता खिसकने पर भी सूचना पाने के लिए /smart भेजें। स्मार्ट पैसा कहाँ खिसका, इसका हर सोमवार सारांश पाने के लिए /weekly भेजें।",
     storeDown: "लिंक अभी जाँचा नहीं जा सका। एक मिनट बाद फिर कोशिश करें।",
     smartOn:
       "स्मार्ट पैसे की सूचनाएँ चालू हैं। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता की जगह बहुत खिसक जाए तो आपको यहीं पता चलेगा। इसके लिए बॉट यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था, और कुछ नहीं। इन्हें बंद करने के लिए /smart फिर से भेजें।",
@@ -5810,6 +5839,11 @@ const hi: Dictionary = {
     weeklyLink: (url: string) => `पूरा ब्योरा साइट पर: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) अपने दायरे से बाहर निकल गई: ${range}। कीमत लौटने तक यह एक ही टोकन रखती है और कुछ नहीं कमाती।`,
+    leftFeeYield: (rate: string) =>
+      `पिछले सात दिनों में इस पूल में दायरे के भीतर की तरलता को, पूल में मौजूद रक़म के मुक़ाबले, सालाना लगभग ${rate} की दर से शुल्क मिला; दायरे से बाहर यह पोज़िशन उसमें से कुछ नहीं कमाती।`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `इसे मौजूदा कीमत पर उसी चौड़ाई के साथ, ${range} पर, फिर से केंद्रित करने के लिए लगभग ${amount} स्वैप करना होगा; उस पर पूल का ${fee} शुल्क लगभग ${feeAmount} होगा। कीमत पर असर और गैस नहीं गिने गए।`,
+    leftRecentreHook: "इस पूल के hook को यह बदलने की अनुमति है कि स्वैप की लागत क्या हो, इसलिए असल स्वैप कुछ और चुका सकता है।",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair} (${protocol}) अपने दायरे के किनारे के पास है: ${range}। कीमत ${price} है; ${edge} के पार यह एक ही टोकन रखेगी और कुछ नहीं कमाएगी।`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -6907,7 +6941,7 @@ const zh: Dictionary = {
   telegram: {
     heading: "Telegram 提醒",
     intro:
-      "当这个地址的某个仓位接近它的区间边缘、离开区间或重新回到区间内时，通过 Telegram 获知。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会从服务器上删除，并在七天内从它的加密备份中消失。检查的频率取决于运行它的服务器。 如果你用 /smart 向机器人提出要求，当你持有仓位的池子里收益最高的流动性移动时，它也会告诉你；那时它会为每个这样的池子保存上次通知你时那个区间在哪里。 用 /weekly，它还会每周一发送一份该网络上聪明资金流向的摘要；为此它只保存上一份摘要的发送时间。",
+      "当这个地址的某个仓位接近它的区间边缘、离开区间或重新回到区间内时，通过 Telegram 获知。当某个仓位离开区间时，提醒还会说明过去七天里该资金池中处于区间内的流动性按年化计获得了多少手续费，以及按当前价格把仓位重新居中需要付多少兑换手续费：两者都是测量值，都不是预测。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会从服务器上删除，并在七天内从它的加密备份中消失。检查的频率取决于运行它的服务器。 如果你用 /smart 向机器人提出要求，当你持有仓位的池子里收益最高的流动性移动时，它也会告诉你；那时它会为每个这样的池子保存上次通知你时那个区间在哪里。 用 /weekly，它还会每周一发送一份该网络上聪明资金流向的摘要；为此它只保存上一份摘要的发送时间。",
     connect: "连接 Telegram",
     connected: (address: string) => `这个浏览器已绑定：正在关注 ${address}。`,
     pending: "绑定等待中：在 Telegram 里打开机器人的对话并按下“开始”。",
@@ -6924,7 +6958,7 @@ const zh: Dictionary = {
     stopped: "已停止。这个对话现在不再关注任何东西。记录已从服务器删除，七天内也会从加密备份中消失。",
     nothingToStop: "这个对话本来就没有关注任何东西。",
     help:
-      "这个机器人只关注你在网站上绑定的地址，也只在某个仓位接近区间边缘、离开或重新进入它的区间时说话。发送 /stop 结束。 发送 /smart，当你持有仓位的池子里收益最高的流动性移动时，也会收到通知。 发送 /weekly，每周一收到聪明资金流向的摘要。",
+      "这个机器人只关注你在网站上绑定的地址，也只在某个仓位接近区间边缘、离开或重新进入它的区间时说话。某个仓位离开区间时，它还会说明过去七天里资金池付给区间内流动性的手续费，以及重新居中需要付多少兑换手续费。发送 /stop 结束。 发送 /smart，当你持有仓位的池子里收益最高的流动性移动时，也会收到通知。 发送 /weekly，每周一收到聪明资金流向的摘要。",
     storeDown: "现在无法检查绑定。请一分钟后再试。",
     smartOn:
       "聪明资金提醒已开启。如果你持有仓位的某个池子里收益最高的流动性所在的位置大幅移动，你会在这里收到通知。为此，机器人只保存上次通知你时那个区间在哪里，别的什么都不保存。再发一次 /smart 即可关闭。",
@@ -6945,6 +6979,11 @@ const zh: Dictionary = {
     weeklyLink: (url: string) => `完整内容见网站：${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair}（${protocol}）已离开它的区间：${range}。在价格回来之前，它只持有一种代币，什么也赚不到。`,
+    leftFeeYield: (rate: string) =>
+      `过去七天里，这个资金池中处于区间内的流动性获得的手续费，按池中现有价值计约为每年 ${rate}；离开区间后，这个仓位一分也赚不到。`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `若在当前价格以同样宽度重新居中，即 ${range}，需要兑换约 ${amount}；资金池对此收取的 ${fee} 手续费约为 ${feeAmount}。未计入价格冲击和 gas。`,
+    leftRecentreHook: "这个资金池的 hook 被允许改变一笔兑换的成本，所以真实的兑换可能付出别的数目。",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair}（${protocol}）已接近它的区间边缘：${range}。当前价格为 ${price}；越过 ${edge} 后，它将只持有一种代币，什么也赚不到。`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -8138,7 +8177,7 @@ const ru: Dictionary = {
   telegram: {
     heading: "Уведомления в Telegram",
     intro:
-      "Узнавать в Telegram, когда одна из позиций этого адреса приближается к краю своего диапазона, выходит за него или возвращается в него. Кнопка ведёт к боту этого сайта; нажатие «Старт» там привязывает тот чат к этому адресу. Хранятся адрес и числовой идентификатор чата — и больше ничего, — и оба удаляются с сервера, как только вы отправите боту /stop или забудете связь здесь, а из его зашифрованных резервных копий — в течение семи дней. Как часто идёт проверка, зависит от сервера, на котором всё это работает. Если вы попросите об этом бота командой /smart, он будет сообщать и о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция; тогда он хранит для каждого такого пула, где этот диапазон был, когда вам сообщали в последний раз. С /weekly он также каждый понедельник присылает сводку о том, куда в этой сети переместились умные деньги; для этого хранится только время отправки последней сводки.",
+      "Узнавать в Telegram, когда одна из позиций этого адреса приближается к краю своего диапазона, выходит за него или возвращается в него. Когда позиция выходит за диапазон, уведомление говорит ещё, сколько комиссий получила за последние семь дней ликвидность внутри диапазона в этом пуле, в годовом выражении, и во что обошлось бы в комиссиях за своп перецентрирование позиции по текущей цене: и то и другое — измерения, а не прогноз. Кнопка ведёт к боту этого сайта; нажатие «Старт» там привязывает тот чат к этому адресу. Хранятся адрес и числовой идентификатор чата — и больше ничего, — и оба удаляются с сервера, как только вы отправите боту /stop или забудете связь здесь, а из его зашифрованных резервных копий — в течение семи дней. Как часто идёт проверка, зависит от сервера, на котором всё это работает. Если вы попросите об этом бота командой /smart, он будет сообщать и о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция; тогда он хранит для каждого такого пула, где этот диапазон был, когда вам сообщали в последний раз. С /weekly он также каждый понедельник присылает сводку о том, куда в этой сети переместились умные деньги; для этого хранится только время отправки последней сводки.",
     connect: "Подключить Telegram",
     connected: (address: string) => `Этот браузер связан: за ${address} следим.`,
     pending: "Связь ждёт: откройте чат бота в Telegram и нажмите «Старт».",
@@ -8155,7 +8194,7 @@ const ru: Dictionary = {
     stopped: "Остановлено. Этот чат больше ни за чем не следит. Запись удалена с сервера, а из зашифрованных резервных копий исчезнет в течение семи дней.",
     nothingToStop: "Этот чат ни за чем не следил.",
     help:
-      "Этот бот следит только за адресом, который вы связали на сайте, и говорит только тогда, когда позиция приближается к краю своего диапазона, выходит за него или возвращается в него. Чтобы прекратить, отправьте /stop. Отправьте /smart, чтобы получать и сообщения о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция. Отправьте /weekly, чтобы каждый понедельник получать сводку о том, куда переместились умные деньги.",
+      "Этот бот следит только за адресом, который вы связали на сайте, и говорит только тогда, когда позиция приближается к краю своего диапазона, выходит за него или возвращается в него. Когда позиция выходит за диапазон, он сообщает и то, сколько пул заплатил ликвидности внутри диапазона за последние семь дней, и во что обошлось бы перецентрирование в комиссиях за своп. Чтобы прекратить, отправьте /stop. Отправьте /smart, чтобы получать и сообщения о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция. Отправьте /weekly, чтобы каждый понедельник получать сводку о том, куда переместились умные деньги.",
     storeDown: "Связь сейчас не удалось проверить. Попробуйте через минуту.",
     smartOn:
       "Оповещения об умных деньгах включены. Если место, где стоит самая доходная ликвидность в пуле, в котором у вас есть позиция, сильно сместится, вы узнаете об этом здесь. Для этого бот хранит, где этот диапазон был, когда вам сообщали в последний раз, и больше ничего. Чтобы выключить, отправьте /smart ещё раз.",
@@ -8176,6 +8215,11 @@ const ru: Dictionary = {
     weeklyLink: (url: string) => `Целиком — на сайте: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) вышла за свой диапазон: ${range}. Она держит один токен и ничего не зарабатывает, пока цена не вернётся.`,
+    leftFeeYield: (rate: string) =>
+      `За последние семь дней ликвидность внутри диапазона в этом пуле получила комиссий примерно на ${rate} в год от того, что лежит в пуле; вне диапазона эта позиция ничего из этого не зарабатывает.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `Перецентрирование по текущей цене с той же шириной, на ${range}, потребовало бы свопа примерно ${amount}; комиссия пула ${fee} с него составила бы примерно ${feeAmount}. Влияние на цену и gas не учитываются.`,
+    leftRecentreHook: "Hook’у этого пула разрешено менять то, сколько стоит своп, поэтому настоящий своп может заплатить иначе.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair} (${protocol}) приближается к краю своего диапазона: ${range}. Цена сейчас ${price}; за пределами ${edge} она будет держать один токен и ничего не зарабатывать.`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -9375,7 +9419,7 @@ const pt: Dictionary = {
   telegram: {
     heading: "Avisos no Telegram",
     intro:
-      "Ser avisado, no Telegram, quando uma das posições deste endereço chegar perto da borda da faixa dela, sair dela ou voltar para dentro. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois são apagados do servidor no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui, e dos backups criptografados dele em até sete dias. Com que frequência a conferência acontece depende do servidor em que isto roda. Se você pedir ao bot com /smart, ele também avisa quando a liquidez que mais ganha em um pool onde você tem uma posição se mover; então ele guarda, para cada pool assim, onde essa faixa estava quando você foi avisado pela última vez. Com /weekly ele também envia, toda segunda-feira, um resumo de para onde o dinheiro inteligente se moveu nessa rede; para isso guarda só quando o último foi enviado.",
+      "Ser avisado, no Telegram, quando uma das posições deste endereço chegar perto da borda da faixa dela, sair dela ou voltar para dentro. Quando uma sai, o aviso diz também quanto a liquidez dentro da faixa naquele pool recebeu em taxas nos últimos sete dias, como percentual ao ano, e quanto custaria em taxas de swap recentralizar a posição no preço atual: as duas coisas medidas, nenhuma uma previsão. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois são apagados do servidor no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui, e dos backups criptografados dele em até sete dias. Com que frequência a conferência acontece depende do servidor em que isto roda. Se você pedir ao bot com /smart, ele também avisa quando a liquidez que mais ganha em um pool onde você tem uma posição se mover; então ele guarda, para cada pool assim, onde essa faixa estava quando você foi avisado pela última vez. Com /weekly ele também envia, toda segunda-feira, um resumo de para onde o dinheiro inteligente se moveu nessa rede; para isso guarda só quando o último foi enviado.",
     connect: "Conectar o Telegram",
     connected: (address: string) => `Este navegador está vinculado: ${address} está sendo acompanhado.`,
     pending: "O vínculo está esperando: abra a conversa do bot no Telegram e aperte Iniciar.",
@@ -9392,7 +9436,7 @@ const pt: Dictionary = {
     stopped: "Encerrado. Esta conversa não acompanha mais nada. O registro foi apagado do servidor e sai dos backups criptografados em até sete dias.",
     nothingToStop: "Esta conversa não estava acompanhando nada.",
     help:
-      "Este bot só acompanha o endereço que você vinculou no site, e só fala quando uma posição chega perto da borda da faixa dela, sai dela ou volta para dentro. Mande /stop para encerrar. Envie /smart para também ser avisado quando a liquidez que mais ganha em um pool onde você tem uma posição se mover. Envie /weekly para receber toda segunda-feira um resumo de para onde o dinheiro inteligente se moveu.",
+      "Este bot só acompanha o endereço que você vinculou no site, e só fala quando uma posição chega perto da borda da faixa dela, sai dela ou volta para dentro. Quando uma sai, ele também diz quanto o pool pagou à liquidez dentro da faixa nos últimos sete dias e quanto custaria recentralizar em taxas de swap. Mande /stop para encerrar. Envie /smart para também ser avisado quando a liquidez que mais ganha em um pool onde você tem uma posição se mover. Envie /weekly para receber toda segunda-feira um resumo de para onde o dinheiro inteligente se moveu.",
     storeDown: "Não foi possível conferir o vínculo agora. Tente de novo daqui a um minuto.",
     smartOn:
       "Os alertas de dinheiro inteligente estão ativados. Se o lugar onde está a liquidez que mais ganha em um pool onde você tem uma posição se deslocar muito, você saberá aqui. Para isso o bot guarda onde essa faixa estava quando você foi avisado pela última vez, e nada mais. Envie /smart de novo para desativá-los.",
@@ -9413,6 +9457,11 @@ const pt: Dictionary = {
     weeklyLink: (url: string) => `Tudo no site: ${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) saiu da faixa dela: ${range}. Ela está com um token só e não ganha nada até o preço voltar.`,
+    leftFeeYield: (rate: string) =>
+      `Nos últimos sete dias, a liquidez dentro da faixa neste pool recebeu taxas de cerca de ${rate} ao ano sobre o que há no pool; fora da faixa, esta posição não ganha nada disso.`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `Recentralizá-la no preço atual com a mesma largura, em ${range}, significaria fazer um swap de cerca de ${amount}; a taxa de ${fee} do pool sobre isso seria de cerca de ${feeAmount}. Impacto no preço e gas não são contados.`,
+    leftRecentreHook: "O hook deste pool tem permissão para mudar quanto um swap custa, então um swap de verdade pode pagar outra coisa.",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair} (${protocol}) está perto da borda da faixa dela: ${range}. O preço está em ${price}; além de ${edge} ela fica com um token só e não ganha nada.`,
     entered: (pair: string, protocol: string, range: string) =>
@@ -10600,7 +10649,7 @@ const zhHant: Dictionary = {
   telegram: {
     heading: "Telegram 提醒",
     intro:
-      "當這個地址的某個倉位接近它的區間邊緣、離開區間或重新回到區間內時，透過 Telegram 獲知。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會從伺服器上刪除，並在七天內從它的加密備份中消失。檢查的頻率取決於執行它的伺服器。如果你用 /smart 向機器人提出要求，當你持有倉位的池子裡收益最高的流動性移動時，它也會告訴你；那時它會為每個這樣的池子儲存上次通知你時那個區間在哪裡。用 /weekly 開啟後，它還會每週一傳送一份該網路上聰明資金流向的摘要；為此它只儲存上一份摘要的傳送時間。",
+      "當這個地址的某個倉位接近它的區間邊緣、離開區間或重新回到區間內時，透過 Telegram 獲知。當某個倉位離開區間時，提醒還會說明過去七天裡該資金池中處於區間內的流動性按年化計獲得了多少手續費，以及按當前價格把倉位重新置中需要付多少兌換手續費：兩者都是測量值，都不是預測。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會從伺服器上刪除，並在七天內從它的加密備份中消失。檢查的頻率取決於執行它的伺服器。如果你用 /smart 向機器人提出要求，當你持有倉位的池子裡收益最高的流動性移動時，它也會告訴你；那時它會為每個這樣的池子儲存上次通知你時那個區間在哪裡。用 /weekly 開啟後，它還會每週一傳送一份該網路上聰明資金流向的摘要；為此它只儲存上一份摘要的傳送時間。",
     connect: "連接 Telegram",
     connected: (address: string) => `這個瀏覽器已綁定：正在關注 ${address}。`,
     pending: "綁定等待中：在 Telegram 裡開啟機器人的對話並按下「開始」。",
@@ -10617,7 +10666,7 @@ const zhHant: Dictionary = {
     stopped: "已停止。這個對話現在不再關注任何東西。記錄已從伺服器刪除，七天內也會從加密備份中消失。",
     nothingToStop: "這個對話本來就沒有關注任何東西。",
     help:
-      "這個機器人只關注你在網站上綁定的地址，也只在某個倉位接近區間邊緣、離開或重新進入它的區間時說話。傳送 /stop 結束。傳送 /smart，當你持有倉位的池子裡收益最高的流動性移動時，也會收到通知。傳送 /weekly，每週一收到聰明資金流向的摘要。",
+      "這個機器人只關注你在網站上綁定的地址，也只在某個倉位接近區間邊緣、離開或重新進入它的區間時說話。某個倉位離開區間時，它還會說明過去七天裡資金池付給區間內流動性的手續費，以及重新置中需要付多少兌換手續費。傳送 /stop 結束。傳送 /smart，當你持有倉位的池子裡收益最高的流動性移動時，也會收到通知。傳送 /weekly，每週一收到聰明資金流向的摘要。",
     storeDown: "現在無法檢查綁定。請一分鐘後再試。",
     smartOn:
       "聰明資金提醒已開啟。如果你持有倉位的某個池子裡收益最高的流動性所在的位置大幅移動，你會在這裡收到通知。為此，機器人只儲存上次通知你時那個區間在哪裡，別的什麼都不儲存。再傳送一次 /smart 即可關閉。",
@@ -10638,6 +10687,11 @@ const zhHant: Dictionary = {
     weeklyLink: (url: string) => `完整內容見網站：${url}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair}（${protocol}）已離開它的區間：${range}。在價格回來之前，它只持有一種代幣，什麼也賺不到。`,
+    leftFeeYield: (rate: string) =>
+      `過去七天裡，這個資金池中處於區間內的流動性獲得的手續費，按池中現有價值計約為每年 ${rate}；離開區間後，這個倉位一分也賺不到。`,
+    leftRecentre: (range: string, amount: string, fee: string, feeAmount: string) =>
+      `若在當前價格以同樣寬度重新置中，也就是 ${range}，需要兌換約 ${amount}；資金池對此收取的 ${fee} 手續費約為 ${feeAmount}。未計入價格衝擊和 gas。`,
+    leftRecentreHook: "這個資金池的 hook 被允許改變一筆兌換的成本，所以真實的兌換可能付出別的數目。",
     nearing: (pair: string, protocol: string, range: string, price: string, edge: string) =>
       `⏳ ${pair}（${protocol}）已接近它的區間邊緣：${range}。當前價格為 ${price}；越過 ${edge} 後，它將只持有一種代幣，什麼也賺不到。`,
     entered: (pair: string, protocol: string, range: string) =>

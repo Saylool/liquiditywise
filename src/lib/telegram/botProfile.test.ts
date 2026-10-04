@@ -34,6 +34,13 @@ describe("the bot's profile fits what Telegram accepts", () => {
     expect(quoted(name)).toContain("/weekly");
   });
 
+  it.each([
+    ["DESC_EN", /leave.*paid in range.*re-centre/s],
+    ["DESC_TR", /çıkınca havuzun.*aralıkta ödediğini.*yeniden ortalamanın takas komisyonunu/s],
+  ])("%s says what an alert that a position has left its range adds", (name, words) => {
+    expect(quoted(name)).toMatch(words);
+  });
+
   it("lists /weekly among the commands, in every language the menu is set in", () => {
     const menus = [...script.matchAll(/'commands=(\[[^']*\])'/g)].map((match) => JSON.parse(match[1] ?? "[]") as { command: string; description: string }[]);
 

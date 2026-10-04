@@ -25,17 +25,17 @@ api() {
   printf '%s %s\n' "$method" "$(printf '%s' "$out" | grep -oE '"ok":(true|false)')"
 }
 
-DESC_EN='This bot follows the Uniswap positions of one address and tells you when one nears the edge of its range, leaves it, or comes back.
+DESC_EN='Follows the Uniswap positions of one address and tells you when one nears its range edge, leaves it, or comes back; on a leave, also what the pool paid in range last week and the swap fee to re-centre.
 
-You link an address on liquiditywise.com; nothing is stored until you do, and then it is the address and this chat, plus a pool smart-money range with /smart and the last digest time with /weekly. /stop deletes all of it at once, and from the encrypted backups within seven days.
+Link an address on liquiditywise.com; only then is anything kept: the address, this chat, a smart-money range with /smart, the last digest time with /weekly. /stop deletes it all at once, and from encrypted backups within seven days.
 
-Reads public on-chain data; cannot sign or send anything. Information only, not advice.'
+Reads public on-chain data; cannot sign or send. Information, not advice.'
 
-DESC_TR='Bu bot bir adresin Uniswap pozisyonlarını izler ve içlerinden biri aralığının sınırına yaklaştığında, çıktığında ya da geri girdiğinde haber verir.
+DESC_TR='Bir adresin Uniswap pozisyonlarını izler; biri aralık sınırına yaklaşınca, çıkınca ya da geri girince haber verir; çıkınca havuzun geçen hafta aralıkta ödediğini ve yeniden ortalamanın takas komisyonunu da.
 
-Adresi liquiditywise.com üzerinden bağlarsın; bağlamadan önce hiçbir şey saklanmaz, sonra adres ile bu sohbet saklanır; /smart ile havuzun akıllı para aralığı, /weekly ile son özetin zamanı. /stop yazarsan hepsi hemen, şifreli yedeklerden de yedi günde silinir.
+Adresi liquiditywise.com üzerinden bağlarsın; ancak o zaman saklanır: adres, bu sohbet, /smart ile akıllı para aralığı, /weekly ile son özet zamanı. /stop hepsini hemen, şifreli yedeklerden de yedi günde siler.
 
-Herkese açık zincir verisini okur; imzalayamaz, işlem gönderemez. Yalnızca bilgi, tavsiye değil.'
+Herkese açık zincir verisini okur; imzalayamaz, gönderemez. Yalnızca bilgi, tavsiye değil.'
 
 SHORT_EN='Tells you when a Uniswap position leaves its range. liquiditywise.com'
 SHORT_TR='Uniswap pozisyonun aralıktan çıkınca haber verir. liquiditywise.com'

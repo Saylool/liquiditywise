@@ -229,6 +229,15 @@ describe("composing a v4 position", () => {
    * dynamic one has no fee to report — the hook sets it at the moment of a swap,
    * and this read never asked the pool's state.
    */
+  it("carries the protocol's cut read with the fees, and leaves it unread where that read did not answer", () => {
+    const cut = { zeroForOnePpm: 100, oneForZeroPpm: 125 };
+    const read = onlyV4({ v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees, protocolFees: new Map([[V4_POOL, cut]]) } });
+    const unread = onlyV4({ v4: { raw: rawV4(), pools: [v4Pool()], fees: noFees, protocolFees: new Map() } });
+
+    expect(read.positions[0]?.pool).toMatchObject({ protocolFee: cut });
+    expect(unread.positions[0]?.pool).toMatchObject({ protocolFee: null });
+  });
+
   it("reports a dynamic fee as unobserved rather than as a number", () => {
     const hooked = "0x000000000000000000000000000000000000f0c0";
     const answer = onlyV4({

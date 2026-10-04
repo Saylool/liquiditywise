@@ -9,6 +9,7 @@ import {
   calculateRecentringReplay,
   rebalanceInto,
   recentreSwapFee,
+  statedRecentreSwapFee,
   type RecentreSwapFee,
 } from "./recentringReplay";
 
@@ -445,5 +446,18 @@ describe("the fee a re-centre's swap is charged", () => {
     expect(recentreSwapFee(dynamic, measured)).toEqual({ zeroForOnePpm: 420, oneForZeroPpm: 420, basis: "measured" });
     expect(recentreSwapFee(unread, measured)?.basis).toBe("measured");
     expect(recentreSwapFee(dynamic, unmeasured)).toBeNull();
+  });
+
+  /* What a Telegram alert charges a re-centre's swap: the pool's own terms or nothing, since it has no month to measure. */
+  it("is the pool's own terms alone where nothing measured is to be had", () => {
+    expect(statedRecentreSwapFee(v3)).toEqual({ zeroForOnePpm: 3000, oneForZeroPpm: 3000, basis: "stated" });
+    expect(statedRecentreSwapFee(v4({ kind: "static", feePpm: 500 }, { zeroForOnePpm: 100, oneForZeroPpm: 125 }))).toEqual({
+      zeroForOnePpm: 600,
+      oneForZeroPpm: 625,
+      basis: "stated",
+    });
+    expect(statedRecentreSwapFee(v4({ kind: "dynamic", currentFeePpm: 9000 }, { zeroForOnePpm: 0, oneForZeroPpm: 0 }))).toBeNull();
+    expect(statedRecentreSwapFee(v4({ kind: "static", feePpm: 500 }, null))).toBeNull();
+    expect(statedRecentreSwapFee(v4({ kind: "unread" }, { zeroForOnePpm: 0, oneForZeroPpm: 0 }))).toBeNull();
   });
 });

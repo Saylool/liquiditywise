@@ -7,10 +7,9 @@ import { fetchEthereumV3PositionFees, type V3PositionFeesRead } from "../uniswap
 import { fetchEthereumV3Positions } from "../uniswap/ethereumV3Positions";
 import { fetchEthereumV3PositionHistories, type V3PositionHistories } from "../uniswap/ethereumV3PositionSnapshots";
 import { fetchEthereumV4PoolsByIds } from "../uniswap/ethereumV4PoolsByIds";
-import { fetchEthereumV4PositionFees } from "../uniswap/ethereumV4PositionFees";
+import { fetchEthereumV4PositionFees, type V4PositionFeesRead } from "../uniswap/ethereumV4PositionFees";
 import { fetchEthereumV4PositionIds } from "../uniswap/ethereumV4PositionIds";
 import { fetchEthereumV4Positions } from "../uniswap/ethereumV4Positions";
-import type { PositionFees } from "../uniswap/feeGrowth";
 import {
   composeAddressPositions,
   type AddressPositionsResult,
@@ -71,6 +70,7 @@ const orNothing = async <Read>(label: string, read: Promise<DataResult<Read>>, n
 };
 
 const NO_V3_FEES: V3PositionFeesRead = { fees: new Map(), sqrtPrices: new Map() };
+const NO_V4_FEES: V4PositionFeesRead = { fees: new Map(), protocolFees: new Map() };
 
 /**
  * The histories of the v3 positions a page can show.
@@ -193,7 +193,7 @@ const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V
     return { ok: false, notice: positions.notice };
   }
 
-  const [pools, fees] = await Promise.all([
+  const [pools, read] = await Promise.all([
     fetchEthereumV4PoolsByIds({
       poolIds: heldPoolIds(positions.data),
       apiKey,
@@ -210,7 +210,7 @@ const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V
         fetchImpl: fetch,
         chainId,
       }),
-      new Map<string, PositionFees>(),
+      NO_V4_FEES,
     ),
   ]);
   if (pools.status === "unavailable") {
@@ -218,7 +218,7 @@ const readV4 = async (address: string, chainId: V4ChainId): Promise<SideResult<V
     return { ok: false, notice: pools.notice };
   }
 
-  return { ok: true, side: { raw: positions.data, pools: pools.data, fees } };
+  return { ok: true, side: { raw: positions.data, pools: pools.data, fees: read.fees, protocolFees: read.protocolFees } };
 };
 
 /**

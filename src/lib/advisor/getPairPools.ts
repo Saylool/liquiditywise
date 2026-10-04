@@ -7,7 +7,7 @@ import { getEthereumV4PoolDays } from "../uniswap/getEthereumV4PoolDays";
 import { getEthereumV4PoolSearch } from "../uniswap/getEthereumV4PoolSearch";
 import { getNativeUsdPrice } from "../uniswap/getNativeUsdPrice";
 import type { PairPools, PairTerms } from "./pairPools";
-import { readPairPools } from "./readPairPools";
+import { type PairPoolReaders, readPairPools } from "./readPairPools";
 
 /** Identifies this reader in server-side diagnostics. */
 const LABEL = "pair-pools";
@@ -18,15 +18,22 @@ const LABEL = "pair-pools";
  * pair searched a minute ago on the pool page — or any day table the warmer
  * keeps — costs nothing here. Nothing is cached at this level: every piece is
  * kept where it is read, for as long as it is good.
+ *
+ * The readers are exported for the one other place that needs this page's
+ * figure for a single pool: a Telegram alert that a position has left its
+ * range says what that pool's liquidity in range was paid (see
+ * telegram/leftRange.ts). The same reads behind the same caches, so the two
+ * cannot disagree and neither pays twice.
  */
-export const getPairPools = async (terms: PairTerms): Promise<PairPools> =>
-  readPairPools(terms, {
-    searchV3: (searched, chainId) => getEthereumV3PoolSearch(searched, chainId),
-    searchV4: (searched, chainId) => getEthereumV4PoolSearch(searched, chainId),
-    daysV3: (chainId) => getEthereumV3PoolDays(chainId),
-    daysV4: (chainId) => getEthereumV4PoolDays(chainId),
-    nativeUsd: (chainId, protocol) => getNativeUsdPrice(chainId, protocol),
-    onThrown: (where) => {
-      logDetail(LABEL, `a read threw instead of answering: ${where}`);
-    },
-  });
+export const pairPoolReaders: PairPoolReaders = {
+  searchV3: (searched, chainId) => getEthereumV3PoolSearch(searched, chainId),
+  searchV4: (searched, chainId) => getEthereumV4PoolSearch(searched, chainId),
+  daysV3: (chainId) => getEthereumV3PoolDays(chainId),
+  daysV4: (chainId) => getEthereumV4PoolDays(chainId),
+  nativeUsd: (chainId, protocol) => getNativeUsdPrice(chainId, protocol),
+  onThrown: (where) => {
+    logDetail(LABEL, `a read threw instead of answering: ${where}`);
+  },
+};
+
+export const getPairPools = async (terms: PairTerms): Promise<PairPools> => readPairPools(terms, pairPoolReaders);

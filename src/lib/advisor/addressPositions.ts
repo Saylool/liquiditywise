@@ -8,6 +8,7 @@ import {
   POSITIONS_SHOWN,
   PositionSchema,
   type ProtocolVersion,
+  type V4ProtocolFee,
   ZERO_ADDRESS,
 } from "../../schemas";
 import type { RawV3Positions } from "../uniswap/ethereumV3Positions";
@@ -88,6 +89,12 @@ export type V4Side = {
   readonly raw: RawV4Positions;
   readonly pools: readonly V4PoolTokens[];
   readonly fees: ReadonlyMap<string, PositionFees>;
+  /**
+   * The protocol's cut of a swap in each pool, by pool id, read with the fees
+   * from the pool's own state. A pool missing from it was not read, and its
+   * positions say so rather than carry a zero.
+   */
+  readonly protocolFees?: ReadonlyMap<string, V4ProtocolFee>;
 };
 
 export type AddressPositionsInput = {
@@ -196,6 +203,7 @@ const describeV4 = (
   raw: RawV4Position,
   byId: ReadonlyMap<string, V4PoolTokens>,
   fees: ReadonlyMap<string, PositionFees>,
+  protocolFees: ReadonlyMap<string, V4ProtocolFee>,
 ): Position | null => {
   const found = byId.get(raw.poolId);
   if (found === undefined) return null;
@@ -217,14 +225,18 @@ const describeV4 = (
       /*
        * From the key, which is the only place that says which kind a pool is.
        * A dynamic pool's current fee is left unread rather than guessed: the
-       * hook sets it per swap and this read never asked the pool's state.
+       * hook sets it per swap, and what the pool's state stores is only what
+       * the hook last wrote there.
        */
       fee:
         raw.key.fee === DYNAMIC_FEE_FLAG
           ? { kind: "dynamic", currentFeePpm: null }
           : { kind: "static", feePpm: raw.key.fee },
-      /* Not read here. A zero standing in for it would be a figure nobody read. */
-      protocolFee: null,
+      /*
+       * From the pool's state, read with the fees; where that read failed it
+       * stays unread. A zero standing in for it would be a figure nobody read.
+       */
+      protocolFee: protocolFees.get(raw.poolId) ?? null,
       hookAddress: raw.key.hooks === ZERO_ADDRESS ? null : raw.key.hooks,
     },
     tickLower: raw.tickLower,
@@ -304,7 +316,9 @@ export const composeAddressPositions = ({
     ...(v3 === null
       ? []
       : v3.raw.open.map((position) => describeV3(position, v3.raw.factory, byAddress, v3.fees))),
-    ...(v4 === null ? [] : v4.raw.open.map((position) => describeV4(position, byId, v4.fees))),
+    ...(v4 === null
+      ? []
+      : v4.raw.open.map((position) => describeV4(position, byId, v4.fees, v4.protocolFees ?? new Map()))),
   ].filter((position): position is Position => position !== null);
 
   const sources: HoldingsSource[] = [];

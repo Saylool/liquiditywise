@@ -224,29 +224,19 @@ export const priceAtSqrt = (
   return Number.isFinite(price) && price > 0 ? price : null;
 };
 
-/**
- * What a liquidity holds between two ticks at a `slot0` price, in whole tokens:
- * the protocol's position formulas (see analytics/divergenceLoss.ts), scaled
- * by the liquidity and then by each token's decimals.
- */
-export const amountsHeld = ({
-  liquidity,
-  tickLower,
-  tickUpper,
-  sqrtPriceX96,
-  decimals,
-}: {
+type HeldInput = {
   readonly liquidity: bigint;
   readonly tickLower: number;
   readonly tickUpper: number;
-  readonly sqrtPriceX96: bigint;
   readonly decimals: { readonly token0: number; readonly token1: number };
-}): TokenAmounts | null => {
+};
+
+/** What both readings below come to, from the square root of a raw price however it was read. */
+const heldAtRoot = ({ liquidity, tickLower, tickUpper, decimals }: HeldInput, root: number): TokenAmounts | null => {
   const lowerRoot = sqrtRatioAtTick(tickLower);
   const upperRoot = sqrtRatioAtTick(tickUpper);
   if (lowerRoot === null || upperRoot === null || !(lowerRoot < upperRoot)) return null;
 
-  const root = Number(sqrtPriceX96) / Q96;
   const perUnit = amountsAt(root * root, lowerRoot, upperRoot);
   const units = Number(liquidity);
   const held = {
@@ -255,6 +245,34 @@ export const amountsHeld = ({
   };
 
   return Number.isFinite(held.token0) && Number.isFinite(held.token1) ? held : null;
+};
+
+/**
+ * What a liquidity holds between two ticks at a `slot0` price, in whole tokens:
+ * the protocol's position formulas (see analytics/divergenceLoss.ts), scaled
+ * by the liquidity and then by each token's decimals.
+ */
+export const amountsHeld = ({
+  sqrtPriceX96,
+  ...position
+}: HeldInput & { readonly sqrtPriceX96: bigint }): TokenAmounts | null => heldAtRoot(position, Number(sqrtPriceX96) / Q96);
+
+/**
+ * The same, with the pool's price at the start of a tick rather than its exact
+ * `slot0` price — the reading a listed position carries, and the one its range
+ * status was decided from.
+ *
+ * Between two ticks the difference is a hundredth of a percent of the price,
+ * and for a position whose range the price has left it is nothing at all: past
+ * an edge the formulas hold one token, the same amount wherever the price sits
+ * on that side. At the upper tick itself the position is out of range and the
+ * price is at or above that edge, so the tick's own price holds exactly what
+ * the chain's would.
+ */
+export const amountsHeldAtTick = ({ tick, ...position }: HeldInput & { readonly tick: number }): TokenAmounts | null => {
+  const root = sqrtRatioAtTick(tick);
+
+  return root === null ? null : heldAtRoot(position, root);
 };
 
 /** Builds one position's record, or says why there is none. */

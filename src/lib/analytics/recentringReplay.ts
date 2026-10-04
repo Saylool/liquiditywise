@@ -1,4 +1,4 @@
-import { type PoolDailyPriceHistory, type PoolMarketSnapshot, type Pool, swapFeePpm } from "../../schemas";
+import { type PoolDailyPriceHistory, type PoolMarketSnapshot, type Pool, type PositionPool, swapFeePpm } from "../../schemas";
 import { usdPerToken1 } from "./depositFeeShare";
 import { amountsAt, valueInToken1 } from "./divergenceLoss";
 import { dayFeeShare, type RangeBacktest, replayLiquidity, replayWindow } from "./rangeBacktest";
@@ -74,17 +74,17 @@ export type RecentreSwapFee = {
 };
 
 /**
- * The fee a re-centre's swap is charged on this pool, or `null` when nothing
- * can say.
+ * What a swap pays by the pool's own terms, in each direction, or `null` where
+ * they do not say: a v3 tier, or a v4 key's fee with the protocol's cut
+ * combined the way the PoolManager combines them. A v4 pool whose hook sets
+ * the fee per swap says nothing fixed, and neither does one whose state was
+ * not read.
  *
- * What the pool's own terms say first, in the swap's own direction: a v3 tier,
- * or a v4 key's fee with the protocol's cut combined the way the PoolManager
- * combines them. Where nothing fixed says, the rate the month's swaps actually
- * paid — the realised-fee panel's whole-window figure, fees over volume, from
- * the same days. Never `currentFeePpm`, one moment's reading of a dynamic fee,
- * for the reason `lpFeePpm` gives for never returning it.
+ * Any pool a position names will do as well as a pool's own page's: only the
+ * fee terms are read, and a position's v3 pool has those without the tick
+ * spacing nobody publishes.
  */
-export const recentreSwapFee = (pool: Pool, realized: RealizedFeeRateResult): RecentreSwapFee | null => {
+export const statedRecentreSwapFee = (pool: Pool | PositionPool): RecentreSwapFee | null => {
   if (pool.protocolVersion === "v3") {
     return { zeroForOnePpm: pool.feePpm, oneForZeroPpm: pool.feePpm, basis: "stated" };
   }
@@ -95,6 +95,23 @@ export const recentreSwapFee = (pool: Pool, realized: RealizedFeeRateResult): Re
       basis: "stated",
     };
   }
+  return null;
+};
+
+/**
+ * The fee a re-centre's swap is charged on this pool, or `null` when nothing
+ * can say.
+ *
+ * What the pool's own terms say first, in the swap's own direction (see
+ * {@link statedRecentreSwapFee}). Where nothing fixed says, the rate the
+ * month's swaps actually paid — the realised-fee panel's whole-window figure,
+ * fees over volume, from the same days. Never `currentFeePpm`, one moment's
+ * reading of a dynamic fee, for the reason `lpFeePpm` gives for never
+ * returning it.
+ */
+export const recentreSwapFee = (pool: Pool, realized: RealizedFeeRateResult): RecentreSwapFee | null => {
+  const stated = statedRecentreSwapFee(pool);
+  if (stated !== null) return stated;
   if (realized.status === "success") {
     const { aggregatePpm } = realized.rate;
     return { zeroForOnePpm: aggregatePpm, oneForZeroPpm: aggregatePpm, basis: "measured" };

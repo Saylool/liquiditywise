@@ -4,6 +4,7 @@ import type { DataResult } from "../../schemas";
 import type { V3PositionHistories, V3PositionSnapshot } from "../uniswap/ethereumV3PositionSnapshots";
 import {
   amountsHeld,
+  amountsHeldAtTick,
   composePositionRecord,
   feesBetweenChanges,
   historyOf,
@@ -302,6 +303,24 @@ describe("what a liquidity holds at a price", () => {
 
     expect(scaled?.token0).toBeCloseTo((raw?.token0 ?? 0) / 1e6, 6);
     expect(scaled?.token1).toBeCloseTo((raw?.token1 ?? 0) / 1e18, 12);
+  });
+
+  /* The reading a listed position carries: the pool's tick, not its exact price. */
+  it("is the same at a tick as at that tick's own square-root price", () => {
+    const atTick = (tick: number) =>
+      amountsHeldAtTick({ liquidity: 10n ** 18n, tickLower: -1_000, tickUpper: 1_000, tick, decimals: { token0: 0, token1: 0 } });
+
+    /* To a part in a trillion of the liquidity: the square-root price is rounded to an integer on the way in. */
+    for (const tick of [-1_500, -1_000, 0, 999, 1_000, 2_000]) {
+      const exact = held(BigInt(Math.round(1.0001 ** (tick / 2) * Q96)));
+      expect(Math.abs((atTick(tick)?.token0 ?? Number.NaN) - (exact?.token0 ?? Number.NaN)), `${tick}`).toBeLessThan(1e6);
+      expect(Math.abs((atTick(tick)?.token1 ?? Number.NaN) - (exact?.token1 ?? Number.NaN)), `${tick}`).toBeLessThan(1e6);
+    }
+    /* Past an edge, one token alone, wherever on that side. */
+    expect(atTick(-5_000)).toEqual(atTick(-1_001));
+    expect(atTick(1_000)?.token0).toBe(0);
+    near(atTick(1_000)?.token1, 1e18 * (upper - lower));
+    expect(atTick(900_000)).toBeNull();
   });
 
   it("is unread for ticks outside the protocol's range", () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { formatPrice } from "../format/displayFormats";
 import type { AddressPositionsResult } from "../advisor/addressPositions";
 import type { Position } from "../../schemas";
 import { getDictionary } from "../i18n/dictionaries";
@@ -10,6 +11,10 @@ import type { SmartPair } from "../analytics/smartLiquidity";
 import { claimLink, createPendingLink, readLink, setSmartAlerts, setWeeklyDigest } from "./links";
 import type { SmartSnapshot, SnapshotPair } from "../analytics/smartHistory";
 import type { ChainId } from "../chains/chains";
+import type { DataResult, PoolSearchResults } from "../../schemas";
+import type { PairPoolReaders } from "../advisor/readPairPools";
+import type { V4PoolDays } from "../uniswap/ethereumV4PoolDays";
+import { priceAtTick } from "../uniswap/v3TickMath";
 
 /** No measurement kept: the position alerts under test are all these passes have to say. */
 const none = () => new Map<string, never>();
@@ -576,3 +581,211 @@ describe("checkWatches and the Monday digest", () => {
     expect(sent.map(({ chatId }) => chatId).sort()).toEqual([42, 43]);
   });
 });
+
+describe("checkWatches, when a position leaves its range", () => {
+  const USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+  const WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+  const POOL = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640";
+  const price = (tick: number) => priceAtTick({ tick, token0Decimals: 6, token1Decimals: 18 }) as number;
+
+  /* Mainnet #998651's shape: USDC/WETH at 0.05%, ticks 190190 to 200570, the chain's liquidity. */
+  const at = (tokenId: string, tick: number): Position => ({
+    tokenId,
+    pool: {
+      protocolVersion: "v3",
+      chainId: 1,
+      id: POOL,
+      token0: { chainId: 1, address: USDC, symbol: "USDC", decimals: 6 },
+      token1: { chainId: 1, address: WETH, symbol: "WETH", decimals: 18 },
+      feePpm: 500,
+    },
+    tickLower: 190_190,
+    tickUpper: 200_570,
+    lowerPrice: price(190_190),
+    upperPrice: price(200_570),
+    liquidity: "2204989653163776",
+    uncollected: null,
+    currentTick: tick,
+    inRange: tick >= 190_190 && tick < 200_570,
+  });
+
+  const FETCHED_AT = "2026-09-24T12:00:00.000Z";
+  const card = {
+    id: POOL,
+    feeTier: "500",
+    totalValueLockedUSD: "1",
+    poolDayData: [],
+    token0: { id: USDC, symbol: "USDC", name: "USD Coin", decimals: "6", derivedETH: "0.00025" },
+    token1: { id: WETH, symbol: "WETH", name: "Wrapped Ether", decimals: "18", derivedETH: "1" },
+  };
+
+  /** The pair page's reads, counted: the pool holds $1,000,000 and charged $650 over six and a half days, 3.65% a year. */
+  const readers = (overrides: Partial<PairPoolReaders> = {}) => {
+    const asked: string[] = [];
+    const reading: PairPoolReaders = {
+      searchV3: async () => {
+        asked.push("search");
+        return {
+          status: "success",
+          data: {
+            terms: ["USDC", "WETH"],
+            fetchedAt: FETCHED_AT,
+            source: "uniswap-v3-subgraph",
+            matches: [
+              {
+                pool: at("0", 0).pool,
+                reserves: { token0: String(500_000n * 10n ** 6n), token1: String(125n * 10n ** 18n) },
+                ethPrice: { token0: 1 / 4000, token1: 1 },
+                exactSymbolMatches: 2,
+              },
+            ],
+          },
+        } as unknown as DataResult<PoolSearchResults>;
+      },
+      searchV4: async () => {
+        asked.push("search v4");
+        return { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" };
+      },
+      daysV3: async () => {
+        asked.push("days");
+        const days: V4PoolDays = {
+          fetchedAt: FETCHED_AT,
+          payload: { data: { poolDayDatas: [{ date: 1, volumeUSD: "1300000", feesUSD: "650", pool: card }], _meta: { hasIndexingErrors: false } } },
+        };
+        return { status: "success", data: days };
+      },
+      daysV4: async () => {
+        asked.push("days v4");
+        return { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" };
+      },
+      nativeUsd: async () => {
+        asked.push("price");
+        return { status: "success", data: 4_000 };
+      },
+      ...overrides,
+    };
+    return { reading, asked };
+  };
+
+  const watching = async (locale: "en" | "tr" = "en") => {
+    const store = fakeStore();
+    await createPendingLink(store, TOKEN, { address: ADDRESS, locale, now: new Date() });
+    await claimLink(store, TOKEN, 42);
+    const { client, sent } = bot();
+    const state = { positions: [at("1", 195_000)] };
+    const pass = (pairReaders?: PairPoolReaders) =>
+      checkWatches({
+        store,
+        bot: client,
+        readPositions: async () => answer(state.positions),
+        dictionary: getDictionary,
+        ...noDigest,
+        readSmartPairs: none,
+        ...(pairReaders === undefined ? {} : { pairReaders }),
+      });
+    return { state, sent, pass };
+  };
+
+  const en = getDictionary("en").telegram;
+
+  it("adds what the range is missing and what coming back would cost, before the footer", async () => {
+    const { state, sent, pass } = await watching();
+    const { reading } = readers();
+    await pass(reading);
+    state.positions = [at("1", 180_000)];
+    await pass(reading);
+
+    const text = sent[0]?.text ?? "";
+    const parts = text.split("\n\n");
+    expect(parts).toHaveLength(4);
+    expect(parts[0]?.startsWith("⚠️ USDC/WETH (Uniswap v3) has left its range:")).toBe(true);
+    expect(parts[1]).toBe(en.leftFeeYield("3.65%"));
+    expect(parts[2]).toMatch(/^Re-centring it on the current price at the same width, as .+ USDC\/WETH, would mean swapping about [\d,.]+ USDC; the pool's 0\.05% fee on that is about [\d,.]+ USDC\. Price impact and gas are not counted\.$/);
+    expect(parts[3]).toBe(en.footer);
+  });
+
+  it("reads the pair page's figures once in a pass, however many positions in the pool leave", async () => {
+    const { state, sent, pass } = await watching();
+    const { reading, asked } = readers();
+    state.positions = [at("1", 195_000), at("2", 196_000)];
+    await pass(reading);
+    state.positions = [at("1", 180_000), at("2", 210_000)];
+    await pass(reading);
+
+    expect(sent).toHaveLength(2);
+    expect(sent.every(({ text }) => text.includes(en.leftFeeYield("3.65%")))).toBe(true);
+    expect(asked.sort()).toEqual(["days", "price", "search"]);
+  });
+
+  it("reads nothing and adds nothing for a position coming close to an edge, or coming back", async () => {
+    const { state, sent, pass } = await watching();
+    const { reading, asked } = readers();
+    state.positions = [at("1", 195_000)];
+    await pass(reading);
+    state.positions = [at("1", 200_500)];
+    await pass(reading);
+    expect(asked).toEqual([]);
+    state.positions = [at("1", 210_000)];
+    await pass(reading);
+    expect(asked).not.toEqual([]);
+    asked.length = 0;
+    state.positions = [at("1", 195_000)];
+    await pass(reading);
+
+    expect(sent.map(({ text }) => [...text][0])).toEqual(["⏳", "⚠", "✅"]);
+    expect(sent[0]?.text).not.toContain("seven days");
+    expect(sent[0]?.text).not.toContain("Re-centring");
+    expect(sent[2]?.text).not.toContain("seven days");
+    expect(sent[2]?.text).not.toContain("Re-centring");
+    expect(sent[2]?.text).toBe(enteredText(at("1", 195_000)));
+    expect(asked).toEqual([]);
+  });
+
+  it("sends the alert all the same when the pair page's reads fail or throw — without that line", async () => {
+    for (const failing of [
+      readers({ searchV3: async () => Promise.reject(new Error("the gateway went away")) }).reading,
+      readers({ nativeUsd: async () => ({ status: "unavailable", reason: "timeout", notice: "market-data-timed-out" }) }).reading,
+    ]) {
+      const { state, sent, pass } = await watching();
+      await pass(failing);
+      state.positions = [at("1", 180_000)];
+      const summary = await pass(failing);
+
+      expect(summary).toMatchObject({ alerts: 1, sent: 1 });
+      expect(sent[0]?.text).not.toContain("seven days");
+      expect(sent[0]?.text).toContain("Re-centring it on the current price");
+      expect(sent[0]?.text.endsWith(en.footer)).toBe(true);
+    }
+  });
+
+  it("gives no yield where the pool is under the pair page's floor, and the cost all the same", async () => {
+    const { state, sent, pass } = await watching();
+    const { reading } = readers({ nativeUsd: async () => ({ status: "success", data: 1 }) });
+    await pass(reading);
+    state.positions = [at("1", 180_000)];
+    await pass(reading);
+
+    expect(sent[0]?.text).not.toContain("seven days");
+    expect(sent[0]?.text).toContain("Re-centring");
+  });
+
+  it("speaks the link's language", async () => {
+    const { state, sent, pass } = await watching("tr");
+    const { reading } = readers();
+    await pass(reading);
+    state.positions = [at("1", 210_000)];
+    await pass(reading);
+
+    expect(sent[0]?.text).toContain(getDictionary("tr").telegram.leftFeeYield("%3,65"));
+    expect(sent[0]?.text).toContain("WETH takas etmek demek olurdu");
+  });
+});
+
+/** The alert that a position is back inside its range, as it has always read: what happened, and the footer. */
+const enteredText = (position: Position): string =>
+  `${getDictionary("en").telegram.entered("USDC/WETH", "Uniswap v3", alertRange(position))}\n\n${getDictionary("en").telegram.footer}`;
+
+const alertRange = (position: Position): string => {
+  const quoted = [1 / position.upperPrice, 1 / position.lowerPrice].map((value) => formatPrice(value, "en"));
+  return `${quoted[0]} – ${quoted[1]} USDC/WETH`;
+};

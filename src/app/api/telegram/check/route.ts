@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAddressPositions } from "@/lib/advisor/getAddressPositions";
+import { pairPoolReaders } from "@/lib/advisor/getPairPools";
 import { peekSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
 import { smartPairsByPool } from "@/lib/advisor/smartRanges";
 import { readSeries } from "@/lib/advisor/smartStore";
@@ -49,6 +50,12 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
     /* The Monday digest reads the series the measurement keeps beside the links, in the same store. */
     readSmartSeries: (chainId) => readSeries(setup.store, chainOf(chainId).slug).catch(() => null),
     now: () => new Date(),
+    /*
+     * The pair page's own readers, behind their own caches, for the fee yield
+     * a left-range alert gives: a day table the warmer keeps, or a pair
+     * searched on the site in the last ten minutes, costs this pass nothing.
+     */
+    pairReaders: pairPoolReaders,
   });
 
   /*
