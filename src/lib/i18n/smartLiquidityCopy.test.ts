@@ -125,6 +125,15 @@ describe("the smart-money page's words", () => {
     }
   });
 
+  it("points from then to now in every language — right, since figures in Latin digits lay out left to right in Arabic too", () => {
+    for (const locale of LOCALES) {
+      const { trend } = getSmartLiquidityCopy(locale);
+      expect(trend.range("-5%", "+7%"), locale).toMatch(/-5% → \+7%/);
+      expect(trend.share("20%", "31%"), locale).toContain("20% → 31%");
+      expect(trend.mover("USDC / WETH", "20%", "31%"), locale).toContain("20% → 31%");
+    }
+  });
+
   it("says, in every language, that nothing is kept about who reads the page", () => {
     for (const locale of LOCALES) expect(getSmartLiquidityCopy(locale).holders.kept.length, locale).toBeGreaterThan(40);
   });

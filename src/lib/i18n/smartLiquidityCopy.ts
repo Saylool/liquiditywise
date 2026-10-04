@@ -359,14 +359,21 @@ const COPY: Record<Locale, SmartLiquidityCopy> = {
       intro:
         "النطاق الوسيط للمراكز الذكية وحصتها من المال الذكي عند أول قياس في الفترة وعند آخر قياس. تُقارَن النطاقات أسعارًا، فلا يظهر تحرّك السعر وحده على أنه انزياح.",
       notYet: "تظهر الاتجاهات متى حُفظ يوم من القياسات.",
-      range: (then, now) => `النطاق: ${then} ← ${now}`,
+      /*
+       * Pointing right, as in every other language. Then and now are Latin
+       * digits and percentages carrying left-to-right marks, so the pair of
+       * them lays out left to right even on this right-to-left page — then on
+       * the left, now on the right — and a left-pointing arrow pointed from
+       * now back to then (measured in a browser on 2026-10-04).
+       */
+      range: (then, now) => `النطاق: ${then} → ${now}`,
       rangeNew: (now) => `النطاق: ${now} · لم يكن بين أبرز الأزواج في البداية`,
-      share: (then, now) => `حصته من المال الذكي: ${then} ← ${now}`,
+      share: (then, now) => `حصته من المال الذكي: ${then} → ${now}`,
       shareNew: (now) => `حصته من المال الذكي: ${now}`,
       widthLabel: (from, to) => `اتساع النطاق، من ${from} إلى ${to}`,
       gaining: "يكسب مالًا ذكيًا",
       losing: "يفقد مالًا ذكيًا",
-      mover: (pair, from, to) => `${pair}: ${from} ← ${to}`,
+      mover: (pair, from, to) => `${pair}: ${from} → ${to}`,
     },
     holders: {
       heading: "حائزون يظهرون باستمرار",
