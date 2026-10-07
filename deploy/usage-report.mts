@@ -2,7 +2,7 @@
  * The weekly report from the journal's lines, under plain Node. Everything it
  * decides is in src/lib/usage/, under test; this file reads stdin and prints.
  *
- *   journalctl ... -o short-iso --utc | TELEGRAM_LINKS=3 node usage-report.mts --from 2026-09-17 --to 2026-09-23
+ *   journalctl ... -o short-iso --utc | TELEGRAM_LINKS=3 EMAIL_SUBSCRIBERS=2 node usage-report.mts --from 2026-09-17 --to 2026-09-23
  */
 
 import { priceOf } from "../src/lib/ai/modelPrices.ts";
@@ -30,10 +30,15 @@ const main = async (): Promise<void> => {
     .map(parseUsageLine)
     .filter((line): line is UsageLine => line !== null);
 
-  const links = process.env.TELEGRAM_LINKS?.trim() ?? "";
-  const telegramLinks = /^\d+$/.test(links) ? Number(links) : null;
+  /* A count, or nothing: the script hands over what redis-cli answered, and an empty answer is the store not asked. */
+  const count = (value: string | undefined): number | null => {
+    const trimmed = value?.trim() ?? "";
+    return /^\d+$/.test(trimmed) ? Number(trimmed) : null;
+  };
+  const telegramLinks = count(process.env.TELEGRAM_LINKS);
+  const emailSubscribers = count(process.env.EMAIL_SUBSCRIBERS);
 
-  process.stdout.write(`${weeklyReport({ lines, from, to, telegramLinks, priceOf })}\n`);
+  process.stdout.write(`${weeklyReport({ lines, from, to, telegramLinks, emailSubscribers, priceOf })}\n`);
 };
 
 main().catch((error: unknown) => {

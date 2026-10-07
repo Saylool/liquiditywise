@@ -3,7 +3,9 @@ import Link from "next/link";
 import type { Mover } from "../lib/analytics/smartHistory";
 import { type Chain, ETHEREUM, readsV3Positions } from "../lib/chains/chains";
 import { formatPercent, formatUtcMinute, formatWhole } from "../lib/format/displayFormats";
+import type { EmailFormStatus } from "../lib/email/formStatus";
 import type { Dictionary } from "../lib/i18n/dictionaries";
+import type { EmailDigestCopy } from "../lib/i18n/emailDigestCopy";
 import { getHomeAlertsCopy } from "../lib/i18n/homeAlertsCopy";
 import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
@@ -12,6 +14,7 @@ import type { WeeklyCopy } from "../lib/i18n/weeklyCopy";
 import { keptPair, keptRanges } from "../lib/telegram/messages";
 import type { RangeMove, TopYield, WeeklyReading, WeeklyWindow } from "../lib/telegram/weeklyDigest";
 import { ChainTabs } from "./ChainTabs";
+import { EmailDigestForm } from "./EmailDigestForm";
 
 /*
  * The Monday digest as a page: the week's window, the pairs gaining and
@@ -29,9 +32,21 @@ import { ChainTabs } from "./ChainTabs";
  * the page holds at a phone's width without a table to clip (see
  * overflow-is-clipped). The one thing that could run long — a range with its
  * unit, then and now — breaks at its spaces.
+ *
+ * Under it all, wherever there is a week to tell or there will be one, the
+ * form that asks for the same digest by e-mail (EmailDigestForm.tsx): the
+ * reader has just read what they would get.
  */
 
 type Bot = { readonly username: string; readonly url: string } | null;
+
+/** The digest by e-mail: whether this deployment sends it, what the last submission came to, and the action behind the form. */
+export type EmailDigestOffer = {
+  readonly offered: boolean;
+  readonly status: EmailFormStatus | null;
+  readonly copy: EmailDigestCopy;
+  readonly action: (formData: FormData) => Promise<void>;
+};
 
 type Shared = {
   readonly copy: WeeklyCopy;
@@ -103,8 +118,22 @@ const Window = ({ window, shared: { copy, locale } }: { window: WeeklyWindow; sh
   );
 };
 
-/** Where to go on from the digest: the detail, and the bot that sends it, where there is one. */
-const Onward = ({ chain, bot, shared: { copy, locale } }: { chain: Chain; bot: Bot; shared: Shared }) => (
+/** Where to go on from the digest: the detail, the bot that sends it where there is one, and the same digest by e-mail. */
+const Onward = ({
+  chain,
+  chains,
+  networkLabel,
+  bot,
+  email,
+  shared: { copy, locale },
+}: {
+  chain: Chain;
+  chains: readonly Chain[];
+  networkLabel: string;
+  bot: Bot;
+  email: EmailDigestOffer;
+  shared: Shared;
+}) => (
   <>
     <p className="text-sm">
       <Link href={smartMoneyHref(locale, chain)} prefetch={false} className="text-link">
@@ -119,6 +148,15 @@ const Onward = ({ chain, bot, shared: { copy, locale } }: { chain: Chain; bot: B
         </a>
       </p>
     )}
+    <EmailDigestForm
+      chain={chain}
+      chains={chains}
+      copy={email.copy}
+      networkLabel={networkLabel}
+      status={email.status}
+      offered={email.offered}
+      action={email.action}
+    />
   </>
 );
 
@@ -132,6 +170,7 @@ export function WeeklyDigestPage({
   t,
   locale,
   bot,
+  email,
 }: {
   /** The week as the kept series tells it; `null` where nothing is kept or the store did not answer. */
   reading: WeeklyReading | null;
@@ -146,9 +185,11 @@ export function WeeklyDigestPage({
   locale: Locale;
   /** The bot that sends this digest, or `null` where alerts are not set up. */
   bot: Bot;
+  email: EmailDigestOffer;
 }) {
   const shared: Shared = { copy, t, locale };
   const tabs = <ChainTabs current={chain} label={networkLabel} pageHref={pageHref} chains={chains} />;
+  const onward = <Onward chain={chain} chains={chains} networkLabel={networkLabel} bot={bot} email={email} shared={shared} />;
 
   /* Nothing is measured where positions cannot be listed, so there is no week to tell. */
   if (!readsV3Positions(chain.id)) {
@@ -170,7 +211,7 @@ export function WeeklyDigestPage({
         {tabs}
         {intro}
         <p className="text-sm leading-relaxed text-muted">{copy.unavailable}</p>
-        <Onward chain={chain} bot={bot} shared={shared} />
+        {onward}
       </>
     );
   }
@@ -181,7 +222,7 @@ export function WeeklyDigestPage({
         {tabs}
         {intro}
         <p className="max-w-2xl text-sm leading-relaxed text-muted">{copy.notYet(chain.name)}</p>
-        <Onward chain={chain} bot={bot} shared={shared} />
+        {onward}
       </>
     );
   }
@@ -202,7 +243,7 @@ export function WeeklyDigestPage({
       )}
       <TopYields topYields={reading.topYields} shared={shared} />
       <p className="max-w-2xl text-sm leading-relaxed text-muted">{t.telegram.weeklyNote}</p>
-      <Onward chain={chain} bot={bot} shared={shared} />
+      {onward}
     </>
   );
 }

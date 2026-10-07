@@ -94,6 +94,27 @@ From a machine with the bot token in its `.env.local`:
 node --env-file=.env.local scripts/setTelegramWebhook.mjs https://liquiditywise.com
 ```
 
+## 6. The digest by e-mail
+
+Optional, for readers who do not use Telegram: the form on `/weekly` takes
+an address and a network, sends one confirmation, and from the next Monday
+on sends the same digest the bot sends, on the same five-minute pass. Three
+settings in `.env.local`, all three or none (`.env.example` explains each):
+
+```
+RESEND_API_KEY=       # a sending key from resend.com
+EMAIL_FROM=           # "LiquidityWise <digest@liquiditywise.com>", on a domain verified there
+EMAIL_DIGEST_SECRET=  # any long random string, made here: openssl rand -base64 32
+```
+
+The secret goes into the file by editor, like the others, never on a command
+line. Restart the service, and the form appears on `/weekly` and the card on
+the front page; the hourly health probe starts asking Resend whether the key
+still works, and the Monday report counts confirmed addresses beside the
+chats. What is kept per subscriber — the address, the network, the language,
+when it was confirmed, when the last digest went out — lives under
+`liquiditywise:email:` and is backed up with the links (below).
+
 ## Checking the store on a machine that can open a port
 
 The Redis client is covered by unit tests against a socket the tests write,
@@ -238,15 +259,15 @@ that machine. That is what `uptime-worker/` is for — see below.
 ## Backups
 
 The Telegram links — an address and a chat id per reader, and the set the
-alert pass walks — are the one thing this application keeps, and Redis keeps
-them on one disk. The append-only log covers a crash; nothing else covered
-losing the machine. `backup.sh`, installed as `liquiditywise-backup`, runs at
-03:17 every day:
+alert pass walks — and the e-mail subscriptions beside them are the two
+things this application keeps, and Redis keeps them on one disk. The
+append-only log covers a crash; nothing else covered losing the machine.
+`backup.sh`, installed as `liquiditywise-backup`, runs at 03:17 every day:
 
-1. `store-backup.mts` copies every key under `liquiditywise:telegram:` out of
-   Redis as JSON, each with the moment it expires — nothing else in Redis, and
-   nothing of the other sites'. The copy is read back the way a restore reads
-   it before anything is stored.
+1. `store-backup.mts` copies every key under `liquiditywise:telegram:` and
+   `liquiditywise:email:` out of Redis as JSON, each with the moment it
+   expires — nothing else in Redis, and nothing of the other sites'. The copy
+   is read back the way a restore reads it before anything is stored.
 2. It is gzipped and encrypted to `backup-recipient.pem`. The private key is
    not on the server: the server can write a backup and cannot read one.
 3. It is sent to the Worker in `backup-worker/`, on

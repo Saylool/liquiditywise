@@ -9,7 +9,9 @@
 # Counted from the application's own journal: the visit lines the proxy writes
 # and the spend lines the explanation writes (src/lib/usage/usageLines.ts says
 # what is in them — pages, pools, languages and token counts, never who). The
-# number of chats following an address comes from Redis.
+# number of chats following an address, and of addresses confirmed for the
+# Monday digest by e-mail, come from Redis — as counts of two sets, never as
+# their members.
 set -uo pipefail
 
 APP_DIR="${APP_DIR:-/opt/liquiditywise}"
@@ -44,10 +46,11 @@ redis_password=""
 case "$redis_url" in redis://:*@*) redis_password="${redis_url#redis://:}"; redis_password="${redis_password%%@*}" ;; esac
 database="${redis_url##*/}"; case "$database" in ''|*[!0-9]*) database=0 ;; esac
 links="$(REDISCLI_AUTH="$redis_password" redis-cli -n "$database" SCARD liquiditywise:telegram:watches 2>/dev/null | tr -dc '0-9')"
+subscribers="$(REDISCLI_AUTH="$redis_password" redis-cli -n "$database" SCARD liquiditywise:email:confirmed 2>/dev/null | tr -dc '0-9')"
 
 message="$(journalctl -u liquiditywise --since "$from 00:00:00 UTC" --until "$until" \
     --no-pager -o short-iso --utc 2>/dev/null |
-  TELEGRAM_LINKS="$links" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
+  TELEGRAM_LINKS="$links" EMAIL_SUBSCRIBERS="$subscribers" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
     "$APP_DIR/deploy/usage-report.mts" --from "$from" --to "$to")" || {
   echo "The report could not be made." >&2
   exit 1

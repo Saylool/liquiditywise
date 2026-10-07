@@ -171,3 +171,43 @@ describe("what the hourly check asks", () => {
     expect(asked.some((url) => /bnb|bsc|avalanche|avax|snowtrace/.test(url))).toBe(false);
   });
 });
+
+describe("the e-mail provider", () => {
+  const base = () => {
+    vi.stubEnv("THE_GRAPH_API_KEY", "key");
+    vi.stubEnv("UNISWAP_V3_ETHEREUM_SUBGRAPH_ID", "mainnet-v3");
+    vi.stubEnv("ETHEREUM_RPC_URL", "https://mainnet.example");
+  };
+
+  it("is asked about its key only where the digest by e-mail is set up, and answers a status alone", async () => {
+    base();
+    vi.stubEnv("RESEND_API_KEY", "re_key");
+    vi.stubEnv("EMAIL_FROM", "LiquidityWise <digest@liquiditywise.com>");
+    vi.stubEnv("EMAIL_DIGEST_SECRET", "secret");
+    vi.stubEnv("REDIS_URL", "redis://127.0.0.1:6379/1");
+    const asked: { url: string; auth: string | undefined }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        asked.push({ url, auth: (init.headers as Record<string, string>).Authorization });
+        return new Response("[]", { status: 403 });
+      }),
+    );
+
+    const status = await upstreamProbes()?.probeEmailProvider?.();
+    vi.unstubAllGlobals();
+
+    expect(status).toBe(403);
+    expect(asked).toEqual([{ url: "https://api.resend.com/domains", auth: "Bearer re_key" }]);
+  });
+
+  it("is not asked where any of the three settings is missing", () => {
+    base();
+    vi.stubEnv("RESEND_API_KEY", "re_key");
+    vi.stubEnv("EMAIL_FROM", "digest@liquiditywise.com");
+    vi.stubEnv("EMAIL_DIGEST_SECRET", "");
+    vi.stubEnv("REDIS_URL", "redis://127.0.0.1:6379/1");
+
+    expect(upstreamProbes()?.probeEmailProvider).toBeUndefined();
+  });
+});

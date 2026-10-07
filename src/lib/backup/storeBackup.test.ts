@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { RespReply } from "../store/resp";
 import {
   BACKUP_PREFIX,
+  BACKUP_PREFIXES,
   describeSnapshot,
   exportStore,
   readSnapshot,
@@ -50,7 +51,7 @@ const fakeRedis = (clock = { now: NOW }) => {
     switch (name) {
       case "SCAN": {
         const all = [...strings.keys(), ...sets.keys(), ...others.keys()]
-          .filter((k) => k.startsWith(BACKUP_PREFIX) && alive(k))
+          .filter((k) => k.startsWith(rest[1] === undefined ? BACKUP_PREFIX : rest[1].slice(0, -1)) && alive(k))
           .sort();
         const start = Number(key);
         const page = all.slice(start, start + 2);
@@ -127,14 +128,33 @@ describe("exportStore", () => {
     });
   });
 
-  it("asks only for keys under the prefix", async () => {
+  it("asks only for keys under the prefixes, each of them", async () => {
     const redis = populated();
     await exportStore(redis.command, NOW);
 
     const scans = redis.log.filter(([name]) => name === "SCAN");
     expect(scans.length).toBeGreaterThan(1);
-    for (const scan of scans) expect(scan.slice(2, 4)).toEqual(["MATCH", `${BACKUP_PREFIX}*`]);
+    const patterns = BACKUP_PREFIXES.map((prefix) => `${prefix}*`);
+    for (const scan of scans) {
+      expect(scan[2]).toBe("MATCH");
+      expect(patterns).toContain(scan[3]);
+    }
+    for (const pattern of patterns) expect(scans.some((scan) => scan[3] === pattern), pattern).toBe(true);
     expect(redis.log.some((args) => args[1] === "otherapp:session")).toBe(false);
+  });
+
+  /* The e-mail subscriptions are a reader's record too, and are promised the same seven days. */
+  it("copies the e-mail subscriptions beside the links", async () => {
+    const redis = populated();
+    redis.strings.set("liquiditywise:email:sub:xyz", '{"address":"r@example.com"}');
+    redis.sets.set("liquiditywise:email:confirmed", new Set(["xyz"]));
+
+    const snapshot = await exportStore(redis.command, NOW);
+
+    expect(snapshot.entries.map((entry) => entry.key)).toContain("liquiditywise:email:sub:xyz");
+    expect(snapshot.entries.map((entry) => entry.key)).toContain("liquiditywise:email:confirmed");
+    expect(() => readSnapshot(JSON.stringify(snapshot))).not.toThrow();
+    expect(describeSnapshot(snapshot)).toContain("1 e-mail subscriptions, 1 confirmed");
   });
 
   it("follows the cursor to the end, and keeps a key SCAN returned twice once", async () => {
@@ -342,7 +362,7 @@ describe("describeSnapshot", () => {
   it("counts without naming anybody", async () => {
     const line = describeSnapshot(await exportStore(populated().command, NOW));
 
-    expect(line).toBe("taken 2026-09-24T03:17:00.000Z: 2 links, 1 being watched, 3 keys in all");
+    expect(line).toBe("taken 2026-09-24T03:17:00.000Z: 2 links, 1 being watched, 0 e-mail subscriptions, 0 confirmed, 3 keys in all");
     expect(line).not.toContain("0x1");
   });
 

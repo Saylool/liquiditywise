@@ -20,7 +20,7 @@ describe("the weekly report script", () => {
     const run = spawnSync(process.execPath, [SCRIPT, "--from", "2026-09-21", "--to", "2026-09-27"], {
       input: lines,
       encoding: "utf8",
-      env: { ...process.env, TELEGRAM_LINKS: "3", NODE_NO_WARNINGS: "1" },
+      env: { ...process.env, TELEGRAM_LINKS: "3", EMAIL_SUBSCRIBERS: "2", NODE_NO_WARNINGS: "1" },
     });
 
     expect(run.stderr).toBe("");
@@ -28,5 +28,6 @@ describe("the weekly report script", () => {
     expect(run.stdout).toContain("📊 LiquidityWise · the week of 21 Sep – 27 Sep");
     expect(run.stdout).toContain("Chains: base 1");
     expect(run.stdout).toContain("Telegram: 3 chats following an address");
+    expect(run.stdout).toContain("E-mail: 2 addresses confirmed for the Monday digest");
   });
 });

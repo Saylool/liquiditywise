@@ -134,4 +134,18 @@ describe("which pages a search engine may read", () => {
     expect(CLOSED_PATHS).toContain("/api/");
     expect(CLOSED_PATHS).toContain("/__backup/");
   });
+
+  /*
+   * The two addresses a link in an e-mail opens: one a page, one a handler
+   * (it answers POST too), both doing one thing for one reader. Closed, while
+   * the weekly page they sit under stays open — the prefix rule above holds
+   * the one to the other.
+   */
+  it("closes the two e-mail link addresses and keeps the weekly page open", () => {
+    expect(CLOSED_PATHS).toContain("/weekly/confirm");
+    expect(CLOSED_PATHS).toContain("/weekly/unsubscribe");
+    expect(INDEXED_PAGES).toContain("/weekly");
+    expect(statSync(join(APP, "weekly", "unsubscribe", "route.ts")).isFile()).toBe(true);
+    expect(PAGES).not.toContain("/weekly/unsubscribe");
+  });
 });

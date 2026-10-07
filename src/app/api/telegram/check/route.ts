@@ -6,6 +6,8 @@ import { peekSmartLiquidity } from "@/lib/advisor/getSmartLiquidity";
 import { smartPairsByPool } from "@/lib/advisor/smartRanges";
 import { readSeries } from "@/lib/advisor/smartStore";
 import { chainOf } from "@/lib/chains/chains";
+import { emailDigestSetup } from "@/lib/email/environment";
+import { sendDigestEmails } from "@/lib/email/sendDigests";
 import { recordAlertRun } from "@/lib/health/appReadings";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { checkWatches } from "@/lib/telegram/checkWatches";
@@ -18,8 +20,15 @@ import { sameSecret } from "@/lib/telegram/secrets";
  * Called by whatever schedules things where this runs — Vercel's cron with
  * its `Authorization: Bearer <CRON_SECRET>`, or a crontab's `curl` with the
  * same header at home. The answer is counts and nothing else: how many links,
- * how many read, how many alerts and Monday digests went out. No address
- * leaves this route.
+ * how many read, how many alerts and Monday digests went out — and, where the
+ * digest by e-mail is set up, how many of those went out by mail. No address
+ * of either kind leaves this route.
+ *
+ * The e-mail pass rides on this one rather than on a schedule of its own, as
+ * the bot's digest does: the same cron, the same hour, the same rule for
+ * when a digest is due (email/sendDigests.ts). It runs after the links, so a
+ * slow provider holds no alert back, and before the heartbeat, so a pass
+ * that died in it leaves no claim that it ran.
  */
 
 export const dynamic = "force-dynamic";
@@ -58,6 +67,20 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
     pairReaders: pairPoolReaders,
   });
 
+  /* The same digest to the addresses that asked for it by e-mail, where this deployment can send it. */
+  const email = emailDigestSetup();
+  const mailed =
+    email === null
+      ? null
+      : await sendDigestEmails({
+          store: email.store,
+          sendEmail: email.provider.sendEmail,
+          secret: email.secret,
+          dictionary: getDictionary,
+          readSmartSeries: (chainId) => readSeries(email.store, chainOf(chainId).slug).catch(() => null),
+          now: () => new Date(),
+        });
+
   /*
    * The pass finished. The mark it leaves is what lets the health check tell
    * a schedule that has stopped from one that is merely quiet, and it is
@@ -66,7 +89,11 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
    */
   if (!summary.storeUnavailable) await recordAlertRun(setup.store, new Date());
 
-  return NextResponse.json({ ok: !summary.storeUnavailable, ...summary });
+  return NextResponse.json({
+    ok: !summary.storeUnavailable,
+    ...summary,
+    ...(mailed === null ? {} : { email: mailed }),
+  });
 };
 
 export const GET = run;

@@ -2,6 +2,7 @@ import "server-only";
 
 import { v3PositionsSubgraphIdFor, v3SubgraphIdFor, v4SubgraphIdFor } from "../chains/chainEnvironment";
 import type { V4ChainId } from "../chains/chains";
+import { emailDigestSetup } from "../email/environment";
 import { type BlockscoutChainId, fetchBlockscoutAnswer } from "../verification/blockscout";
 import type { SourceAnswer } from "../verification/sourceAnswer";
 import { fetchSourcifyAnswer } from "../verification/sourcify";
@@ -19,6 +20,11 @@ import type { OtherChain, ProbeDependencies, SubgraphName, VerifierName } from "
  * Neither the key nor the RPC URL leaves this module: the probes resolve to
  * an HTTP status and nothing more, so no part of a credential can reach a
  * report, a log or a Telegram message.
+ *
+ * The e-mail provider's key is asked about the same way, where the digest by
+ * e-mail is set up (email/environment.ts): its own probe answers a status
+ * alone, and a Monday on which every digest silently failed to send would
+ * otherwise be the first anybody heard of a key revoked on Tuesday.
  */
 
 /** Ten seconds. A probe that has to wait longer has answered the question. */
@@ -187,6 +193,13 @@ export const upstreamProbes = (): ProbeDependencies | null => {
       }),
     ),
     probeVerifiers: VERIFIER_PROBES,
+    ...emailProbe(),
     now: () => new Date(),
   };
+};
+
+/** The e-mail provider's probe, where the digest by e-mail is set up, and nothing where it is not. */
+const emailProbe = (): Pick<ProbeDependencies, "probeEmailProvider"> => {
+  const email = emailDigestSetup();
+  return email === null ? {} : { probeEmailProvider: email.provider.probe };
 };

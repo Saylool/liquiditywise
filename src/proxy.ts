@@ -74,6 +74,7 @@ export const config = {
     "/most-traded",
     "/smart-money",
     "/weekly",
+    "/weekly/confirm",
     "/about",
     "/method",
     "/developers",

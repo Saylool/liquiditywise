@@ -5,6 +5,7 @@ import { getTopicCopy } from "../learn/topics";
 import { getChainCopy } from "./chainCopy";
 import { getDevelopersCopy } from "./developersCopy";
 import { getDictionary } from "./dictionaries";
+import { getEmailDigestCopy } from "./emailDigestCopy";
 import { getEmbedCopy } from "./embedCopy";
 import { getHomeAlertsCopy } from "./homeAlertsCopy";
 import { getHookCheckCopy } from "./hookCheckCopy";
@@ -146,6 +147,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     recentring: getRecentringCopy,
     smartLiquidity: getSmartLiquidityCopy,
     weekly: getWeeklyCopy,
+    emailDigest: getEmailDigestCopy,
     homeAlerts: getHomeAlertsCopy,
     embed: getEmbedCopy,
     hookCheck: getHookCheckCopy,

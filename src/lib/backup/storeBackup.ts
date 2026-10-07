@@ -1,12 +1,17 @@
 /*
- * The Telegram links, taken out of Redis and put back.
+ * The Telegram links and the e-mail subscriptions, taken out of Redis and put
+ * back.
  *
- * They are the one thing this application keeps about anybody, and they live
- * on one disk. The append-only log protects them from a crash; nothing
+ * They are the two things this application keeps about anybody, and they
+ * live on one disk. The append-only log protects them from a crash; nothing
  * protected them from losing the machine. This is what a daily backup takes
  * and what a restore puts back — the links and the set the checker walks,
- * under `liquiditywise:telegram:`, and nothing else. The health keys are not
- * worth keeping, and whatever else a shared Redis holds is not ours to copy.
+ * under `liquiditywise:telegram:`, and the digest subscriptions with their
+ * set, under `liquiditywise:email:` — and nothing else. The health keys are
+ * not worth keeping, and whatever else a shared Redis holds is not ours to
+ * copy. One prefix per kind of record, each backed up and restored whole: a
+ * reader who unsubscribes is promised the same seven days as one who sends
+ * /stop, and that is only true of a key the backup copies.
  *
  * A logical copy rather than Redis's own dump: it reads as JSON, it restores
  * into any Redis or into the REST store, and a restore can check every entry
@@ -21,6 +26,12 @@
 import type { RespReply } from "../store/resp";
 
 export const BACKUP_PREFIX = "liquiditywise:telegram:";
+
+/** Every prefix the backup copies: the Telegram links, and the e-mail subscriptions beside them (email/subscriptions.ts). */
+export const BACKUP_PREFIXES = [BACKUP_PREFIX, "liquiditywise:email:"] as const;
+
+/** Whether a key is one the backup holds: under a prefix, and more than the bare prefix. */
+const isBackedUp = (key: string): boolean => BACKUP_PREFIXES.some((prefix) => key.startsWith(prefix) && key.length > prefix.length);
 
 /** One Redis command, answered. */
 export type Command = (args: readonly string[]) => Promise<RespReply>;
@@ -61,22 +72,24 @@ const expectStrings = (reply: RespReply, what: string): string[] =>
     ? reply.values.map((item) => expectString(item, what))
     : fail(`${what}: unexpected reply ${reply.kind}`);
 
-/** Every key under the prefix. SCAN may return a key twice; each is kept once. */
+/** Every key under the prefixes, one SCAN per prefix. SCAN may return a key twice; each is kept once. */
 const keysUnderPrefix = async (command: Command): Promise<string[]> => {
   const keys = new Set<string>();
-  let cursor = "0";
-  do {
-    const reply = await command(["SCAN", cursor, "MATCH", `${BACKUP_PREFIX}*`, "COUNT", "500"]);
-    const [next, batch] = reply.kind === "array" ? reply.values : [];
-    if (next === undefined || batch === undefined) throw new Error(`SCAN: unexpected reply ${reply.kind}`);
-    cursor = expectString(next, "SCAN cursor");
-    for (const key of expectStrings(batch, "SCAN keys")) keys.add(key);
-  } while (cursor !== "0");
+  for (const prefix of BACKUP_PREFIXES) {
+    let cursor = "0";
+    do {
+      const reply = await command(["SCAN", cursor, "MATCH", `${prefix}*`, "COUNT", "500"]);
+      const [next, batch] = reply.kind === "array" ? reply.values : [];
+      if (next === undefined || batch === undefined) throw new Error(`SCAN: unexpected reply ${reply.kind}`);
+      cursor = expectString(next, "SCAN cursor");
+      for (const key of expectStrings(batch, "SCAN keys")) keys.add(key);
+    } while (cursor !== "0");
+  }
   return [...keys].sort();
 };
 
 /**
- * Everything under the prefix, as it stands.
+ * Everything under the prefixes, as it stands.
  *
  * A key that disappears between being listed and being read has expired or
  * been removed by `/stop`, and is left out, which is what a copy taken a
@@ -126,8 +139,8 @@ const readExpiry = (value: unknown, key: string): number | null => {
 const readEntry = (value: unknown): SnapshotEntry => {
   if (!isRecord(value)) return fail("an entry is not an object");
   const { key, type } = value;
-  if (typeof key !== "string" || !key.startsWith(BACKUP_PREFIX) || key.length === BACKUP_PREFIX.length) {
-    return fail(`an entry's key is not under ${BACKUP_PREFIX}`);
+  if (typeof key !== "string" || !isBackedUp(key)) {
+    return fail(`an entry's key is not under ${BACKUP_PREFIXES.join(" or ")}`);
   }
   const expiresAtMs = readExpiry(value.expiresAtMs, key);
 
@@ -205,7 +218,7 @@ export const restoreCommands = (snapshot: Snapshot, nowMs: number): string[][] =
 /**
  * Puts a snapshot back into the store `command` speaks to.
  *
- * Into an empty prefix only, unless told to replace. A restore is the step
+ * Into empty prefixes only, unless told to replace. A restore is the step
  * after something went wrong; one run against the live store by mistake
  * would put back every link a reader had since removed with `/stop`.
  */
@@ -217,7 +230,7 @@ export const restoreStore = async (
 ): Promise<number> => {
   const existing = await keysUnderPrefix(command);
   if (existing.length > 0 && !options.replace) {
-    throw new Error(`the store already holds ${existing.length} keys under ${BACKUP_PREFIX}; pass --replace to overwrite them`);
+    throw new Error(`the store already holds ${existing.length} keys under ${BACKUP_PREFIXES.join(" and ")}; pass --replace to overwrite them`);
   }
   if (options.replace) {
     for (const key of existing) await command(["DEL", key]);
@@ -231,10 +244,13 @@ export const restoreStore = async (
   return new Set(commands.map((args) => args[1])).size;
 };
 
-/** What a snapshot holds, in counts — for a person to read without seeing an address or a chat id. */
+/** What a snapshot holds, in counts — for a person to read without seeing an address, a chat id or a mailbox. */
 export const describeSnapshot = (snapshot: Snapshot): string => {
   const links = snapshot.entries.filter((entry) => entry.key.startsWith(`${BACKUP_PREFIX}link:`)).length;
   const watches = snapshot.entries.find((entry) => entry.key === `${BACKUP_PREFIX}watches`);
   const watched = watches?.type === "set" ? watches.members.length : 0;
-  return `taken ${snapshot.takenAt}: ${links} links, ${watched} being watched, ${snapshot.entries.length} keys in all`;
+  const subscriptions = snapshot.entries.filter((entry) => entry.key.startsWith(`${BACKUP_PREFIXES[1]}sub:`)).length;
+  const confirmed = snapshot.entries.find((entry) => entry.key === `${BACKUP_PREFIXES[1]}confirmed`);
+  const subscribed = confirmed?.type === "set" ? confirmed.members.length : 0;
+  return `taken ${snapshot.takenAt}: ${links} links, ${watched} being watched, ${subscriptions} e-mail subscriptions, ${subscribed} confirmed, ${snapshot.entries.length} keys in all`;
 };

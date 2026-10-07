@@ -15,6 +15,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { HomeAlerts } from "@/components/HomeAlerts";
+import { emailDigestOffered } from "@/lib/email/environment";
 import { publicBot } from "@/lib/telegram/environment";
 import { HomeMostTraded } from "./HomeMostTraded";
 import { ETHEREUM } from "@/lib/chains/chains";
@@ -88,7 +89,7 @@ export default async function Home() {
           <HomeMostTraded locale={locale} t={t} />
         </Suspense>
       </section>
-      <HomeAlerts locale={locale} bot={publicBot()} />
+      <HomeAlerts locale={locale} bot={publicBot()} emailDigest={emailDigestOffered()} />
       <section className="landing-section range-section" data-reveal>
         <div>
           <p className="eyebrow section-kicker">{copy.rangeKicker}</p>
