@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { SmartSnapshot, SnapshotPair } from "../analytics/smartHistory";
-import { DIGEST_RANGES, digestChainOf, digestWeekStart, isDigestDue, weeklyDigestOf } from "./weeklyDigest";
+import { DIGEST_RANGES, digestChainOf, digestWeekStart, isDigestDue, TOP_YIELDS, weeklyDigestOf, weeklyReadingOf } from "./weeklyDigest";
 
 /* 2026-10-05 is a Monday. */
 const MONDAY = "2026-10-05";
@@ -163,5 +163,88 @@ describe("what the week's digest says", () => {
     ]);
 
     expect(digest?.ranges.map(({ pool }) => pool)).toEqual(["0x5", "0x4", "0x3"]);
+  });
+});
+
+/*
+ * The page's view of the same series: which of the bot's two silences it is,
+ * the dates of the week, and what earned the most — with the digest itself
+ * being the very object the bot sends, not a second computation of it.
+ */
+describe("what the week's reading says", () => {
+  const yielding = (pool: string, yearlyYield: number, positions = 6): SnapshotPair => ({
+    ...pair(pool, 50, 1, 2, positions),
+    yearlyYield,
+  });
+
+  it("says there is nothing to compare yet until a day of measurements is kept, with no week to date", () => {
+    expect(weeklyReadingOf([])).toEqual({ status: "not-yet" });
+    expect(weeklyReadingOf([snapshot(LATEST, [pair("0xa", 10, 1, 2)])])).toEqual({ status: "not-yet" });
+    expect(
+      weeklyReadingOf([
+        snapshot("2026-10-04T18:00:00.000Z", [pair("0xa", 50, 1, 2), pair("0xb", 50, 1, 2)]),
+        snapshot(LATEST, [pair("0xa", 10, 3, 6), pair("0xb", 90, 1, 2)]),
+      ]),
+    ).toEqual({ status: "not-yet" });
+  });
+
+  it("dates a quiet week from the first measurement compared to the latest, and still says what earned the most", () => {
+    const reading = weeklyReadingOf([
+      snapshot(WEEK_AGO, [pair("0xa", 50, 1, 2), pair("0xb", 50, 1, 2)]),
+      snapshot(LATEST, [yielding("0xa", 0.3), yielding("0xb", 0.5)]),
+    ]);
+
+    expect(reading.status).toBe("quiet");
+    if (reading.status !== "quiet") return;
+    expect(reading.window).toEqual({ from: WEEK_AGO, to: LATEST, days: 6.875 });
+    expect(reading.topYields.map(({ pool, yearlyYield }) => [pool, yearlyYield])).toEqual([
+      ["0xb", 0.5],
+      ["0xa", 0.3],
+    ]);
+    expect(reading.topYields[0]).toEqual({ pool: "0xb", pair: "USDC / WETH", feePpm: 500, yearlyYield: 0.5, positions: 6 });
+  });
+
+  it("carries the digest the bot would send, the same object, when something moved", () => {
+    const series = [
+      snapshot(WEEK_AGO, [pair("0xa", 60, 1, 2), pair("0xb", 40, 1, 2)]),
+      snapshot(LATEST, [pair("0xa", 30, 1, 2), pair("0xb", 70, 1, 2)]),
+    ];
+    const reading = weeklyReadingOf(series);
+
+    expect(reading.status).toBe("moved");
+    if (reading.status !== "moved") return;
+    expect(reading.digest).toEqual(weeklyDigestOf(series));
+    expect(reading.digest.gaining.map(({ pool }) => pool)).toEqual(["0xb"]);
+    expect(reading.digest.losing.map(({ pool }) => pool)).toEqual(["0xa"]);
+    expect(reading.window).toEqual({ from: WEEK_AGO, to: LATEST, days: 6.875 });
+    expect(reading.window.days).toBe(reading.digest.days);
+  });
+
+  it("dates the week from the first measurement inside the trend's window, not from the oldest kept", () => {
+    const reading = weeklyReadingOf([
+      snapshot("2026-09-20T09:00:00.000Z", [pair("0xa", 50, 1, 2), pair("0xb", 50, 1, 2)]),
+      snapshot(WEEK_AGO, [pair("0xa", 50, 1, 2), pair("0xb", 50, 1, 2)]),
+      snapshot(LATEST, [pair("0xa", 50, 1, 2), pair("0xb", 50, 1, 2)]),
+    ]);
+
+    expect(reading.status).toBe("quiet");
+    if (reading.status === "quiet") expect(reading.window.from).toBe(WEEK_AGO);
+  });
+
+  it(`names at most ${TOP_YIELDS} pairs by yield, highest first, and none whose median is of too few positions`, () => {
+    const reading = weeklyReadingOf([
+      snapshot(WEEK_AGO, [pair("0xa", 50, 1, 2), pair("0xb", 50, 1, 2)]),
+      snapshot(LATEST, [
+        yielding("0x1", 0.1),
+        yielding("0x2", 0.9, 4),
+        yielding("0x3", 0.4),
+        yielding("0x4", 0.6),
+        yielding("0x5", 0.2),
+      ]),
+    ]);
+
+    expect(reading.status).not.toBe("not-yet");
+    if (reading.status === "not-yet") return;
+    expect(reading.topYields.map(({ pool }) => pool)).toEqual(["0x4", "0x3", "0x5"]);
   });
 });

@@ -36,6 +36,9 @@ describe("what a visit line records", () => {
     expect(visit("/pool?q=weth")?.chain).toBe("ethereum");
     expect(visit("/hooks?chain=base")?.chain).toBe("base");
     expect(visit("/smart-money?chain=polygon")?.chain).toBe("polygon");
+    expect(visit("/weekly?chain=base")?.chain).toBe("base");
+    expect(visit("/weekly")?.chain).toBe("ethereum");
+    expect(visit("/weekly")?.page).toBe("/weekly");
     expect(visit("/most-traded?chain=bnb")?.chain).toBe("bnb");
     expect(visit("/hooks?chain=avalanche")?.chain).toBe("avalanche");
     expect(visit("/pool?chain=celo&q=celo")?.chain).toBe("celo");

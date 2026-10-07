@@ -25,6 +25,14 @@ import { hasShifted, MIN_SMART_POSITIONS } from "./smartShift";
  * pair's share or range moved enough to name has nothing to tell either; then
  * no message is sent and nothing is recorded, so a pass later that Monday,
  * with a measurement more, may still have something to say.
+ *
+ * **One reading, two readers.** The bot wants the digest or nothing; the
+ * /weekly page wants to say *which* nothing — not a day measured yet, or a
+ * week in which nothing moved — and the dates of the week it read. So the
+ * whole composition is `weeklyReadingOf`, which says which of the three it
+ * found, and `weeklyDigestOf` is that reading with everything but a digest
+ * read as `null`. The arithmetic is in one place, and the page and the
+ * message cannot drift apart on what counts as a move.
  */
 
 /** The hour, UTC, on Monday from which the week's digest goes out. */
@@ -82,12 +90,69 @@ export type WeeklyDigest = {
   readonly ranges: readonly RangeMove[];
 };
 
+/** How many pairs are named for the yield of their smart positions. */
+export const TOP_YIELDS = 3;
+
+/** The week a reading is of: the first measurement compared and the latest, as the series dates them. */
+export type WeeklyWindow = {
+  readonly from: string;
+  readonly to: string;
+  /** The days between the two; what the digest's heading counts. */
+  readonly days: number;
+};
+
+/** A pair at the latest measurement, by what its smart positions' median earns. */
+export type TopYield = {
+  readonly pool: string;
+  /** "USDC / WETH", as the page names it: token0 first. */
+  readonly pair: string;
+  readonly feePpm: number;
+  /** The median yearly fee yield of its smart positions, as a ratio. */
+  readonly yearlyYield: number;
+  readonly positions: number;
+};
+
+/**
+ * What the kept series says about the week, for the page that shows it.
+ *
+ * `not-yet` until a day lies between the first measurement in the window and
+ * the latest, which is when the trend first speaks (see MIN_TREND_MS);
+ * `quiet` when there is a week to read and nothing in it moved enough to
+ * name; `moved` with the digest the bot would send. The window and the top
+ * yields are there whenever there is a week at all, so a quiet week still
+ * says which week it was and what earned the most in it.
+ */
+export type WeeklyReading =
+  | { readonly status: "not-yet" }
+  | { readonly status: "quiet"; readonly window: WeeklyWindow; readonly topYields: readonly TopYield[] }
+  | {
+      readonly status: "moved";
+      readonly window: WeeklyWindow;
+      readonly topYields: readonly TopYield[];
+      readonly digest: WeeklyDigest;
+    };
+
 /** How far a range moved, as its farther-moved edge over the width it had: the measure `hasShifted` holds to its threshold. */
 const moveOf = (then: readonly [number, number], now: readonly [number, number]): number =>
   Math.max(Math.abs(Math.log(now[0] / then[0])), Math.abs(Math.log(now[1] / then[1]))) / Math.log(then[1] / then[0]);
 
 /**
- * What the week's digest says, or `null` when it would say nothing.
+ * The pairs whose smart positions' median earned the most at the latest
+ * measurement, highest first. A median of too few positions is one position's
+ * yield with a word in front of it, so the floor the ranges keep applies
+ * here too; a pair under it is left out rather than listed on one holder's
+ * luck.
+ */
+const topYieldsOf = (latest: SmartSnapshot): readonly TopYield[] =>
+  latest.pairs
+    .filter(({ positions }) => positions >= MIN_SMART_POSITIONS)
+    .map(({ pool, pair, feePpm, yearlyYield, positions }): TopYield => ({ pool, pair, feePpm, yearlyYield, positions }))
+    .sort((a, b) => b.yearlyYield - a.yearlyYield)
+    .slice(0, TOP_YIELDS);
+
+/**
+ * What the week's reading is — nothing to compare yet, a quiet week, or a
+ * digest (see `WeeklyReading`).
  *
  * The movers are the trend's own. A range is named when the pair is one the
  * trend follows, its median was of enough positions at both ends of the week
@@ -95,11 +160,14 @@ const moveOf = (then: readonly [number, number], now: readonly [number, number])
  * the same bar, so the digest does not call a drift a move that the alert
  * would not. The farthest moves first.
  */
-export const weeklyDigestOf = (series: readonly SmartSnapshot[]): WeeklyDigest | null => {
+export const weeklyReadingOf = (series: readonly SmartSnapshot[]): WeeklyReading => {
   const trend = trendOf(series);
   const latest = series[series.length - 1];
   const reference = series.find(({ at }) => at === trend?.since);
-  if (trend === null || latest === undefined || reference === undefined) return null;
+  if (trend === null || latest === undefined || reference === undefined) return { status: "not-yet" };
+
+  const window: WeeklyWindow = { from: reference.at, to: latest.at, days: trend.days };
+  const topYields = topYieldsOf(latest);
 
   const followed = new Set(trend.pairs.map(({ pool }) => pool));
   const ranges = latest.pairs
@@ -122,6 +190,17 @@ export const weeklyDigestOf = (series: readonly SmartSnapshot[]): WeeklyDigest |
     .slice(0, DIGEST_RANGES)
     .map(({ range }) => range);
 
-  if (trend.gaining.length === 0 && trend.losing.length === 0 && ranges.length === 0) return null;
-  return { days: trend.days, gaining: trend.gaining, losing: trend.losing, ranges };
+  if (trend.gaining.length === 0 && trend.losing.length === 0 && ranges.length === 0) return { status: "quiet", window, topYields };
+  return {
+    status: "moved",
+    window,
+    topYields,
+    digest: { days: trend.days, gaining: trend.gaining, losing: trend.losing, ranges },
+  };
+};
+
+/** What the week's digest says, or `null` when it would say nothing: the bot's view of the reading. */
+export const weeklyDigestOf = (series: readonly SmartSnapshot[]): WeeklyDigest | null => {
+  const reading = weeklyReadingOf(series);
+  return reading.status === "moved" ? reading.digest : null;
 };

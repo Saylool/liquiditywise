@@ -5,12 +5,14 @@ import { localePath } from "../lib/i18n/localePath";
 import type { Locale } from "../lib/i18n/locales";
 import { getPairPoolsCopy } from "../lib/i18n/pairPoolsCopy";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
+import { getWeeklyCopy } from "../lib/i18n/weeklyCopy";
 import { ArrowIcon } from "./BrandMark";
 
 /*
  * The front page's way to the things that are not a single pool: where the
- * best-earning liquidity sits, one pair's pools on every network, and the
- * Telegram bot.
+ * best-earning liquidity sits — and, beside it, the week's digest of where it
+ * moved, which is the bot's Monday message as a page — one pair's pools on
+ * every network, and the Telegram bot.
  *
  * The bot's card is only there when alerts are set up on this deployment
  * (`bot` is `null` otherwise): a link to a bot that cannot store a link or
@@ -28,6 +30,7 @@ export function HomeAlerts({
 }) {
   const copy = getHomeAlertsCopy(locale);
   const smart = getSmartLiquidityCopy(locale);
+  const weekly = getWeeklyCopy(locale);
   const pair = getPairPoolsCopy(locale);
 
   return (
@@ -40,10 +43,15 @@ export function HomeAlerts({
         <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface p-5">
           <h3 className="text-base font-semibold">{smart.link}</h3>
           <p className="text-sm leading-relaxed text-muted">{smart.description}</p>
-          <Link href={localePath(locale, "/smart-money")} prefetch={false} className="text-link text-sm">
-            {smart.heading}
-            <ArrowIcon />
-          </Link>
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            <Link href={localePath(locale, "/smart-money")} prefetch={false} className="text-link text-sm">
+              {smart.heading}
+              <ArrowIcon />
+            </Link>
+            <Link href={localePath(locale, "/weekly")} prefetch={false} className="text-link text-sm">
+              {weekly.link}
+            </Link>
+          </div>
         </div>
         <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-surface p-5">
           <h3 className="text-base font-semibold">{pair.heading}</h3>

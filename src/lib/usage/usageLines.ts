@@ -28,6 +28,7 @@ export const PAGES = [
   "/learn",
   "/most-traded",
   "/smart-money",
+  "/weekly",
   "/about",
   "/method",
   "/developers",
@@ -62,6 +63,7 @@ const CHAIN_PAGES: readonly Page[] = [
   "/most-traded",
   "/hooks",
   "/smart-money",
+  "/weekly",
   "/embed/pool",
   "/api/embed/pool",
 ];

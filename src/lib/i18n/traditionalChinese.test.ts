@@ -15,6 +15,7 @@ import { getPositionOutlookCopy } from "./positionOutlookCopy";
 import { getPositionRecordCopy } from "./positionRecordCopy";
 import { getRecentringCopy } from "./recentringCopy";
 import { getSmartLiquidityCopy } from "./smartLiquidityCopy";
+import { getWeeklyCopy } from "./weeklyCopy";
 
 /*
  * Traditional Chinese, held to the one thing its neighbour cannot check.
@@ -144,6 +145,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     positionRecord: getPositionRecordCopy,
     recentring: getRecentringCopy,
     smartLiquidity: getSmartLiquidityCopy,
+    weekly: getWeeklyCopy,
     homeAlerts: getHomeAlertsCopy,
     embed: getEmbedCopy,
     hookCheck: getHookCheckCopy,

@@ -8,6 +8,7 @@ import { getAboutCopy } from "../lib/i18n/aboutCopy";
 import { getDevelopersCopy } from "../lib/i18n/developersCopy";
 import { getMethodCopy } from "../lib/i18n/methodCopy";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
+import { getWeeklyCopy } from "../lib/i18n/weeklyCopy";
 import { getLearnCopy } from "../lib/learn/briefs";
 import { BrandMark, ArrowIcon } from "./BrandMark";
 import { PreferenceBar } from "./PreferenceBar";
@@ -72,6 +73,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </Link>
           <Link href={localePath(locale, "/smart-money")} prefetch={false} className="text-link">
             {getSmartLiquidityCopy(locale).link}
+          </Link>
+          <Link href={localePath(locale, "/weekly")} prefetch={false} className="text-link">
+            {getWeeklyCopy(locale).link}
           </Link>
           <Link href={localePath(locale, "/about")} prefetch={false} className="text-link">
             {getAboutCopy(locale).link}

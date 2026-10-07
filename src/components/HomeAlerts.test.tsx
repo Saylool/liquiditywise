@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { getPairPoolsCopy } from "../lib/i18n/pairPoolsCopy";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
+import { getWeeklyCopy } from "../lib/i18n/weeklyCopy";
 import { HomeAlerts } from "./HomeAlerts";
 
 const BOT = { username: "LiquidityWiseBot", url: "https://t.me/LiquidityWiseBot" };
@@ -14,6 +15,13 @@ describe("the front page's alerts section", () => {
     expect(html).toContain('href="/tr/smart-money"');
     expect(html).toContain(getSmartLiquidityCopy("tr").link);
     expect(html).toContain("Paranın nereye gittiğini gör");
+  });
+
+  it("leads on to the week's digest beside it, in the reader's language and by that page's own name", () => {
+    const html = renderToStaticMarkup(<HomeAlerts locale="tr" bot={null} />);
+
+    expect(html).toContain('href="/tr/weekly"');
+    expect(html).toContain(getWeeklyCopy("tr").link);
   });
 
   it("leads to the pair page, which has no language address, with its own heading in the reader's language, with or without a bot", () => {

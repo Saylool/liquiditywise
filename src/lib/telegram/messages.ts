@@ -113,17 +113,18 @@ export const smartShiftText = (shift: SmartShift, t: Dictionary, locale: Locale,
   return `${t.telegram.smartShift(`${pool.token0.symbol}/${pool.token1.symbol}`, protocolOn(pool.protocolVersion, chainId), range(shift.then), range(shift.now))}\n\n${t.telegram.footer}`;
 };
 
-/** A kept pair as the smart-money page names it: "USDC / WETH · 0.05%". */
-const keptPair = (pair: string, feePpm: number, locale: Locale): string => `${pair} · ${formatFeePpm(feePpm, locale)}`;
+/** A kept pair as the smart-money page names it: "USDC / WETH · 0.05%". Shared with the /weekly page, which names them the same way. */
+export const keptPair = (pair: string, feePpm: number, locale: Locale): string => `${pair} · ${formatFeePpm(feePpm, locale)}`;
 
 /**
  * A kept range, then and now, as prices quoted the way the pair is at its
  * price now — both ends the same way round, so the two can be compared. The
  * kept series has the pair's symbols ("USDC / WETH", token0 first) and not its
  * tokens; where they cannot be told apart, the prices go without a unit
- * rather than with a wrong one.
+ * rather than with a wrong one. The /weekly page writes its ranges through
+ * this too, so a range reads the same on the page as in the message.
  */
-const keptRanges = (range: RangeMove, locale: Locale): { readonly then: string; readonly now: string } => {
+export const keptRanges = (range: RangeMove, locale: Locale): { readonly then: string; readonly now: string } => {
   const quote = { inverted: isInverted(range.currentPrice) };
   const symbols = range.pair.split(" / ");
   const [token0, token1] = symbols;
