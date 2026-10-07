@@ -46,6 +46,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/learn/smart-money": "guide: smart liquidity",
   "/embed/pool": "pool card on another site",
   "/api/embed/pool": "pool card as JSON",
+  "/api/share/position": "position card shared",
 };
 
 const number = (value: number): string => value.toLocaleString("en-US");

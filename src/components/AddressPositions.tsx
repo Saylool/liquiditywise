@@ -1,11 +1,13 @@
 import type { AddressPositionsResult } from "../lib/advisor/addressPositions";
 import type { PositionOutlook } from "../lib/advisor/positionOutlook";
+import { coversEveryPrice, positionQuote } from "../lib/advisor/positionQuote";
 import { type PositionRecord, type PositionRecordResult, type TokenAmounts, valueRecord } from "../lib/advisor/positionRecord";
 import { type SmartRange, smartRangeKey } from "../lib/advisor/smartRanges";
 import { type RangeAround, rangeAroundInverted, signedPercent } from "../lib/format/rangeAround";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
 import { getPositionOutlookCopy } from "../lib/i18n/positionOutlookCopy";
 import { getPositionRecordCopy } from "../lib/i18n/positionRecordCopy";
+import { getPositionShareCopy } from "../lib/i18n/positionShareCopy";
 import { poolAnalysisHref, v4PoolAnalysisHref } from "../lib/advisor/requestedParameters";
 import {
   formatFeePpm,
@@ -15,16 +17,12 @@ import {
   formatUtcDate,
   formatWhole,
 } from "../lib/format/displayFormats";
-import { choosePriceQuote, type PriceQuote, quotedInterval } from "../lib/format/priceQuote";
+import { type PriceQuote, quotedInterval } from "../lib/format/priceQuote";
 import type { Dictionary } from "../lib/i18n/dictionaries";
 import type { Locale } from "../lib/i18n/locales";
-import {
-  MAX_TICK,
-  MIN_TICK,
-  type Position,
-  type PriceBandParameters,
-  V3_MAX_TICK_SPACING,
-} from "../schemas";
+import { positionPostText } from "../lib/share/positionCard";
+import { holdingsUrl, postOnXUrl, shareCardUrl } from "../lib/share/shareLinks";
+import type { Position, PriceBandParameters } from "../schemas";
 import { GuardedLink } from "./GuardedLink";
 import { chainOf } from "../lib/chains/chains";
 
@@ -36,33 +34,59 @@ import { chainOf } from "../lib/chains/chains";
  * somebody's own money rather than a pool's — so it says, beside the answer,
  * that the same list is public and that nothing here is stored.
  *
- * Each position is quoted the way the rest of the application quotes a pair: one
- * direction chosen from the price, the dearer token as the base. The direction
- * is picked from where the pool is now when that is known, and from the middle
- * of the position's own band when it is not, so a range never comes out upside
- * down for want of a tick.
+ * Each position is quoted the way the rest of the application quotes a pair:
+ * one direction chosen from the price, the dearer token as the base, picked
+ * from the middle of the position's own band so a range never comes out
+ * upside down for want of a tick (see advisor/positionQuote.ts, which the
+ * share card reads too, so the card quotes as the row does).
  */
-const referencePrice = (position: Position): number =>
-  Math.sqrt(position.lowerPrice) * Math.sqrt(position.upperPrice);
 
 /**
- * Whether a position covers every price its pool can express.
+ * The offer, under a verified record, to share it: the card as an image, a
+ * post on X with the figures already written, and the page's own address.
  *
- * A deliberate and common choice, and one the page was printing as
- * `2.96E-39 – 3.38E38`, which is true and tells a reader nothing.
+ * Three plain links and no script. The card and the post open in a new tab,
+ * since both leave this page; the page's own link is the one to copy, and
+ * following it is harmless — it is this page. Outside the row's own link,
+ * because a link inside a link is not markup a browser agrees on.
  *
- * A v4 position carries its pool's tick spacing, so the outermost usable ticks
- * are exact: they are the last multiples of the spacing inside TickMath's
- * limits, and no tick between one of those and the limit exists. A v3 position
- * does not — no subgraph publishes a pool's spacing, and the metadata behind
- * these stops short of it — so there the test is "beyond anything any pool could
- * offer" rather than "exactly the edge".
+ * The card's address encodes the position's public token id and the chain,
+ * nothing about the reader (see share/shareLinks.ts); the row says so under
+ * the links, beside the page's own note that nothing here is stored.
  */
-const coversEveryPrice = (position: Position): boolean => {
-  const spacing =
-    position.pool.protocolVersion === "v4" ? position.pool.tickSpacing : V3_MAX_TICK_SPACING;
+const ShareRow = ({
+  position,
+  record,
+  address,
+  locale,
+}: {
+  position: Position;
+  record: PositionRecord;
+  /** The address the page was opened for, which the page's own link carries. */
+  address: string;
+  locale: Locale;
+}) => {
+  const copy = getPositionShareCopy(locale);
+  const chain = chainOf(position.pool.chainId);
+  const card = shareCardUrl(chain, position.tokenId, locale);
 
-  return position.tickLower <= MIN_TICK + spacing && position.tickUpper >= MAX_TICK - spacing;
+  return (
+    <div className="flex flex-col gap-1 px-4 text-xs leading-relaxed text-muted">
+      <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className="font-medium">{copy.heading}</span>
+        <a href={card} target="_blank" rel="noopener" className="text-link">
+          {copy.image}
+        </a>
+        <a href={postOnXUrl(positionPostText(position, record, locale), card)} target="_blank" rel="noopener" className="text-link">
+          {copy.post}
+        </a>
+        <a href={holdingsUrl(address, chain)} className="text-link">
+          {copy.link}
+        </a>
+      </p>
+      <p>{copy.note}</p>
+    </div>
+  );
 };
 
 /**
@@ -177,6 +201,7 @@ const PositionRow = ({
   smartRange,
   record,
   recordsAsked,
+  address,
   parameters,
   t,
   locale,
@@ -186,6 +211,8 @@ const PositionRow = ({
   record: PositionRecordResult | undefined;
   /** Whether records were asked for at all; when not, no row says anything about one. */
   recordsAsked: boolean;
+  /** The address the page was opened for, for the share row's link back to it. */
+  address: string;
   /** How it has fared against its pool's last days, when the pool's history could be read. */
   outlook: PositionOutlook | undefined;
   /** Where the pool's best-earning liquidity sits, when the pool is one that was measured. */
@@ -195,7 +222,7 @@ const PositionRow = ({
   locale: Locale;
 }) => {
   const { pool } = position;
-  const quote = choosePriceQuote(pool, referencePrice(position));
+  const quote = positionQuote(position);
   const edges = quotedInterval(quote, { lower: position.lowerPrice, upper: position.upperPrice });
   /* A range in the row's own quote, so the position's and the suggested one read in the same units. */
   const inQuote = (lower: number, upper: number) => {
@@ -237,7 +264,7 @@ const PositionRow = ({
   const hooked = pool.protocolVersion === "v4" && pool.hookAddress !== null;
 
   return (
-    <li>
+    <li className="flex flex-col gap-2">
       <GuardedLink
         href={href}
         className="flex flex-col gap-2 rounded-md border border-border bg-surface-sunken p-4"
@@ -323,6 +350,10 @@ const PositionRow = ({
         {recordsAsked ? <RecordSection position={position} record={record} quote={quote} locale={locale} /> : null}
         <p className="text-xs text-accent">{t.positions.analyse}</p>
       </GuardedLink>
+      {/* Only a record verified against the chain is offered for sharing: the card never shows a partial figure. */}
+      {pool.protocolVersion === "v3" && record?.status === "verified" ? (
+        <ShareRow position={position} record={record.record} address={address} locale={locale} />
+      ) : null}
     </li>
   );
 };
@@ -404,6 +435,7 @@ export function AddressPositions({
                   }
                   record={position.pool.protocolVersion === "v3" ? records?.get(position.tokenId) : undefined}
                   recordsAsked={records !== undefined}
+                  address={result.data.address}
                   parameters={parameters}
                   t={t}
                   locale={locale}

@@ -99,3 +99,30 @@ describe("a v4 pool id in the search box", () => {
     expect(spendsUpstreamQuota(new URLSearchParams({ q: `0x${"e5".repeat(32)}` }))).toBe(false);
   });
 });
+
+/*
+ * The share card names a position by its token id, a decimal, and reads the
+ * chain for it: charged on that page alone, and only when the route would
+ * read anything.
+ */
+describe("a position's share card", () => {
+  const SHARE = "/api/share/position";
+
+  it("is counted on its own page, for a well-formed position on a chain whose positions are kept", () => {
+    expect(spendsUpstreamQuota(new URLSearchParams({ id: "998651" }), SHARE)).toBe(true);
+    expect(spendsUpstreamQuota(new URLSearchParams({ chain: "base", id: "12345", lang: "tr" }), SHARE)).toBe(true);
+  });
+
+  it("is not counted for an address the route refuses before reading", () => {
+    for (const search of ["", "id=0x12", "id=-1", "id=1&id=2", "chain=solana&id=1", "chain=celo&id=1", `address=${POOL_ADDRESS}`]) {
+      expect(spendsUpstreamQuota(query(search), SHARE), search).toBe(false);
+    }
+  });
+
+  /* A decimal id names no pool anywhere else, and the rule for every other page is unchanged. */
+  it("leaves every other page's rule as it was", () => {
+    expect(spendsUpstreamQuota(new URLSearchParams({ id: "998651" }), "/v4")).toBe(false);
+    expect(spendsUpstreamQuota(new URLSearchParams({ id: "998651" }))).toBe(false);
+    expect(spendsUpstreamQuota(query(`address=${POOL_ADDRESS}`), "/pool")).toBe(true);
+  });
+});

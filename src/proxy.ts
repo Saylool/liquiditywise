@@ -13,7 +13,7 @@ import {
   poolAnalysisRateLimiter,
 } from "./lib/ratelimit/poolAnalysisRateLimiter";
 import { EMBED_CARD_HEADERS, EMBED_CARD_PATH } from "./lib/security/responseHeaders";
-import { EMBED_PAGES } from "./lib/site/indexing";
+import { EMBED_PAGES, SHARE_PAGES } from "./lib/site/indexing";
 import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
 
 /*
@@ -53,7 +53,8 @@ import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
  * renders, however it was reached. Held to usageLines.ts's list by a test.
  *
  * The embeddable pool card and its JSON are here for both reasons: each reads
- * one pool like the page it stands for, and each is counted.
+ * one pool like the page it stands for, and each is counted. So is the share
+ * card, which reads one position as the holdings page does.
  *
  * And every open page's language addresses, which exist only because this
  * turns them into the page itself (see localePath.ts). Written out rather than
@@ -84,6 +85,7 @@ export const config = {
     "/learn/smart-money",
     "/embed/pool",
     "/api/embed/pool",
+    "/api/share/position",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn",
@@ -151,6 +153,12 @@ const askedFor = (request: NextRequest): Locale =>
 /** Where the embeddable card's figures are served as JSON. */
 const EMBED_DATA_PATH: (typeof EMBED_PAGES)[number] = "/api/embed/pool";
 
+/** Where a position's share card is drawn, which answers its failures in JSON like the embed API. */
+const SHARE_CARD_PATH: (typeof SHARE_PAGES)[number] = "/api/share/position";
+
+/** The pages whose language is in their address rather than the reader's cookie or browser. */
+const ADDRESSED_LANGUAGE_PAGES: readonly string[] = [...EMBED_PAGES, ...SHARE_PAGES];
+
 const refuse = (retryAfterSeconds: number, locale: Locale, page: URL): NextResponse => {
   const headers = {
     "Retry-After": String(retryAfterSeconds),
@@ -168,6 +176,10 @@ const refuse = (retryAfterSeconds: number, locale: Locale, page: URL): NextRespo
       { error: "rate-limited", retryAfterSeconds },
       { status: 429, headers: { ...headers, "Access-Control-Allow-Origin": "*" } },
     );
+  }
+  /* The share card too, in JSON a script can test — but it is an image, not an API another site reads, so without the opening. */
+  if (page.pathname === SHARE_CARD_PATH) {
+    return NextResponse.json({ error: "rate-limited", retryAfterSeconds }, { status: 429, headers });
   }
 
   return new NextResponse(tooManyRequestsPage(retryAfterSeconds, locale), {
@@ -215,10 +227,11 @@ const route = (request: NextRequest) => {
     return {
       page: request.nextUrl,
       /*
-       * The embeddable card speaks the language its address names, whoever
-       * loads it (see embed/embedRequest.ts), and is counted in that one.
+       * The embeddable card and the share card speak the language their
+       * address names, whoever loads them (see embed/embedRequest.ts), and
+       * are counted in that one.
        */
-      locale: (EMBED_PAGES as readonly string[]).includes(request.nextUrl.pathname)
+      locale: ADDRESSED_LANGUAGE_PAGES.includes(request.nextUrl.pathname)
         ? readEmbedLocale(request.nextUrl.searchParams)
         : askedFor(request),
       pass: () => NextResponse.next({ request: { headers } }),
@@ -257,7 +270,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const routed = route(request);
   const answer = (response: NextResponse) => openToFraming(response, routed.page);
 
-  if (!spendsUpstreamQuota(routed.page.searchParams)) {
+  if (!spendsUpstreamQuota(routed.page.searchParams, routed.page.pathname)) {
     recordVisit(request, routed, "served");
     return answer(routed.pass());
   }

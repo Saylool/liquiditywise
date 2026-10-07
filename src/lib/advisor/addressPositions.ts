@@ -288,6 +288,44 @@ const recordsFor = (
   return records;
 };
 
+/** One v3 position with its record, as the share card needs them together. */
+export type DescribedV3Position = {
+  readonly position: Position;
+  readonly record: PositionRecordResult;
+};
+
+/**
+ * One v3 position out of a side read for it alone, with its record — what a
+ * share card is made of (see share/positionCard.ts).
+ *
+ * The same proof and the same arithmetic as the list: the pool is derived from
+ * the pair and the fee the position names and checked against what the source
+ * came back with, and the record is built from the manager's own record, the
+ * fees and the price read with them, and the history. `null` where the pool
+ * cannot be confirmed or the position is not in the side at all, which the
+ * caller reports as no such position rather than as a failure — a card is
+ * never drawn for a position whose pool could not be proved.
+ */
+export const describeOneV3 = (side: V3Side, tokenId: string): DescribedV3Position | null => {
+  const manager = side.raw.open.find((position) => position.tokenId === tokenId);
+  if (manager === undefined) return null;
+
+  const byAddress = new Map(side.pools.map((entry) => [entry.pool.id, entry]));
+  const position = describeV3(manager, side.raw.factory, byAddress, side.fees);
+  if (position === null) return null;
+
+  return {
+    position,
+    record: composePositionRecord({
+      position: manager,
+      decimals: { token0: position.pool.token0.decimals, token1: position.pool.token1.decimals },
+      history: historyOf(side.history, tokenId),
+      uncollected: position.uncollected,
+      sqrtPriceX96: side.sqrtPrices?.get(tokenId) ?? null,
+    }),
+  };
+};
+
 /**
  * Composes one address's answer from whichever protocols were read.
  *

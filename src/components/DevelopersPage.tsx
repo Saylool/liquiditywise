@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
-import { CHAINS } from "../lib/chains/chains";
+import { CHAINS, V3_POSITION_CHAINS } from "../lib/chains/chains";
 import {
   CARD_HEADERS,
   DATA_HEADERS,
@@ -23,13 +23,16 @@ import { DEVELOPERS_SECTION_IDS, type DevelopersCopy, type DevelopersFigures } f
 import { getEmbedCopy } from "../lib/i18n/embedCopy";
 import { LOCALE_DETAILS, LOCALES, type Locale } from "../lib/i18n/locales";
 import { getMethodCopy } from "../lib/i18n/methodCopy";
+import { getPositionShareCopy } from "../lib/i18n/positionShareCopy";
 import { POOL_ANALYSIS_REQUEST_LIMIT, POOL_ANALYSIS_WINDOW_MS } from "../lib/ratelimit/poolAnalysisRateLimiter";
+import { EXAMPLE_SHARE_URL } from "../lib/share/shareDocs";
 import { LICENSE_URL, REPOSITORY_URL } from "../lib/site/repository";
 
 /**
- * What another site can build on — the embeddable pool card and its JSON —
- * for the person writing the code. Static: it reads nothing, so it is the
- * same page for everybody and costs nothing to render.
+ * What another site can build on — the embeddable pool card and its JSON,
+ * and the card a holder shares about a position — for the person writing
+ * the code. Static: it reads nothing, so it is the same page for everybody
+ * and costs nothing to render.
  *
  * Nothing on it is written beside the code. The figures in the prose come
  * from the constants the routes and the proxy use; the field list, the
@@ -66,6 +69,8 @@ export const developerFigures = (locale: Locale): DevelopersFigures => ({
   embedSummary: getEmbedCopy(locale).summary,
   analysedBy: getEmbedCopy(locale).analysedBy,
   methodLink: getMethodCopy(locale).link,
+  positionChains: list(locale, V3_POSITION_CHAINS.map(({ name }) => name)),
+  shareHeading: getPositionShareCopy(locale).heading,
 });
 
 /** Inline code, wherever it sits in a sentence: left to right, and free to break where a phone needs it to. */
@@ -293,6 +298,12 @@ export function DevelopersPage({
         <CodeBlock caption={copy.examples.fetch} code={EXAMPLE_FETCH} />
         <CodeBlock caption={copy.examples.iframe} code={EXAMPLE_SNIPPET} />
         <p className="text-xs leading-relaxed text-muted">{copy.examples.selectHint}</p>
+      </section>
+
+      <section id="share" className={SECTION}>
+        {heading("share")}
+        <Paragraphs texts={copy.share(figures)} />
+        <CodeBlock caption={copy.shareLabel} code={EXAMPLE_SHARE_URL} />
       </section>
 
       <section id="terms" className={SECTION}>

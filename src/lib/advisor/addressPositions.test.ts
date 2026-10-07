@@ -9,6 +9,7 @@ import { DYNAMIC_FEE_FLAG } from "../uniswap/v4PoolKey";
 import {
   composeAddressPositions,
   derivedPoolAddresses,
+  describeOneV3,
   heldPoolIds,
 } from "./addressPositions";
 
@@ -545,5 +546,67 @@ describe("each listed v3 position's record", () => {
 
     expect(built?.size).toBe(1);
     expect(built?.get(shared)?.status).toBe("verified");
+  });
+});
+
+/*
+ * One position with its record, for the card that shares it: the same proof
+ * and the same record the list makes, from a side read for that one id.
+ */
+describe("one v3 position described on its own", () => {
+  const LIQUIDITY = BigInt(position().liquidity);
+  const opened = {
+    blockNumber: 18_000_000n,
+    at: "2023-08-01T00:00:00.000Z",
+    liquidity: LIQUIDITY,
+    deposited0: 1_000_000,
+    deposited1: 0,
+    withdrawn0: 0,
+    withdrawn1: 0,
+    feeGrowthInside0: 0n,
+    feeGrowthInside1: 0n,
+  };
+  const side = (overrides: Record<string, unknown> = {}) => ({
+    raw: rawV3(),
+    pools: [pool()],
+    fees: new Map([["1112391", { token0: "5", token1: "6" }]]),
+    sqrtPrices: new Map([["1112391", BigInt(Math.round(1.0001 ** -100_000 * 2 ** 96))]]),
+    history: {
+      status: "success",
+      data: { asked: new Set(["1112391"]), snapshots: new Map([["1112391", [opened]]]), unreadable: new Set<string>() },
+    } as const,
+    ...overrides,
+  });
+
+  it("is the position the list would show, with the record the list would put under it", () => {
+    const described = describeOneV3(side(), "1112391");
+    const listed = composeAddressPositions({ address: OWNER, v3: side(), v4: null, fetchedAt: FETCHED_AT });
+
+    expect(described?.position).toEqual(listed.status === "success" ? listed.data.positions[0] : null);
+    expect(described?.record).toEqual(listed.status === "success" ? listed.records?.get("1112391") : null);
+    expect(described?.record.status).toBe("verified");
+  });
+
+  it("is nothing for an id the side does not hold, or a pool the source does not confirm", () => {
+    expect(describeOneV3(side(), "7")).toBeNull();
+    expect(describeOneV3(side({ pools: [] }), "1112391")).toBeNull();
+    expect(describeOneV3(side({ pools: [pool({ feePpm: 3_000 })] }), "1112391")).toBeNull();
+  });
+
+  it("carries the record's own verdict when the history does not reach the present, or was not read", () => {
+    expect(describeOneV3(side({ history: { status: "unavailable", reason: "timeout", notice: "market-data-timed-out" } }), "1112391")?.record).toEqual({
+      status: "unread",
+    });
+    expect(
+      describeOneV3(
+        side({
+          history: {
+            status: "success",
+            data: { asked: new Set(["1112391"]), snapshots: new Map([["1112391", [{ ...opened, liquidity: LIQUIDITY - 1n }]]]), unreadable: new Set() },
+          },
+        }),
+        "1112391",
+      )?.record,
+    ).toEqual({ status: "unverified", reason: "liquidity-differs" });
   });
 });

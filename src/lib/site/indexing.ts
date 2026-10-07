@@ -49,5 +49,12 @@ export const INDEXED_PAGES = [
  */
 export const EMBED_PAGES = ["/embed/pool", "/api/embed/pool"] as const;
 
+/**
+ * The card a holder shares about one open v3 position: an image, served by a
+ * route handler and closed like the holdings page whose record it draws — it
+ * reads that one position live, from the chain and its sources.
+ */
+export const SHARE_PAGES = ["/api/share/position"] as const;
+
 /** Pages that read live data per request, plus the routes that are not pages at all. */
 export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/pair", "/holdings", "/embed/", "/api/", "/__backup/"] as const;
