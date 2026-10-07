@@ -1,29 +1,31 @@
 import { describe, expect, it } from "vitest";
 
-import { visualOrder } from "./visualOrder";
+import { lineRuns } from "./visualOrder";
 
-describe("the visual order of a right-to-left card line", () => {
-  it("reverses the words of an Arabic sentence, so a left-to-right renderer draws it reading right to left", () => {
-    expect(visualOrder("مقيس على الموقع")).toBe("الموقع على مقيس");
+const texts = (line: string) => lineRuns(line).map(({ dir, text }) => `${dir}:${text}`);
+
+describe("the runs of a right-to-left card line", () => {
+  it("cuts an Arabic sentence into one run per word, in reading order", () => {
+    expect(texts("مقيس على الموقع")).toEqual(["rtl:مقيس", "rtl:على", "rtl:الموقع"]);
   });
 
-  it("keeps a Latin run — a name, figures, a URL — in its own order inside the reversed line", () => {
-    expect(visualOrder("مركز Uniswap v3 مفتوح، بسعر اليوم")).toBe("اليوم بسعر مفتوح، Uniswap v3 مركز");
-    expect(visualOrder("النطاق 1,948.91 – 5,502.58 USDC لكل WETH")).toBe("WETH لكل 1,948.91 – 5,502.58 USDC النطاق");
+  it("keeps a Latin stretch — a name, figures, a URL — as one run, so it reads left to right inside the line", () => {
+    expect(texts("مركز Uniswap v3 مفتوح، بسعر اليوم")).toEqual(["rtl:مركز", "ltr:Uniswap v3", "rtl:مفتوح،", "rtl:بسعر", "rtl:اليوم"]);
+    expect(texts("النطاق 1,948.91 – 5,502.58 USDC لكل WETH")).toEqual([
+      "rtl:النطاق",
+      "ltr:1,948.91 – 5,502.58 USDC",
+      "rtl:لكل",
+      "ltr:WETH",
+    ]);
   });
 
   it("lets a word with no direction of its own — a dot, a dash — travel with the run before it", () => {
-    expect(visualOrder("مقيس على liquiditywise.com · ليس نصيحة")).toBe("نصيحة ليس liquiditywise.com · على مقيس");
+    expect(texts("قياس من liquiditywise.com · ليس نصيحة")).toEqual(["rtl:قياس", "rtl:من", "ltr:liquiditywise.com ·", "rtl:ليس", "rtl:نصيحة"]);
   });
 
-  it("leaves a line that is Latin alone as it is, and a single word as it is", () => {
-    expect(visualOrder("1,948.91 – 5,502.58 USDC")).toBe("1,948.91 – 5,502.58 USDC");
-    expect(visualOrder("النطاق")).toBe("النطاق");
-    expect(visualOrder("")).toBe("");
-  });
-
-  it("is its own inverse on a line of two runs, as a reordering should be", () => {
-    const line = "منذ 2025-05-28";
-    expect(visualOrder(visualOrder(line))).toBe(line);
+  it("makes one Latin run of a Latin line, one run of one word, and none of nothing", () => {
+    expect(texts("1,948.91 – 5,502.58 USDC")).toEqual(["ltr:1,948.91 – 5,502.58 USDC"]);
+    expect(texts("النطاق")).toEqual(["rtl:النطاق"]);
+    expect(lineRuns("")).toEqual([]);
   });
 });

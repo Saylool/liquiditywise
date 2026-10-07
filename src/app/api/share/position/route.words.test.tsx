@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { visualOrder } from "@/lib/share/visualOrder";
+import { lineRuns } from "@/lib/share/visualOrder";
 
 vi.mock("server-only", () => ({}));
 
@@ -119,16 +119,16 @@ describe("what the share card says", () => {
 
   /*
    * The renderer lays every line out left to right and knows no bidi, so an
-   * Arabic card's words are handed to it already in drawing order (see
-   * lib/share/visualOrder.ts): the footer's last word first.
+   * Arabic card's lines are handed to it as runs laid out from the right
+   * (see lib/share/visualOrder.ts).
    */
-  it("hands an Arabic card its words in drawing order, not reading order", async () => {
+  it("draws an Arabic card's lines as runs laid out from the right, a Latin stretch kept whole", async () => {
     const markup = await words("/api/share/position?id=1112391&lang=ar");
     const footer = "قياس من liquiditywise.com · ليس نصيحة";
 
-    expect(markup).toContain(visualOrder(footer));
     expect(markup).not.toContain(footer);
-    expect(visualOrder(footer)).not.toBe(footer);
+    for (const run of lineRuns(footer)) expect(markup).toContain(`>${run.text}</div>`);
+    expect(markup).toContain("flex-direction:row-reverse");
   });
 
   it("is drawn in the site's own three faces, and an Arabic face the renderer can parse for the glyphs they lack", async () => {
