@@ -84,12 +84,18 @@ describe("which pages a search engine may read", () => {
     expect(robots().sitemap).toBe(`${SITE_URL}/sitemap.xml`);
   });
 
-  it("lists only the open pages in the sitemap, on the real host, at every address each has", () => {
+  /*
+   * Not the unprefixed address: it shows whichever language the browser asks
+   * for and names that language's address canonical, so listed as a page it
+   * was only a duplicate for the crawler to report (and it did, 2026-10-05).
+   */
+  it("lists only the open pages in the sitemap, on the real host, at each language's address and no other", () => {
     const urls = sitemap().map(({ url }) => url);
 
-    expect(urls).toHaveLength(INDEXED_PAGES.length * (LOCALES.length + 1));
-    expect(urls).toContain("https://liquiditywise.com");
-    expect(urls).toContain("https://liquiditywise.com/hooks");
+    expect(urls).toHaveLength(INDEXED_PAGES.length * LOCALES.length);
+    expect(urls).not.toContain("https://liquiditywise.com");
+    expect(urls).not.toContain("https://liquiditywise.com/hooks");
+    expect(urls).toContain("https://liquiditywise.com/en/hooks");
     expect(urls).toContain("https://liquiditywise.com/tr");
     expect(urls).toContain("https://liquiditywise.com/zh-Hant/hooks");
     expect(urls.every((url) => url.startsWith(SITE_URL))).toBe(true);

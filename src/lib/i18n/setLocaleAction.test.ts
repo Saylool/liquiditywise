@@ -94,11 +94,28 @@ describe("an open page's canonical address", () => {
     expect(alternates.languages.tr).toBe("https://liquiditywise.com/tr/hooks");
   });
 
-  it("is the address without a language otherwise, whatever the reader's language", async () => {
+  /*
+   * Not the unprefixed address. Until 2026-10-07 it named itself, and so did
+   * /en/…; a crawler reading both in English folded eleven /en/… pages into
+   * their unprefixed twins as duplicates. The canonical now follows the
+   * language shown, which is what the hreflang beside it says too.
+   */
+  it("is the address of the language shown when reached unprefixed, never the unprefixed address", async () => {
     request.headers = new Headers({ "accept-language": "tr" });
     const { getOpenPageAlternates } = await import("./requestLocale");
 
-    expect((await getOpenPageAlternates("/")).canonical).toBe("/");
+    expect((await getOpenPageAlternates("/")).canonical).toBe("/tr");
+
+    request.headers = new Headers();
+    expect((await getOpenPageAlternates("/method")).canonical).toBe("/en/method");
+  });
+
+  it("lets a chosen language outrank the browser's in the canonical, as the page itself does", async () => {
+    request.headers = new Headers({ "accept-language": "fr" });
+    request.cookies = [{ name: "locale", value: "hi" }];
+    const { getOpenPageAlternates } = await import("./requestLocale");
+
+    expect((await getOpenPageAlternates("/hooks")).canonical).toBe("/hi/hooks");
   });
 
   it("takes the page's language from its address before the reader's cookie", async () => {

@@ -41,17 +41,21 @@ export const getRequestDictionary = async (): Promise<{
 
 /**
  * An open page's canonical address and its every language's address, for its
- * metadata. The canonical is the address this render was reached by — /tr for
- * the Turkish front page, / for the one that follows the browser — so each
- * language's page names itself and none is folded into another.
+ * metadata. The canonical is the address of the language this render is in:
+ * /tr/method for the Turkish method page, whether it was reached by that
+ * address or by /method with a Turkish browser.
+ *
+ * Not the address reached by. Until 2026-10-07 the unprefixed address named
+ * itself canonical, and so did /en/method; a crawler reads both in English,
+ * found two pages saying the same thing, and folded eleven /en/… pages into
+ * their unprefixed twins as duplicates (Search Console: "Google chose a
+ * different canonical than the user"). Now the unprefixed address is only
+ * the way in that follows the browser — the x-default of every language
+ * alternate — and names the language page it showed.
  */
 export const getOpenPageAlternates = async (
   path: OpenPage,
-): Promise<{ readonly canonical: string; readonly languages: Record<string, string> }> => {
-  const addressed = (await headers()).get(LOCALE_HEADER);
-
-  return {
-    canonical: isLocale(addressed) ? localePath(addressed, path) : path,
-    languages: languageAlternates(path),
-  };
-};
+): Promise<{ readonly canonical: string; readonly languages: Record<string, string> }> => ({
+  canonical: localePath(await getRequestLocale(), path),
+  languages: languageAlternates(path),
+});
