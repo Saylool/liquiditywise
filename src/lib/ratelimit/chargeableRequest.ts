@@ -1,5 +1,7 @@
 import { Bytes32HexSchema, EvmAddressSchema } from "../../schemas/primitives";
 import { readPoolSearchInput } from "../search/poolSearchInput";
+import { readShareRequest } from "../share/shareRequest";
+import { SHARE_PAGES } from "../site/indexing";
 
 /*
  * Which requests are charged against a visitor's allowance.
@@ -32,8 +34,17 @@ import { readPoolSearchInput } from "../search/poolSearchInput";
  * An address typed into the search box is not counted here. It is answered with
  * a redirect to the canonical `?address=` form, and that request is counted when
  * it arrives — counting both would charge one visitor twice for one analysis.
+ *
+ * The share card is the one route whose `id` is not a pool's: it names a
+ * position by its token id, a decimal (share/shareRequest.ts), and reads the
+ * chain and two sources for it as a holdings lookup does. So on that page,
+ * and only there, a well-formed position is what is charged — judged by the
+ * same reader the route uses, so a request the route refuses before reading
+ * is never charged.
  */
-export const spendsUpstreamQuota = (parameters: URLSearchParams): boolean => {
+export const spendsUpstreamQuota = (parameters: URLSearchParams, page?: string): boolean => {
+  if (page !== undefined && (SHARE_PAGES as readonly string[]).includes(page)) return readShareRequest(parameters) !== null;
+
   const address = parameters.get("address");
   if (address !== null) return EvmAddressSchema.safeParse(address).success;
 

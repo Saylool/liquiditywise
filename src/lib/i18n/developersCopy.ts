@@ -29,7 +29,7 @@ import type { Locale } from "./locales";
  */
 
 /** The sections, in reading order; each is also the anchor it is linked to. */
-export const DEVELOPERS_SECTION_IDS = ["card", "parameters", "json", "errors", "caching", "examples", "terms"] as const;
+export const DEVELOPERS_SECTION_IDS = ["card", "parameters", "json", "errors", "caching", "examples", "share", "terms"] as const;
 
 export type DevelopersSectionId = (typeof DEVELOPERS_SECTION_IDS)[number];
 
@@ -64,6 +64,10 @@ export type DevelopersFigures = {
   readonly analysedBy: string;
   /** The words the method page is linked by everywhere, so the pointer to it reads like the link. */
   readonly methodLink: string;
+  /** The networks whose positions are kept, where a record can be verified and a share card drawn. */
+  readonly positionChains: string;
+  /** The holdings page's own heading over the share row, so a reader can find it. */
+  readonly shareHeading: string;
 };
 
 type Paragraphs = (figures: DevelopersFigures) => readonly string[];
@@ -111,6 +115,10 @@ export type DevelopersCopy = {
 
   readonly examples: { readonly curl: string; readonly fetch: string; readonly iframe: string; readonly selectHint: string };
 
+  /** The share card: what it draws, how it is addressed, and how it fails. */
+  readonly share: Paragraphs;
+  readonly shareLabel: string;
+
   readonly terms: Paragraphs;
   readonly links: { readonly code: string; readonly licence: string };
 };
@@ -131,6 +139,7 @@ const en: DevelopersCopy = {
     errors: "Status codes and errors",
     caching: "Caching and the rate limit",
     examples: "Examples",
+    share: "The share card",
     terms: "Terms, in plain words",
   },
 
@@ -239,6 +248,12 @@ const en: DevelopersCopy = {
     selectHint: "One click selects a whole block, ready to copy.",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` draws a card for one open v3 position, a PNG 1200 pixels by 630: the pair with its fee and network, the position's range, the fees it has earned over its whole life, and its result against simply holding the deposits with the result's two parts — the figures the holdings page shows in the record under that position, in the token that page quotes the pool in. The position is named by \`id\`, its token id, with \`chain\` and \`lang\` as above; left out, Ethereum and English. Only on the networks whose positions are kept (${f.positionChains}), where a record can be verified against the chain, and only a verified record puts a figure on the card: one that could not be verified gives a plain card that says so. Every holdings page offers the links under "${f.shareHeading}".`,
+    `The card itself is \`200\`. An address that names no position is \`400\`, an id the chain holds no open position under is \`404\`, and a position that could not be read just now is \`503\` — each as JSON with an \`error\` of \`not-a-position\`, \`no-such-position\` or \`unreadable\`, never a card with a figure missing from it. A card is kept ${f.keptSeconds} seconds, like the pool card, since its record is valued at today's price; and a request that names a well-formed position reads the chain, so it counts against the same ${f.limit} requests per ${f.windowSeconds} seconds as the pool pages, and is \`429\` past them. The card names the position's public token id and nothing about who asked for it, and nothing is kept.`,
+  ],
+  shareLabel: "The card for one position on Ethereum, in English — an address that can be opened as it stands:",
+
   terms: (f) => [
     `The figures are measurements, not advice. The range is worked out from how far the pool's price moved over the last ${f.measuredDays} days: it is not a forecast and not a recommendation, and every answer says so itself, the card on its face and the JSON in \`disclaimer\`. How every figure is made, and what each leaves out, is under "${f.methodLink}".`,
     `The card carries its own link back, "${f.analysedBy}". The JSON has no attribution field, and nothing in the code asks for one; what it carries is \`poolUrl\`, the pool's page here, and \`disclaimer\`. Shown beside the figures, those two tell a reader where they came from and what they are.`,
@@ -264,6 +279,7 @@ const tr: DevelopersCopy = {
     errors: "Durum kodları ve hatalar",
     caching: "Önbellek ve istek sınırı",
     examples: "Örnekler",
+    share: "Paylaşım kartı",
     terms: "Koşullar, sade bir dille",
   },
 
@@ -372,6 +388,12 @@ const tr: DevelopersCopy = {
     selectHint: "Tek tıklama bütün bloğu seçer, kopyalamaya hazır.",
   },
 
+  share: (f) => [
+    `\`/api/share/position\`, açık bir v3 pozisyonu için bir kart çizer: 1200'e 630 piksellik bir PNG. Üzerinde çift, komisyonu ve ağıyla; pozisyonun aralığı; bütün ömrü boyunca kazandığı komisyon; ve yatırılanları sadece tutmaya kıyasla sonucu, sonucun iki parçasıyla — yani pozisyonlar sayfasının o pozisyonun altındaki hesapta gösterdiği rakamlar, o sayfanın havuzu kote ettiği token cinsinden. Pozisyon \`id\` ile, yani token kimliğiyle belirtilir; \`chain\` ve \`lang\` yukarıdaki gibidir, verilmezse Ethereum ve İngilizce. Yalnızca pozisyonları tutulan ağlarda (${f.positionChains}), çünkü bir hesap ancak oralarda zincirle doğrulanabilir; ve karta rakam koyan yalnızca doğrulanmış bir hesaptır: doğrulanamayan bir hesap, bunu söyleyen düz bir kart verir. Her pozisyonlar sayfası bağlantıları "${f.shareHeading}" başlığı altında sunar.`,
+    `Kartın kendisi \`200\`'dür. Pozisyon belirtmeyen bir adres \`400\`, zincirin altında açık bir pozisyon tutmadığı bir kimlik \`404\`, şu an okunamayan bir pozisyon \`503\` olur — her biri JSON olarak, \`error\` alanı \`not-a-position\`, \`no-such-position\` ya da \`unreadable\` ile; asla rakamı eksik bir kart değil. Bir kart, havuz kartı gibi ${f.keptSeconds} saniye saklanır, çünkü hesabı bugünkü fiyatla değerlenir; biçimi doğru bir pozisyon belirten istek zinciri okur, bu yüzden havuz sayfalarıyla aynı hakka sayılır: ${f.windowSeconds} saniyede ${f.limit} istek, ötesi \`429\`. Kart, pozisyonun herkese açık token kimliğini söyler, kimin istediğine dair hiçbir şey söylemez ve hiçbir şey saklanmaz.`,
+  ],
+  shareLabel: "Ethereum'daki bir pozisyonun kartı, İngilizce — olduğu gibi açılabilen bir adres:",
+
   terms: (f) => [
     `Rakamlar ölçümdür, tavsiye değildir. Aralık, havuzun fiyatının son ${f.measuredDays} günde ne kadar hareket ettiğinden hesaplanır: bir tahmin değildir, bir öneri de değildir; ve her cevap bunu kendisi söyler, kart yüzünde, JSON \`disclaimer\` içinde. Her rakamın nasıl üretildiği ve neyi dışarıda bıraktığı "${f.methodLink}" sayfasındadır.`,
     `Kart kendi geri bağlantısını taşır: "${f.analysedBy}". JSON'da bir atıf alanı yoktur ve kodda atıf isteyen hiçbir şey yoktur; taşıdığı şey, havuzun buradaki sayfası olan \`poolUrl\` ve \`disclaimer\`'dır. Rakamların yanında gösterildiklerinde bu ikisi okura rakamların nereden geldiğini ve ne olduklarını söyler.`,
@@ -397,6 +419,7 @@ const de: DevelopersCopy = {
     errors: "Statuscodes und Fehler",
     caching: "Caching und das Anfragelimit",
     examples: "Beispiele",
+    share: "Die Teilen-Karte",
     terms: "Bedingungen, in einfachen Worten",
   },
 
@@ -505,6 +528,12 @@ const de: DevelopersCopy = {
     selectHint: "Ein Klick markiert einen ganzen Block, bereit zum Kopieren.",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` zeichnet eine Karte für eine offene v3-Position, ein PNG von 1200 mal 630 Pixeln: das Paar mit Gebühr und Netzwerk, den Bereich der Position, die Gebühren über ihre ganze Laufzeit und ihr Ergebnis gegenüber dem bloßen Halten der Einlagen mit den zwei Teilen des Ergebnisses — die Zahlen, die die Positionsseite in der Rechnung unter dieser Position zeigt, in dem Token, in dem diese Seite den Pool notiert. Die Position wird mit \`id\`, ihrer Token-ID, benannt; \`chain\` und \`lang\` wie oben, weggelassen Ethereum und Englisch. Nur auf den Netzwerken, deren Positionen geführt werden (${f.positionChains}), wo sich eine Rechnung gegen die Chain prüfen lässt — und nur eine geprüfte Rechnung setzt eine Zahl auf die Karte: eine, die sich nicht prüfen ließ, ergibt eine schlichte Karte, die das sagt. Jede Positionsseite bietet die Links unter "${f.shareHeading}" an.`,
+    `Die Karte selbst ist \`200\`. Eine Adresse, die keine Position nennt, ist \`400\`, eine ID, unter der die Chain keine offene Position hält, \`404\`, und eine Position, die sich gerade nicht lesen ließ, \`503\` — jeweils als JSON mit einem \`error\` von \`not-a-position\`, \`no-such-position\` oder \`unreadable\`, nie als Karte, auf der eine Zahl fehlt. Eine Karte wird ${f.keptSeconds} Sekunden behalten, wie die Pool-Karte, da ihre Rechnung zum heutigen Preis bewertet ist; und eine Anfrage, die eine wohlgeformte Position nennt, liest die Chain, zählt also gegen dieselben ${f.limit} Anfragen je ${f.windowSeconds} Sekunden wie die Pool-Seiten und ist darüber hinaus \`429\`. Die Karte nennt die öffentliche Token-ID der Position und nichts über den, der sie angefragt hat, und nichts wird gespeichert.`,
+  ],
+  shareLabel: "Die Karte für eine Position auf Ethereum, auf Englisch — eine Adresse, die sich so öffnen lässt, wie sie dasteht:",
+
   terms: (f) => [
     `Die Zahlen sind Messungen, keine Beratung. Der Bereich wird daraus berechnet, wie weit sich der Preis des Pools in den letzten ${f.measuredDays} Tagen bewegt hat: Er ist keine Prognose und keine Empfehlung, und jede Antwort sagt das selbst, die Karte auf ihrer Vorderseite, das JSON in \`disclaimer\`. Wie jede Zahl entsteht und was sie auslässt, steht unter „${f.methodLink}“.`,
     `Die Karte trägt ihren eigenen Link zurück, „${f.analysedBy}“. Das JSON hat kein Feld für eine Namensnennung, und nichts im Code verlangt eine; was es trägt, sind \`poolUrl\`, die Seite des Pools hier, und \`disclaimer\`. Neben den Zahlen gezeigt, sagen diese beiden einem Leser, woher die Zahlen kommen und was sie sind.`,
@@ -530,6 +559,7 @@ const es: DevelopersCopy = {
     errors: "Códigos de estado y errores",
     caching: "Caché y límite de peticiones",
     examples: "Ejemplos",
+    share: "La tarjeta para compartir",
     terms: "Condiciones, en palabras sencillas",
   },
 
@@ -638,6 +668,12 @@ const es: DevelopersCopy = {
     selectHint: "Un clic selecciona todo un bloque, listo para copiar.",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` dibuja una tarjeta para una posición v3 abierta, un PNG de 1200 por 630 píxeles: el par con su comisión y su red, el rango de la posición, las comisiones ganadas en toda su vida y su resultado frente a simplemente mantener lo depositado, con las dos partes del resultado: las cifras que la página de posiciones muestra en el cálculo bajo esa posición, en el token en que esa página cotiza el pool. La posición se nombra con \`id\`, el id de su token; \`chain\` y \`lang\` como arriba, y si se omiten, Ethereum e inglés. Solo en las redes cuyas posiciones se conservan (${f.positionChains}), donde un cálculo puede comprobarse contra la cadena, y solo un cálculo comprobado pone una cifra en la tarjeta: uno que no pudo comprobarse da una tarjeta lisa que lo dice. Cada página de posiciones ofrece los enlaces bajo "${f.shareHeading}".`,
+    `La tarjeta en sí es \`200\`. Una dirección que no nombra ninguna posición es \`400\`, un id bajo el que la cadena no tiene ninguna posición abierta es \`404\`, y una posición que no pudo leerse ahora mismo es \`503\`: cada uno como JSON con un \`error\` de \`not-a-position\`, \`no-such-position\` o \`unreadable\`, nunca una tarjeta a la que le falte una cifra. Una tarjeta se conserva ${f.keptSeconds} segundos, como la tarjeta del pool, porque su cálculo se valora al precio de hoy; y una petición que nombra una posición bien formada lee la cadena, así que cuenta contra las mismas ${f.limit} peticiones por ${f.windowSeconds} segundos que las páginas de pools, y más allá es \`429\`. La tarjeta nombra el id público del token de la posición y nada sobre quién la pidió, y no se guarda nada.`,
+  ],
+  shareLabel: "La tarjeta de una posición en Ethereum, en inglés: una dirección que puede abrirse tal cual:",
+
   terms: (f) => [
     `Las cifras son mediciones, no asesoramiento. El rango se calcula a partir de cuánto se movió el precio del pool en los últimos ${f.measuredDays} días: no es una previsión ni una recomendación, y cada respuesta lo dice por sí misma, la tarjeta a la vista y el JSON en \`disclaimer\`. Cómo se obtiene cada cifra, y qué deja fuera cada una, está en «${f.methodLink}».`,
     `La tarjeta lleva su propio enlace de vuelta, «${f.analysedBy}». El JSON no tiene ningún campo de atribución, y nada en el código la pide; lo que lleva es \`poolUrl\`, la página del pool aquí, y \`disclaimer\`. Mostrados junto a las cifras, esos dos le dicen al lector de dónde salen y qué son.`,
@@ -663,6 +699,7 @@ const ar: DevelopersCopy = {
     errors: "رموز الحالة والأخطاء",
     caching: "التخزين المؤقت وحدّ الطلبات",
     examples: "أمثلة",
+    share: "بطاقة المشاركة",
     terms: "الشروط بكلمات بسيطة",
   },
 
@@ -771,6 +808,12 @@ const ar: DevelopersCopy = {
     selectHint: "نقرة واحدة تحدّد الكتلة كلها، جاهزة للنسخ.",
   },
 
+  share: (f) => [
+    `يرسم \`/api/share/position\` بطاقة لمركز v3 مفتوح واحد، صورة PNG بعرض 1200 بكسل وارتفاع 630: الزوج مع رسومه وشبكته، ونطاق المركز، والرسوم التي كسبها طوال عمره، ونتيجته مقابل الاحتفاظ بالمودَع ببساطة مع جزأي النتيجة — وهي الأرقام التي تعرضها صفحة المراكز في الحساب تحت ذلك المركز، بالرمز الذي تسعّر به تلك الصفحة التجمّع. يُسمّى المركز بـ \`id\`، أي معرّف رمزه؛ و\`chain\` و\`lang\` كما في الأعلى، وإن أُغفلا فإيثيريوم والإنجليزية. على الشبكات التي تُحفظ مراكزها فقط (${f.positionChains})، حيث يمكن التحقق من الحساب مقابل السلسلة، ولا يضع رقمًا على البطاقة إلا حساب تم التحقق منه: أما الذي تعذّر التحقق منه فيعطي بطاقة بسيطة تقول ذلك. وتعرض كل صفحة مراكز الروابط تحت "${f.shareHeading}".`,
+    `البطاقة نفسها \`200\`. والعنوان الذي لا يسمّي مركزًا \`400\`، والمعرّف الذي لا تحمل السلسلة تحته مركزًا مفتوحًا \`404\`، والمركز الذي تعذّرت قراءته الآن \`503\` — كل منها بصيغة JSON مع \`error\` قيمته \`not-a-position\` أو \`no-such-position\` أو \`unreadable\`، ولا تكون أبدًا بطاقة ينقصها رقم. تُحفظ البطاقة ${f.keptSeconds} ثانية، كبطاقة التجمّع، لأن حسابها مقوّم بسعر اليوم؛ والطلب الذي يسمّي مركزًا صحيح الصيغة يقرأ السلسلة، فيُحتسب من الحصة نفسها التي تُحتسب منها صفحات التجمّعات: ${f.limit} طلبات في كل ${f.windowSeconds} ثانية، وما زاد عليها فـ \`429\`. تذكر البطاقة معرّف رمز المركز العام ولا شيء عمّن طلبها، ولا يُحفظ شيء.`,
+  ],
+  shareLabel: "بطاقة مركز واحد على إيثيريوم، بالإنجليزية — عنوان يمكن فتحه كما هو:",
+
   terms: (f) => [
     `الأرقام قياسات، لا نصيحة. يُحسب النطاق من مقدار تحرّك سعر التجمّع خلال آخر ${f.measuredDays} يومًا: ليس تنبؤًا وليس توصية، وكل إجابة تقول ذلك بنفسها، البطاقة على واجهتها وJSON في \`disclaimer\`. وكيف يُحسب كل رقم وما الذي يتركه خارجه، تجده في صفحة «${f.methodLink}».`,
     `تحمل البطاقة رابطها الخاص للعودة، «${f.analysedBy}». أما JSON فليس فيه حقل لنسبة المصدر، ولا شيء في الشيفرة يطلب ذلك؛ ما يحمله هو \`poolUrl\`، صفحة التجمّع هنا، و\`disclaimer\`. وإذا عُرض هذان بجانب الأرقام، أخبرا القارئ من أين جاءت وما هي.`,
@@ -796,6 +839,7 @@ const hi: DevelopersCopy = {
     errors: "स्टेटस कोड और त्रुटियाँ",
     caching: "कैशिंग और अनुरोध सीमा",
     examples: "उदाहरण",
+    share: "साझा करने का कार्ड",
     terms: "शर्तें, सादे शब्दों में",
   },
 
@@ -904,6 +948,12 @@ const hi: DevelopersCopy = {
     selectHint: "एक क्लिक पूरा ब्लॉक चुन लेता है, कॉपी करने के लिए तैयार।",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` एक खुली v3 पोज़िशन के लिए कार्ड बनाता है, 1200 गुणा 630 पिक्सेल का एक PNG: जोड़ी अपने शुल्क और नेटवर्क के साथ, पोज़िशन का दायरा, पूरे जीवनकाल में कमाया गया शुल्क, और जमा की गई राशि को बस रखे रहने की तुलना में उसका नतीजा, नतीजे के दो हिस्सों के साथ — यानी वही आँकड़े जो पोज़िशन वाला पृष्ठ उस पोज़िशन के नीचे के हिसाब में दिखाता है, उसी टोकन में जिसमें वह पृष्ठ पूल की कीमत बताता है। पोज़िशन को \`id\` से, यानी उसकी टोकन आईडी से, नाम दिया जाता है; \`chain\` और \`lang\` ऊपर की तरह, और न देने पर Ethereum और अंग्रेज़ी। सिर्फ़ उन नेटवर्क पर जिनकी पोज़िशनें रखी जाती हैं (${f.positionChains}), जहाँ हिसाब चेन से जाँचा जा सकता है; और कार्ड पर आँकड़ा सिर्फ़ जाँचा हुआ हिसाब ही रखता है: जो जाँचा न जा सका, वह एक सादा कार्ड देता है जो यही कहता है। हर पोज़िशन वाला पृष्ठ ये लिंक "${f.shareHeading}" के नीचे देता है।`,
+    `कार्ड खुद \`200\` है। जो पता किसी पोज़िशन का नाम नहीं लेता वह \`400\`, जिस आईडी के नीचे चेन कोई खुली पोज़िशन नहीं रखती वह \`404\`, और जो पोज़िशन अभी पढ़ी न जा सकी वह \`503\` — हर एक JSON के रूप में, \`error\` में \`not-a-position\`, \`no-such-position\` या \`unreadable\` के साथ; कभी ऐसा कार्ड नहीं जिसमें कोई आँकड़ा छूटा हो। कार्ड ${f.keptSeconds} सेकंड रखा जाता है, पूल कार्ड की तरह, क्योंकि उसका हिसाब आज की कीमत पर आँका जाता है; और जो अनुरोध सही रूप की पोज़िशन का नाम लेता है वह चेन पढ़ता है, इसलिए वह पूल पृष्ठों के ही ${f.windowSeconds} सेकंड में ${f.limit} अनुरोधों की गिनती में आता है, और उससे आगे \`429\` है। कार्ड पोज़िशन की सार्वजनिक टोकन आईडी बताता है और माँगने वाले के बारे में कुछ नहीं, और कुछ भी सहेजा नहीं जाता।`,
+  ],
+  shareLabel: "Ethereum पर एक पोज़िशन का कार्ड, अंग्रेज़ी में — एक पता जो जैसा है वैसा खोला जा सकता है:",
+
   terms: (f) => [
     `आँकड़े माप हैं, सलाह नहीं। दायरा इस बात से निकाला जाता है कि पिछले ${f.measuredDays} दिनों में पूल की कीमत कितनी हिली: यह कोई पूर्वानुमान नहीं है और कोई सिफ़ारिश भी नहीं, और हर जवाब यह ख़ुद कहता है, कार्ड अपने सामने और JSON \`disclaimer\` में। हर आँकड़ा कैसे बनता है और क्या छोड़ देता है, यह "${f.methodLink}" पृष्ठ पर है।`,
     `कार्ड पर लौटने का उसका अपना लिंक है, "${f.analysedBy}"। JSON में श्रेय देने का कोई फ़ील्ड नहीं है, और कोड में कुछ भी इसे नहीं माँगता; उसमें जो है वह है \`poolUrl\`, यहाँ पूल का पृष्ठ, और \`disclaimer\`। आँकड़ों के पास दिखाए जाएँ, तो ये दोनों पाठक को बताते हैं कि आँकड़े कहाँ से आए और क्या हैं।`,
@@ -929,6 +979,7 @@ const zh: DevelopersCopy = {
     errors: "状态码与错误",
     caching: "缓存与请求限制",
     examples: "示例",
+    share: "分享卡片",
     terms: "条款，用大白话说",
   },
 
@@ -1034,6 +1085,12 @@ const zh: DevelopersCopy = {
     selectHint: "单击即可选中整个代码块，方便复制。",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` 为一个未平仓的 v3 仓位绘制一张卡片，一张 1200 乘 630 像素的 PNG：交易对及其手续费和网络、仓位的区间、整个存续期间赚到的手续费，以及相对单纯持有存入代币的结果和结果的两个部分——也就是仓位页面在该仓位下方的记录里显示的数字，以该页面为资金池报价所用的代币计。仓位由 \`id\` 指定，即它的代币 id；\`chain\` 和 \`lang\` 同上，省略时为以太坊和英文。只在保留仓位的网络上（${f.positionChains}），因为只有在那里记录才能与链上核对；而且只有核对过的记录才会把数字放到卡片上：无法核对的记录会得到一张写明这一点的素卡片。每个仓位页面都在“${f.shareHeading}”下提供这些链接。`,
+    `卡片本身是 \`200\`。没有指定任何仓位的地址是 \`400\`，链上在该 id 下没有未平仓仓位的是 \`404\`，此刻读不到的仓位是 \`503\`——每一种都以 JSON 返回，\`error\` 为 \`not-a-position\`、\`no-such-position\` 或 \`unreadable\`，绝不会是缺了数字的卡片。卡片保留 ${f.keptSeconds} 秒，和资金池卡片一样，因为它的记录按今天的价格计算；指定了格式正确的仓位的请求会读取链上数据，所以它和资金池页面计入同一份额度：每 ${f.windowSeconds} 秒 ${f.limit} 次请求，超出即为 \`429\`。卡片只写出仓位公开的代币 id，不涉及是谁请求的，也不保存任何东西。`,
+  ],
+  shareLabel: "以太坊上一个仓位的卡片，英文——一个可以照原样打开的地址：",
+
   terms: (f) => [
     `这些数字是测量，不是建议。区间是根据池子价格在过去 ${f.measuredDays} 天里的波动幅度算出的：它不是预测，也不是推荐，每个响应都会自己说明这一点——卡片写在正面，JSON 写在 \`disclaimer\` 里。每个数字是怎么算出来的、各自漏掉了什么，见“${f.methodLink}”页面。`,
     `卡片带有自己的返回链接“${f.analysedBy}”。JSON 没有署名字段，代码中也没有任何要求署名的内容；它带的是 \`poolUrl\`（该池子在本站的页面）和 \`disclaimer\`。把这两项放在数字旁边，读者就能知道数字从哪里来、是什么。`,
@@ -1059,6 +1116,7 @@ const ru: DevelopersCopy = {
     errors: "Коды ответа и ошибки",
     caching: "Кэширование и лимит запросов",
     examples: "Примеры",
+    share: "Карточка для публикации",
     terms: "Условия, простыми словами",
   },
 
@@ -1167,6 +1225,12 @@ const ru: DevelopersCopy = {
     selectHint: "Один щелчок выделяет весь блок, готовый к копированию.",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` рисует карточку для одной открытой позиции v3, PNG размером 1200 на 630 пикселей: пара с её комиссией и сетью, диапазон позиции, комиссии за всё время её жизни и её итог против простого хранения внесённого с двумя частями итога — те цифры, что страница позиций показывает в расчёте под этой позицией, в том токене, в котором эта страница котирует пул. Позиция называется через \`id\`, id её токена; \`chain\` и \`lang\` как выше, а без них — Ethereum и английский. Только в сетях, чьи позиции хранятся (${f.positionChains}), где расчёт можно сверить с сетью, и только сверенный расчёт ставит цифру на карточку: тот, что сверить не удалось, даёт простую карточку, которая так и говорит. Каждая страница позиций предлагает ссылки под заголовком «${f.shareHeading}».`,
+    `Сама карточка — \`200\`. Адрес, не называющий позицию, — \`400\`, id, под которым сеть не держит открытой позиции, — \`404\`, а позиция, которую не удалось прочитать прямо сейчас, — \`503\`; каждый ответ — JSON с \`error\`, равным \`not-a-position\`, \`no-such-position\` или \`unreadable\`, и никогда не карточка с пропущенной цифрой. Карточка хранится ${f.keptSeconds} секунд, как карточка пула, потому что её расчёт оценён по сегодняшней цене; а запрос, называющий корректную позицию, читает сеть, поэтому считается в ту же квоту, что и страницы пулов: ${f.limit} запросов за ${f.windowSeconds} секунд, сверх неё — \`429\`. Карточка называет публичный id токена позиции и ничего о том, кто её запросил, и ничего не сохраняется.`,
+  ],
+  shareLabel: "Карточка одной позиции в Ethereum, на английском — адрес, который можно открыть как есть:",
+
   terms: (f) => [
     `Цифры — это измерения, а не совет. Диапазон рассчитан по тому, насколько цена пула двигалась за последние ${f.measuredDays} дн.: это не прогноз и не рекомендация, и каждый ответ говорит это сам — карточка на своей лицевой стороне, JSON в \`disclaimer\`. Как получается каждая цифра и что она оставляет за кадром, рассказано на странице «${f.methodLink}».`,
     `Карточка несёт собственную ссылку обратно — «${f.analysedBy}». В JSON нет поля для указания авторства, и ничто в коде его не требует; в нём есть \`poolUrl\`, страница пула здесь, и \`disclaimer\`. Показанные рядом с цифрами, эти два поля говорят читателю, откуда цифры и что они такое.`,
@@ -1192,6 +1256,7 @@ const pt: DevelopersCopy = {
     errors: "Códigos de status e erros",
     caching: "Cache e limite de requisições",
     examples: "Exemplos",
+    share: "O cartão para compartilhar",
     terms: "Condições, em palavras simples",
   },
 
@@ -1300,6 +1365,12 @@ const pt: DevelopersCopy = {
     selectHint: "Um clique seleciona um bloco inteiro, pronto para copiar.",
   },
 
+  share: (f) => [
+    `\`/api/share/position\` desenha um cartão para uma posição v3 aberta, um PNG de 1200 por 630 pixels: o par com a taxa e a rede, a faixa da posição, as taxas ganhas em toda a vida dela e o resultado contra simplesmente segurar o que foi depositado, com as duas partes do resultado — os números que a página de posições mostra no cálculo sob aquela posição, no token em que aquela página cota o pool. A posição é nomeada por \`id\`, o id do token dela; \`chain\` e \`lang\` como acima, e, se omitidos, Ethereum e inglês. Só nas redes cujas posições são guardadas (${f.positionChains}), onde um cálculo pode ser conferido com a rede, e só um cálculo conferido põe um número no cartão: um que não pôde ser conferido dá um cartão simples que diz isso. Cada página de posições oferece os links sob "${f.shareHeading}".`,
+    `O cartão em si é \`200\`. Um endereço que não nomeia posição nenhuma é \`400\`, um id sob o qual a rede não tem posição aberta é \`404\`, e uma posição que não pôde ser lida agora é \`503\` — cada um como JSON com um \`error\` de \`not-a-position\`, \`no-such-position\` ou \`unreadable\`, nunca um cartão com um número faltando. Um cartão é guardado por ${f.keptSeconds} segundos, como o cartão do pool, porque o cálculo dele é avaliado ao preço de hoje; e um pedido que nomeia uma posição bem formada lê a rede, então conta contra os mesmos ${f.limit} pedidos por ${f.windowSeconds} segundos das páginas de pools, e além deles é \`429\`. O cartão nomeia o id público do token da posição e nada sobre quem o pediu, e nada é guardado.`,
+  ],
+  shareLabel: "O cartão de uma posição no Ethereum, em inglês — um endereço que pode ser aberto como está:",
+
   terms: (f) => [
     `Os números são medições, não recomendações. A faixa é calculada a partir de quanto o preço do pool se moveu nos últimos ${f.measuredDays} dias: não é uma previsão nem uma recomendação de investimento, e toda resposta diz isso por si mesma, o cartão na própria face e o JSON em \`disclaimer\`. Como cada número é obtido, e o que cada um deixa de fora, está em "${f.methodLink}".`,
     `O cartão traz seu próprio link de volta, "${f.analysedBy}". O JSON não tem campo de atribuição, e nada no código pede uma; o que ele traz é \`poolUrl\`, a página do pool aqui, e \`disclaimer\`. Mostrados ao lado dos números, esses dois dizem ao leitor de onde eles vieram e o que são.`,
@@ -1325,6 +1396,7 @@ const zhHant: DevelopersCopy = {
     errors: "狀態碼與錯誤",
     caching: "快取與請求限制",
     examples: "範例",
+    share: "分享卡片",
     terms: "條款，用白話說",
   },
 
@@ -1429,6 +1501,12 @@ const zhHant: DevelopersCopy = {
     iframe: "把卡片放到頁面上：",
     selectHint: "點一下即可選取整個程式碼區塊，方便複製。",
   },
+
+  share: (f) => [
+    `\`/api/share/position\` 為一個未平倉的 v3 倉位繪製一張卡片，一張 1200 乘 630 像素的 PNG：交易對及其手續費和網路、倉位的區間、整個存續期間賺到的手續費，以及相對單純持有存入代幣的結果和結果的兩個部分——也就是倉位頁面在該倉位下方的記錄裡顯示的數字，以該頁面為資金池報價所用的代幣計。倉位由 \`id\` 指定，即它的代幣 id；\`chain\` 和 \`lang\` 同上，省略時為以太坊和英文。只在保留倉位的網路上（${f.positionChains}），因為只有在那裡記錄才能與鏈上核對；而且只有核對過的記錄才會把數字放到卡片上：無法核對的記錄會得到一張寫明這一點的素卡片。每個倉位頁面都在「${f.shareHeading}」下提供這些連結。`,
+    `卡片本身是 \`200\`。沒有指定任何倉位的地址是 \`400\`，鏈上在該 id 下沒有未平倉倉位的是 \`404\`，此刻讀不到的倉位是 \`503\`——每一種都以 JSON 回傳，\`error\` 為 \`not-a-position\`、\`no-such-position\` 或 \`unreadable\`，絕不會是缺了數字的卡片。卡片保留 ${f.keptSeconds} 秒，和資金池卡片一樣，因為它的記錄按今天的價格計算；指定了格式正確的倉位的請求會讀取鏈上資料，所以它和資金池頁面計入同一份額度：每 ${f.windowSeconds} 秒 ${f.limit} 次請求，超出即為 \`429\`。卡片只寫出倉位公開的代幣 id，不涉及是誰請求的，也不保存任何東西。`,
+  ],
+  shareLabel: "以太坊上一個倉位的卡片，英文——一個可以照原樣開啟的地址：",
 
   terms: (f) => [
     `這些數字是測量，不是建議。區間是根據池子價格在過去 ${f.measuredDays} 天裡的波動幅度算出的：它不是預測，也不是推薦，每個回應都會自己說明這一點——卡片寫在正面，JSON 寫在 \`disclaimer\` 裡。每個數字是怎麼算出來的、各自遺漏了什麼，見「${f.methodLink}」頁面。`,

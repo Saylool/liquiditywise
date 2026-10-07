@@ -528,3 +528,106 @@ describe("the record under a position", () => {
     expect(markup).toContain("komisyon +5 XOR, aralık etkisi -8 XOR");
   });
 });
+
+/*
+ * The offer, under a verified record, to share it: three plain links and no
+ * script, outside the row's own link, naming the position's public token id
+ * and nothing about the reader.
+ */
+describe("sharing a record", () => {
+  const RECORD = {
+    openedAt: "2024-05-01T10:00:00.000Z",
+    deposited: { token0: 100, token1: 10 },
+    withdrawn: { token0: 0, token1: 1 },
+    now: { token0: 80, token1: 15 },
+    fees: { token0: 3, token1: 1 },
+    price: 0.5,
+  };
+  const verified = new Map([["1112391", { status: "verified", record: RECORD } as const]]);
+  const withRecords = (records: ReadonlyMap<string, unknown>, positions: unknown[] = [position()], locale: Locale = "en") =>
+    renderToStaticMarkup(
+      <AddressPositions
+        result={{ ...answer({ positions }), records } as AddressPositionsResult}
+        parameters={PARAMETERS}
+        t={getDictionary(locale)}
+        locale={locale}
+      />,
+    );
+  const hrefs = (markup: string) => [...markup.matchAll(/href="([^"]+)"/g)].map(([, href]) => href!.replace(/&amp;/g, "&"));
+
+  it("offers the card in a new tab, a post on X with the figures written, and the page's own link", () => {
+    const markup = withRecords(verified);
+    const links = hrefs(markup);
+
+    expect(markup).toContain("Share this record");
+    expect(links).toContain("https://liquiditywise.com/api/share/position?id=1112391");
+    expect(links).toContain(`https://liquiditywise.com/holdings?address=${OWNER}`);
+    const post = new URL(links.find((href) => href.startsWith("https://x.com/intent/post?"))!);
+    expect(post.searchParams.get("text")).toBe(
+      "XOR / WETH on Uniswap v3, since 2024-05-01: -3 XOR against simply holding, of which fees +5 XOR. Measured on LiquidityWise, not advice.",
+    );
+    expect(post.searchParams.get("url")).toBe("https://liquiditywise.com/api/share/position?id=1112391");
+    /* The card and the post leave this page; the page's own link does not. */
+    expect(markup).toMatch(/href="https:\/\/liquiditywise\.com\/api\/share\/position\?id=1112391" target="_blank" rel="noopener"/);
+    expect(markup).toMatch(/href="https:\/\/x\.com\/intent\/post\?[^"]+" target="_blank" rel="noopener"/);
+    expect(markup).not.toMatch(/href="https:\/\/liquiditywise\.com\/holdings[^"]*" target/);
+    expect(markup).not.toContain("<script");
+    expect(markup).not.toContain("<button");
+  });
+
+  /* A link inside a link is not markup a browser agrees on: the row's own link closes before the offer begins. */
+  it("sits outside the row's own link", () => {
+    const markup = withRecords(verified);
+    const rowLink = markup.indexOf(`href="/pool?address=${POOL}`);
+    const rowClosed = markup.indexOf("</a>", rowLink);
+    const offer = markup.indexOf("Share this record");
+
+    expect(rowLink).toBeGreaterThanOrEqual(0);
+    expect(offer).toBeGreaterThan(rowClosed);
+  });
+
+  it("says the card names only the position's public token id, beside the page's own note", () => {
+    const markup = withRecords(verified);
+
+    expect(markup).toContain("name the position&#x27;s public token id");
+    expect(markup).toContain("Nothing here is stored");
+    expect(markup).not.toContain(`id=${OWNER}`);
+  });
+
+  it("carries the chain of a position off mainnet in both the card and the page link", () => {
+    const onBase = position({ pool: { ...position().pool, chainId: 8453 } });
+    const links = hrefs(withRecords(verified, [onBase]));
+
+    expect(links).toContain("https://liquiditywise.com/api/share/position?chain=base&id=1112391");
+    expect(links).toContain(`https://liquiditywise.com/holdings?chain=base&address=${OWNER}`);
+  });
+
+  it.each([
+    ["unverified", { status: "unverified", reason: "liquidity-differs" }],
+    ["unread", { status: "unread" }],
+  ])("offers nothing for a record that is %s", (_label, record) => {
+    const markup = withRecords(new Map([["1112391", record]]));
+
+    expect(markup).not.toContain("Share this record");
+    expect(markup).not.toContain("/api/share/position");
+    expect(markup).not.toContain("x.com/intent");
+  });
+
+  it("offers nothing when no records were asked for, nor under a v4 position", () => {
+    expect(render(answer())).not.toContain("/api/share/position");
+    expect(withRecords(new Map(), [v4Position()])).not.toContain("/api/share/position");
+  });
+
+  it("speaks the reader's language, on the links and in the post, and asks for the card in it", () => {
+    const markup = withRecords(verified, [position()], "tr");
+    const links = hrefs(markup);
+
+    expect(markup).toContain("Bu hesabı paylaş");
+    expect(markup).toContain("X&#x27;te paylaş");
+    expect(markup).not.toContain("Share this record");
+    expect(links).toContain("https://liquiditywise.com/api/share/position?id=1112391&lang=tr");
+    const post = new URL(links.find((href) => href.startsWith("https://x.com/intent/post?"))!);
+    expect(post.searchParams.get("text")).toContain("komisyon kısmı +5 XOR");
+    expect(post.searchParams.get("url")).toBe("https://liquiditywise.com/api/share/position?id=1112391&lang=tr");
+  });
+});

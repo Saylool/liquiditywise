@@ -105,6 +105,14 @@ describe("what a visit line records", () => {
     });
   });
 
+  /* The share card names a position, not a pool, and is counted like the holdings page: the chain, and no id. */
+  it("counts the share card on its chain, naming no pool", () => {
+    expect(visit("/api/share/position?chain=base&id=998651")).toMatchObject({ page: "/api/share/position", pool: null, chain: "base" });
+    expect(visitLine(visit("/api/share/position?id=998651") ?? (null as never))).toBe(
+      "[visit] page=/api/share/position pool=- locale=tr bot=0 outcome=served chain=ethereum",
+    );
+  });
+
   it("does not count a page the browser loaded ahead of a click", () => {
     expect(visit("/pool", { "user-agent": BROWSER, purpose: "prefetch" })).toBeNull();
     expect(visit("/pool", { "user-agent": BROWSER, "sec-purpose": "prefetch;prerender" })).toBeNull();

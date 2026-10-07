@@ -395,3 +395,52 @@ describe("the embeddable pool card", () => {
     ]);
   });
 });
+
+/*
+ * The share card: charged like the holdings page it was offered on, refused
+ * in JSON a script can test, counted in the language its address names, and
+ * never opened to framing.
+ */
+describe("the share card", () => {
+  const BROWSER = "Mozilla/5.0 (Macintosh) Safari/605.1.15";
+  const loading = (path: string, client: string) =>
+    new NextRequest(`http://localhost${path}`, {
+      headers: { "x-forwarded-for": client, "user-agent": BROWSER, "accept-language": "tr-TR,tr;q=0.9", cookie: "locale=de" },
+    });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("is charged against the reader's allowance, and refused past it in JSON, without the embed API's opening", async () => {
+    const client = "198.51.100.250";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) {
+      expect((await proxy(loading("/api/share/position?chain=base&id=998651", client))).status).toBe(200);
+    }
+
+    const refused = await proxy(loading("/api/share/position?chain=base&id=998651", client));
+
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get("cache-control")).toBe("no-store");
+    expect(refused.headers.get("access-control-allow-origin")).toBeNull();
+    expect(refused.headers.get("content-security-policy")).toBeNull();
+    expect(await refused.json()).toMatchObject({ error: "rate-limited", retryAfterSeconds: expect.any(Number) });
+  });
+
+  it("charges nothing for an address that names no position", async () => {
+    const client = "198.51.100.251";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT + 2; i += 1) {
+      expect((await proxy(loading("/api/share/position?id=0x12", client))).status).toBe(200);
+    }
+  });
+
+  it("is counted on its chain, in the language its address names, naming no pool and no id", async () => {
+    const lines = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    await proxy(loading("/api/share/position?chain=base&id=998651&lang=ru", "198.51.100.252"));
+
+    expect(lines.mock.calls.map(([line]) => String(line)).filter((line) => line.startsWith("[visit]"))).toEqual([
+      "[visit] page=/api/share/position pool=- locale=ru bot=0 outcome=served chain=base",
+    ]);
+  });
+});

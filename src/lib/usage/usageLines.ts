@@ -1,5 +1,5 @@
 import { chainBySlug, chainOf } from "../chains/chains.ts";
-import { EMBED_PAGES, LEARN_TOPIC_PAGES } from "../site/indexing.ts";
+import { EMBED_PAGES, LEARN_TOPIC_PAGES, SHARE_PAGES } from "../site/indexing.ts";
 
 /*
  * The two lines this application writes about its own use, and the reader of
@@ -34,6 +34,7 @@ export const PAGES = [
   "/developers",
   ...LEARN_TOPIC_PAGES,
   ...EMBED_PAGES,
+  ...SHARE_PAGES,
 ] as const;
 export type Page = (typeof PAGES)[number];
 
@@ -66,6 +67,7 @@ const CHAIN_PAGES: readonly Page[] = [
   "/weekly",
   "/embed/pool",
   "/api/embed/pool",
+  ...SHARE_PAGES,
 ];
 
 const chainOfVisit = (page: Page, parameters: URLSearchParams): string | null => {
@@ -100,7 +102,8 @@ const isPage = (path: string): path is Page => (PAGES as readonly string[]).incl
 
 /**
  * The pool a page was opened for, when it names one. `/holdings` never does,
- * whatever its query says.
+ * whatever its query says — nor does the share card, which names a position
+ * by its token id and is counted like the holdings page it was offered on.
  */
 /**
  * How a pool is named in the journal: `v3:0x…` on mainnet, as every line
