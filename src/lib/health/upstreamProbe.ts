@@ -173,6 +173,12 @@ export type UpstreamReport = {
   readonly subgraphs?: Partial<Record<SubgraphName, SubgraphReading>>;
   /** What each contract verifier said about the PoolManager it holds verified, and since when it has been failing. */
   readonly verifiers?: Partial<Record<VerifierName, VerifierReading>>;
+  /**
+   * What the e-mail provider said to its key, where the digest by e-mail is
+   * set up (email/provider.ts). Absent where it is not: a deployment without
+   * a key is not a deployment whose key is refused.
+   */
+  readonly emailProvider?: UpstreamStatus;
   /** When these were taken, so a stale report can be told from a fresh one. */
   readonly atMs: number;
 };
@@ -182,7 +188,7 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { marketData, chainData, atMs, otherChains, subgraphs, verifiers } = parsed as Partial<UpstreamReport>;
+    const { marketData, chainData, atMs, otherChains, subgraphs, verifiers, emailProvider } = parsed as Partial<UpstreamReport>;
     const known = (value: unknown): value is UpstreamStatus =>
       value === "ok" || value === "credentials-rejected" || value === "rate-limited" || value === "unreachable";
 
@@ -222,7 +228,16 @@ const parseReport = (raw: string | null | undefined): UpstreamReport | null => {
     }
 
     return known(marketData) && known(chainData) && typeof atMs === "number"
-      ? { marketData, chainData, otherChains: others, subgraphs: readings, verifiers: verifierReadings, atMs }
+      ? {
+          marketData,
+          chainData,
+          otherChains: others,
+          subgraphs: readings,
+          verifiers: verifierReadings,
+          /* And one stored before the e-mail provider was asked, which reads as not asked. */
+          ...(known(emailProvider) ? { emailProvider } : {}),
+          atMs,
+        }
       : null;
   } catch {
     return null;
@@ -244,6 +259,8 @@ export type ProbeDependencies = {
   readonly probeSubgraphs?: Partial<Record<SubgraphName, () => Promise<{ status: number; body: unknown }>>>;
   /** One question per verifier, about the contract it is known to hold verified. */
   readonly probeVerifiers?: Partial<Record<VerifierName, () => Promise<SourceAnswer>>>;
+  /** Asks the e-mail provider whether its key still works; resolves to its HTTP status. Only where one is configured. */
+  readonly probeEmailProvider?: () => Promise<number>;
   readonly now: () => Date;
 };
 
@@ -281,7 +298,7 @@ export const readUpstreamReport = async (
     const probe = dependencies.probeVerifiers?.[name];
     return probe === undefined ? [] : [{ name, probe }];
   });
-  const [[marketStatus, chainStatus, ...otherStatuses], answers, verdicts] = await Promise.all([
+  const [[marketStatus, chainStatus, ...otherStatuses], answers, verdicts, emailStatus] = await Promise.all([
     Promise.all([
       dependencies.probeMarketData().catch(() => 0),
       dependencies.probeChainData().catch(() => 0),
@@ -293,6 +310,8 @@ export const readUpstreamReport = async (
         probe().then(classifyVerifierAnswer, (): VerifierStatus => "unanswered"),
       ),
     ),
+    /* The e-mail provider beside them, where there is one to ask; a probe that throws is the provider unreachable, not the key. */
+    dependencies.probeEmailProvider === undefined ? Promise.resolve(null) : dependencies.probeEmailProvider().catch(() => 0),
   ]);
 
   /* A failure keeps the moment it began, so a problem can wait for a second probe that agrees. */
@@ -321,6 +340,7 @@ export const readUpstreamReport = async (
     ),
     subgraphs,
     verifiers,
+    ...(emailStatus === null ? {} : { emailProvider: classifyProbeStatus(emailStatus) }),
     atMs: nowMs,
   };
 

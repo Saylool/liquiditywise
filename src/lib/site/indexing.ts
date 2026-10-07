@@ -50,5 +50,22 @@ export const INDEXED_PAGES = [
  */
 export const EMBED_PAGES = ["/embed/pool", "/api/embed/pool"] as const;
 
-/** Pages that read live data per request, plus the routes that are not pages at all. */
-export const CLOSED_PATHS = ["/pool", "/v4", "/compare", "/pair", "/holdings", "/embed/", "/api/", "/__backup/"] as const;
+/**
+ * Pages that read live data per request, plus the routes that are not pages
+ * at all — and the two addresses a link in an e-mail opens (/weekly/confirm,
+ * /weekly/unsubscribe), which do one thing for one reader and are nothing to
+ * find. /weekly itself stays open: a robots rule is a prefix, and these two
+ * are longer than it.
+ */
+export const CLOSED_PATHS = [
+  "/pool",
+  "/v4",
+  "/compare",
+  "/pair",
+  "/holdings",
+  "/weekly/confirm",
+  "/weekly/unsubscribe",
+  "/embed/",
+  "/api/",
+  "/__backup/",
+] as const;

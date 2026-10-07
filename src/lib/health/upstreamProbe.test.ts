@@ -242,3 +242,51 @@ describe("a refused key on another chain", () => {
     expect(problem?.message).toContain("ARBITRUM_RPC_URL");
   });
 });
+
+describe("the e-mail provider's key", () => {
+  const withEmail = (status: number | Error): ProbeDependencies => ({
+    ...deps(200, 200),
+    probeEmailProvider: async () => {
+      if (status instanceof Error) throw status;
+      return status;
+    },
+  });
+
+  it("is asked beside the others where a provider is configured, and read the same way", async () => {
+    const store = fakeStore();
+
+    expect((await readUpstreamReport(store, withEmail(200)))?.emailProvider).toBe("ok");
+    expect((await readUpstreamReport(fakeStore(), withEmail(401)))?.emailProvider).toBe("credentials-rejected");
+    expect((await readUpstreamReport(fakeStore(), withEmail(new Error("offline"))))?.emailProvider).toBe("unreachable");
+  });
+
+  it("is not asked, and not reported, where none is configured", async () => {
+    const report = await readUpstreamReport(fakeStore(), deps(200, 200));
+
+    expect(report).not.toHaveProperty("emailProvider");
+    expect(problemsFrom({ emailProviderStatus: report?.emailProvider })).toEqual([]);
+  });
+
+  it("is remembered with the rest of the report, and a report stored before it was asked reads as not asked", async () => {
+    const store = fakeStore();
+    await readUpstreamReport(store, withEmail(401));
+
+    const remembered = await readUpstreamReport(store, deps(200, 200));
+    expect(remembered?.emailProvider).toBe("credentials-rejected");
+
+    const older = fakeStore();
+    await older.set("liquiditywise:health:upstream", JSON.stringify({ marketData: "ok", chainData: "ok", atMs: NOW.getTime() }));
+    expect(await readUpstreamReport(older, deps(200, 200))).not.toHaveProperty("emailProvider");
+  });
+
+  it("is a problem of its own when refused, naming the variable, and nothing when only slow or down", () => {
+    const [problem] = problemsFrom({ emailProviderStatus: "credentials-rejected" });
+
+    expect(problem?.id).toBe("email-provider-key-refused");
+    expect(problem?.message).toContain("RESEND_API_KEY");
+    expect(problem?.message).toContain("Monday digest");
+    expect(problemsFrom({ emailProviderStatus: "rate-limited" })).toEqual([]);
+    expect(problemsFrom({ emailProviderStatus: "unreachable" })).toEqual([]);
+    expect(problemsFrom({ emailProviderStatus: "ok" })).toEqual([]);
+  });
+});

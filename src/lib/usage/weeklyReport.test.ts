@@ -20,8 +20,8 @@ const opened = (day: string, visit: Partial<Visit> = {}): UsageLine =>
 const spent = (day: string, model = "gpt-5.6-luna", input = 2_000, output = 500): UsageLine =>
   at(day, spendLine({ model, inputTokens: input, outputTokens: output, pool: USDC_WETH, pair: "USDC/WETH" }));
 
-const report = (lines: readonly UsageLine[], telegramLinks: number | null = 0) =>
-  weeklyReport({ lines, from: "2026-09-17", to: "2026-09-23", telegramLinks, priceOf });
+const report = (lines: readonly UsageLine[], telegramLinks: number | null = 0, emailSubscribers: number | null = 0) =>
+  weeklyReport({ lines, from: "2026-09-17", to: "2026-09-23", telegramLinks, emailSubscribers, priceOf });
 
 describe("the weekly report", () => {
   it("says a quiet week was quiet rather than sending an empty message", () => {
@@ -31,6 +31,7 @@ describe("the weekly report", () => {
     expect(text).toContain("No page was opened this week");
     expect(text).toContain("Explanations written: none");
     expect(text).toContain("Telegram: 0 chats following an address");
+    expect(text).toContain("E-mail: 0 addresses confirmed for the Monday digest");
   });
 
   it("counts people and bots apart, and pages by what they are", () => {
@@ -108,12 +109,23 @@ describe("the weekly report", () => {
     const text = report(
       [opened("2026-09-18", { outcome: "refused" }), at("2026-09-18", "[interpretation] answer rejected — a digit")],
       null,
+      null,
     );
 
     expect(text).toContain("Turned away by the rate limit: 1");
     expect(text).toContain("Pages opened by people: 0");
     expect(text).toContain("Answers the checks turned down: 1");
     expect(text).toContain("Telegram: the store could not be asked");
+    expect(text).toContain("E-mail: the store could not be asked");
+  });
+
+  /* Beside the chats, the addresses — as a count, never a list; the report has no way to get one. */
+  it("counts the addresses confirmed for the digest by e-mail, and the confirmations that came through", () => {
+    const text = report([opened("2026-09-18", { page: "/weekly/confirm", pool: null })], 3, 12);
+
+    expect(text).toContain("E-mail: 12 addresses confirmed for the Monday digest");
+    expect(text).toContain("weekly digest: confirmed by e-mail 1");
+    expect(text).not.toContain("@");
   });
 
   it("says when the refusals were one burst, and not when they were spread out", () => {

@@ -50,6 +50,7 @@ export type ProblemId =
   | "bnb-rpc-key-refused"
   | "avalanche-rpc-key-refused"
   | "celo-rpc-key-refused"
+  | "email-provider-key-refused"
   | `${SubgraphName}-subgraph-failing`
   | `${VerifierName}-verifier-failing`;
 
@@ -87,6 +88,8 @@ export type Readings = {
   readonly verifierFailures?:
     | Partial<Record<VerifierName, { readonly status: VerifierStatus; readonly forMs: number }>>
     | undefined;
+  /** What the e-mail provider said to its key, where the digest by e-mail is set up. */
+  readonly emailProviderStatus?: UpstreamStatus | undefined;
 };
 
 /**
@@ -297,6 +300,19 @@ export const problemsFrom = (readings: Readings): readonly Problem[] => {
    */
   for (const chain of OTHER_CHAINS) {
     if (readings.otherChainStatus?.[chain] === "credentials-rejected") problems.push(OTHER_CHAIN_PROBLEMS[chain]);
+  }
+
+  /*
+   * The quietest of all: no page reads the e-mail provider, so a refused key
+   * shows nowhere but on Monday, as digests that did not go out, to readers
+   * who would take the silence for a quiet week.
+   */
+  if (readings.emailProviderStatus === "credentials-rejected") {
+    problems.push({
+      id: "email-provider-key-refused",
+      message:
+        "Resend is refusing RESEND_API_KEY (401/403). The Monday digest by e-mail cannot be sent and no confirmation reaches a new subscriber, while the form goes on accepting addresses. Check the key on resend.com under API Keys.",
+    });
   }
 
   /*

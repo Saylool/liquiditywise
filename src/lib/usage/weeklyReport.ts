@@ -20,6 +20,8 @@ export type WeekInput = {
   readonly to: string;
   /** Chats following an address right now, or `null` when the store could not be asked. */
   readonly telegramLinks: number | null;
+  /** Addresses confirmed for the Monday digest by e-mail right now, or `null` when the store could not be asked. Never the addresses. */
+  readonly emailSubscribers: number | null;
   readonly priceOf: (model: string) => ModelPrice | null;
 };
 
@@ -35,6 +37,7 @@ const PAGE_NAMES: Readonly<Record<Page, string>> = {
   "/most-traded": "most traded",
   "/smart-money": "smart liquidity",
   "/weekly": "weekly digest",
+  "/weekly/confirm": "weekly digest: confirmed by e-mail",
   "/about": "about",
   "/method": "how it works",
   "/developers": "for developers",
@@ -219,6 +222,7 @@ export const weeklyReport = (input: WeekInput): string => {
   if (capped > 0) out.push(`Explanations held back by the hourly ceiling: ${number(capped)}`);
 
   out.push(`Telegram: ${input.telegramLinks === null ? "the store could not be asked" : `${number(input.telegramLinks)} chats following an address`}`);
+  out.push(`E-mail: ${input.emailSubscribers === null ? "the store could not be asked" : `${number(input.emailSubscribers)} addresses confirmed for the Monday digest`}`);
 
   const byDay = ranked(tally(served.flatMap((visit) => (visit.at === null ? [] : [visit.at]))));
   const busiest = byDay[0];

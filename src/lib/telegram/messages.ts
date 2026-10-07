@@ -143,6 +143,62 @@ export const keptRanges = (range: RangeMove, locale: Locale): { readonly then: s
 export const smartMoneyUrl = (locale: Locale, chainId: number): string =>
   `${SITE_URL}${localePath(locale, "/smart-money")}?chain=${chainOf(chainId).slug}`;
 
+/** A list in the digest: its heading, and one line per pair, without the bullet the message puts in front. */
+export type DigestSection = { readonly heading: string; readonly items: readonly string[] };
+
+/**
+ * The Monday digest in its parts: the heading with the chain and the days,
+ * the lists with something in them — gaining, losing, the ranges that moved,
+ * each as prices then and now — the note that it is a measurement, the link
+ * to the page it all comes from, and the footer. The message joins them
+ * (`weeklyDigestText`); the e-mail lays them out (email/digestEmail.ts). One
+ * composition, so the two cannot drift apart on a word.
+ */
+export const weeklyDigestParts = (
+  digest: WeeklyDigest,
+  t: Dictionary,
+  locale: Locale,
+  chainId: number,
+): {
+  readonly heading: string;
+  readonly sections: readonly DigestSection[];
+  readonly note: string;
+  readonly link: string;
+  readonly footer: string;
+} => {
+  const movers = (heading: string, list: readonly Mover[]): DigestSection[] =>
+    list.length === 0
+      ? []
+      : [
+          {
+            heading,
+            items: list.map(({ pair, feePpm, from, to }) =>
+              t.telegram.weeklyMover(keptPair(pair, feePpm, locale), formatPercent(from, locale), formatPercent(to, locale)),
+            ),
+          },
+        ];
+  const ranges: DigestSection[] =
+    digest.ranges.length === 0
+      ? []
+      : [
+          {
+            heading: t.telegram.weeklyRanges,
+            items: digest.ranges.map((range) => {
+              const { then, now } = keptRanges(range, locale);
+              return t.telegram.weeklyRange(keptPair(range.pair, range.feePpm, locale), then, now);
+            }),
+          },
+        ];
+
+  return {
+    heading: t.telegram.weeklyHeading(chainOf(chainId).name, formatWhole(Math.round(digest.days), locale)),
+    sections: [...movers(t.telegram.weeklyGaining, digest.gaining), ...movers(t.telegram.weeklyLosing, digest.losing), ...ranges],
+    note: t.telegram.weeklyNote,
+    link: t.telegram.weeklyLink(smartMoneyUrl(locale, chainId)),
+    footer: t.telegram.footer,
+  };
+};
+
 /**
  * The Monday digest: the pairs gaining and losing a share of the smart money
  * over the week, the pairs whose smart range moved — each as prices then and
@@ -150,37 +206,13 @@ export const smartMoneyUrl = (locale: Locale, chainId: number): string =>
  * that it is a measurement and not a suggestion, and ends with the footer.
  */
 export const weeklyDigestText = (digest: WeeklyDigest, t: Dictionary, locale: Locale, chainId: number): string => {
-  const movers = (heading: string, list: readonly Mover[]): string[] =>
-    list.length === 0
-      ? []
-      : [
-          [
-            heading,
-            ...list.map(({ pair, feePpm, from, to }) =>
-              `• ${t.telegram.weeklyMover(keptPair(pair, feePpm, locale), formatPercent(from, locale), formatPercent(to, locale))}`,
-            ),
-          ].join("\n"),
-        ];
-  const ranges =
-    digest.ranges.length === 0
-      ? []
-      : [
-          [
-            t.telegram.weeklyRanges,
-            ...digest.ranges.map((range) => {
-              const { then, now } = keptRanges(range, locale);
-              return `• ${t.telegram.weeklyRange(keptPair(range.pair, range.feePpm, locale), then, now)}`;
-            }),
-          ].join("\n"),
-        ];
+  const parts = weeklyDigestParts(digest, t, locale, chainId);
 
   return [
-    t.telegram.weeklyHeading(chainOf(chainId).name, formatWhole(Math.round(digest.days), locale)),
-    ...movers(t.telegram.weeklyGaining, digest.gaining),
-    ...movers(t.telegram.weeklyLosing, digest.losing),
-    ...ranges,
-    `${t.telegram.weeklyNote}\n${t.telegram.weeklyLink(smartMoneyUrl(locale, chainId))}`,
-    t.telegram.footer,
+    parts.heading,
+    ...parts.sections.map(({ heading, items }) => [heading, ...items.map((item) => `• ${item}`)].join("\n")),
+    `${parts.note}\n${parts.link}`,
+    parts.footer,
   ].join("\n\n");
 };
 

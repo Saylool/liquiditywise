@@ -6,7 +6,11 @@ import { getWeeklyReading } from "@/lib/advisor/getWeeklyDigest";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { readsV3Positions, V3_POSITION_CHAINS } from "@/lib/chains/chains";
+import { emailDigestOffered } from "@/lib/email/environment";
+import { EMAIL_STATUS_PARAMETER, readEmailStatus } from "@/lib/email/formStatus";
+import { subscribeToDigest } from "@/lib/email/subscribeAction";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
+import { getEmailDigestCopy } from "@/lib/i18n/emailDigestCopy";
 import { localePath } from "@/lib/i18n/localePath";
 import { getOpenPageAlternates, getRequestDictionary } from "@/lib/i18n/requestLocale";
 import { getWeeklyCopy } from "@/lib/i18n/weeklyCopy";
@@ -25,6 +29,11 @@ import { publicBot } from "@/lib/telegram/environment";
  * is kept, never measuring anything, so a crawler's visit costs the store one
  * read and the chain nothing. The card a shared link unfurls into is the
  * smart-money card for the same chain: the digest is a week of that page.
+ *
+ * Under the digest, the form that asks for it by e-mail. The one word the
+ * form's action sends back (`?email=`) is read here and shown over the form;
+ * it is not part of the page's identity — the canonical and the alternates
+ * name the page without it — and never reaches the store.
  */
 
 export async function generateMetadata({
@@ -55,7 +64,8 @@ export default async function WeeklyPage({
 }) {
   const { locale, t } = await getRequestDictionary();
   const copy = getWeeklyCopy(locale);
-  const chain = readRequestedChain((await searchParams)[CHAIN_PARAMETER]);
+  const parameters = await searchParams;
+  const chain = readRequestedChain(parameters[CHAIN_PARAMETER]);
 
   /* A chain nobody reads is said so, not quietly shown as mainnet's week. */
   if (chain === null) {
@@ -80,6 +90,12 @@ export default async function WeeklyPage({
         t={t}
         locale={locale}
         bot={publicBot()}
+        email={{
+          offered: emailDigestOffered(),
+          status: readEmailStatus(parameters[EMAIL_STATUS_PARAMETER]),
+          copy: getEmailDigestCopy(locale),
+          action: subscribeToDigest,
+        }}
       />
     </WorkspaceShell>
   );

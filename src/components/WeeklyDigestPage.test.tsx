@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import { chainById, V3_POSITION_CHAINS } from "../lib/chains/chains";
 import { formatFeePpm, formatPercent, formatPrice, formatUtcMinute, formatWhole } from "../lib/format/displayFormats";
+import type { EmailFormStatus } from "../lib/email/formStatus";
 import { getDictionary } from "../lib/i18n/dictionaries";
+import { getEmailDigestCopy } from "../lib/i18n/emailDigestCopy";
 import { getHomeAlertsCopy } from "../lib/i18n/homeAlertsCopy";
 import type { Locale } from "../lib/i18n/locales";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
@@ -36,7 +38,13 @@ const MOVED: WeeklyReading = { status: "moved", window: WINDOW, topYields: TOP, 
 const QUIET: WeeklyReading = { status: "quiet", window: WINDOW, topYields: TOP };
 const NOT_YET: WeeklyReading = { status: "not-yet" };
 
-const render = (reading: WeeklyReading | null, chainId = 1, locale: Locale = "en", bot: typeof BOT | null = null) =>
+const render = (
+  reading: WeeklyReading | null,
+  chainId = 1,
+  locale: Locale = "en",
+  bot: typeof BOT | null = null,
+  email: { offered: boolean; status: EmailFormStatus | null } = { offered: false, status: null },
+) =>
   renderToStaticMarkup(
     <WeeklyDigestPage
       reading={reading}
@@ -48,6 +56,7 @@ const render = (reading: WeeklyReading | null, chainId = 1, locale: Locale = "en
       t={getDictionary(locale)}
       locale={locale}
       bot={bot}
+      email={{ ...email, copy: getEmailDigestCopy(locale), action: async () => {} }}
     />,
   );
 
@@ -196,5 +205,39 @@ describe("the weekly page", () => {
     expect(lines).toContain(`WETH / USDT · ${formatFeePpm(3000, "ar")}: ${formatPercent(0.4, "ar")} → ${formatPercent(0.7, "ar")}`);
     expect(lines.some((line) => line.includes(`USDC/WETH → ${formatPrice(1 / 0.0006, "ar")}`))).toBe(true);
     expect(html).toContain(escaped(getWeeklyCopy("ar").window(formatUtcMinute(WINDOW.from), formatUtcMinute(WINDOW.to), formatWhole(7, "ar"))));
+  });
+});
+
+describe("the digest by e-mail on the weekly page", () => {
+  it("offers the form under the digest, with the page's chain chosen, wherever there is a week or will be one", () => {
+    for (const reading of [MOVED, QUIET, NOT_YET, null]) {
+      const html = render(reading, 8453, "en", null, { offered: true, status: null });
+
+      expect(html).toContain('<section id="email"');
+      expect(html).toContain('<option value="base" selected="">Base</option>');
+      expect(html).toContain(getEmailDigestCopy("en").privacy);
+    }
+  });
+
+  it("shows what the last submission came to, over the form", () => {
+    expect(render(MOVED, 1, "en", null, { offered: true, status: "sent" })).toContain(getEmailDigestCopy("en").status.sent);
+    expect(render(MOVED, 1, "en", null, { offered: true, status: null })).not.toContain('role="status"');
+  });
+
+  it("says the digest by e-mail is not set up where it is not, with no field to fill", () => {
+    const html = render(MOVED, 1, "en", null, { offered: false, status: null });
+
+    expect(html).toContain(getEmailDigestCopy("en").notConfigured);
+    expect(html).not.toContain("<form");
+  });
+
+  it("offers nothing on a chain where no smart money is measured: there is no digest to send", () => {
+    const html = render(null, 130, "en", null, { offered: true, status: null });
+
+    expect(html).not.toContain('<section id="email"');
+  });
+
+  it("speaks the reader's language on the form too", () => {
+    expect(render(MOVED, 1, "tr", null, { offered: true, status: null })).toContain(getEmailDigestCopy("tr").heading);
   });
 });

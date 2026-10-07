@@ -29,6 +29,8 @@ export const PAGES = [
   "/most-traded",
   "/smart-money",
   "/weekly",
+  /* The link in a confirmation e-mail: counted, so the report can say how many came through, never for whom. */
+  "/weekly/confirm",
   "/about",
   "/method",
   "/developers",

@@ -58,6 +58,7 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
           otherChainStatus: upstream.otherChains,
           subgraphFailures: subgraphFailures(upstream),
           verifierFailures: verifierFailures(upstream),
+          emailProviderStatus: upstream.emailProvider,
         }),
     ...readOutsideReadings(request.nextUrl.searchParams),
   });
