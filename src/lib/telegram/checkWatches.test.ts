@@ -9,6 +9,10 @@ import { checkWatches } from "./checkWatches";
 import { fakeStore } from "./fakeStore";
 import type { SmartPair } from "../analytics/smartLiquidity";
 import { claimLink, createPendingLink, readLink, setSmartAlerts, setWeeklyDigest } from "./links";
+import { poolRangeMovedText } from "./messages";
+import type { PoolWatchTarget } from "./poolWatchCommand";
+import type { PoolRangeReading } from "./poolRangeShift";
+import { addPoolWatch, POOL_WATCHERS_KEY, readPoolWatches } from "./poolWatches";
 import type { SmartSnapshot, SnapshotPair } from "../analytics/smartHistory";
 import type { ChainId } from "../chains/chains";
 import type { DataResult, PoolSearchResults } from "../../schemas";
@@ -19,8 +23,8 @@ import { priceAtTick } from "../uniswap/v3TickMath";
 /** No measurement kept: the position alerts under test are all these passes have to say. */
 const none = () => new Map<string, never>();
 
-/* No series kept, on a Tuesday: no digest is due or could be sent, whichever link asked. */
-const noDigest = { readSmartSeries: async () => null, now: () => new Date("2026-10-06T09:00:00.000Z") };
+/* No series kept, on a Tuesday: no digest is due or could be sent, whichever link asked. No pool can be read either: no chat here watches one. */
+const noDigest = { readSmartSeries: async () => null, now: () => new Date("2026-10-06T09:00:00.000Z"), readPoolRange: async () => null };
 
 const TOKEN = "abcDEF123456789012_-xy";
 const ADDRESS = "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640";
@@ -80,7 +84,7 @@ describe("checkWatches", () => {
 
     expect(asked).toEqual([ADDRESS]);
     expect(sent).toEqual([]);
-    expect(summary).toEqual({ watches: 1, checked: 1, unreadable: 0, alerts: 0, sent: 0, digests: 0, storeUnavailable: false });
+    expect(summary).toEqual({ watches: 1, checked: 1, unreadable: 0, alerts: 0, sent: 0, digests: 0, poolWatches: 0, poolsUnreadable: 0, poolAlerts: 0, storeUnavailable: false });
     expect((await readLink(store, TOKEN))?.snapshot).toEqual({ "v3:1": true });
   });
 
@@ -432,6 +436,7 @@ describe("checkWatches and the Monday digest", () => {
           return state.series;
         },
         now: () => new Date(state.time),
+        readPoolRange: async () => null,
       });
     return { sent, asked, pass };
   };
@@ -789,3 +794,160 @@ const alertRange = (position: Position): string => {
   const quoted = [1 / position.upperPrice, 1 / position.lowerPrice].map((value) => formatPrice(value, "en"));
   return `${quoted[0]} – ${quoted[1]} USDC/WETH`;
 };
+
+describe("checkWatches and the pool watches", () => {
+  const POOL = `0x${"c".repeat(40)}`;
+  const TARGET = { protocol: "v3", chainId: 1, poolId: POOL } as const;
+  const TOLD = [0.0003, 0.0005] as const;
+  const WIDTH = Math.log(TOLD[1] / TOLD[0]);
+  /** The lower edge moved by `share` of the told range's log-width. */
+  const moved = (share: number): readonly [number, number] => [TOLD[0] * Math.exp(share * WIDTH), TOLD[1]];
+
+  const reading = (range: readonly [number, number], target: PoolWatchTarget = TARGET): PoolRangeReading => ({
+    ...target,
+    pair: { token0: "USDC", token1: "WETH" },
+    lpFeePpm: 500,
+    currentPrice: 0.0004,
+    range,
+  });
+
+  const watched = async (chatId = 99, target: PoolWatchTarget = TARGET, store = fakeStore()) => {
+    await addPoolWatch(store, chatId, { target, range: TOLD, locale: "tr", now: new Date("2026-10-06T09:00:00.000Z") });
+    return store;
+  };
+
+  type Ranges = Map<string, readonly [number, number] | null | "throws">;
+
+  const passes = (store: ReturnType<typeof fakeStore>, state: { ranges: Ranges; time: string; delivers?: boolean }) => {
+    const sent: { chatId: number; text: string }[] = [];
+    const logged: string[] = [];
+    const asked: PoolWatchTarget[] = [];
+    const pass = () =>
+      checkWatches({
+        store,
+        bot: {
+          sendMessage: async (chatId, text) => {
+            if (state.delivers === false) return false;
+            sent.push({ chatId, text });
+            return true;
+          },
+        },
+        readPositions: async () => answer([]),
+        dictionary: getDictionary,
+        readSmartPairs: none,
+        readSmartSeries: async () => null,
+        now: () => new Date(state.time),
+        readPoolRange: async (target) => {
+          asked.push(target);
+          const range = state.ranges.get(target.poolId);
+          if (range === "throws") throw new Error("https://secret-rpc.example/key timed out");
+          return range === null || range === undefined ? null : reading(range, target);
+        },
+        log: (line) => logged.push(line),
+      });
+    return { sent, logged, asked, pass };
+  };
+
+  it("reads each watched pool, and says nothing while the range sits within a tenth of the one told", async () => {
+    const store = await watched();
+    const { sent, asked, pass } = passes(store, { ranges: new Map([[POOL, moved(0.09)]]), time: "2026-10-07T09:00:00.000Z" });
+
+    const summary = await pass();
+
+    expect(asked).toEqual([TARGET]);
+    expect(sent).toEqual([]);
+    expect(summary).toMatchObject({ poolWatches: 1, poolsUnreadable: 0, poolAlerts: 0, watches: 0, alerts: 0 });
+    expect((await readPoolWatches(store, 99))?.watches[0]?.told).toMatchObject({ lower: 0.0003, upper: 0.0005 });
+  });
+
+  it("tells the move once it passes a tenth, in the watch's language, with the range told then the new one, and keeps the new one as told", async () => {
+    const store = await watched();
+    const state = { ranges: new Map([[POOL, moved(0.11)]]), time: "2026-10-07T09:00:00.000Z" };
+    const { sent, pass } = passes(store, state);
+
+    const summary = await pass();
+
+    expect(summary).toMatchObject({ poolWatches: 1, poolAlerts: 1 });
+    expect(sent).toEqual([{ chatId: 99, text: poolRangeMovedText(reading(moved(0.11)), TOLD, getDictionary("tr"), "tr") }]);
+    expect(sent[0]?.text).toContain(getDictionary("tr").telegram.footer);
+    expect(sent[0]?.text).toContain(" → ");
+    expect((await readPoolWatches(store, 99))?.watches[0]?.told).toEqual({ lower: moved(0.11)[0], upper: TOLD[1], at: "2026-10-07T09:00:00.000Z" });
+
+    /* The same reading again: the baseline moved with the message, so there is nothing new to say. */
+    state.time = "2026-10-09T09:00:00.000Z";
+    expect((await pass()).poolAlerts).toBe(0);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("tells no pool more than once a day, however far the range goes on moving", async () => {
+    const store = await watched();
+    const state = { ranges: new Map([[POOL, moved(0.2)]]), time: "2026-10-07T09:00:00.000Z" };
+    const { sent, pass } = passes(store, state);
+
+    await pass();
+    state.ranges.set(POOL, moved(0.6));
+    state.time = "2026-10-08T08:59:00.000Z";
+    expect((await pass()).poolAlerts).toBe(0);
+    expect((await readPoolWatches(store, 99))?.watches[0]?.told.at).toBe("2026-10-07T09:00:00.000Z");
+
+    state.time = "2026-10-08T09:00:00.000Z";
+    expect((await pass()).poolAlerts).toBe(1);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]?.text).toBe(poolRangeMovedText(reading(moved(0.6)), moved(0.2), getDictionary("tr"), "tr"));
+  });
+
+  it("logs a pool that could not be read, or whose read threw, counts it, and goes on to the next", async () => {
+    const other = { ...TARGET, poolId: `0x${"e".repeat(40)}` };
+    const store = await watched();
+    await watched(99, other, store);
+    const ranges: Ranges = new Map();
+    ranges.set(POOL, "throws");
+    ranges.set(other.poolId, moved(0.3));
+    const { sent, logged, pass } = passes(store, { ranges, time: "2026-10-07T09:00:00.000Z" });
+
+    const summary = await pass();
+
+    expect(summary).toMatchObject({ poolWatches: 2, poolsUnreadable: 1, poolAlerts: 1, storeUnavailable: false });
+    expect(logged).toEqual([`[telegram] watched pool unreadable: v3 1 ${POOL}`]);
+    expect(sent.map(({ text }) => text)).toEqual([poolRangeMovedText(reading(moved(0.3), other), TOLD, getDictionary("tr"), "tr")]);
+    /* The unreadable pool keeps the range it was told, to be compared with next pass. */
+    expect((await readPoolWatches(store, 99))?.watches[0]?.told).toMatchObject({ lower: 0.0003, upper: 0.0005 });
+
+    ranges.set(POOL, null);
+    expect(await pass()).toMatchObject({ poolsUnreadable: 1, poolAlerts: 0 });
+    expect(logged).toHaveLength(2);
+  });
+
+  it("leaves a watch due when Telegram did not take the message", async () => {
+    const store = await watched();
+    const { pass } = passes(store, { ranges: new Map([[POOL, moved(0.3)]]), time: "2026-10-07T09:00:00.000Z", delivers: false });
+
+    expect(await pass()).toMatchObject({ poolAlerts: 0 });
+    expect((await readPoolWatches(store, 99))?.watches[0]?.told.at).toBe("2026-10-06T09:00:00.000Z");
+  });
+
+  it("runs the pool watches after the links on the same pass, each chat in its own language", async () => {
+    const store = await linked();
+    await watched(99, TARGET, store);
+    await addPoolWatch(store, 7, { target: TARGET, range: TOLD, locale: "ar", now: new Date("2026-10-06T09:00:00.000Z") });
+    const { sent, pass } = passes(store, { ranges: new Map([[POOL, moved(0.3)]]), time: "2026-10-07T09:00:00.000Z" });
+
+    const summary = await pass();
+
+    expect(summary).toMatchObject({ watches: 1, checked: 1, poolWatches: 2, poolAlerts: 2 });
+    expect(sent.map(({ chatId }) => chatId).sort()).toEqual([7, 99]);
+    expect(sent.find(({ chatId }) => chatId === 7)?.text).toContain(getDictionary("ar").telegram.footer);
+  });
+
+  it("logs and counts nothing when the set of watchers could not be read, with the links already checked", async () => {
+    const store = await linked();
+    const inner = store.smembers;
+    const failing = Object.assign(store, {
+      smembers: async (key: string) => (key === POOL_WATCHERS_KEY ? null : inner(key)),
+    });
+    const { logged, pass } = passes(failing, { ranges: new Map(), time: "2026-10-07T09:00:00.000Z" });
+
+    expect(await pass()).toMatchObject({ watches: 1, poolWatches: 0, poolAlerts: 0, storeUnavailable: false });
+    expect(logged).toEqual(["[telegram] the set of pool watchers could not be read; no pool was checked"]);
+  });
+});

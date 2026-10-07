@@ -12,17 +12,19 @@ import { recordAlertRun } from "@/lib/health/appReadings";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { checkWatches } from "@/lib/telegram/checkWatches";
 import { telegramSetup } from "@/lib/telegram/environment";
+import { readPoolRange } from "@/lib/telegram/poolWatchReads";
 import { sameSecret } from "@/lib/telegram/secrets";
 
 /*
- * The scheduled pass over every linked address.
+ * The scheduled pass over every linked address, and over every watched pool.
  *
  * Called by whatever schedules things where this runs — Vercel's cron with
  * its `Authorization: Bearer <CRON_SECRET>`, or a crontab's `curl` with the
  * same header at home. The answer is counts and nothing else: how many links,
- * how many read, how many alerts and Monday digests went out — and, where the
- * digest by e-mail is set up, how many of those went out by mail. No address
- * of either kind leaves this route.
+ * how many read, how many alerts and Monday digests went out, how many pools
+ * are watched and how many range alerts went out — and, where the digest by
+ * e-mail is set up, how many of those went out by mail. No address of either
+ * kind leaves this route.
  *
  * The e-mail pass rides on this one rather than on a schedule of its own, as
  * the bot's digest does: the same cron, the same hour, the same rule for
@@ -65,6 +67,8 @@ const run = async (request: NextRequest): Promise<NextResponse> => {
      * searched on the site in the last ten minutes, costs this pass nothing.
      */
     pairReaders: pairPoolReaders,
+    /* Each watched pool through the embedded card's cached reader: the pool page's own pipeline, kept a few minutes. */
+    readPoolRange,
   });
 
   /* The same digest to the addresses that asked for it by e-mail, where this deployment can send it. */

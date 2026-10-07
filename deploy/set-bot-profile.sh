@@ -25,20 +25,20 @@ api() {
   printf '%s %s\n' "$method" "$(printf '%s' "$out" | grep -oE '"ok":(true|false)')"
 }
 
-DESC_EN='Follows the Uniswap positions of one address and tells you when one nears its range edge, leaves it, or comes back; on a leave, also what the pool paid in range last week and the swap fee to re-centre.
+DESC_EN='Tells you when a Uniswap position nears its range edge, leaves it, or comes back; on a leave, also what the pool paid in range last week and the fee to re-centre. /watch <pool> follows a pool suggested range instead; no address needed.
 
-Link an address on liquiditywise.com; only then is anything kept: the address, this chat, a smart-money range with /smart, the last digest time with /weekly. /stop deletes it all at once, and from encrypted backups within seven days.
+Kept only what you ask: this chat and the address; /smart adds a smart-money range, /weekly the last digest time, /watch the pool and the range last told. /stop deletes all at once, from encrypted backups in seven days.
 
-Reads public on-chain data; cannot sign or send. Information, not advice.'
+Public chain data; cannot sign or send. Not advice.'
 
-DESC_TR='Bir adresin Uniswap pozisyonlarını izler; biri aralık sınırına yaklaşınca, çıkınca ya da geri girince haber verir; çıkınca havuzun geçen hafta aralıkta ödediğini ve yeniden ortalamanın takas komisyonunu da.
+DESC_TR='Uniswap pozisyonun aralık sınırına yaklaşınca, çıkınca ya da geri girince haber verir; çıkınca havuzun geçen hafta aralıkta ödediğini ve yeniden ortalamanın takas komisyonunu da. /watch <havuz> adres gerekmeden bir havuzun önerilen aralığını izler.
 
-Adresi liquiditywise.com üzerinden bağlarsın; ancak o zaman saklanır: adres, bu sohbet, /smart ile akıllı para aralığı, /weekly ile son özet zamanı. /stop hepsini hemen, şifreli yedeklerden de yedi günde siler.
+Yalnızca istediğin saklanır: bu sohbet ve adres; /smart akıllı para aralığını, /weekly son özet zamanını, /watch havuzu ve son aralığı ekler. /stop hepsini hemen, şifreli yedeklerden de yedi günde siler.
 
-Herkese açık zincir verisini okur; imzalayamaz, gönderemez. Yalnızca bilgi, tavsiye değil.'
+Açık zincir verisi; imzalamaz, göndermez. Tavsiye değil.'
 
-SHORT_EN='Tells you when a Uniswap position leaves its range. liquiditywise.com'
-SHORT_TR='Uniswap pozisyonun aralıktan çıkınca haber verir. liquiditywise.com'
+SHORT_EN='Tells you when a Uniswap position leaves its range, or a pool suggested range moves. liquiditywise.com'
+SHORT_TR='Uniswap pozisyonun aralıktan çıkınca ya da bir havuzun önerilen aralığı kayınca haber verir. liquiditywise.com'
 
 api setMyName --data-urlencode 'name=LiquidityWise'
 
@@ -50,9 +50,10 @@ api setMyShortDescription --data-urlencode "short_description=$SHORT_TR" --data-
 
 # Only the commands the bot actually answers. `/start` is listed because
 # Telegram shows it anyway; a menu offering something the bot ignores is
-# worse than a short menu.
+# worse than a short menu. The three pool-watch commands need no link, so
+# they sit right after /start.
 api setMyCommands \
-  --data-urlencode 'commands=[{"command":"start","description":"Link the address you chose on the site"},{"command":"smart","description":"Also alert when smart money moves (on/off)"},{"command":"weekly","description":"Monday digest of where smart money moved (on/off)"},{"command":"stop","description":"Stop the alerts and forget the address"}]'
+  --data-urlencode 'commands=[{"command":"start","description":"Link the address you chose on the site"},{"command":"watch","description":"Follow a pool suggested range: /watch [network] <pool>"},{"command":"unwatch","description":"Stop following a pool and delete what was kept"},{"command":"watches","description":"List the pools this chat follows"},{"command":"smart","description":"Also alert when smart money moves (on/off)"},{"command":"weekly","description":"Monday digest of where smart money moved (on/off)"},{"command":"stop","description":"Stop everything and forget the address and the pools"}]'
 api setMyCommands \
-  --data-urlencode 'commands=[{"command":"start","description":"Sitede seçtiğin adresi bağla"},{"command":"smart","description":"Akıllı para kayınca da haber ver (aç/kapat)"},{"command":"weekly","description":"Akıllı paranın pazartesi haftalık özeti (aç/kapat)"},{"command":"stop","description":"Bildirimleri durdur ve adresi unut"}]' \
+  --data-urlencode 'commands=[{"command":"start","description":"Sitede seçtiğin adresi bağla"},{"command":"watch","description":"Bir havuzun önerilen aralığını izle: /watch [ağ] <havuz>"},{"command":"unwatch","description":"Havuzu izlemeyi bırak ve saklananı sil"},{"command":"watches","description":"Bu sohbetin izlediği havuzları listele"},{"command":"smart","description":"Akıllı para kayınca da haber ver (aç/kapat)"},{"command":"weekly","description":"Akıllı paranın pazartesi haftalık özeti (aç/kapat)"},{"command":"stop","description":"Her şeyi durdur; adresi ve havuzları unut"}]' \
   --data-urlencode 'language_code=tr'

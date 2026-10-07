@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { telegramSetup } from "@/lib/telegram/environment";
 import { handleUpdate } from "@/lib/telegram/handleUpdate";
+import { readPoolRange } from "@/lib/telegram/poolWatchReads";
 import { sameSecret } from "@/lib/telegram/secrets";
 import { TelegramUpdateSchema } from "@/lib/telegram/update";
 
@@ -28,7 +29,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const update = TelegramUpdateSchema.safeParse(await request.json().catch(() => null));
   if (update.success) {
-    await handleUpdate(update.data, { store: setup.store, bot: setup.bot, dictionary: getDictionary });
+    await handleUpdate(update.data, {
+      store: setup.store,
+      bot: setup.bot,
+      dictionary: getDictionary,
+      /* A /watch reads its pool through the embedded card's cached reader: the pool page's pipeline, never a second one. */
+      readPoolRange,
+      now: () => new Date(),
+    });
   }
 
   return NextResponse.json({ ok: true });

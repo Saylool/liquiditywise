@@ -2,52 +2,92 @@ import type { Dictionary } from "../i18n/dictionaries";
 import { DEFAULT_LOCALE, type Locale, negotiateLocale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
 import { claimLink, findByChat, forgetLink, setSmartAlerts, setWeeklyDigest } from "./links";
+import { poolWatchedText, poolWatchesText } from "./messages";
+import { parsePoolWatch, type PoolWatchParse, type PoolWatchTarget } from "./poolWatchCommand";
+import type { PoolRangeReading } from "./poolRangeShift";
+import { addPoolWatch, forgetPoolWatches, MAX_POOL_WATCHES, readPoolWatches, removePoolWatch } from "./poolWatches";
 import { readCommand, type TelegramUpdate } from "./update";
 import type { KeyValueStore } from "../store/keyValueStore";
+import { CHAINS } from "../chains/chains";
+import { formatWhole } from "../format/displayFormats";
 
 /*
  * What the bot does with one message.
  *
- * Four commands and a shrug. `/start <token>` ties this chat to the link the
+ * Seven commands and a shrug. `/start <token>` ties this chat to the link the
  * token names and says so in the language the reader was using on the site.
- * `/stop` forgets whatever this chat was tied to. `/smart` turns the
- * smart-money alerts on for the link, or off again: they are off until asked
- * for, because the link was made for a narrower promise. `/weekly` does the
- * same for the Monday digest of where the smart money moved. Anything else
- * gets the help line, in the language Telegram says the sender uses.
+ * `/stop` forgets whatever this chat was tied to — the link and the pool
+ * watches both. `/smart` turns the smart-money alerts on for the link, or off
+ * again: they are off until asked for, because the link was made for a
+ * narrower promise. `/weekly` does the same for the Monday digest of where
+ * the smart money moved. `/watch <pool>` follows one pool's suggested range
+ * with no link at all, `/unwatch <pool>` stops, and `/watches` lists them.
+ * Anything else gets the help line, in the language Telegram says the sender
+ * uses.
  *
  * **The digest belongs to the link, as /smart does, though it is only
  * about public measurements.** A chat that has no link could in principle be
- * sent one, but the only record this bot keeps is a link: a second kind of
- * record, keyed by chat id, would be a second thing `/stop` and "forget the
- * link" on the site have to find and delete, and a promise — the address and
- * the chat, nothing else — to rewrite in ten languages. Kept on the link, the
- * digest goes when the link goes, the backup covers it as it covers the
- * link, and it is sent in the language and for the chain the link was made in.
+ * sent one, but keeping a second kind of record for it would be a second
+ * thing `/stop` has to find and delete for the sake of one timestamp. Kept
+ * on the link, the digest goes when the link goes, and it is sent in the
+ * language and for the chain the link was made in.
  *
- * Pure of the framework: the store and the bot are handed in, so a test can
- * watch what would have been sent without a network.
+ * **The pool watches are that second kind of record (poolWatches.ts), and
+ * they earn it.** A reader who holds no position has nothing to link, and the
+ * thing they follow — a pool's suggested range — is nobody's address. So a
+ * watch is keyed by the chat, speaks the language the chat wrote `/watch`
+ * in, and is the other thing `/stop` deletes.
+ *
+ * Pure of the framework: the store, the bot and the pool reader are handed
+ * in, so a test can watch what would have been sent without a network.
  */
 
 export type UpdateHandling = {
   readonly store: KeyValueStore;
   readonly bot: BotClient;
   readonly dictionary: (locale: Locale) => Dictionary;
+  /** One pool's suggested range now, through the pages' own cached reader; `null` when it could not be read. */
+  readonly readPoolRange: (target: PoolWatchTarget) => Promise<PoolRangeReading | null>;
+  /** The time, handed in so a test can say when a range was told. */
+  readonly now: () => Date;
 };
 
 /** Telegram reports a sender's language as an IETF tag, which is what the negotiator reads. */
 const senderLocale = (languageCode: string | undefined): Locale =>
   negotiateLocale(languageCode) ?? DEFAULT_LOCALE;
 
+/** A pool read that threw is a pool that could not be read; nothing a reader does reaches the chat as an error. */
+const quietly = async <T>(read: () => Promise<T>): Promise<T | null> => {
+  try {
+    return await read();
+  } catch {
+    return null;
+  }
+};
+
+/** Which words `/watch` was missing, for a parse that was refused. */
+const watchProblem = (parsed: Exclude<PoolWatchParse, { ok: true }>, t: Dictionary): string => {
+  switch (parsed.reason) {
+    case "no-pool":
+    case "bad-pool":
+      return t.telegram.watchHow;
+    case "unknown-chain":
+      return t.telegram.watchUnknownChain(parsed.word, CHAINS.map(({ slug }) => slug).join(", "));
+    case "not-on-chain":
+      return t.telegram.watchNotOnChain(`Uniswap ${parsed.protocol}`, parsed.chain.name);
+  }
+};
+
 export const handleUpdate = async (
   update: TelegramUpdate,
-  { store, bot, dictionary }: UpdateHandling,
+  { store, bot, dictionary, readPoolRange, now }: UpdateHandling,
 ): Promise<void> => {
   const message = update.message;
   if (message === undefined || message.chat.type !== "private") return;
 
   const chatId = message.chat.id;
-  const fallback = dictionary(senderLocale(message.from?.language_code));
+  const locale = senderLocale(message.from?.language_code);
+  const fallback = dictionary(locale);
   const command = readCommand(message.text);
 
   if (command === null || command.kind === "other") {
@@ -57,17 +97,20 @@ export const handleUpdate = async (
 
   if (command.kind === "stop") {
     const watch = await findByChat(store, chatId);
-    if (watch === undefined) {
+    const pools = await readPoolWatches(store, chatId);
+    if (watch === undefined || pools === undefined) {
       await bot.sendMessage(chatId, fallback.telegram.storeDown);
       return;
     }
-    if (watch === null) {
+    if (watch === null && pools === null) {
       await bot.sendMessage(chatId, fallback.telegram.nothingToStop);
       return;
     }
 
-    await forgetLink(store, watch.token);
-    await bot.sendMessage(chatId, dictionary(watch.link.locale).telegram.stopped);
+    /* Both kinds of record, whichever the chat had: one command, and nothing left behind. */
+    if (watch !== null) await forgetLink(store, watch.token);
+    if (pools !== null) await forgetPoolWatches(store, chatId);
+    await bot.sendMessage(chatId, dictionary(watch?.link.locale ?? pools?.locale ?? locale).telegram.stopped);
     return;
   }
 
@@ -112,6 +155,76 @@ export const handleUpdate = async (
       return;
     }
     await bot.sendMessage(chatId, turningOn ? t.telegram.weeklyOn : t.telegram.weeklyOff);
+    return;
+  }
+
+  if (command.kind === "watch") {
+    const parsed = parsePoolWatch(command.argument);
+    if (!parsed.ok) {
+      await bot.sendMessage(chatId, watchProblem(parsed, fallback));
+      return;
+    }
+
+    /*
+     * Read before anything is kept: the answer is the range, and a pool that
+     * cannot be read now has no range to be the baseline. Nothing is written
+     * for a pool that was never read, so a mistyped address leaves no record.
+     */
+    const reading = await quietly(() => readPoolRange(parsed.target));
+    if (reading === null) {
+      await bot.sendMessage(chatId, fallback.telegram.watchUnreadable);
+      return;
+    }
+
+    const outcome = await addPoolWatch(store, chatId, { target: parsed.target, range: reading.range, locale, now: now() });
+    switch (outcome) {
+      case "added":
+        await bot.sendMessage(chatId, poolWatchedText(reading, fallback, locale));
+        return;
+      case "full":
+        await bot.sendMessage(chatId, fallback.telegram.watchFull(formatWhole(MAX_POOL_WATCHES, locale)));
+        return;
+      case "unavailable":
+        await bot.sendMessage(chatId, fallback.telegram.storeDown);
+        return;
+    }
+  }
+
+  if (command.kind === "unwatch") {
+    const parsed = parsePoolWatch(command.argument);
+    if (!parsed.ok) {
+      await bot.sendMessage(chatId, watchProblem(parsed, fallback));
+      return;
+    }
+
+    const outcome = await removePoolWatch(store, chatId, parsed.target);
+    switch (outcome) {
+      case "removed":
+        await bot.sendMessage(chatId, fallback.telegram.unwatched);
+        return;
+      case "not-watched":
+        await bot.sendMessage(chatId, fallback.telegram.notWatched);
+        return;
+      case "unavailable":
+        await bot.sendMessage(chatId, fallback.telegram.storeDown);
+        return;
+    }
+  }
+
+  if (command.kind === "watches") {
+    const pools = await readPoolWatches(store, chatId);
+    if (pools === undefined) {
+      await bot.sendMessage(chatId, fallback.telegram.storeDown);
+      return;
+    }
+
+    /* Named from a fresh read where one can be made — a few cached reads at most — and by their id where not. */
+    const named = [];
+    for (const watch of pools?.watches ?? []) {
+      named.push({ watch, reading: await quietly(() => readPoolRange({ protocol: watch.protocol, chainId: watch.chainId, poolId: watch.poolId })) });
+    }
+    const t = pools === null ? fallback : dictionary(pools.locale);
+    await bot.sendMessage(chatId, poolWatchesText(named, t, pools?.locale ?? locale));
     return;
   }
 

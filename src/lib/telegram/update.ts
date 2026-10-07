@@ -31,25 +31,43 @@ export type BotCommand =
   | { readonly kind: "smart" }
   /** Turns the Monday digest of where the smart money moved on for the chat's link, or off if it is on. */
   | { readonly kind: "weekly" }
+  /** Follows one pool's suggested range, or stops following it; the pool and the chain are read from `argument` (poolWatchCommand.ts). */
+  | { readonly kind: "watch" | "unwatch"; readonly argument: string | null }
+  /** Lists the pools this chat follows. */
+  | { readonly kind: "watches" }
   | { readonly kind: "other" };
+
+/** The commands whose argument may be several words: a pool and, either side of it, the chain it is on. */
+const MANY_WORDS = new Set(["watch", "unwatch"]);
 
 /**
  * Reads a command out of a message.
  *
  * `/start` may carry the deep-link token as its only argument; Telegram puts
- * the `start=` parameter there. A bot's own username may be suffixed to a
+ * the `start=` parameter there. `/watch` and `/unwatch` carry a pool and
+ * maybe a chain, in either order, and are the only commands read with more
+ * than one word after them: any other command followed by two words is no
+ * command, as it always was. A bot's own username may be suffixed to a
  * command in a group (`/stop@SomeBot`), which is allowed and stripped.
  */
 export const readCommand = (text: string | undefined): BotCommand | null => {
   if (text === undefined) return null;
 
-  const match = /^\/([a-z]+)(?:@\w+)?(?:\s+(\S+))?\s*$/i.exec(text.trim());
+  const match = /^\/([a-z]+)(?:@\w+)?(?:\s+(.+?))?\s*$/i.exec(text.trim());
   if (match === null) return null;
 
-  const [, name, argument] = match;
-  switch (name?.toLowerCase()) {
+  const [, name = "", argument] = match;
+  const command = name.toLowerCase();
+  if (argument !== undefined && /\s/.test(argument) && !MANY_WORDS.has(command)) return null;
+
+  switch (command) {
     case "start":
       return { kind: "start", argument: argument ?? null };
+    case "watch":
+    case "unwatch":
+      return { kind: command, argument: argument ?? null };
+    case "watches":
+      return { kind: "watches" };
     case "stop":
       return { kind: "stop" };
     case "smart":
