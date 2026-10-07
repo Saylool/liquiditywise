@@ -7,8 +7,11 @@ import type { BotClient } from "./botApi";
 import type { SmartSnapshot } from "../analytics/smartHistory";
 import type { SmartPair } from "../analytics/smartLiquidity";
 import { listWatches, recordDigestSent, recordSnapshot, type TelegramLink } from "./links";
-import { alertText, smartShiftText, weeklyDigestText } from "./messages";
+import { alertText, poolRangeMovedText, smartShiftText, weeklyDigestText } from "./messages";
 import { positionChanges, snapshotOf } from "./positionChanges";
+import type { PoolWatchTarget } from "./poolWatchCommand";
+import { type PoolRangeReading, shouldTell } from "./poolRangeShift";
+import { listPoolWatchers, type PoolWatchRecord, recordRangeTold } from "./poolWatches";
 import { smartShifts } from "./smartShift";
 import type { KeyValueStore } from "../store/keyValueStore";
 import type { ChainId } from "../chains/chains";
@@ -44,6 +47,14 @@ import { feeYieldReader } from "./leftRangeReads";
  * per pool per pass, and nothing they do can hold the alert back: a read that
  * fails or a figure that throws costs its line, and the alert goes out as it
  * always did.
+ *
+ * The pool watches come after the links, on the same pass. Each watched pool
+ * is read through the embedded card's cached reader — the pool page's own
+ * pipeline, kept a few minutes — and its suggested range now is set against
+ * the one the chat was last told (poolRangeShift.ts): moved far enough, and
+ * not told within a day, it is told, and what was told is kept. A pool that
+ * could not be read is logged and passed over, and holds nothing else back;
+ * a pass is never the slower or the shorter for one pool's source being down.
  */
 
 export type CheckSummary = {
@@ -54,6 +65,10 @@ export type CheckSummary = {
   readonly sent: number;
   /** Monday digests that went out this pass. */
   readonly digests: number;
+  /** Watched pools over every chat, how many of them could not be read, and how many range alerts went out. */
+  readonly poolWatches: number;
+  readonly poolsUnreadable: number;
+  readonly poolAlerts: number;
   /** True when the set of links itself could not be read; nothing was checked. */
   readonly storeUnavailable: boolean;
 };
@@ -78,6 +93,10 @@ export type WatchChecking = {
    * that line is never made.
    */
   readonly pairReaders?: PairPoolReaders;
+  /** One watched pool's suggested range now, through the pages' cached reader; `null` when it could not be read. */
+  readonly readPoolRange: (target: PoolWatchTarget) => Promise<PoolRangeReading | null>;
+  /** Where a pool that could not be read is noted. The default is the server's log; a test hands in its own. */
+  readonly log?: (line: string) => void;
 };
 
 /** Whatever goes wrong in making one of the lines costs that line and nothing else. */
@@ -98,10 +117,12 @@ export const checkWatches = async ({
   readSmartSeries,
   now,
   pairReaders,
+  readPoolRange,
+  log = (line) => console.error(line),
 }: WatchChecking): Promise<CheckSummary> => {
   const watches = await listWatches(store);
   if (watches === null) {
-    return { watches: 0, checked: 0, unreadable: 0, alerts: 0, sent: 0, digests: 0, storeUnavailable: true };
+    return { watches: 0, checked: 0, unreadable: 0, alerts: 0, sent: 0, digests: 0, poolWatches: 0, poolsUnreadable: 0, poolAlerts: 0, storeUnavailable: true };
   }
 
   let checked = 0;
@@ -178,5 +199,60 @@ export const checkWatches = async ({
     await recordSnapshot(store, token, link, snapshotOf(result.data.positions, link.snapshot), smart?.ranges);
   }
 
-  return { watches: watches.length, checked, unreadable, alerts, sent, digests, storeUnavailable: false };
+  const pools = await checkPoolWatches({ store, bot, dictionary, now, readPoolRange, log });
+
+  return { watches: watches.length, checked, unreadable, alerts, sent, digests, ...pools, storeUnavailable: false };
+};
+
+/**
+ * The pool watches' half of the pass. The set that could not be read is
+ * logged and counts as no pool: the links' half has already run, and a pass
+ * that did its first half should say so rather than nothing.
+ */
+const checkPoolWatches = async ({
+  store,
+  bot,
+  dictionary,
+  now,
+  readPoolRange,
+  log,
+}: Pick<WatchChecking, "store" | "bot" | "dictionary" | "now" | "readPoolRange"> & { readonly log: (line: string) => void }): Promise<
+  Pick<CheckSummary, "poolWatches" | "poolsUnreadable" | "poolAlerts">
+> => {
+  const watchers = await listPoolWatchers(store);
+  if (watchers === null) {
+    log("[telegram] the set of pool watchers could not be read; no pool was checked");
+    return { poolWatches: 0, poolsUnreadable: 0, poolAlerts: 0 };
+  }
+
+  let poolWatches = 0;
+  let poolsUnreadable = 0;
+  let poolAlerts = 0;
+
+  for (const { chatId, record: listed } of watchers) {
+    let record: PoolWatchRecord = listed;
+    const t = dictionary(record.locale);
+
+    for (const watch of listed.watches) {
+      poolWatches += 1;
+      /* A read that fails or throws costs this pool this pass and nothing else; the pool is public, so it may be named. */
+      const reading = await quietly(() => readPoolRange({ protocol: watch.protocol, chainId: watch.chainId, poolId: watch.poolId }));
+      if (reading === null) {
+        poolsUnreadable += 1;
+        log(`[telegram] watched pool unreadable: ${watch.protocol} ${watch.chainId} ${watch.poolId}`);
+        continue;
+      }
+
+      const at = now();
+      if (!shouldTell([watch.told.lower, watch.told.upper], watch.told.at, reading.range, at)) continue;
+
+      /* Sent first, recorded once Telegram has taken it; a failed send leaves the chat due next pass. */
+      if (await bot.sendMessage(chatId, poolRangeMovedText(reading, [watch.told.lower, watch.told.upper], t, record.locale))) {
+        poolAlerts += 1;
+        record = (await recordRangeTold(store, chatId, record, watch, reading.range, at)).record;
+      }
+    }
+  }
+
+  return { poolWatches, poolsUnreadable, poolAlerts };
 };

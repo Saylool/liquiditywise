@@ -792,7 +792,7 @@ const en = {
   telegram: {
     heading: "Alerts on Telegram",
     intro:
-      "Be told, on Telegram, when one of this address's positions comes close to the edge of its range, leaves it, or comes back into it. When one leaves, the alert also says what liquidity in range in that pool was paid over the last seven days, as a yearly rate, and what re-centring the position at the current price would cost in swap fees: both measured, neither a forecast. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both are deleted from this server the moment you send the bot /stop or forget the link here, and drop out of its encrypted backups within seven days. How often it is checked is up to the server this runs on. If you ask the bot with /smart, it also says when the best-earning liquidity in a pool you hold a position in moves; then it keeps, per such pool, where that range sat when you were last told. With /weekly it also sends, each Monday, a digest of where the smart money moved on that network; for that it keeps only when the last one went out.",
+      "Be told, on Telegram, when one of this address's positions comes close to the edge of its range, leaves it, or comes back into it. When one leaves, the alert also says what liquidity in range in that pool was paid over the last seven days, as a yearly rate, and what re-centring the position at the current price would cost in swap fees: both measured, neither a forecast. The button takes you to this site's bot; pressing Start there ties that chat to this address. What is kept is the address and the chat's numeric id — nothing else — and both are deleted from this server the moment you send the bot /stop or forget the link here, and drop out of its encrypted backups within seven days. How often it is checked is up to the server this runs on. If you ask the bot with /smart, it also says when the best-earning liquidity in a pool you hold a position in moves; then it keeps, per such pool, where that range sat when you were last told. With /weekly it also sends, each Monday, a digest of where the smart money moved on that network; for that it keeps only when the last one went out. In the bot itself, /watch with a pool follows that pool's suggested range without linking any address, up to five pools per chat; for that it keeps the chat's numeric id, the pool and the range it was last told, deleted by /unwatch or /stop.",
     connect: "Connect Telegram",
     connected: (address: string) => `This browser is linked: ${address} is being watched.`,
     pending: "The link is waiting: open the bot's chat in Telegram and press Start.",
@@ -809,7 +809,7 @@ const en = {
     stopped: "Stopped. This chat follows nothing now. The record is deleted from the server, and within seven days from its encrypted backups too.",
     nothingToStop: "This chat was not following anything.",
     help:
-      "This bot only follows the address you linked on the site, and only says when a position comes close to the edge of its range, leaves it, or re-enters it. When one leaves, it also says what the pool paid its liquidity in range over the last seven days and what re-centring would cost in swap fees. Send /stop to end it. Send /smart to be told, too, when the best-earning liquidity in a pool you hold moves. Send /weekly for a Monday digest of where the smart money moved.",
+      "This bot only follows the address you linked on the site, and only says when a position comes close to the edge of its range, leaves it, or re-enters it. When one leaves, it also says what the pool paid its liquidity in range over the last seven days and what re-centring would cost in swap fees. Send /stop to end it. Send /smart to be told, too, when the best-earning liquidity in a pool you hold moves. Send /weekly for a Monday digest of where the smart money moved. Send /watch with a pool to follow its suggested range without linking an address; /watches lists them, /unwatch ends one.",
     storeDown: "The link could not be checked right now. Try again in a minute.",
     smartOn:
       "Smart-money alerts are on. If where the best-earning liquidity sits in a pool you hold a position in moves a long way, you will hear it here. For this the bot keeps where that range sat when you were last told, and nothing more. Send /smart again to turn them off.",
@@ -832,6 +832,32 @@ const en = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "That is where the best-earning liquidity is, measured on chain — not a suggestion for yours.",
     weeklyLink: (url: string) => `All of it on the site: ${url}`,
+    /*
+     * The pool watches (/watch): a chat that holds no position follows a
+     * pool's suggested range instead, as the pool page draws it. The words
+     * for the range, the horizon and the width are the pool page's own.
+     */
+    watching: (pair: string, protocol: string, fee: string) => `👁 Watching ${pair} (${protocol}, ${fee}).`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `The suggested range now, for the default ${days}-day horizon and a width of ${width} standard deviation: ${range}. The price is ${price}.`,
+    watchRule:
+      "You will hear here when either edge of that range has moved by more than a tenth of its width — at most once a day. It measures how far the price has moved, not where it will go.",
+    watchKept:
+      "Kept for this: this chat's numeric id, the pool, and the range you were last told — nothing else. /unwatch with the same pool deletes it; /stop deletes everything this chat asked for.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 The suggested range for ${pair} (${protocol}, ${fee}) has moved: ${then} → ${now}. The price is ${price}.`,
+    watchNote: "A measurement of how far the price moved over the horizon, laid around today's price — not a suggestion for a position.",
+    watchHow:
+      "Send /watch with a v3 pool address or a v4 pool id, and the network's name when it is not Ethereum, in either order: /watch base 0x… or /watch 0x… base. /watches lists what this chat follows; /unwatch with the same pool ends one.",
+    watchUnknownChain: (word: string, chains: string) => `“${word}” is not a network this site reads. The networks are: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `${protocol} pools are not read on ${chain} here.`,
+    watchUnreadable: "That pool could not be read just now. Check the address and the network, or try again in a minute.",
+    watchFull: (max: string) => `This chat already follows ${max} pools, the most it can. Send /unwatch for one of them first.`,
+    unwatched: "No longer following that pool. What was kept for it is deleted from the server, and within seven days from its encrypted backups too.",
+    notWatched: "This chat was not following that pool. /watches lists what it follows.",
+    watchesNone: "This chat follows no pool. Send /watch with a pool to begin.",
+    watchesHeading: (count: string) => `Pools this chat follows (${count}), each with the range last told:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) has left its range: ${range}. It holds a single token and earns nothing until the price comes back.`,
     /*
@@ -1874,7 +1900,7 @@ const tr: Dictionary = {
   telegram: {
     heading: "Telegram'dan bildirim",
     intro:
-      "Bu adresteki bir pozisyon aralığının sınırına yaklaştığında, aralıktan çıktığında ya da geri girdiğinde Telegram'dan haber al. Biri aralığından çıktığında bildirim, o havuzda aralık içindeki likiditeye son yedi günde yıllık oran olarak ne kadar komisyon ödendiğini ve pozisyonu şimdiki fiyatta yeniden ortalamanın takas komisyonu olarak neye mal olacağını da söyler: ikisi de ölçümdür, hiçbiri tahmin değildir. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de sunucudan silinir, yedi gün içinde de şifreli yedeklerden düşer. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır. Bota /smart ile istersen, pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da söyler; o zaman her böyle havuz için, o aralığın sana son bildirildiğinde nerede durduğunu saklar. /weekly ile her pazartesi o ağda akıllı paranın nereye kaydığına dair bir özet de gönderir; bunun için yalnızca son özetin ne zaman gittiğini saklar.",
+      "Bu adresteki bir pozisyon aralığının sınırına yaklaştığında, aralıktan çıktığında ya da geri girdiğinde Telegram'dan haber al. Biri aralığından çıktığında bildirim, o havuzda aralık içindeki likiditeye son yedi günde yıllık oran olarak ne kadar komisyon ödendiğini ve pozisyonu şimdiki fiyatta yeniden ortalamanın takas komisyonu olarak neye mal olacağını da söyler: ikisi de ölçümdür, hiçbiri tahmin değildir. Düğme seni bu sitenin botuna götürür; orada Başlat'a basınca o sohbet bu adrese bağlanır. Saklanan yalnızca adres ile sohbetin sayısal kimliğidir — başka hiçbir şey — ve bota /stop yazdığın ya da bağlantıyı buradan unuttuğun an ikisi de sunucudan silinir, yedi gün içinde de şifreli yedeklerden düşer. Ne sıklıkla kontrol edildiği, bunun çalıştığı sunucuya bağlıdır. Bota /smart ile istersen, pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da söyler; o zaman her böyle havuz için, o aralığın sana son bildirildiğinde nerede durduğunu saklar. /weekly ile her pazartesi o ağda akıllı paranın nereye kaydığına dair bir özet de gönderir; bunun için yalnızca son özetin ne zaman gittiğini saklar. Botun kendisinde, bir havuzla /watch hiçbir adres bağlamadan o havuzun önerilen aralığını izler, sohbet başına en fazla beş havuz; bunun için sohbetin sayısal kimliğini, havuzu ve en son söylenen aralığı saklar; /unwatch ya da /stop siler.",
     connect: "Telegram'a bağla",
     connected: (address: string) => `Bu tarayıcı bağlı: ${address} izleniyor.`,
     pending: "Bağlantı bekliyor: Telegram'da botun sohbetini aç ve Başlat'a bas.",
@@ -1891,7 +1917,7 @@ const tr: Dictionary = {
     stopped: "Durduruldu. Bu sohbet artık hiçbir şeyi izlemiyor. Kayıt sunucudan silindi; şifreli yedeklerden de yedi gün içinde düşecek.",
     nothingToStop: "Bu sohbet zaten hiçbir şeyi izlemiyordu.",
     help:
-      "Bu bot yalnızca sitede bağladığın adresi izler ve yalnızca bir pozisyon aralığının sınırına yaklaşınca, aralıktan çıkınca ya da geri girince konuşur. Biri çıktığında, havuzun son yedi günde aralık içindeki likiditeye ne ödediğini ve yeniden ortalamanın takas komisyonu olarak neye mal olacağını da söyler. Bitirmek için /stop gönder. Pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da haber almak için /smart gönder. Akıllı paranın nereye kaydığını her pazartesi özet olarak almak için /weekly gönder.",
+      "Bu bot yalnızca sitede bağladığın adresi izler ve yalnızca bir pozisyon aralığının sınırına yaklaşınca, aralıktan çıkınca ya da geri girince konuşur. Biri çıktığında, havuzun son yedi günde aralık içindeki likiditeye ne ödediğini ve yeniden ortalamanın takas komisyonu olarak neye mal olacağını da söyler. Bitirmek için /stop gönder. Pozisyonun olan bir havuzda en çok kazanan likidite kaydığında da haber almak için /smart gönder. Akıllı paranın nereye kaydığını her pazartesi özet olarak almak için /weekly gönder. Bir adres bağlamadan bir havuzun önerilen aralığını izlemek için havuzla birlikte /watch gönder; /watches listeler, /unwatch birini bitirir.",
     storeDown: "Bağlantı şu anda kontrol edilemedi. Bir dakika sonra yeniden dene.",
     smartOn:
       "Akıllı para uyarıları açık. Pozisyonun olan bir havuzda en çok kazanan likiditenin durduğu yer çok kayarsa burada duyarsın. Bunun için bot, o aralığın sana son bildirildiğinde nerede durduğunu saklar, başka bir şey değil. Kapatmak için /smart'ı yeniden gönder.",
@@ -1910,6 +1936,27 @@ const tr: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "Bu, en çok kazanan likiditenin zincirden ölçülen yeridir; seninkine bir öneri değil.",
     weeklyLink: (url: string) => `Tamamı sitede: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 ${pair} (${protocol}, ${fee}) izleniyor.`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `Şimdiki önerilen aralık, varsayılan ${days} günlük ufuk ve ${width} standart sapma genişlik için: ${range}. Fiyat ${price}.`,
+    watchRule:
+      "Bu aralığın iki sınırından biri genişliğinin onda birinden fazla kaydığında burada haber alırsın — günde en fazla bir kez. Fiyatın ne kadar hareket ettiğini ölçer, nereye gideceğini söylemez.",
+    watchKept:
+      "Bunun için saklanan: bu sohbetin sayısal kimliği, havuz ve sana en son söylenen aralık — başka bir şey değil. Aynı havuzla /unwatch bunu siler; /stop bu sohbetin istediği her şeyi siler.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 ${pair} (${protocol}, ${fee}) için önerilen aralık kaydı: ${then} → ${now}. Fiyat ${price}.`,
+    watchNote: "Fiyatın ufuk boyunca ne kadar hareket ettiğinin bugünkü fiyat etrafına yerleştirilmiş bir ölçümü — bir pozisyon önerisi değil.",
+    watchHow:
+      "/watch komutunu bir v3 havuz adresi ya da v4 havuz kimliğiyle, Ethereum değilse ağın adıyla birlikte gönder; sıra fark etmez: /watch base 0x… ya da /watch 0x… base. /watches bu sohbetin izlediklerini listeler; aynı havuzla /unwatch birini bitirir.",
+    watchUnknownChain: (word: string, chains: string) => `“${word}” bu sitenin okuduğu bir ağ değil. Ağlar: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `${protocol} havuzları burada ${chain} üzerinde okunmuyor.`,
+    watchUnreadable: "Bu havuz şu anda okunamadı. Adresi ve ağı kontrol et ya da bir dakika sonra yeniden dene.",
+    watchFull: (max: string) => `Bu sohbet zaten ${max} havuz izliyor, izleyebileceğinin en fazlası. Önce birine /unwatch gönder.`,
+    unwatched: "Bu havuz artık izlenmiyor. Onun için saklananlar sunucudan silindi; şifreli yedeklerden de yedi gün içinde silinir.",
+    notWatched: "Bu sohbet o havuzu izlemiyordu. /watches izlediklerini listeler.",
+    watchesNone: "Bu sohbet hiçbir havuz izlemiyor. Başlamak için bir havuzla /watch gönder.",
+    watchesHeading: (count: string) => `Bu sohbetin izlediği havuzlar (${count}), her biri en son söylenen aralıkla:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) aralığından çıktı: ${range}. Fiyat geri gelene kadar tek token tutuyor ve hiçbir şey kazanmıyor.`,
     leftFeeYield: (rate: string) =>
@@ -2878,7 +2925,7 @@ const de: Dictionary = {
   telegram: {
     heading: "Hinweise per Telegram",
     intro:
-      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder hineinkommt. Verlässt eine ihn, sagt der Hinweis auch, welche Gebühren die Liquidität im Bereich dieses Pools in den letzten sieben Tagen erhielt, als Jahressatz, und was eine Neuzentrierung der Position zum jetzigen Preis an Tauschgebühren kosten würde: beides gemessen, keine Prognose. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides wird vom Server gelöscht, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst, und verschwindet binnen sieben Tagen auch aus seinen verschlüsselten Sicherungen. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft. Wenn du den Bot mit /smart darum bittest, meldet er auch, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst; dann merkt er sich je Pool, wo dieser Bereich lag, als du zuletzt benachrichtigt wurdest. Mit /weekly schickt er außerdem jeden Montag einen Überblick, wohin sich das kluge Geld in diesem Netzwerk bewegt hat; dafür merkt er sich nur, wann der letzte verschickt wurde.",
+      "Lass dir per Telegram sagen, wenn eine Position dieser Adresse dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder hineinkommt. Verlässt eine ihn, sagt der Hinweis auch, welche Gebühren die Liquidität im Bereich dieses Pools in den letzten sieben Tagen erhielt, als Jahressatz, und was eine Neuzentrierung der Position zum jetzigen Preis an Tauschgebühren kosten würde: beides gemessen, keine Prognose. Der Knopf führt zum Bot dieser Seite; drückst du dort auf Start, wird dieser Chat mit dieser Adresse verknüpft. Gespeichert werden die Adresse und die numerische Kennung des Chats — sonst nichts — und beides wird vom Server gelöscht, sobald du dem Bot /stop schickst oder die Verknüpfung hier vergisst, und verschwindet binnen sieben Tagen auch aus seinen verschlüsselten Sicherungen. Wie oft geprüft wird, hängt vom Server ab, auf dem das läuft. Wenn du den Bot mit /smart darum bittest, meldet er auch, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst; dann merkt er sich je Pool, wo dieser Bereich lag, als du zuletzt benachrichtigt wurdest. Mit /weekly schickt er außerdem jeden Montag einen Überblick, wohin sich das kluge Geld in diesem Netzwerk bewegt hat; dafür merkt er sich nur, wann der letzte verschickt wurde. Im Bot selbst verfolgt /watch mit einem Pool dessen vorgeschlagenen Bereich, ohne dass eine Adresse verknüpft wird, bis zu fünf Pools pro Chat; dafür merkt er sich die numerische ID des Chats, den Pool und den zuletzt genannten Bereich, gelöscht durch /unwatch oder /stop.",
     connect: "Telegram verbinden",
     connected: (address: string) => `Dieser Browser ist verknüpft: ${address} wird beobachtet.`,
     pending: "Die Verknüpfung wartet: öffne den Chat mit dem Bot in Telegram und drücke auf Start.",
@@ -2895,7 +2942,7 @@ const de: Dictionary = {
     stopped: "Beendet. Dieser Chat folgt nun nichts mehr. Der Eintrag ist vom Server gelöscht und verschwindet binnen sieben Tagen auch aus den verschlüsselten Sicherungen.",
     nothingToStop: "Dieser Chat ist nichts gefolgt.",
     help:
-      "Dieser Bot folgt nur der Adresse, die du auf der Seite verknüpft hast, und meldet sich nur, wenn eine Position dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder betritt. Verlässt eine ihn, sagt er auch, was der Pool der Liquidität im Bereich in den letzten sieben Tagen gezahlt hat und was eine Neuzentrierung an Tauschgebühren kosten würde. Schick /stop, um das zu beenden. Sende /smart, um zusätzlich informiert zu werden, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst. Sende /weekly für einen Überblick jeden Montag, wohin sich das kluge Geld bewegt hat.",
+      "Dieser Bot folgt nur der Adresse, die du auf der Seite verknüpft hast, und meldet sich nur, wenn eine Position dem Rand ihres Bereichs nahekommt, ihn verlässt oder wieder betritt. Verlässt eine ihn, sagt er auch, was der Pool der Liquidität im Bereich in den letzten sieben Tagen gezahlt hat und was eine Neuzentrierung an Tauschgebühren kosten würde. Schick /stop, um das zu beenden. Sende /smart, um zusätzlich informiert zu werden, wenn sich die bestverdienende Liquidität in einem Pool verschiebt, in dem du eine Position hältst. Sende /weekly für einen Überblick jeden Montag, wohin sich das kluge Geld bewegt hat. Sende /watch mit einem Pool, um seinen vorgeschlagenen Bereich zu verfolgen, ohne eine Adresse zu verknüpfen; /watches listet sie, /unwatch beendet einen.",
     storeDown: "Die Verknüpfung konnte gerade nicht geprüft werden. Versuch es in einer Minute noch einmal.",
     smartOn:
       "Benachrichtigungen zum klugen Geld sind an. Wenn sich in einem Pool, in dem du eine Position hältst, die Lage der bestverdienenden Liquidität weit verschiebt, erfährst du es hier. Dafür merkt sich der Bot, wo dieser Bereich lag, als du zuletzt benachrichtigt wurdest, und sonst nichts. Sende /smart noch einmal, um sie auszuschalten.",
@@ -2914,6 +2961,27 @@ const de: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "Dort steht die bestverdienende Liquidität, von der Chain gemessen – kein Vorschlag für deine.",
     weeklyLink: (url: string) => `Alles auf der Seite: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 ${pair} (${protocol}, ${fee}) wird verfolgt.`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `Der vorgeschlagene Bereich jetzt, für den Standardhorizont von ${days} Tagen und eine Breite von ${width} Standardabweichung: ${range}. Der Preis ist ${price}.`,
+    watchRule:
+      "Du erfährst hier, wenn sich einer der beiden Ränder dieses Bereichs um mehr als ein Zehntel seiner Breite verschoben hat — höchstens einmal am Tag. Es misst, wie weit sich der Preis bewegt hat, nicht wohin er geht.",
+    watchKept:
+      "Dafür gespeichert: die numerische ID dieses Chats, der Pool und der Bereich, der dir zuletzt genannt wurde — sonst nichts. /unwatch mit demselben Pool löscht es; /stop löscht alles, was dieser Chat angefragt hat.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 Der vorgeschlagene Bereich für ${pair} (${protocol}, ${fee}) hat sich verschoben: ${then} → ${now}. Der Preis ist ${price}.`,
+    watchNote: "Ein Maß dafür, wie weit sich der Preis über den Horizont bewegt hat, um den heutigen Preis gelegt — kein Vorschlag für eine Position.",
+    watchHow:
+      "Sende /watch mit der Adresse eines v3-Pools oder der ID eines v4-Pools und, wenn es nicht Ethereum ist, dem Namen des Netzwerks, in beliebiger Reihenfolge: /watch base 0x… oder /watch 0x… base. /watches listet, was dieser Chat verfolgt; /unwatch mit demselben Pool beendet eines.",
+    watchUnknownChain: (word: string, chains: string) => `„${word}“ ist kein Netzwerk, das diese Seite liest. Die Netzwerke sind: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `${protocol}-Pools werden hier auf ${chain} nicht gelesen.`,
+    watchUnreadable: "Dieser Pool konnte gerade nicht gelesen werden. Prüfe Adresse und Netzwerk, oder versuche es in einer Minute noch einmal.",
+    watchFull: (max: string) => `Dieser Chat verfolgt schon ${max} Pools, mehr geht nicht. Sende zuerst /unwatch für einen davon.`,
+    unwatched: "Dieser Pool wird nicht mehr verfolgt. Was dafür gespeichert war, ist vom Server gelöscht, und innerhalb von sieben Tagen auch aus den verschlüsselten Sicherungen.",
+    notWatched: "Dieser Chat hat diesen Pool nicht verfolgt. /watches listet, was er verfolgt.",
+    watchesNone: "Dieser Chat verfolgt keinen Pool. Sende /watch mit einem Pool, um anzufangen.",
+    watchesHeading: (count: string) => `Pools, die dieser Chat verfolgt (${count}), jeder mit dem zuletzt genannten Bereich:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) hat seinen Bereich verlassen: ${range}. Es hält nur noch einen Token und verdient nichts, bis der Preis zurückkommt.`,
     leftFeeYield: (rate: string) =>
@@ -3856,7 +3924,7 @@ const es: Dictionary = {
   telegram: {
     heading: "Avisos por Telegram",
     intro:
-      "Entérate por Telegram cuando una posición de esta dirección se acerque al borde de su rango, salga de él o vuelva a entrar. Cuando una sale, el aviso dice también qué comisiones recibió en los últimos siete días la liquidez dentro de rango de ese pool, como tasa anual, y cuánto costaría en comisiones de intercambio recentrar la posición en el precio actual: ambas cosas medidas, ninguna una previsión. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos se borran del servidor en cuanto envías /stop al bot u olvidas el enlace aquí, y de sus copias de seguridad cifradas en un plazo de siete días. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto. Si se lo pides al bot con /smart, también avisa cuando se mueve la liquidez que más gana en un pool donde tienes una posición; entonces guarda, por cada pool así, dónde estaba ese rango cuando te avisó por última vez. Con /weekly también envía cada lunes un resumen de adónde se movió el dinero inteligente en esa red; para eso solo guarda cuándo se envió el último.",
+      "Entérate por Telegram cuando una posición de esta dirección se acerque al borde de su rango, salga de él o vuelva a entrar. Cuando una sale, el aviso dice también qué comisiones recibió en los últimos siete días la liquidez dentro de rango de ese pool, como tasa anual, y cuánto costaría en comisiones de intercambio recentrar la posición en el precio actual: ambas cosas medidas, ninguna una previsión. El botón te lleva al bot de este sitio; al pulsar Iniciar allí, ese chat queda ligado a esta dirección. Se guarda la dirección y el identificador numérico del chat — nada más — y ambos se borran del servidor en cuanto envías /stop al bot u olvidas el enlace aquí, y de sus copias de seguridad cifradas en un plazo de siete días. La frecuencia de las comprobaciones depende del servidor donde se ejecuta esto. Si se lo pides al bot con /smart, también avisa cuando se mueve la liquidez que más gana en un pool donde tienes una posición; entonces guarda, por cada pool así, dónde estaba ese rango cuando te avisó por última vez. Con /weekly también envía cada lunes un resumen de adónde se movió el dinero inteligente en esa red; para eso solo guarda cuándo se envió el último. En el propio bot, /watch con un pool sigue el rango sugerido de ese pool sin enlazar ninguna dirección, hasta cinco pools por chat; para eso guarda el identificador numérico del chat, el pool y el rango que se le dijo por última vez, borrados con /unwatch o /stop.",
     connect: "Conectar Telegram",
     connected: (address: string) => `Este navegador está enlazado: se vigila ${address}.`,
     pending: "El enlace está a la espera: abre el chat del bot en Telegram y pulsa Iniciar.",
@@ -3873,7 +3941,7 @@ const es: Dictionary = {
     stopped: "Detenido. Este chat ya no sigue nada. El registro se ha borrado del servidor y desaparecerá de las copias de seguridad cifradas en un plazo de siete días.",
     nothingToStop: "Este chat no seguía nada.",
     help:
-      "Este bot solo sigue la dirección que enlazaste en el sitio, y solo habla cuando una posición se acerca al borde de su rango, sale de él o vuelve a entrar. Cuando una sale, también dice cuánto pagó el pool a su liquidez dentro de rango en los últimos siete días y cuánto costaría recentrarla en comisiones de intercambio. Envía /stop para terminar. Envía /smart para que también te avise cuando se mueva la liquidez que más gana en un pool donde tienes una posición. Envía /weekly para recibir cada lunes un resumen de adónde se movió el dinero inteligente.",
+      "Este bot solo sigue la dirección que enlazaste en el sitio, y solo habla cuando una posición se acerca al borde de su rango, sale de él o vuelve a entrar. Cuando una sale, también dice cuánto pagó el pool a su liquidez dentro de rango en los últimos siete días y cuánto costaría recentrarla en comisiones de intercambio. Envía /stop para terminar. Envía /smart para que también te avise cuando se mueva la liquidez que más gana en un pool donde tienes una posición. Envía /weekly para recibir cada lunes un resumen de adónde se movió el dinero inteligente. Envía /watch con un pool para seguir su rango sugerido sin enlazar una dirección; /watches los lista, /unwatch termina uno.",
     storeDown: "No se pudo comprobar el enlace ahora mismo. Inténtalo de nuevo en un minuto.",
     smartOn:
       "Las alertas de dinero inteligente están activadas. Si el lugar donde está la liquidez que más gana en un pool donde tienes una posición se desplaza mucho, te enterarás aquí. Para eso el bot guarda dónde estaba ese rango cuando te avisó por última vez, y nada más. Envía /smart otra vez para desactivarlas.",
@@ -3892,6 +3960,27 @@ const es: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "Ahí está la liquidez que más gana, medida en la cadena; no es una sugerencia para la tuya.",
     weeklyLink: (url: string) => `Todo en el sitio: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 Siguiendo ${pair} (${protocol}, ${fee}).`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `El rango sugerido ahora, para el horizonte predeterminado de ${days} días y un ancho de ${width} desviación estándar: ${range}. El precio es ${price}.`,
+    watchRule:
+      "Sabrás aquí cuando cualquiera de los dos bordes de ese rango se haya movido más de una décima parte de su ancho — como mucho una vez al día. Mide cuánto se ha movido el precio, no adónde irá.",
+    watchKept:
+      "Guardado para esto: el identificador numérico de este chat, el pool y el rango que se te dijo por última vez — nada más. /unwatch con el mismo pool lo borra; /stop borra todo lo que este chat pidió.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 El rango sugerido para ${pair} (${protocol}, ${fee}) se ha movido: ${then} → ${now}. El precio es ${price}.`,
+    watchNote: "Una medida de cuánto se movió el precio a lo largo del horizonte, colocada alrededor del precio de hoy — no una sugerencia para una posición.",
+    watchHow:
+      "Envía /watch con la dirección de un pool v3 o el id de un pool v4 y, si no es Ethereum, el nombre de la red, en cualquier orden: /watch base 0x… o /watch 0x… base. /watches lista lo que sigue este chat; /unwatch con el mismo pool termina uno.",
+    watchUnknownChain: (word: string, chains: string) => `«${word}» no es una red que este sitio lea. Las redes son: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `Los pools de ${protocol} no se leen en ${chain} aquí.`,
+    watchUnreadable: "Ese pool no se pudo leer ahora mismo. Revisa la dirección y la red, o inténtalo de nuevo en un minuto.",
+    watchFull: (max: string) => `Este chat ya sigue ${max} pools, el máximo que puede. Envía antes /unwatch para uno de ellos.`,
+    unwatched: "Ya no se sigue ese pool. Lo guardado para él se borró del servidor, y en siete días también de sus copias de seguridad cifradas.",
+    notWatched: "Este chat no seguía ese pool. /watches lista lo que sigue.",
+    watchesNone: "Este chat no sigue ningún pool. Envía /watch con un pool para empezar.",
+    watchesHeading: (count: string) => `Pools que sigue este chat (${count}), cada uno con el rango dicho por última vez:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) ha salido de su rango: ${range}. Mantiene un solo token y no gana nada hasta que el precio vuelva.`,
     leftFeeYield: (rate: string) =>
@@ -4832,7 +4921,7 @@ const ar: Dictionary = {
   telegram: {
     heading: "تنبيهات عبر تيليغرام",
     intro:
-      "اعرف عبر تيليغرام متى يقترب أحد مراكز هذا العنوان من حافة نطاقه أو يخرج منه أو يعود إليه. وحين يخرج أحدها، يذكر التنبيه أيضًا ما دُفع للسيولة داخل النطاق في ذلك التجمّع خلال الأيام السبعة الماضية، كمعدل سنوي، وما ستكلّفه إعادة توسيط المركز عند السعر الحالي من رسوم التبادل: كلاهما مقيس، ولا أيّ منهما تنبؤ. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما من الخادم لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا، ومن نسخه الاحتياطية المشفّرة خلال سبعة أيام. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا. وإن طلبتَ ذلك من البوت بالأمر /smart فسيقول أيضًا متى انتقلت السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا؛ وعندئذ يحفظ لكل تجمّع من هذا النوع أين كان ذلك النطاق حين أُبلغتَ آخر مرة. وبالأمر /weekly يرسل أيضًا كل يوم اثنين ملخصًا عن المكان الذي انتقل إليه المال الذكي على تلك الشبكة؛ ولهذا لا يحفظ إلا وقت إرسال آخر ملخص.",
+      "اعرف عبر تيليغرام متى يقترب أحد مراكز هذا العنوان من حافة نطاقه أو يخرج منه أو يعود إليه. وحين يخرج أحدها، يذكر التنبيه أيضًا ما دُفع للسيولة داخل النطاق في ذلك التجمّع خلال الأيام السبعة الماضية، كمعدل سنوي، وما ستكلّفه إعادة توسيط المركز عند السعر الحالي من رسوم التبادل: كلاهما مقيس، ولا أيّ منهما تنبؤ. الزر يأخذك إلى بوت هذا الموقع؛ وبالضغط على «ابدأ» هناك تُربط تلك المحادثة بهذا العنوان. ما يُحفظ هو العنوان والمعرّف الرقمي للمحادثة — لا شيء غيرهما — ويُمحى كلاهما من الخادم لحظة إرسالك /stop إلى البوت أو نسيانك الرابط هنا، ومن نسخه الاحتياطية المشفّرة خلال سبعة أيام. أما تكرار الفحص فيحدده الخادم الذي يعمل عليه هذا. وإن طلبتَ ذلك من البوت بالأمر /smart فسيقول أيضًا متى انتقلت السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا؛ وعندئذ يحفظ لكل تجمّع من هذا النوع أين كان ذلك النطاق حين أُبلغتَ آخر مرة. وبالأمر /weekly يرسل أيضًا كل يوم اثنين ملخصًا عن المكان الذي انتقل إليه المال الذكي على تلك الشبكة؛ ولهذا لا يحفظ إلا وقت إرسال آخر ملخص. وفي البوت نفسه، يتابع /watch مع تجمّع النطاق المقترح لذلك التجمّع من دون ربط أي عنوان، حتى خمسة تجمّعات لكل محادثة؛ ولهذا يحفظ المعرّف الرقمي للمحادثة والتجمّع والنطاق الذي أُبلغت به آخر مرة، ويُحذف بالأمر /unwatch أو /stop.",
     connect: "ربط تيليغرام",
     connected: (address: string) => `هذا المتصفح مربوط: يُراقَب ${address}.`,
     pending: "الرابط بانتظارك: افتح محادثة البوت في تيليغرام واضغط «ابدأ».",
@@ -4849,7 +4938,7 @@ const ar: Dictionary = {
     stopped: "توقّف. هذه المحادثة لا تتابع شيئًا الآن. مُحي السجل من الخادم، وسيُمحى من النسخ الاحتياطية المشفّرة خلال سبعة أيام.",
     nothingToStop: "هذه المحادثة لم تكن تتابع شيئًا.",
     help:
-      "هذا البوت يتابع فقط العنوان الذي ربطته في الموقع، ولا يتكلم إلا عندما يقترب مركز من حافة نطاقه أو يخرج منه أو يعود إليه. وحين يخرج أحدها، يذكر أيضًا ما دفعه التجمّع للسيولة داخل النطاق خلال الأيام السبعة الماضية وما ستكلّفه إعادة التوسيط من رسوم التبادل. أرسل /stop للإنهاء. أرسل /smart لتُبلَغ أيضًا حين تنتقل السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا. أرسل /weekly ليصلك كل يوم اثنين ملخص عن المكان الذي انتقل إليه المال الذكي.",
+      "هذا البوت يتابع فقط العنوان الذي ربطته في الموقع، ولا يتكلم إلا عندما يقترب مركز من حافة نطاقه أو يخرج منه أو يعود إليه. وحين يخرج أحدها، يذكر أيضًا ما دفعه التجمّع للسيولة داخل النطاق خلال الأيام السبعة الماضية وما ستكلّفه إعادة التوسيط من رسوم التبادل. أرسل /stop للإنهاء. أرسل /smart لتُبلَغ أيضًا حين تنتقل السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا. أرسل /weekly ليصلك كل يوم اثنين ملخص عن المكان الذي انتقل إليه المال الذكي. أرسل /watch مع تجمّع لمتابعة نطاقه المقترح من دون ربط عنوان؛ /watches يعرضها، و/unwatch ينهي إحداها.",
     storeDown: "تعذّر فحص الرابط الآن. حاول مجددًا بعد دقيقة.",
     smartOn:
       "تنبيهات المال الذكي مفعّلة. إذا انتقل بعيدًا موضع السيولة الأعلى ربحًا في تجمّع تملك فيه مركزًا، فستعرف ذلك هنا. ولهذا يحفظ البوت أين كان ذلك النطاق حين أُبلغتَ آخر مرة، ولا يحفظ شيئًا غير ذلك. أرسل /smart مرة أخرى لإيقافها.",
@@ -4874,6 +4963,27 @@ const ar: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "هذا موضع السيولة الأعلى ربحًا مقيسًا على السلسلة، وليس اقتراحًا لمركزك.",
     weeklyLink: (url: string) => `كل ذلك في الموقع: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 تتم متابعة ${pair} (${protocol}، ${fee}).`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `النطاق المقترح الآن، للأفق الافتراضي ${days} يومًا وعرض ${width} انحراف معياري: ${range}. السعر ${price}.`,
+    watchRule:
+      "ستعرف هنا متى انتقلت إحدى حافتي ذلك النطاق بأكثر من عُشر عرضه — مرة واحدة في اليوم على الأكثر. هو يقيس مقدار حركة السعر، ولا يقول إلى أين سيذهب.",
+    watchKept:
+      "ما يُحفظ لهذا: المعرّف الرقمي لهذه المحادثة، والتجمّع، والنطاق الذي أُبلغتَ به آخر مرة — لا شيء غير ذلك. /unwatch مع التجمّع نفسه يحذفه؛ و/stop يحذف كل ما طلبته هذه المحادثة.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 انتقل النطاق المقترح لـ ${pair} (${protocol}، ${fee}): ${then} → ${now}. السعر ${price}.`,
+    watchNote: "قياس لمقدار حركة السعر على مدى الأفق، موضوع حول سعر اليوم — وليس اقتراحًا لمركز.",
+    watchHow:
+      "أرسل /watch مع عنوان تجمّع v3 أو معرّف تجمّع v4، ومع اسم الشبكة إن لم تكن إيثريوم، بأي ترتيب: /watch base 0x… أو /watch 0x… base. /watches يعرض ما تتابعه هذه المحادثة؛ و/unwatch مع التجمّع نفسه ينهي متابعته.",
+    watchUnknownChain: (word: string, chains: string) => `«${word}» ليست شبكة يقرأها هذا الموقع. الشبكات هي: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `تجمّعات ${protocol} لا تُقرأ هنا على ${chain}.`,
+    watchUnreadable: "تعذّرت قراءة هذا التجمّع الآن. تحقق من العنوان والشبكة، أو أعد المحاولة بعد دقيقة.",
+    watchFull: (max: string) => `هذه المحادثة تتابع بالفعل ${max} تجمّعات، وهو الحد الأقصى. أرسل /unwatch لأحدها أولًا.`,
+    unwatched: "لم تعد متابعة هذا التجمّع. ما حُفظ له مُحي من الخادم، ومن النسخ الاحتياطية المشفّرة خلال سبعة أيام.",
+    notWatched: "هذه المحادثة لم تكن تتابع ذلك التجمّع. /watches يعرض ما تتابعه.",
+    watchesNone: "هذه المحادثة لا تتابع أي تجمّع. أرسل /watch مع تجمّع للبدء.",
+    watchesHeading: (count: string) => `التجمّعات التي تتابعها هذه المحادثة (${count})، كل منها مع آخر نطاق أُبلغتَ به:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}، ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ خرج ${pair} (${protocol}) من نطاقه: ${range}. يحمل رمزًا واحدًا ولا يكسب شيئًا حتى يعود السعر.`,
     leftFeeYield: (rate: string) =>
@@ -5801,7 +5911,7 @@ const hi: Dictionary = {
   telegram: {
     heading: "Telegram पर सूचनाएँ",
     intro:
-      "जब इस पते की कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए, Telegram पर जानें। जब कोई बाहर जाती है, तो सूचना यह भी बताती है कि पिछले सात दिनों में उस पूल में दायरे के भीतर की तरलता को सालाना दर से कितना शुल्क मिला, और मौजूदा कीमत पर पोज़िशन को फिर से केंद्रित करने में स्वैप शुल्क कितना लगेगा: दोनों मापे हुए, कोई भी पूर्वानुमान नहीं। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों सर्वर से मिट जाते हैं, और सात दिनों के भीतर उसके एन्क्रिप्टेड बैकअप से भी। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है। यदि आप बॉट से /smart कहकर माँगें, तो वह यह भी बताएगा कि जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता कब खिसकी; तब वह हर ऐसे पूल के लिए यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था। /weekly से वह हर सोमवार यह सारांश भी भेजता है कि उस नेटवर्क पर स्मार्ट पैसा कहाँ खिसका; इसके लिए वह केवल यह रखता है कि आख़िरी सारांश कब गया।",
+      "जब इस पते की कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए, Telegram पर जानें। जब कोई बाहर जाती है, तो सूचना यह भी बताती है कि पिछले सात दिनों में उस पूल में दायरे के भीतर की तरलता को सालाना दर से कितना शुल्क मिला, और मौजूदा कीमत पर पोज़िशन को फिर से केंद्रित करने में स्वैप शुल्क कितना लगेगा: दोनों मापे हुए, कोई भी पूर्वानुमान नहीं। यह बटन आपको इस साइट के बॉट तक ले जाता है; वहाँ Start दबाते ही वह चैट इस पते से जुड़ जाती है। रखा केवल पता और चैट की संख्यात्मक पहचान जाती है — और कुछ नहीं — और बॉट को /stop भेजते ही या यहाँ लिंक भुलाते ही दोनों सर्वर से मिट जाते हैं, और सात दिनों के भीतर उसके एन्क्रिप्टेड बैकअप से भी। कितनी बार जाँच होती है, यह उस सर्वर पर निर्भर है जिस पर यह चलता है। यदि आप बॉट से /smart कहकर माँगें, तो वह यह भी बताएगा कि जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता कब खिसकी; तब वह हर ऐसे पूल के लिए यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था। /weekly से वह हर सोमवार यह सारांश भी भेजता है कि उस नेटवर्क पर स्मार्ट पैसा कहाँ खिसका; इसके लिए वह केवल यह रखता है कि आख़िरी सारांश कब गया। बॉट में ही, किसी पूल के साथ /watch बिना कोई पता जोड़े उस पूल के सुझाए गए दायरे पर नज़र रखता है, एक चैट में ज़्यादा से ज़्यादा पाँच पूल; इसके लिए वह चैट की संख्यात्मक पहचान, पूल और पिछली बार बताया गया दायरा रखता है, जो /unwatch या /stop से मिट जाता है।",
     connect: "Telegram जोड़ें",
     connected: (address: string) => `यह ब्राउज़र जुड़ा है: ${address} पर नज़र रखी जा रही है।`,
     pending: "लिंक प्रतीक्षा में है: Telegram में बॉट की चैट खोलें और Start दबाएँ।",
@@ -5818,7 +5928,7 @@ const hi: Dictionary = {
     stopped: "रोक दिया गया। यह चैट अब किसी पर नज़र नहीं रखती। रिकॉर्ड सर्वर से मिटा दिया गया है, और सात दिनों के भीतर एन्क्रिप्टेड बैकअप से भी मिट जाएगा।",
     nothingToStop: "यह चैट किसी पर नज़र नहीं रख रही थी।",
     help:
-      "यह बॉट केवल उस पते पर नज़र रखता है जो आपने साइट पर जोड़ा है, और केवल तभी बोलता है जब कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए। जब कोई बाहर जाती है, तो यह भी बताता है कि पिछले सात दिनों में पूल ने दायरे के भीतर की तरलता को कितना शुल्क दिया और फिर से केंद्रित करने में स्वैप शुल्क कितना लगेगा। समाप्त करने के लिए /stop भेजें। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता खिसकने पर भी सूचना पाने के लिए /smart भेजें। स्मार्ट पैसा कहाँ खिसका, इसका हर सोमवार सारांश पाने के लिए /weekly भेजें।",
+      "यह बॉट केवल उस पते पर नज़र रखता है जो आपने साइट पर जोड़ा है, और केवल तभी बोलता है जब कोई पोज़िशन अपने दायरे के किनारे के पास पहुँचे, उससे बाहर जाए या वापस आए। जब कोई बाहर जाती है, तो यह भी बताता है कि पिछले सात दिनों में पूल ने दायरे के भीतर की तरलता को कितना शुल्क दिया और फिर से केंद्रित करने में स्वैप शुल्क कितना लगेगा। समाप्त करने के लिए /stop भेजें। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता खिसकने पर भी सूचना पाने के लिए /smart भेजें। स्मार्ट पैसा कहाँ खिसका, इसका हर सोमवार सारांश पाने के लिए /weekly भेजें। बिना पता जोड़े किसी पूल के सुझाए गए दायरे पर नज़र रखने के लिए पूल के साथ /watch भेजें; /watches उन्हें सूचीबद्ध करता है, /unwatch एक को बंद करता है।",
     storeDown: "लिंक अभी जाँचा नहीं जा सका। एक मिनट बाद फिर कोशिश करें।",
     smartOn:
       "स्मार्ट पैसे की सूचनाएँ चालू हैं। जिस पूल में आपकी पोज़िशन है उसमें सबसे ज़्यादा कमाने वाली तरलता की जगह बहुत खिसक जाए तो आपको यहीं पता चलेगा। इसके लिए बॉट यह रखता है कि आपको आख़िरी बार बताए जाने पर वह दायरा कहाँ था, और कुछ नहीं। इन्हें बंद करने के लिए /smart फिर से भेजें।",
@@ -5837,6 +5947,27 @@ const hi: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "सबसे ज़्यादा कमाने वाली तरलता की जगह यही है, चेन से मापी हुई — आपकी पोज़िशन के लिए सुझाव नहीं।",
     weeklyLink: (url: string) => `पूरा ब्योरा साइट पर: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 ${pair} (${protocol}, ${fee}) पर नज़र रखी जा रही है।`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `अभी सुझाया गया दायरा, डिफ़ॉल्ट ${days} दिन की अवधि और ${width} मानक विचलन की चौड़ाई के लिए: ${range}। कीमत ${price} है।`,
+    watchRule:
+      "जब उस दायरे का कोई भी किनारा उसकी चौड़ाई के दसवें हिस्से से ज़्यादा खिसक जाए, आपको यहीं पता चलेगा — दिन में ज़्यादा से ज़्यादा एक बार। यह मापता है कि कीमत कितनी चली, यह नहीं कि कहाँ जाएगी।",
+    watchKept:
+      "इसके लिए रखा जाता है: इस चैट की संख्यात्मक पहचान, पूल, और वह दायरा जो आपको पिछली बार बताया गया — और कुछ नहीं। उसी पूल के साथ /unwatch इसे मिटा देता है; /stop इस चैट की माँगी हर चीज़ मिटा देता है।",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 ${pair} (${protocol}, ${fee}) का सुझाया गया दायरा खिसक गया: ${then} → ${now}। कीमत ${price} है।`,
+    watchNote: "अवधि में कीमत कितनी चली, इसका माप, आज की कीमत के चारों ओर रखा गया — किसी पोज़िशन का सुझाव नहीं।",
+    watchHow:
+      "/watch किसी v3 पूल के पते या v4 पूल की पहचान के साथ भेजें, और अगर Ethereum नहीं है तो नेटवर्क के नाम के साथ, किसी भी क्रम में: /watch base 0x… या /watch 0x… base। /watches बताता है कि यह चैट किन पर नज़र रखती है; उसी पूल के साथ /unwatch एक को बंद करता है।",
+    watchUnknownChain: (word: string, chains: string) => `“${word}” ऐसा नेटवर्क नहीं है जिसे यह साइट पढ़ती हो। नेटवर्क हैं: ${chains}।`,
+    watchNotOnChain: (protocol: string, chain: string) => `${protocol} पूल यहाँ ${chain} पर नहीं पढ़े जाते।`,
+    watchUnreadable: "वह पूल अभी पढ़ा नहीं जा सका। पता और नेटवर्क जाँचें, या एक मिनट बाद फिर कोशिश करें।",
+    watchFull: (max: string) => `यह चैट पहले से ${max} पूलों पर नज़र रखती है, जो अधिकतम है। पहले उनमें से किसी एक के लिए /unwatch भेजें।`,
+    unwatched: "उस पूल पर अब नज़र नहीं रखी जा रही। उसके लिए रखा गया सब सर्वर से मिटा दिया गया है, और सात दिनों के भीतर उसके एन्क्रिप्टेड बैकअप से भी।",
+    notWatched: "यह चैट उस पूल पर नज़र नहीं रख रही थी। /watches बताता है कि किन पर रखती है।",
+    watchesNone: "यह चैट किसी पूल पर नज़र नहीं रखती। शुरू करने के लिए किसी पूल के साथ /watch भेजें।",
+    watchesHeading: (count: string) => `इस चैट के पूल (${count}), हर एक पिछली बार बताए गए दायरे के साथ:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) अपने दायरे से बाहर निकल गई: ${range}। कीमत लौटने तक यह एक ही टोकन रखती है और कुछ नहीं कमाती।`,
     leftFeeYield: (rate: string) =>
@@ -6941,7 +7072,7 @@ const zh: Dictionary = {
   telegram: {
     heading: "Telegram 提醒",
     intro:
-      "当这个地址的某个仓位接近它的区间边缘、离开区间或重新回到区间内时，通过 Telegram 获知。当某个仓位离开区间时，提醒还会说明过去七天里该资金池中处于区间内的流动性按年化计获得了多少手续费，以及按当前价格把仓位重新居中需要付多少兑换手续费：两者都是测量值，都不是预测。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会从服务器上删除，并在七天内从它的加密备份中消失。检查的频率取决于运行它的服务器。 如果你用 /smart 向机器人提出要求，当你持有仓位的池子里收益最高的流动性移动时，它也会告诉你；那时它会为每个这样的池子保存上次通知你时那个区间在哪里。 用 /weekly，它还会每周一发送一份该网络上聪明资金流向的摘要；为此它只保存上一份摘要的发送时间。",
+      "当这个地址的某个仓位接近它的区间边缘、离开区间或重新回到区间内时，通过 Telegram 获知。当某个仓位离开区间时，提醒还会说明过去七天里该资金池中处于区间内的流动性按年化计获得了多少手续费，以及按当前价格把仓位重新居中需要付多少兑换手续费：两者都是测量值，都不是预测。按钮会把你带到本站的机器人；在那里按下“开始”，那个对话就会与这个地址绑定。保存的只有这个地址和对话的数字 id——别的什么都没有——你向机器人发送 /stop 或在这里忘记绑定的那一刻，两者都会从服务器上删除，并在七天内从它的加密备份中消失。检查的频率取决于运行它的服务器。 如果你用 /smart 向机器人提出要求，当你持有仓位的池子里收益最高的流动性移动时，它也会告诉你；那时它会为每个这样的池子保存上次通知你时那个区间在哪里。 用 /weekly，它还会每周一发送一份该网络上聪明资金流向的摘要；为此它只保存上一份摘要的发送时间。在机器人里，发送 /watch 并附上资金池，即可在不绑定任何地址的情况下关注该池的建议区间，每个聊天最多五个；为此它保存聊天的数字 ID、资金池和上一次告知的区间，/unwatch 或 /stop 会将其删除。",
     connect: "连接 Telegram",
     connected: (address: string) => `这个浏览器已绑定：正在关注 ${address}。`,
     pending: "绑定等待中：在 Telegram 里打开机器人的对话并按下“开始”。",
@@ -6958,7 +7089,7 @@ const zh: Dictionary = {
     stopped: "已停止。这个对话现在不再关注任何东西。记录已从服务器删除，七天内也会从加密备份中消失。",
     nothingToStop: "这个对话本来就没有关注任何东西。",
     help:
-      "这个机器人只关注你在网站上绑定的地址，也只在某个仓位接近区间边缘、离开或重新进入它的区间时说话。某个仓位离开区间时，它还会说明过去七天里资金池付给区间内流动性的手续费，以及重新居中需要付多少兑换手续费。发送 /stop 结束。 发送 /smart，当你持有仓位的池子里收益最高的流动性移动时，也会收到通知。 发送 /weekly，每周一收到聪明资金流向的摘要。",
+      "这个机器人只关注你在网站上绑定的地址，也只在某个仓位接近区间边缘、离开或重新进入它的区间时说话。某个仓位离开区间时，它还会说明过去七天里资金池付给区间内流动性的手续费，以及重新居中需要付多少兑换手续费。发送 /stop 结束。 发送 /smart，当你持有仓位的池子里收益最高的流动性移动时，也会收到通知。 发送 /weekly，每周一收到聪明资金流向的摘要。发送 /watch 并附上资金池，即可不绑定地址而关注其建议区间；/watches 列出它们，/unwatch 取消一个。",
     storeDown: "现在无法检查绑定。请一分钟后再试。",
     smartOn:
       "聪明资金提醒已开启。如果你持有仓位的某个池子里收益最高的流动性所在的位置大幅移动，你会在这里收到通知。为此，机器人只保存上次通知你时那个区间在哪里，别的什么都不保存。再发一次 /smart 即可关闭。",
@@ -6977,6 +7108,26 @@ const zh: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}：${then} → ${now}`,
     weeklyNote: "这是收益最高的流动性所在的位置，由链上测得——不是对你的仓位的建议。",
     weeklyLink: (url: string) => `完整内容见网站：${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 正在关注 ${pair}（${protocol}，${fee}）。`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `当前建议区间，按默认 ${days} 天期限和 ${width} 个标准差的宽度：${range}。价格为 ${price}。`,
+    watchRule: "当该区间任一边缘移动超过其宽度的十分之一时，你会在这里收到通知——每天最多一次。它衡量价格已经移动了多远，而不是会去哪里。",
+    watchKept:
+      "为此保存的只有：这个聊天的数字 ID、资金池，以及上一次告知你的区间——别的什么都没有。对同一资金池发送 /unwatch 即可删除；/stop 删除这个聊天请求过的一切。",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 ${pair}（${protocol}，${fee}）的建议区间已移动：${then} → ${now}。价格为 ${price}。`,
+    watchNote: "这是价格在该期限内移动幅度的度量，围绕今天的价格摆放——不是对任何仓位的建议。",
+    watchHow:
+      "发送 /watch 并附上 v3 资金池地址或 v4 资金池 ID，若不在 Ethereum 上再加网络名称，顺序不限：/watch base 0x… 或 /watch 0x… base。/watches 列出这个聊天关注的资金池；对同一资金池发送 /unwatch 可取消一个。",
+    watchUnknownChain: (word: string, chains: string) => `“${word}”不是本站读取的网络。可用网络：${chains}。`,
+    watchNotOnChain: (protocol: string, chain: string) => `这里不在 ${chain} 上读取 ${protocol} 资金池。`,
+    watchUnreadable: "刚才无法读取该资金池。请检查地址和网络，或一分钟后再试。",
+    watchFull: (max: string) => `这个聊天已经关注了 ${max} 个资金池，已达上限。请先对其中一个发送 /unwatch。`,
+    unwatched: "不再关注该资金池。为它保存的内容已从服务器删除，七天内也会从加密备份中消失。",
+    notWatched: "这个聊天没有关注该资金池。/watches 列出它关注的资金池。",
+    watchesNone: "这个聊天没有关注任何资金池。发送 /watch 并附上一个资金池即可开始。",
+    watchesHeading: (count: string) => `这个聊天关注的资金池（${count}），各附上一次告知的区间：`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair}（${protocol}，${fee}）：${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair}（${protocol}）已离开它的区间：${range}。在价格回来之前，它只持有一种代币，什么也赚不到。`,
     leftFeeYield: (rate: string) =>
@@ -8177,7 +8328,7 @@ const ru: Dictionary = {
   telegram: {
     heading: "Уведомления в Telegram",
     intro:
-      "Узнавать в Telegram, когда одна из позиций этого адреса приближается к краю своего диапазона, выходит за него или возвращается в него. Когда позиция выходит за диапазон, уведомление говорит ещё, сколько комиссий получила за последние семь дней ликвидность внутри диапазона в этом пуле, в годовом выражении, и во что обошлось бы в комиссиях за своп перецентрирование позиции по текущей цене: и то и другое — измерения, а не прогноз. Кнопка ведёт к боту этого сайта; нажатие «Старт» там привязывает тот чат к этому адресу. Хранятся адрес и числовой идентификатор чата — и больше ничего, — и оба удаляются с сервера, как только вы отправите боту /stop или забудете связь здесь, а из его зашифрованных резервных копий — в течение семи дней. Как часто идёт проверка, зависит от сервера, на котором всё это работает. Если вы попросите об этом бота командой /smart, он будет сообщать и о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция; тогда он хранит для каждого такого пула, где этот диапазон был, когда вам сообщали в последний раз. С /weekly он также каждый понедельник присылает сводку о том, куда в этой сети переместились умные деньги; для этого хранится только время отправки последней сводки.",
+      "Узнавать в Telegram, когда одна из позиций этого адреса приближается к краю своего диапазона, выходит за него или возвращается в него. Когда позиция выходит за диапазон, уведомление говорит ещё, сколько комиссий получила за последние семь дней ликвидность внутри диапазона в этом пуле, в годовом выражении, и во что обошлось бы в комиссиях за своп перецентрирование позиции по текущей цене: и то и другое — измерения, а не прогноз. Кнопка ведёт к боту этого сайта; нажатие «Старт» там привязывает тот чат к этому адресу. Хранятся адрес и числовой идентификатор чата — и больше ничего, — и оба удаляются с сервера, как только вы отправите боту /stop или забудете связь здесь, а из его зашифрованных резервных копий — в течение семи дней. Как часто идёт проверка, зависит от сервера, на котором всё это работает. Если вы попросите об этом бота командой /smart, он будет сообщать и о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция; тогда он хранит для каждого такого пула, где этот диапазон был, когда вам сообщали в последний раз. С /weekly он также каждый понедельник присылает сводку о том, куда в этой сети переместились умные деньги; для этого хранится только время отправки последней сводки. В самом боте /watch с пулом следит за предлагаемым диапазоном этого пула без привязки какого-либо адреса, до пяти пулов на чат; для этого хранятся числовой id чата, пул и диапазон, сообщённый в последний раз, — их удаляют /unwatch или /stop.",
     connect: "Подключить Telegram",
     connected: (address: string) => `Этот браузер связан: за ${address} следим.`,
     pending: "Связь ждёт: откройте чат бота в Telegram и нажмите «Старт».",
@@ -8194,7 +8345,7 @@ const ru: Dictionary = {
     stopped: "Остановлено. Этот чат больше ни за чем не следит. Запись удалена с сервера, а из зашифрованных резервных копий исчезнет в течение семи дней.",
     nothingToStop: "Этот чат ни за чем не следил.",
     help:
-      "Этот бот следит только за адресом, который вы связали на сайте, и говорит только тогда, когда позиция приближается к краю своего диапазона, выходит за него или возвращается в него. Когда позиция выходит за диапазон, он сообщает и то, сколько пул заплатил ликвидности внутри диапазона за последние семь дней, и во что обошлось бы перецентрирование в комиссиях за своп. Чтобы прекратить, отправьте /stop. Отправьте /smart, чтобы получать и сообщения о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция. Отправьте /weekly, чтобы каждый понедельник получать сводку о том, куда переместились умные деньги.",
+      "Этот бот следит только за адресом, который вы связали на сайте, и говорит только тогда, когда позиция приближается к краю своего диапазона, выходит за него или возвращается в него. Когда позиция выходит за диапазон, он сообщает и то, сколько пул заплатил ликвидности внутри диапазона за последние семь дней, и во что обошлось бы перецентрирование в комиссиях за своп. Чтобы прекратить, отправьте /stop. Отправьте /smart, чтобы получать и сообщения о том, что сместилась самая доходная ликвидность в пуле, где у вас есть позиция. Отправьте /weekly, чтобы каждый понедельник получать сводку о том, куда переместились умные деньги. Отправьте /watch с пулом, чтобы следить за его предлагаемым диапазоном без привязки адреса; /watches перечисляет их, /unwatch прекращает одно.",
     storeDown: "Связь сейчас не удалось проверить. Попробуйте через минуту.",
     smartOn:
       "Оповещения об умных деньгах включены. Если место, где стоит самая доходная ликвидность в пуле, в котором у вас есть позиция, сильно сместится, вы узнаете об этом здесь. Для этого бот хранит, где этот диапазон был, когда вам сообщали в последний раз, и больше ничего. Чтобы выключить, отправьте /smart ещё раз.",
@@ -8213,6 +8364,27 @@ const ru: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "Так расположена самая доходная ликвидность по данным сети — это не совет для вашей позиции.",
     weeklyLink: (url: string) => `Целиком — на сайте: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 Слежу за ${pair} (${protocol}, ${fee}).`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `Предлагаемый диапазон сейчас, для горизонта по умолчанию в ${days} дней и ширины в ${width} стандартное отклонение: ${range}. Цена — ${price}.`,
+    watchRule:
+      "Вы узнаете здесь, когда любой из краёв этого диапазона сместится больше чем на десятую часть его ширины — не чаще раза в день. Это мера того, насколько сдвинулась цена, а не того, куда она пойдёт.",
+    watchKept:
+      "Для этого хранится: числовой id этого чата, пул и диапазон, который вам сообщили в последний раз — и больше ничего. /unwatch с тем же пулом удаляет это; /stop удаляет всё, что просил этот чат.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 Предлагаемый диапазон для ${pair} (${protocol}, ${fee}) сместился: ${then} → ${now}. Цена — ${price}.`,
+    watchNote: "Мера того, насколько сдвинулась цена за горизонт, уложенная вокруг сегодняшней цены — не предложение для позиции.",
+    watchHow:
+      "Отправьте /watch с адресом пула v3 или id пула v4 и, если это не Ethereum, с названием сети, в любом порядке: /watch base 0x… или /watch 0x… base. /watches перечисляет, за чем следит этот чат; /unwatch с тем же пулом прекращает слежение.",
+    watchUnknownChain: (word: string, chains: string) => `«${word}» — не сеть, которую читает этот сайт. Сети: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `Пулы ${protocol} здесь не читаются в сети ${chain}.`,
+    watchUnreadable: "Этот пул сейчас не удалось прочитать. Проверьте адрес и сеть или повторите через минуту.",
+    watchFull: (max: string) => `Этот чат уже следит за ${max} пулами — это предел. Сначала отправьте /unwatch для одного из них.`,
+    unwatched: "За этим пулом больше не слежу. Что хранилось для него, удалено с сервера, а в течение семи дней — и из зашифрованных резервных копий.",
+    notWatched: "Этот чат не следил за этим пулом. /watches перечисляет, за чем он следит.",
+    watchesNone: "Этот чат не следит ни за одним пулом. Отправьте /watch с пулом, чтобы начать.",
+    watchesHeading: (count: string) => `Пулы, за которыми следит этот чат (${count}), каждый с последним сообщённым диапазоном:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) вышла за свой диапазон: ${range}. Она держит один токен и ничего не зарабатывает, пока цена не вернётся.`,
     leftFeeYield: (rate: string) =>
@@ -9419,7 +9591,7 @@ const pt: Dictionary = {
   telegram: {
     heading: "Avisos no Telegram",
     intro:
-      "Ser avisado, no Telegram, quando uma das posições deste endereço chegar perto da borda da faixa dela, sair dela ou voltar para dentro. Quando uma sai, o aviso diz também quanto a liquidez dentro da faixa naquele pool recebeu em taxas nos últimos sete dias, como percentual ao ano, e quanto custaria em taxas de swap recentralizar a posição no preço atual: as duas coisas medidas, nenhuma uma previsão. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois são apagados do servidor no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui, e dos backups criptografados dele em até sete dias. Com que frequência a conferência acontece depende do servidor em que isto roda. Se você pedir ao bot com /smart, ele também avisa quando a liquidez que mais ganha em um pool onde você tem uma posição se mover; então ele guarda, para cada pool assim, onde essa faixa estava quando você foi avisado pela última vez. Com /weekly ele também envia, toda segunda-feira, um resumo de para onde o dinheiro inteligente se moveu nessa rede; para isso guarda só quando o último foi enviado.",
+      "Ser avisado, no Telegram, quando uma das posições deste endereço chegar perto da borda da faixa dela, sair dela ou voltar para dentro. Quando uma sai, o aviso diz também quanto a liquidez dentro da faixa naquele pool recebeu em taxas nos últimos sete dias, como percentual ao ano, e quanto custaria em taxas de swap recentralizar a posição no preço atual: as duas coisas medidas, nenhuma uma previsão. O botão leva ao bot deste site; apertar Iniciar lá liga aquela conversa a este endereço. O que fica guardado é o endereço e o id numérico da conversa — nada mais — e os dois são apagados do servidor no instante em que você mandar /stop ao bot ou esquecer o vínculo aqui, e dos backups criptografados dele em até sete dias. Com que frequência a conferência acontece depende do servidor em que isto roda. Se você pedir ao bot com /smart, ele também avisa quando a liquidez que mais ganha em um pool onde você tem uma posição se mover; então ele guarda, para cada pool assim, onde essa faixa estava quando você foi avisado pela última vez. Com /weekly ele também envia, toda segunda-feira, um resumo de para onde o dinheiro inteligente se moveu nessa rede; para isso guarda só quando o último foi enviado. No próprio bot, /watch com um pool acompanha a faixa sugerida desse pool sem vincular nenhum endereço, até cinco pools por chat; para isso ele guarda o id numérico do chat, o pool e a faixa dita por último, apagados por /unwatch ou /stop.",
     connect: "Conectar o Telegram",
     connected: (address: string) => `Este navegador está vinculado: ${address} está sendo acompanhado.`,
     pending: "O vínculo está esperando: abra a conversa do bot no Telegram e aperte Iniciar.",
@@ -9436,7 +9608,7 @@ const pt: Dictionary = {
     stopped: "Encerrado. Esta conversa não acompanha mais nada. O registro foi apagado do servidor e sai dos backups criptografados em até sete dias.",
     nothingToStop: "Esta conversa não estava acompanhando nada.",
     help:
-      "Este bot só acompanha o endereço que você vinculou no site, e só fala quando uma posição chega perto da borda da faixa dela, sai dela ou volta para dentro. Quando uma sai, ele também diz quanto o pool pagou à liquidez dentro da faixa nos últimos sete dias e quanto custaria recentralizar em taxas de swap. Mande /stop para encerrar. Envie /smart para também ser avisado quando a liquidez que mais ganha em um pool onde você tem uma posição se mover. Envie /weekly para receber toda segunda-feira um resumo de para onde o dinheiro inteligente se moveu.",
+      "Este bot só acompanha o endereço que você vinculou no site, e só fala quando uma posição chega perto da borda da faixa dela, sai dela ou volta para dentro. Quando uma sai, ele também diz quanto o pool pagou à liquidez dentro da faixa nos últimos sete dias e quanto custaria recentralizar em taxas de swap. Mande /stop para encerrar. Envie /smart para também ser avisado quando a liquidez que mais ganha em um pool onde você tem uma posição se mover. Envie /weekly para receber toda segunda-feira um resumo de para onde o dinheiro inteligente se moveu. Envie /watch com um pool para acompanhar a faixa sugerida dele sem vincular um endereço; /watches os lista, /unwatch encerra um.",
     storeDown: "Não foi possível conferir o vínculo agora. Tente de novo daqui a um minuto.",
     smartOn:
       "Os alertas de dinheiro inteligente estão ativados. Se o lugar onde está a liquidez que mais ganha em um pool onde você tem uma posição se deslocar muito, você saberá aqui. Para isso o bot guarda onde essa faixa estava quando você foi avisado pela última vez, e nada mais. Envie /smart de novo para desativá-los.",
@@ -9455,6 +9627,27 @@ const pt: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}: ${then} → ${now}`,
     weeklyNote: "É onde está a liquidez que mais ganha, medido na rede — não uma sugestão para a sua.",
     weeklyLink: (url: string) => `Tudo no site: ${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 Acompanhando ${pair} (${protocol}, ${fee}).`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `A faixa sugerida agora, para o horizonte padrão de ${days} dias e uma largura de ${width} desvio padrão: ${range}. O preço é ${price}.`,
+    watchRule:
+      "Você saberá aqui quando qualquer uma das bordas dessa faixa tiver se movido mais de um décimo da largura dela — no máximo uma vez por dia. Mede quanto o preço se moveu, não para onde ele vai.",
+    watchKept:
+      "Guardado para isso: o id numérico deste chat, o pool e a faixa que você ouviu por último — nada mais. /unwatch com o mesmo pool apaga isso; /stop apaga tudo o que este chat pediu.",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 A faixa sugerida para ${pair} (${protocol}, ${fee}) se moveu: ${then} → ${now}. O preço é ${price}.`,
+    watchNote: "Uma medida de quanto o preço se moveu ao longo do horizonte, colocada em volta do preço de hoje — não uma sugestão para uma posição.",
+    watchHow:
+      "Envie /watch com o endereço de um pool v3 ou o id de um pool v4 e, se não for Ethereum, o nome da rede, em qualquer ordem: /watch base 0x… ou /watch 0x… base. /watches lista o que este chat acompanha; /unwatch com o mesmo pool encerra um.",
+    watchUnknownChain: (word: string, chains: string) => `“${word}” não é uma rede que este site lê. As redes são: ${chains}.`,
+    watchNotOnChain: (protocol: string, chain: string) => `Pools ${protocol} não são lidos em ${chain} aqui.`,
+    watchUnreadable: "Esse pool não pôde ser lido agora. Confira o endereço e a rede, ou tente de novo em um minuto.",
+    watchFull: (max: string) => `Este chat já acompanha ${max} pools, o máximo que pode. Envie /unwatch para um deles primeiro.`,
+    unwatched: "Esse pool não é mais acompanhado. O que estava guardado para ele foi apagado do servidor, e em até sete dias também dos backups criptografados.",
+    notWatched: "Este chat não acompanhava esse pool. /watches lista o que ele acompanha.",
+    watchesNone: "Este chat não acompanha nenhum pool. Envie /watch com um pool para começar.",
+    watchesHeading: (count: string) => `Pools que este chat acompanha (${count}), cada um com a faixa dita por último:`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair} (${protocol}, ${fee}): ${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair} (${protocol}) saiu da faixa dela: ${range}. Ela está com um token só e não ganha nada até o preço voltar.`,
     leftFeeYield: (rate: string) =>
@@ -10649,7 +10842,7 @@ const zhHant: Dictionary = {
   telegram: {
     heading: "Telegram 提醒",
     intro:
-      "當這個地址的某個倉位接近它的區間邊緣、離開區間或重新回到區間內時，透過 Telegram 獲知。當某個倉位離開區間時，提醒還會說明過去七天裡該資金池中處於區間內的流動性按年化計獲得了多少手續費，以及按當前價格把倉位重新置中需要付多少兌換手續費：兩者都是測量值，都不是預測。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會從伺服器上刪除，並在七天內從它的加密備份中消失。檢查的頻率取決於執行它的伺服器。如果你用 /smart 向機器人提出要求，當你持有倉位的池子裡收益最高的流動性移動時，它也會告訴你；那時它會為每個這樣的池子儲存上次通知你時那個區間在哪裡。用 /weekly 開啟後，它還會每週一傳送一份該網路上聰明資金流向的摘要；為此它只儲存上一份摘要的傳送時間。",
+      "當這個地址的某個倉位接近它的區間邊緣、離開區間或重新回到區間內時，透過 Telegram 獲知。當某個倉位離開區間時，提醒還會說明過去七天裡該資金池中處於區間內的流動性按年化計獲得了多少手續費，以及按當前價格把倉位重新置中需要付多少兌換手續費：兩者都是測量值，都不是預測。按鈕會把你帶到本站的機器人；在那裡按下「開始」，那個對話就會與這個地址綁定。儲存的只有這個地址和對話的數字 id——別的什麼都沒有——你向機器人傳送 /stop 或在這裡忘記綁定的那一刻，兩者都會從伺服器上刪除，並在七天內從它的加密備份中消失。檢查的頻率取決於執行它的伺服器。如果你用 /smart 向機器人提出要求，當你持有倉位的池子裡收益最高的流動性移動時，它也會告訴你；那時它會為每個這樣的池子儲存上次通知你時那個區間在哪裡。用 /weekly 開啟後，它還會每週一傳送一份該網路上聰明資金流向的摘要；為此它只儲存上一份摘要的傳送時間。在機器人裡，傳送 /watch 並附上資金池，即可在不綁定任何地址的情況下關注該池的建議區間，每個對話最多五個；為此它儲存對話的數字 id、資金池和上一次告知的區間，/unwatch 或 /stop 會將其刪除。",
     connect: "連接 Telegram",
     connected: (address: string) => `這個瀏覽器已綁定：正在關注 ${address}。`,
     pending: "綁定等待中：在 Telegram 裡開啟機器人的對話並按下「開始」。",
@@ -10666,7 +10859,7 @@ const zhHant: Dictionary = {
     stopped: "已停止。這個對話現在不再關注任何東西。記錄已從伺服器刪除，七天內也會從加密備份中消失。",
     nothingToStop: "這個對話本來就沒有關注任何東西。",
     help:
-      "這個機器人只關注你在網站上綁定的地址，也只在某個倉位接近區間邊緣、離開或重新進入它的區間時說話。某個倉位離開區間時，它還會說明過去七天裡資金池付給區間內流動性的手續費，以及重新置中需要付多少兌換手續費。傳送 /stop 結束。傳送 /smart，當你持有倉位的池子裡收益最高的流動性移動時，也會收到通知。傳送 /weekly，每週一收到聰明資金流向的摘要。",
+      "這個機器人只關注你在網站上綁定的地址，也只在某個倉位接近區間邊緣、離開或重新進入它的區間時說話。某個倉位離開區間時，它還會說明過去七天裡資金池付給區間內流動性的手續費，以及重新置中需要付多少兌換手續費。傳送 /stop 結束。傳送 /smart，當你持有倉位的池子裡收益最高的流動性移動時，也會收到通知。傳送 /weekly，每週一收到聰明資金流向的摘要。傳送 /watch 並附上資金池，即可不綁定地址而關注其建議區間；/watches 列出它們，/unwatch 取消一個。",
     storeDown: "現在無法檢查綁定。請一分鐘後再試。",
     smartOn:
       "聰明資金提醒已開啟。如果你持有倉位的某個池子裡收益最高的流動性所在的位置大幅移動，你會在這裡收到通知。為此，機器人只儲存上次通知你時那個區間在哪裡，別的什麼都不儲存。再傳送一次 /smart 即可關閉。",
@@ -10685,6 +10878,26 @@ const zhHant: Dictionary = {
     weeklyRange: (pair: string, then: string, now: string) => `${pair}：${then} → ${now}`,
     weeklyNote: "這是收益最高的流動性所在的位置，由鏈上測得——不是對你的倉位的建議。",
     weeklyLink: (url: string) => `完整內容見網站：${url}`,
+    watching: (pair: string, protocol: string, fee: string) => `👁 正在關注 ${pair}（${protocol}，${fee}）。`,
+    watchRange: (range: string, price: string, days: string, width: string) =>
+      `目前建議區間，依預設 ${days} 天期限與 ${width} 個標準差的寬度：${range}。價格為 ${price}。`,
+    watchRule: "當該區間任一邊緣移動超過其寬度的十分之一時，你會在這裡收到通知——每天最多一次。它衡量價格已經移動多遠，而不是會往哪裡去。",
+    watchKept:
+      "為此儲存的只有：這個對話的數字 id、資金池，以及上一次告知你的區間——別的什麼都沒有。對同一資金池傳送 /unwatch 即可刪除；/stop 刪除這個對話要求過的一切。",
+    watchMoved: (pair: string, protocol: string, fee: string, then: string, now: string, price: string) =>
+      `📐 ${pair}（${protocol}，${fee}）的建議區間已移動：${then} → ${now}。價格為 ${price}。`,
+    watchNote: "這是價格在該期限內移動幅度的度量，圍繞今天的價格擺放——不是對任何倉位的建議。",
+    watchHow:
+      "傳送 /watch 並附上 v3 資金池地址或 v4 資金池 id，若不在 Ethereum 上再加網路名稱，順序不限：/watch base 0x… 或 /watch 0x… base。/watches 列出這個對話關注的資金池；對同一資金池傳送 /unwatch 可取消一個。",
+    watchUnknownChain: (word: string, chains: string) => `「${word}」不是本站讀取的網路。可用網路：${chains}。`,
+    watchNotOnChain: (protocol: string, chain: string) => `這裡不在 ${chain} 上讀取 ${protocol} 資金池。`,
+    watchUnreadable: "剛才無法讀取該資金池。請檢查地址與網路，或一分鐘後再試。",
+    watchFull: (max: string) => `這個對話已經關注了 ${max} 個資金池，已達上限。請先對其中一個傳送 /unwatch。`,
+    unwatched: "不再關注該資金池。為它儲存的內容已從伺服器刪除，七天內也會從加密備份中消失。",
+    notWatched: "這個對話沒有關注該資金池。/watches 列出它關注的資金池。",
+    watchesNone: "這個對話沒有關注任何資金池。傳送 /watch 並附上一個資金池即可開始。",
+    watchesHeading: (count: string) => `這個對話關注的資金池（${count}），各附上一次告知的區間：`,
+    watchesItem: (pair: string, protocol: string, fee: string, told: string) => `${pair}（${protocol}，${fee}）：${told}`,
     left: (pair: string, protocol: string, range: string) =>
       `⚠️ ${pair}（${protocol}）已離開它的區間：${range}。在價格回來之前，它只持有一種代幣，什麼也賺不到。`,
     leftFeeYield: (rate: string) =>

@@ -35,19 +35,35 @@ describe("the bot's profile fits what Telegram accepts", () => {
   });
 
   it.each([
+    ["DESC_EN", /\/watch.*the pool and the range last told/s],
+    ["DESC_TR", /\/watch.*havuzu ve son aralığı/s],
+  ])("%s says what a pool watch keeps, and that /watch needs no address", (name, words) => {
+    expect(quoted(name)).toMatch(words);
+    expect(quoted(name)).toMatch(/no address needed|adres gerekmeden/);
+  });
+
+  /* A single-quoted shell string ends at the first apostrophe: "a pool's range" would end the description there. */
+  it.each(["DESC_EN", "DESC_TR", "SHORT_EN", "SHORT_TR"])("%s carries no apostrophe", (name) => {
+    expect(quoted(name)).not.toContain("'");
+  });
+
+  it.each([
     ["DESC_EN", /leave.*paid in range.*re-centre/s],
     ["DESC_TR", /çıkınca havuzun.*aralıkta ödediğini.*yeniden ortalamanın takas komisyonunu/s],
   ])("%s says what an alert that a position has left its range adds", (name, words) => {
     expect(quoted(name)).toMatch(words);
   });
 
-  it("lists /weekly among the commands, in every language the menu is set in", () => {
+  it("lists /weekly and the pool-watch commands among the commands, in every language the menu is set in", () => {
     const menus = [...script.matchAll(/'commands=(\[[^']*\])'/g)].map((match) => JSON.parse(match[1] ?? "[]") as { command: string; description: string }[]);
 
     expect(menus).toHaveLength(2);
     for (const menu of menus) {
-      expect(menu.map(({ command }) => command)).toEqual(["start", "smart", "weekly", "stop"]);
-      for (const { description } of menu) expect(description.length).toBeLessThanOrEqual(256);
+      expect(menu.map(({ command }) => command)).toEqual(["start", "watch", "unwatch", "watches", "smart", "weekly", "stop"]);
+      for (const { description } of menu) {
+        expect(description.length).toBeLessThanOrEqual(256);
+        expect(description.length).toBeGreaterThanOrEqual(3);
+      }
     }
   });
 });

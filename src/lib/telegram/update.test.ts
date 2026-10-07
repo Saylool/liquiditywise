@@ -29,6 +29,21 @@ describe("readCommand", () => {
     expect(readCommand("/weeklydigest")).toEqual({ kind: "other" });
   });
 
+  it("reads /watch and /unwatch with whatever follows them, chain and pool in either order, and /watches alone", () => {
+    expect(readCommand("/watch 0xabc")).toEqual({ kind: "watch", argument: "0xabc" });
+    expect(readCommand("/watch base 0xabc")).toEqual({ kind: "watch", argument: "base 0xabc" });
+    expect(readCommand("/unwatch 0xabc   base ")).toEqual({ kind: "unwatch", argument: "0xabc   base" });
+    expect(readCommand("/WATCH@SomeBot 0xabc")).toEqual({ kind: "watch", argument: "0xabc" });
+    expect(readCommand("/watch")).toEqual({ kind: "watch", argument: null });
+    expect(readCommand("/watches")).toEqual({ kind: "watches" });
+    expect(readCommand("/watchers")).toEqual({ kind: "other" });
+  });
+
+  it("still reads no other command with two words after it", () => {
+    expect(readCommand("/stop now please")).toBeNull();
+    expect(readCommand("/watches all of them")).toBeNull();
+  });
+
   it("reads /stop, with or without the bot's name", () => {
     expect(readCommand("/stop")).toEqual({ kind: "stop" });
     expect(readCommand("/stop@SomeBot")).toEqual({ kind: "stop" });

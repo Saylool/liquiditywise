@@ -8,9 +8,13 @@ import { localePath } from "../i18n/localePath";
 import { SITE_URL } from "../site/indexing";
 import { type LeftRangeLines, NO_LINES, type RecentreCost } from "./leftRange";
 import type { PositionChange } from "./positionChanges";
+import type { PoolRangeReading, PriceRange } from "./poolRangeShift";
+import type { PoolWatch } from "./poolWatches";
+import { poolWatchWords } from "./poolWatchCommand";
 import type { SmartShift } from "./smartShift";
 import type { RangeMove, WeeklyDigest } from "./weeklyDigest";
 import { chainOf } from "../chains/chains";
+import { DEFAULT_PRICE_BAND_PARAMETERS } from "../advisor/poolRangeAnalysis";
 
 /*
  * The text of one alert, in the reader's language.
@@ -214,6 +218,95 @@ export const weeklyDigestText = (digest: WeeklyDigest, t: Dictionary, locale: Lo
     `${parts.note}\n${parts.link}`,
     parts.footer,
   ].join("\n\n");
+};
+
+/*
+ * A watched pool, named the way the position alerts name one: the pair, the
+ * protocol with its chain, and the fee — "0.05%", or the v4 page's words for
+ * a pool whose hook sets one per swap (v4.dynamicFee). Its ranges and price are written
+ * in the direction the pool page shows them, chosen from the price now, so
+ * the range told and the range it moved to are both the same way round and
+ * read beside the page.
+ */
+const poolQuote = (reading: PoolRangeReading): { readonly inverted: boolean; readonly unit: string } => {
+  const inverted = isInverted(reading.currentPrice);
+  return { inverted, unit: inverted ? `${reading.pair.token0}/${reading.pair.token1}` : `${reading.pair.token1}/${reading.pair.token0}` };
+};
+
+const poolRangeText = (reading: PoolRangeReading, range: PriceRange, locale: Locale): string => {
+  const quote = poolQuote(reading);
+  const quoted = quotedInterval(quote, { lower: range[0], upper: range[1] });
+  return `${formatPrice(quoted.lower, locale)} – ${formatPrice(quoted.upper, locale)} ${quote.unit}`;
+};
+
+const poolPriceText = (reading: PoolRangeReading, locale: Locale): string =>
+  formatPrice(poolQuote(reading).inverted ? 1 / reading.currentPrice : reading.currentPrice, locale);
+
+const poolName = (reading: PoolRangeReading, t: Dictionary, locale: Locale): { pair: string; protocol: string; fee: string } => ({
+  pair: `${reading.pair.token0}/${reading.pair.token1}`,
+  protocol: protocolOn(reading.protocol, reading.chainId),
+  fee: reading.lpFeePpm === null ? t.v4.dynamicFee : formatFeePpm(reading.lpFeePpm, locale),
+});
+
+/**
+ * The answer to `/watch`: the pool as read, the suggested range now for the
+ * default horizon and width, the price, the rule for when the chat will hear
+ * again, what is kept for it, and the footer.
+ */
+export const poolWatchedText = (reading: PoolRangeReading, t: Dictionary, locale: Locale): string => {
+  const { pair, protocol, fee } = poolName(reading, t, locale);
+  const { horizonDays, standardDeviationMultiplier } = DEFAULT_PRICE_BAND_PARAMETERS;
+
+  return [
+    t.telegram.watching(pair, protocol, fee),
+    t.telegram.watchRange(
+      poolRangeText(reading, reading.range, locale),
+      poolPriceText(reading, locale),
+      formatWhole(horizonDays, locale),
+      formatWhole(standardDeviationMultiplier, locale),
+    ),
+    `${t.telegram.watchRule}\n${t.telegram.watchKept}`,
+    t.telegram.footer,
+  ].join("\n\n");
+};
+
+/**
+ * The alert that a watched pool's suggested range has moved: the pool, the
+ * range the chat was last told and the one drawn now — in that order, with
+ * the arrow between them, as the digest writes a range then → now — the
+ * price, the note that it is a measurement, and the footer.
+ */
+export const poolRangeMovedText = (reading: PoolRangeReading, told: PriceRange, t: Dictionary, locale: Locale): string => {
+  const { pair, protocol, fee } = poolName(reading, t, locale);
+
+  return [
+    t.telegram.watchMoved(pair, protocol, fee, poolRangeText(reading, told, locale), poolRangeText(reading, reading.range, locale), poolPriceText(reading, locale)),
+    t.telegram.watchNote,
+    t.telegram.footer,
+  ].join("\n\n");
+};
+
+/**
+ * The answer to `/watches`: one line per watched pool — named from a fresh
+ * read where one could be made, and by the words `/unwatch` takes where it
+ * could not — with the range it was last told, and the words to stop each.
+ */
+export const poolWatchesText = (
+  watches: readonly { readonly watch: PoolWatch; readonly reading: PoolRangeReading | null }[],
+  t: Dictionary,
+  locale: Locale,
+): string => {
+  if (watches.length === 0) return t.telegram.watchesNone;
+
+  const lines = watches.map(({ watch, reading }) => {
+    const words = poolWatchWords(watch, chainOf(watch.chainId));
+    if (reading === null) return `• ${protocolOn(watch.protocol, watch.chainId)} ${watch.poolId}\n  /unwatch ${words}`;
+    const { pair, protocol, fee } = poolName(reading, t, locale);
+    const told = poolRangeText(reading, [watch.told.lower, watch.told.upper], locale);
+    return `• ${t.telegram.watchesItem(pair, protocol, fee, told)}\n  /unwatch ${words}`;
+  });
+
+  return [t.telegram.watchesHeading(formatWhole(watches.length, locale)), lines.join("\n"), t.telegram.footer].join("\n\n");
 };
 
 /**

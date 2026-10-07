@@ -7,7 +7,7 @@ import { LOCALES } from "../i18n/locales";
 import type { SmartPair } from "../analytics/smartLiquidity";
 import { getSmartLiquidityCopy } from "../i18n/smartLiquidityCopy";
 import type { LeftRangeLines } from "./leftRange";
-import { alertText, smartMoneyUrl, smartShiftText, weeklyDigestText } from "./messages";
+import { alertText, poolRangeMovedText, poolWatchedText, poolWatchesText, smartMoneyUrl, smartShiftText, weeklyDigestText } from "./messages";
 import type { WeeklyDigest } from "./weeklyDigest";
 
 /*
@@ -398,6 +398,133 @@ describe("the left-range lines' words", () => {
 
       for (const text of [telegram.intro, telegram.help]) {
         expect(text, locale).toMatch(/seven days|yedi gün|sieben Tage|siete días|السبعة|सात दिन|七天|семь дней|sete dias/);
+      }
+    }
+  });
+});
+
+describe("the pool watch's messages", () => {
+  /* WETH per USDC 0.0003 to 0.0005 at 0.0004: quoted USDC per WETH, 2,000 – 3,333 at 2,500. */
+  const reading = {
+    protocol: "v3" as const,
+    chainId: 1 as const,
+    poolId: `0x${"c".repeat(40)}`,
+    pair: { token0: "USDC", token1: "WETH" },
+    lpFeePpm: 500,
+    currentPrice: 0.0004,
+    range: [0.0003, 0.0005] as const,
+  };
+  const en = getDictionary("en");
+  const range = (lower: number, upper: number, locale: (typeof LOCALES)[number] = "en") =>
+    `${formatPrice(1 / upper, locale)} – ${formatPrice(1 / lower, locale)} USDC/WETH`;
+
+  it("answers /watch with the pool, the range now for the default horizon and width, the price, the rule, what is kept, and the footer", () => {
+    const text = poolWatchedText(reading, en, "en");
+
+    expect(text.startsWith(`👁 Watching USDC/WETH (Uniswap v3, ${formatFeePpm(500, "en")}).`)).toBe(true);
+    expect(text).toContain(en.telegram.watchRange(range(0.0003, 0.0005), formatPrice(2500, "en"), "30", "1"));
+    expect(text).toContain(en.telegram.watchRule);
+    expect(text).toContain(en.telegram.watchKept);
+    expect(text.endsWith(`\n\n${en.telegram.footer}`)).toBe(true);
+  });
+
+  it("names a v4 pool's hook-set fee the way the v4 page does, and the chain beside the protocol off mainnet", () => {
+    const onBase = { ...reading, protocol: "v4" as const, chainId: 8453 as const, lpFeePpm: null };
+    const text = poolWatchedText(onBase, en, "en");
+
+    expect(text).toContain(`USDC/WETH (Uniswap v4 · Base, ${en.v4.dynamicFee})`);
+  });
+
+  it("says a moved range as the range told, then the new one, then the price, and that it is a measurement", () => {
+    const text = poolRangeMovedText({ ...reading, range: [0.00033, 0.00055] }, [0.0003, 0.0005], en, "en");
+    const then = range(0.0003, 0.0005);
+    const now = range(0.00033, 0.00055);
+
+    expect(text.startsWith("📐 The suggested range for USDC/WETH (Uniswap v3, ")).toBe(true);
+    expect(text).toContain(`${then} → ${now}`);
+    expect(text).toContain(`The price is ${formatPrice(2500, "en")}`);
+    expect(text).toContain(en.telegram.watchNote);
+    expect(text.endsWith(`\n\n${en.telegram.footer}`)).toBe(true);
+  });
+
+  it("writes then → now with the arrow in Arabic too, the figures laid out left to right as the site's rule says", () => {
+    const text = poolRangeMovedText({ ...reading, range: [0.00033, 0.00055] }, [0.0003, 0.0005], getDictionary("ar"), "ar");
+    const then = range(0.0003, 0.0005, "ar");
+    const now = range(0.00033, 0.00055, "ar");
+
+    expect(text).toContain(`${then} → ${now}`);
+    expect(text.indexOf(then)).toBeLessThan(text.indexOf(now));
+    expect(text).not.toContain("←");
+    expect(text).toContain(getDictionary("ar").telegram.watchNote);
+  });
+
+  it("speaks the watch's language: Turkish, Hindi and Traditional Chinese in their own terms", () => {
+    expect(poolRangeMovedText(reading, [0.0003, 0.0005], getDictionary("tr"), "tr")).toContain("önerilen aralık kaydı");
+    expect(poolWatchedText(reading, getDictionary("hi"), "hi")).toContain("सुझाया गया दायरा");
+    expect(poolWatchedText(reading, getDictionary("zh-Hant"), "zh-Hant")).toContain("建議區間");
+  });
+
+  it("lists the watches with the range each was last told, and a pool that could not be read by its id, each with its /unwatch words", () => {
+    const watch = { chainId: 8453 as const, protocol: "v3" as const, poolId: reading.poolId, told: { lower: 0.0003, upper: 0.0005, at: "2026-10-07T09:00:00.000Z" } };
+    const text = poolWatchesText(
+      [
+        { watch, reading: { ...reading, chainId: 8453 } },
+        { watch: { ...watch, chainId: 1 }, reading: null },
+      ],
+      en,
+      "en",
+    );
+
+    expect(text.startsWith(en.telegram.watchesHeading("2"))).toBe(true);
+    expect(text).toContain(`• ${en.telegram.watchesItem("USDC/WETH", "Uniswap v3 · Base", formatFeePpm(500, "en"), range(0.0003, 0.0005))}\n  /unwatch base ${reading.poolId}`);
+    expect(text).toContain(`• Uniswap v3 ${reading.poolId}\n  /unwatch ${reading.poolId}`);
+    expect(text.endsWith(`\n\n${en.telegram.footer}`)).toBe(true);
+    expect(poolWatchesText([], en, "en")).toBe(en.telegram.watchesNone);
+  });
+});
+
+describe("the pool watch's words", () => {
+  it.each(LOCALES)("in %s, put every value in its place, use the arrow, and say how to watch, list and unwatch", (locale) => {
+    const { telegram } = getDictionary(locale);
+
+    expect(telegram.watching("PAIR", "PROTOCOL", "FEE")).toMatch(/^👁 .*PAIR.*PROTOCOL.*FEE/s);
+    expect(telegram.watchRange("RANGE", "PRICE", "DAYS", "WIDTH")).toMatch(/DAYS.*WIDTH.*RANGE.*PRICE/s);
+    const moved = telegram.watchMoved("PAIR", "PROTOCOL", "FEE", "THEN", "NOW", "PRICE");
+    expect(moved.startsWith("📐")).toBe(true);
+    expect(moved).toContain("THEN → NOW");
+    expect(moved).toMatch(/PAIR.*PROTOCOL.*FEE.*THEN → NOW.*PRICE/s);
+    expect(telegram.watchUnknownChain("WORD", "CHAINS")).toMatch(/WORD.*CHAINS/s);
+    expect(telegram.watchNotOnChain("PROTOCOL", "CHAIN")).toMatch(/PROTOCOL.*CHAIN|CHAIN.*PROTOCOL/s);
+    expect(telegram.watchFull("5")).toContain("5");
+    expect(telegram.watchesHeading("3")).toContain("3");
+    expect(telegram.watchesItem("PAIR", "PROTOCOL", "FEE", "TOLD")).toMatch(/PAIR.*PROTOCOL.*FEE.*TOLD/s);
+
+    for (const text of [telegram.watchHow, telegram.help, telegram.intro]) {
+      expect(text, locale).toContain("/watch");
+      expect(text, locale).toContain("/unwatch");
+    }
+    expect(telegram.watchHow, locale).toContain("/watches");
+    expect(telegram.watchKept, locale).toContain("/stop");
+    expect(telegram.watchKept, locale).toContain("/unwatch");
+    expect(telegram.watchesNone, locale).toContain("/watch");
+    expect(telegram.watchFull("5"), locale).toContain("/unwatch");
+  });
+
+  it("say that /unwatch deletes with the same seven days, and that a chat may watch five, in every language", () => {
+    for (const locale of LOCALES) {
+      const { telegram } = getDictionary(locale);
+      expect(telegram.unwatched, locale).toMatch(/seven days|yedi gün|sieben Tage|siete días|سبعة أيام|सात दिन|七天|семи дней|sete dias/);
+      expect(telegram.intro, locale).toMatch(/five|beş|fünf|cinco|خمسة|पाँच|五|пяти/);
+    }
+  });
+
+  it("are not left in English", () => {
+    const english = getDictionary("en").telegram;
+
+    for (const locale of LOCALES.filter((locale) => locale !== "en")) {
+      const { telegram } = getDictionary(locale);
+      for (const key of ["watchRule", "watchKept", "watchNote", "watchHow", "watchUnreadable", "unwatched", "notWatched", "watchesNone"] as const) {
+        expect(telegram[key], `${locale} ${key}`).not.toBe(english[key]);
       }
     }
   });
