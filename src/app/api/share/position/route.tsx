@@ -8,6 +8,7 @@ import { type PositionCardText, positionCardText } from "@/lib/share/positionCar
 import { readPositionCard } from "@/lib/share/readPositionCard";
 import { readShareRequest } from "@/lib/share/shareRequest";
 import { SHARE_CARD_CACHE, shareFailureResponse } from "@/lib/share/shareResponses";
+import { visualOrder } from "@/lib/share/visualOrder";
 
 /*
  * The card a holder shares about one open v3 position: the pair, its range,
@@ -59,8 +60,15 @@ const Label = ({ children }: { children: string }) => (
 
 /** The whole card, laid out with flex alone: the renderer draws nothing else. */
 const Card = ({ text, locale }: { text: PositionCardText; locale: Locale }) => {
+  const rtl = directionOf(locale) === "rtl";
+  /*
+   * Every line of words passes through `w`: on a right-to-left card that
+   * puts them in the order the renderer must draw them (see visualOrder.ts),
+   * elsewhere it is the identity. The pair is Latin and needs none of it.
+   */
+  const w = rtl ? visualOrder : (line: string) => line;
   const pair = text.kind === "record" ? text.figures.pair : text.pair;
-  const detail = text.kind === "record" ? text.figures.detail : text.detail;
+  const detail = w(text.kind === "record" ? text.figures.detail : text.detail);
 
   return (
     <div
@@ -75,6 +83,7 @@ const Card = ({ text, locale }: { text: PositionCardText; locale: Locale }) => {
         color: FOREGROUND,
         fontFamily: "Geist",
         direction: directionOf(locale),
+        textAlign: rtl ? "right" : "left",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -84,7 +93,7 @@ const Card = ({ text, locale }: { text: PositionCardText; locale: Locale }) => {
           <img src={MARK} width={64} height={64} alt="" />
           <div style={{ display: "flex", fontSize: 36, fontWeight: 600, letterSpacing: -1 }}>LiquidityWise</div>
         </div>
-        <div style={{ display: "flex", fontSize: 24, color: MUTED, maxWidth: 620, textAlign: "end" }}>{text.title}</div>
+        <div style={{ display: "flex", fontSize: 24, color: MUTED, maxWidth: 620, textAlign: "end" }}>{w(text.title)}</div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -98,19 +107,19 @@ const Card = ({ text, locale }: { text: PositionCardText; locale: Locale }) => {
             {/* Two figures side by side, each in half the width, so neither can push the other off the card. */}
             <div style={{ display: "flex", gap: 48 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, width: 504 }}>
-                <Label>{text.labels.range}</Label>
-                <div style={{ display: "flex", fontFamily: MONO, fontSize: 30 }}>{text.figures.range}</div>
+                <Label>{w(text.labels.range)}</Label>
+                <div style={{ display: "flex", fontFamily: MONO, fontSize: 30 }}>{w(text.figures.range)}</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, width: 504 }}>
-                <Label>{text.labels.fees}</Label>
-                <div style={{ display: "flex", fontFamily: MONO, fontSize: 30 }}>{text.figures.fees}</div>
+                <Label>{w(text.labels.fees)}</Label>
+                <div style={{ display: "flex", fontFamily: MONO, fontSize: 30 }}>{w(text.figures.fees)}</div>
               </div>
             </div>
             {/* The result across the whole width, its two parts under it with room to wrap. */}
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <Label>{text.labels.against}</Label>
-              <div style={{ display: "flex", fontFamily: MONO, fontSize: 48 }}>{text.figures.result}</div>
-              <div style={{ display: "flex", width: "100%", fontFamily: MONO, fontSize: 24, color: MUTED, lineHeight: 1.3 }}>{text.figures.parts}</div>
+              <Label>{w(text.labels.against)}</Label>
+              <div style={{ display: "flex", fontFamily: MONO, fontSize: 48 }}>{w(text.figures.result)}</div>
+              <div style={{ display: "flex", width: "100%", fontFamily: MONO, fontSize: 24, color: MUTED, lineHeight: 1.3 }}>{w(text.figures.parts)}</div>
             </div>
           </div>
         ) : (
@@ -127,7 +136,7 @@ const Card = ({ text, locale }: { text: PositionCardText; locale: Locale }) => {
               color: MUTED,
             }}
           >
-            {text.message}
+            {w(text.message)}
           </div>
         )}
       </div>
@@ -135,12 +144,12 @@ const Card = ({ text, locale }: { text: PositionCardText; locale: Locale }) => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 24 }}>
         {text.kind === "record" ? (
           <div style={{ display: "flex", padding: "10px 22px", borderRadius: 999, background: SURFACE, color: ACCENT, fontFamily: MONO }}>
-            {text.since}
+            {w(text.since)}
           </div>
         ) : (
           <div style={{ display: "flex" }} />
         )}
-        <div style={{ display: "flex", color: MUTED }}>{text.footer}</div>
+        <div style={{ display: "flex", color: MUTED }}>{w(text.footer)}</div>
       </div>
     </div>
   );

@@ -43,6 +43,15 @@ export const CARD_FONT_FILES: readonly { readonly name: string; readonly file: s
   { name: "Geist", file: "Geist-Regular.ttf" },
   { name: "Geist Mono", file: "GeistMono-Regular.ttf" },
   { name: "Instrument Serif", file: "InstrumentSerif-Regular.ttf" },
+  /*
+   * For the Arabic card. Without a face of its own the renderer fetches
+   * Noto from Google at request time, and that face carries a GSUB lookup
+   * its parser refuses ("lookupType 5, substFormat 3"): every Arabic card
+   * was a 502 on 2026-10-07. IBM Plex Sans Arabic (OFL, beside it) parses,
+   * joins its letters, and is never asked for by family — the renderer falls
+   * back to it for the glyphs the other three lack.
+   */
+  { name: "IBM Plex Sans Arabic", file: "IBMPlexSansArabic-Regular.ttf" },
 ];
 
 const FONTS_DIRECTORY = join("src", "app", "fonts");

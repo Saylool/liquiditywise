@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { visualOrder } from "@/lib/share/visualOrder";
+
 vi.mock("server-only", () => ({}));
 
 /*
@@ -115,9 +117,23 @@ describe("what the share card says", () => {
     expect(markup).not.toContain("2024-05-01");
   });
 
-  it("is drawn in the site's own three faces", async () => {
+  /*
+   * The renderer lays every line out left to right and knows no bidi, so an
+   * Arabic card's words are handed to it already in drawing order (see
+   * lib/share/visualOrder.ts): the footer's last word first.
+   */
+  it("hands an Arabic card its words in drawing order, not reading order", async () => {
+    const markup = await words("/api/share/position?id=1112391&lang=ar");
+    const footer = "قياس من liquiditywise.com · ليس نصيحة";
+
+    expect(markup).toContain(visualOrder(footer));
+    expect(markup).not.toContain(footer);
+    expect(visualOrder(footer)).not.toBe(footer);
+  });
+
+  it("is drawn in the site's own three faces, and an Arabic face the renderer can parse for the glyphs they lack", async () => {
     await words("/api/share/position?id=1112391");
 
-    expect(drawn.fonts).toEqual(["Geist", "Geist Mono", "Instrument Serif"]);
+    expect(drawn.fonts).toEqual(["Geist", "Geist Mono", "Instrument Serif", "IBM Plex Sans Arabic"]);
   });
 });
