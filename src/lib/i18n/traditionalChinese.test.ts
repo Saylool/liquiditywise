@@ -14,6 +14,7 @@ import { getMostTradedCopy } from "./mostTradedCopy";
 import { getPairPoolsCopy } from "./pairPoolsCopy";
 import { getPositionOutlookCopy } from "./positionOutlookCopy";
 import { getPositionRecordCopy } from "./positionRecordCopy";
+import { getRecentCopy } from "./recentCopy";
 import { getRecentringCopy } from "./recentringCopy";
 import { getSmartLiquidityCopy } from "./smartLiquidityCopy";
 import { getWeeklyCopy } from "./weeklyCopy";
@@ -144,6 +145,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     pairPools: getPairPoolsCopy,
     positionOutlook: getPositionOutlookCopy,
     positionRecord: getPositionRecordCopy,
+    recent: getRecentCopy,
     recentring: getRecentringCopy,
     smartLiquidity: getSmartLiquidityCopy,
     weekly: getWeeklyCopy,

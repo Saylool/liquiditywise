@@ -5,6 +5,7 @@ import { LiquidityHero } from "@/components/LiquidityHero";
 import { PageMotion } from "@/components/PageMotion";
 import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { RangeExplorer } from "@/components/RangeExplorer";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { WalletConnect } from "@/components/WalletConnect";
 import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { localePath } from "@/lib/i18n/localePath";
@@ -78,6 +79,12 @@ export default async function Home() {
             {getMostTradedCopy(locale).link}
             <ArrowIcon />
           </Link>
+          {/*
+           * What this reader last opened, from their own browser's storage —
+           * drawn after hydration, so the HTML sent is the same for everyone
+           * and nothing about a reader is on the server (components/RecentlyViewed).
+           */}
+          <RecentlyViewed locale={locale} placement="home" words={{ mainnet: copy.chain, dynamicFee: t.v4.dynamicFee }} />
         </div>
       </section>
       <section className="landing-section most-traded-section">

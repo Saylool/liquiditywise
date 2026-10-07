@@ -7,6 +7,8 @@ import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { PoolFeeTiersPending } from "@/components/PoolFeeTiers";
 import { PoolLookupForm } from "@/components/PoolLookupForm";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
+import { RecentlyViewed, type RecentWords } from "@/components/RecentlyViewed";
+import { RememberVisit } from "@/components/RememberVisit";
 import { PoolSearchPending } from "@/components/PoolSearchResults";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { V4PoolSearchPending } from "@/components/V4PoolSearchResults";
@@ -33,6 +35,7 @@ import {
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { type Chain, ETHEREUM, readsV3, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
+import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { getPairPoolsCopy } from "@/lib/i18n/pairPoolsCopy";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
@@ -123,6 +126,13 @@ export default async function PoolRangePage({
   const { locale, t } = await getRequestDictionary();
   const params = await searchParams;
   const chainCopy = getChainCopy(locale);
+  /*
+   * Under the box on every branch that has one: the pools this reader last
+   * opened, from their own browser (components/RecentlyViewed). The two words
+   * the list needs from the dictionary go with it as strings.
+   */
+  const recentWords: RecentWords = { mainnet: getInterfaceCopy(locale).chain, dynamicFee: t.v4.dynamicFee };
+  const recently = <RecentlyViewed locale={locale} placement="lookup" words={recentWords} />;
 
   /*
    * The chain first: the same address on the wrong chain is a different pool
@@ -188,6 +198,22 @@ export default async function PoolRangePage({
     return (
       <Shell locale={locale} t={t} chain={chain}>
         <PoolLookupForm t={t} value={address.data} network={network} />
+        {recently}
+        {/* Remembered in the reader's browser only once the pool was read: a failed read is no place to go back to. */}
+        {result.status === "unavailable" || result.data.pool.protocolVersion !== "v3" ? null : (
+          <RememberVisit
+            visit={{
+              kind: "pool",
+              pool: {
+                protocol: "v3",
+                chain: chain.slug,
+                id: address.data,
+                pair: `${result.data.pool.token0.symbol} / ${result.data.pool.token1.symbol}`,
+                feePpm: result.data.pool.feePpm,
+              },
+            }}
+          />
+        )}
         <PoolRangeReport
           result={result}
           poolId={address.data}
@@ -291,6 +317,7 @@ export default async function PoolRangePage({
     return (
       <Shell locale={locale} t={t} chain={chain}>
         <PoolLookupForm t={t} network={network} />
+        {recently}
       </Shell>
     );
   }
@@ -336,6 +363,7 @@ export default async function PoolRangePage({
     <Shell locale={locale} t={t} chain={chain}>
       {/* The validated terms, not the raw string — which may have held a third. */}
       <PoolLookupForm t={t} value={input.terms.join(" ")} network={network} />
+      {recently}
       {/*
        * Streamed, because a search now asks the chain what each candidate holds
        * — the figure the order rests on — and that is several batched calls. The

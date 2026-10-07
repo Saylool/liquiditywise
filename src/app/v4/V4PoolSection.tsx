@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { PoolExplanationPending } from "@/components/PoolExplanation";
 import { EmbedPoolSnippet } from "@/components/EmbedPoolSnippet";
 import { PoolRangeReport } from "@/components/PoolRangeReport";
+import { RememberVisit } from "@/components/RememberVisit";
 import { V4PairPanelPending } from "@/components/V4PairPanel";
 import { V4PoolIdentity } from "@/components/V4PoolIdentity";
 import { HookCheckSection } from "@/app/hooks/HookCheckSection";
@@ -88,6 +89,26 @@ export async function V4PoolSection({
   return (
     <>
       <V4PoolIdentity result={pool} t={t} locale={locale} hookCheck={hookCheck} />
+
+      {/*
+       * Remembered in the reader's browser once the pool was read, with the
+       * fee as the identity card shows it: a figure for a declared tier, none
+       * for one a hook sets per swap or one that could not be read.
+       */}
+      {pool.status === "unavailable" ? null : (
+        <RememberVisit
+          visit={{
+            kind: "pool",
+            pool: {
+              protocol: "v4",
+              chain: chainById(chainId).slug,
+              id: poolId,
+              pair: `${pool.data.token0.symbol} / ${pool.data.token1.symbol}`,
+              feePpm: pool.data.fee.kind === "static" ? pool.data.fee.feePpm : null,
+            },
+          }}
+        />
+      )}
 
       {/*
        * Only when the pool was read at all. An id nobody initialised has no

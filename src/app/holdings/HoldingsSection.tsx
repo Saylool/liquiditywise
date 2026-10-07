@@ -1,9 +1,10 @@
 import { AddressHoldings } from "@/components/AddressHoldings";
+import { RememberVisit } from "@/components/RememberVisit";
 import { getAddressHoldings } from "@/lib/advisor/getAddressHoldings";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import type { EvmAddress, PriceBandParameters } from "@/schemas";
-import type { ChainId } from "@/lib/chains/chains";
+import { chainById, type ChainId } from "@/lib/chains/chains";
 
 /**
  * Reads one address's holdings.
@@ -31,13 +32,23 @@ export async function HoldingsSection({
   const result = await getAddressHoldings(address, chainId);
 
   return (
-    <AddressHoldings
-      result={result}
-      parameters={parameters}
-      chainId={chainId}
-      t={t}
-      locale={locale}
-    />
+    <>
+      {/*
+       * Remembered in the reader's browser — and only there — once the sweep
+       * answered: the address, the chain and when, for the front page's way
+       * back here. The server keeps nothing of it (components/RememberVisit).
+       */}
+      {result.status === "unavailable" ? null : (
+        <RememberVisit visit={{ kind: "address", address: { chain: chainById(chainId).slug, address } }} />
+      )}
+      <AddressHoldings
+        result={result}
+        parameters={parameters}
+        chainId={chainId}
+        t={t}
+        locale={locale}
+      />
+    </>
   );
 }
 

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { BandParametersForm } from "@/components/BandParametersForm";
 import { PoolLookupForm } from "@/components/PoolLookupForm";
+import { RecentlyViewed, type RecentWords } from "@/components/RecentlyViewed";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import {
   HORIZON_PARAMETER,
@@ -21,6 +22,7 @@ import {
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { type Chain, ETHEREUM, readsV4 } from "@/lib/chains/chains";
 import { getChainCopy } from "@/lib/i18n/chainCopy";
+import { getInterfaceCopy } from "@/lib/i18n/interface";
 import { getRangePreferences } from "@/lib/advisor/requestRangePreferences";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
@@ -97,6 +99,9 @@ export default async function V4PoolPage({
   const { locale, t } = await getRequestDictionary();
   const params = await searchParams;
   const chainCopy = getChainCopy(locale);
+  /* Under the box, as on the v3 page: what this reader last opened, from their own browser. */
+  const recentWords: RecentWords = { mainnet: getInterfaceCopy(locale).chain, dynamicFee: t.v4.dynamicFee };
+  const recently = <RecentlyViewed locale={locale} placement="lookup" words={recentWords} />;
 
   /*
    * The chain first, as on the v3 page: the same id on another chain is
@@ -137,6 +142,7 @@ export default async function V4PoolPage({
         <p className="text-sm leading-relaxed text-muted">
           {requested === undefined ? t.v4.noId : t.v4.invalidId}
         </p>
+        {recently}
       </Shell>
     );
   }
@@ -145,6 +151,7 @@ export default async function V4PoolPage({
     <Shell locale={locale} t={t} chain={chain}>
       {/* The one box, as on the pool page: a v4 id goes back in it and reads as one. */}
       <PoolLookupForm t={t} value={poolId.data} network={network} />
+      {recently}
       <Suspense fallback={<V4PoolPending t={t} />}>
         <V4PoolSection
           poolId={poolId.data}

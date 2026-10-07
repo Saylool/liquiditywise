@@ -584,6 +584,95 @@ main:focus {
   border-color: var(--accent);
   transform: translateY(-1px);
 }
+/*
+ * What the reader last opened (components/RecentlyViewed): a row of chips
+ * like the pair shortcuts, with a heading and the forget control on one line
+ * above. Each chip wraps inside itself — pair, fee, network and date are
+ * separate spans with no fixed width — so at 375px a long pair breaks onto a
+ * second line instead of the chip overflowing the column and being clipped.
+ */
+.recent-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+  min-width: 0;
+}
+.recent-lookup {
+  margin-top: 0;
+}
+.recent-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+}
+.recent-head .eyebrow {
+  margin: 0;
+}
+.recent-forget {
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-strong);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.recent-forget:hover {
+  color: var(--accent);
+}
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.recent-list li {
+  min-width: 0;
+  max-width: 100%;
+}
+.recent-list a {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 7px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--foreground);
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.recent-list a:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.recent-list a > span:not(.recent-label) {
+  color: var(--muted);
+}
+.recent-label {
+  font-weight: 500;
+}
+.recent-when {
+  color: var(--subtle);
+  font-size: 11px;
+}
+.recent-note {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+  max-width: 60ch;
+}
 .token-pair {
   display: inline-flex;
 }
