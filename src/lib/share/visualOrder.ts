@@ -25,9 +25,12 @@ const LTR = /[A-Za-z0-9À-ɏ]/;
 
 export type Run = { readonly dir: "rtl" | "ltr"; readonly text: string };
 
+/* The direction marks the site's formatters wrap figures in for the browser: the renderer has no glyph for them and drew a box. */
+const DIRECTION_MARKS = /[\u200E\u200F]/g;
+
 export const lineRuns = (line: string): readonly Run[] => {
   const runs: { dir: Run["dir"] | "neutral"; words: string[] }[] = [];
-  for (const word of line.split(" ").filter((part) => part !== "")) {
+  for (const word of line.replace(DIRECTION_MARKS, "").split(" ").filter((part) => part !== "")) {
     const dir = RTL.test(word) ? "rtl" : LTR.test(word) ? "ltr" : "neutral";
     const last = runs[runs.length - 1];
     /* An Arabic word is a run of its own; Latin words join the Latin run before them; a neutral joins whatever came before. */

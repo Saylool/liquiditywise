@@ -23,6 +23,10 @@ describe("the runs of a right-to-left card line", () => {
     expect(texts("قياس من liquiditywise.com · ليس نصيحة")).toEqual(["rtl:قياس", "rtl:من", "ltr:liquiditywise.com ·", "rtl:ليس", "rtl:نصيحة"]);
   });
 
+  it("drops the direction marks the formatters wrap figures in, which the renderer drew as boxes", () => {
+    expect(texts("الرسوم +9,810.24\u200e%\u200e وأثر")).toEqual(["rtl:الرسوم", "ltr:+9,810.24%", "rtl:وأثر"]);
+  });
+
   it("makes one Latin run of a Latin line, one run of one word, and none of nothing", () => {
     expect(texts("1,948.91 – 5,502.58 USDC")).toEqual(["ltr:1,948.91 – 5,502.58 USDC"]);
     expect(texts("النطاق")).toEqual(["rtl:النطاق"]);
