@@ -31,6 +31,10 @@ import {
   type DataWarningNotice,
   groupedHookPermissions,
 } from "../../../schemas";
+import {
+  TOKEN_A_PLACEHOLDER,
+  TOKEN_B_PLACEHOLDER,
+} from "../../../schemas/tokenPlaceholders";
 import { BASE_INSTRUCTION } from "./base";
 
 /*
@@ -42,10 +46,25 @@ import { BASE_INSTRUCTION } from "./base";
  *
  * **No text a stranger wrote ever reaches this prompt.** The only thing a
  * visitor supplies is a pool address, and it has already passed a strict hex
- * pattern before any read happens; everything else here was produced by this
- * application's own code. There is no free-text field, no fetched description,
- * no token name from an arbitrary contract — and therefore no opening for
- * prompt injection to arrive through the data.
+ * pattern before any read happens. There is no free-text field and no fetched
+ * description.
+ *
+ * This paragraph used to end there, and it was wrong: every token's symbol was
+ * in the brief — in the pair, in every price, in the token held past each
+ * edge — and a symbol is whatever the token's deployer typed. A ticker of
+ * "IGNORE PREVIOUS INSTRUCTIONS" passes the label schema, which can refuse a
+ * control character but not a sentence, and it would have arrived a dozen
+ * times over among the lines the model takes its brief from. An external
+ * security review found it.
+ *
+ * So the analysis is masked before a line is written: each token's symbol is
+ * replaced by its placeholder and its name dropped ({@link withoutTokenLabels}),
+ * and every block below reads the masked copy. Masking at the root rather than
+ * at each `.symbol` means a block added later cannot forget to — it never has
+ * a symbol to leak. The model writes the placeholders back, and the symbols
+ * are put in by plain code after its answer has passed every rule
+ * (`tokenSymbols.ts`). What remains here was produced by this application's
+ * own code, or by its own dictionaries.
  *
  * The figures are rendered with the *interface's own formatters*, in the
  * reader's language, and every price the same way round the page writes it —
@@ -149,6 +168,36 @@ const TERMINOLOGY: Record<Locale, readonly string[]> = {
     'the suggested range: "aralık"',
     'the price band it was derived from: "bant"',
   ],
+};
+
+/**
+ * The analysis with every label a token's author wrote taken out: the symbol
+ * replaced by the placeholder the model is to write, the name removed.
+ *
+ * Only `pool` carries tokens; every other stage of the analysis is figures,
+ * ticks and dates this application computed. A test builds the prompt from an
+ * analysis whose every `symbol` and `name`, wherever it sits, is an injection
+ * attempt, and checks none of it arrives — so a stage that starts carrying a
+ * token later is caught there rather than trusted here.
+ */
+export const withoutTokenLabels = (analysis: PoolRangeAnalysis): PoolRangeAnalysis => {
+  const { pool } = analysis;
+
+  return {
+    ...analysis,
+    pool: {
+      ...pool,
+      token0: maskedToken(pool.token0, TOKEN_A_PLACEHOLDER),
+      token1: maskedToken(pool.token1, TOKEN_B_PLACEHOLDER),
+    },
+  };
+};
+
+/** One token with its symbol replaced and its name gone; every other field kept. */
+const maskedToken = <T extends { readonly symbol: string }>(token: T, placeholder: string): T => {
+  const masked = { ...token, symbol: placeholder };
+  Reflect.deleteProperty(masked, "name");
+  return masked;
 };
 
 /** One labelled figure. A list of these is easier for a model to hold than JSON. */
@@ -727,7 +776,9 @@ export type RangeInterpretationPromptInput = {
 export const buildRangeInterpretationPrompt = (
   input: RangeInterpretationPromptInput,
 ): RangeInterpretationPrompt => {
-  const { analysis, locale, warnings } = input;
+  const { locale, warnings } = input;
+  /* Masked first, so no block below ever holds a symbol; see the top of this file. */
+  const analysis = withoutTokenLabels(input.analysis);
   const terminology = TERMINOLOGY[locale];
   const hookLines = describeHook(analysis, locale);
   const rangeOrderLines = describeRangeOrders(analysis, locale);
@@ -761,6 +812,7 @@ export const buildRangeInterpretationPrompt = (
           "CAVEATS",
           warnings.map((warning) => `- ${getDictionary(locale).notices.warning[warning]}`),
         ),
+    `The two tokens are called ${TOKEN_A_PLACEHOLDER} and ${TOKEN_B_PLACEHOLDER} throughout. Write them exactly so, braces included, wherever you name a token.`,
     `Explain these figures in four parts: what the suggested range means, what happens if price leaves it, what the volatility figure is saying, and what this analysis does not cover. Remember that you may not write any number.`,
   ];
 

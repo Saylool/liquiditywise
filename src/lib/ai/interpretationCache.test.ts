@@ -5,6 +5,7 @@ import {
   createInterpretationCache,
   digestInstruction,
   type InterpretationCacheKeyInput,
+  INTERPRETATION_CONTRACT,
   interpretationCacheKey,
 } from "./interpretationCache";
 
@@ -24,9 +25,16 @@ const analysis = (overrides: {
   poolId?: string;
   chainId?: number;
   currentPrice?: number;
+  symbol0?: string;
+  symbol1?: string;
 } = {}) =>
   ({
-    pool: { chainId: overrides.chainId ?? 1, id: overrides.poolId ?? `0x${"c".repeat(40)}` },
+    pool: {
+      chainId: overrides.chainId ?? 1,
+      id: overrides.poolId ?? `0x${"c".repeat(40)}`,
+      token0: { symbol: overrides.symbol0 ?? "USDC" },
+      token1: { symbol: overrides.symbol1 ?? "WETH" },
+    },
     range: {
       lowerTick: overrides.lowerTick ?? 195_960,
       upperTick: overrides.upperTick ?? 200_010,
@@ -79,6 +87,8 @@ describe("interpretationCacheKey", () => {
     ["another model", { model: "gpt-5.6-terra" }],
     ["an edited instruction", { instruction: "Standing rules, revised." }],
     ["a caveat that now applies", { warnings: ["history-window-incomplete"] as const }],
+    ["a token whose symbol now reads differently", { analysis: analysis({ symbol0: "USDC.e" }) }],
+    ["the other token renamed", { analysis: analysis({ symbol1: "ETH" }) }],
   ])("changes for %s", (_label, overrides) => {
     expect(key(overrides)).not.toBe(key());
   });
@@ -95,6 +105,41 @@ describe("interpretationCacheKey", () => {
       key({ warnings: ["history-window-incomplete", "block-time-unreported"] }),
     );
     expect(key({ warnings: ["block-time-unreported"] })).not.toBe(key({ warnings: [] }));
+  });
+
+  /*
+   * Prose written before the placeholders named tokens from symbols the model
+   * should never have seen, and was never held to the advice rule. The
+   * instruction's digest would have moved anyway; the contract is named in the
+   * key as well, because the brief and the rules can change while the
+   * instruction stays word for word the same — and an entry from before must
+   * then miss, not be served beside prose written under the new rules.
+   */
+  it("names the contract the prose was written under", () => {
+    expect(INTERPRETATION_CONTRACT).toBe("token-placeholders");
+    expect(JSON.parse(key())[0]).toBe(INTERPRETATION_CONTRACT);
+  });
+
+  it("misses every entry written under the contract before the placeholders", () => {
+    /* The key exactly as it was built before this contract existed. */
+    const { pool, range, parameters } = analysis();
+    const before = JSON.stringify([
+      digestInstruction("Standing rules."),
+      "gpt-5.6-luna",
+      "en",
+      pool.chainId,
+      pool.id,
+      range.lowerTick,
+      range.upperTick,
+      range.containsCurrentPrice,
+      range.lowerBoundTruncated,
+      range.upperBoundTruncated,
+      parameters.horizonDays,
+      parameters.standardDeviationMultiplier,
+      [],
+    ]);
+
+    expect(key()).not.toBe(before);
   });
 });
 

@@ -45,6 +45,23 @@ export const digestInstruction = (instruction: string): string => {
   return (hash >>> 0).toString(36);
 };
 
+/**
+ * Which contract the cached prose was written under, beyond the wording of
+ * the instruction.
+ *
+ * The digest above follows the standing instruction, and that alone would
+ * have changed when the placeholders arrived. It is not the whole contract,
+ * though: the brief the model reads and the checks its answer passes live
+ * elsewhere, and either can change while the instruction stays word for word
+ * the same. Prose written before the placeholders named the tokens however
+ * the model chose to, from symbols it should never have been shown, and none
+ * of it was held to the advice rule — so none of it may be served beside
+ * prose that was. Named rather than numbered, so a key read in a log says
+ * which contract it belongs to. Change it whenever the shape of the brief or
+ * the rules on the answer change and the instruction does not.
+ */
+export const INTERPRETATION_CONTRACT = "token-placeholders";
+
 export type InterpretationCacheKeyInput = {
   readonly analysis: PoolRangeAnalysis;
   readonly warnings: readonly DataWarningNotice[];
@@ -64,6 +81,7 @@ export const interpretationCacheKey = (input: InterpretationCacheKeyInput): stri
   const { pool, range, parameters } = analysis;
 
   return JSON.stringify([
+    INTERPRETATION_CONTRACT,
     digestInstruction(instruction),
     model,
     locale,
@@ -76,6 +94,14 @@ export const interpretationCacheKey = (input: InterpretationCacheKeyInput): stri
     range.upperBoundTruncated,
     parameters.horizonDays,
     parameters.standardDeviationMultiplier,
+    /*
+     * What is kept is display text, with the symbols already put in for the
+     * placeholders (see `tokenSymbols.ts`), so the symbols are part of what
+     * the kept prose says. A pool's address fixes its tokens, but not what a
+     * token's contract answers when asked its symbol.
+     */
+    pool.token0.symbol,
+    pool.token1.symbol,
     // Which caveats apply changes what the last section has to say.
     warnings,
   ]);
