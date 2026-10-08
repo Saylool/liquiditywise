@@ -2,7 +2,14 @@
 # Lets only Cloudflare reach liquiditywise.com. Run as root; nginx-site.sh
 # runs it once the certificate is in place, and cron runs it weekly:
 #
-#   bash /opt/liquiditywise/deploy/cloudflare-only.sh
+#   bash /usr/local/lib/liquiditywise/cloudflare-only.sh
+#
+# That is a root-owned copy, with cloudflare_only.py beside it, which setup.sh
+# installs from the checkout on every deploy. Root runs this, so root must not
+# run the checkout's own file — the application user can write that — and the
+# Python it runs is the one next to whichever copy this is, started with -I so
+# that nothing from the environment, the working directory or a user
+# site-packages is imported either.
 #
 # Why. The site sits behind Cloudflare, and nginx hands the application the
 # visitor's address from the CF-Connecting-IP header, which is what the rate
@@ -40,11 +47,11 @@ patched="$(mktemp "$OUT.site.XXXXXX")"
 trap 'rm -f "$next" "$patched"' EXIT
 
 # The list, checked range by range.
-curl -sS --fail -m 30 "$SOURCE" | python3 "$HERE/cloudflare_only.py" allow-list > "$next"
+curl -sS --fail -m 30 "$SOURCE" | python3 -I "$HERE/cloudflare_only.py" allow-list > "$next"
 
 # The site file as it should be. Written to a scratch file; the real one is
 # untouched until the list is in place too.
-python3 "$HERE/cloudflare_only.py" patch-site "$SITE" "$OUT" > "$patched"
+python3 -I "$HERE/cloudflare_only.py" patch-site "$SITE" "$OUT" > "$patched"
 
 list_changed=1; [ -f "$OUT" ] && cmp -s "$next" "$OUT" && list_changed=0
 site_changed=1; cmp -s "$patched" "$SITE" && site_changed=0

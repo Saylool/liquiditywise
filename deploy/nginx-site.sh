@@ -16,6 +16,11 @@ DOMAIN="liquiditywise.com"
 SITE="/etc/nginx/sites-available/$DOMAIN"
 LINK="/etc/nginx/sites-enabled/$DOMAIN"
 EMAIL="${CERTBOT_EMAIL:-sametgoc81tr@gmail.com}"
+# The root-owned copy setup.sh installs, the one cron runs, rather than the
+# file in the checkout, which the application user can write. The checkout's
+# only if setup.sh has not run yet.
+CLOUDFLARE_ONLY="/usr/local/lib/liquiditywise/cloudflare-only.sh"
+[ -f "$CLOUDFLARE_ONLY" ] || CLOUDFLARE_ONLY="$APP_DIR/deploy/cloudflare-only.sh"
 
 command -v nginx >/dev/null || { echo "nginx is not installed on this machine."; exit 1; }
 
@@ -39,7 +44,7 @@ if [ -f "$SITE" ] && grep -q "ssl_certificate" "$SITE"; then
   echo "To rebuild it from the repository: rm $SITE and run this again."
   nginx -t && systemctl reload nginx
   # Only Cloudflare may reach the HTTPS block; see cloudflare-only.sh.
-  bash "$APP_DIR/deploy/cloudflare-only.sh"
+  bash "$CLOUDFLARE_ONLY"
   exit 0
 fi
 
@@ -74,7 +79,7 @@ nginx -t && systemctl reload nginx
 
 # From here only Cloudflare may reach the HTTPS block. Not before: the
 # certificate above was issued with the name pointed straight at this machine.
-bash "$APP_DIR/deploy/cloudflare-only.sh"
+bash "$CLOUDFLARE_ONLY"
 echo
 echo "https://$DOMAIN is served from this machine. Turn the Cloudflare proxy back"
 echo "on and set SSL/TLS to Full (strict) — until then, only Cloudflare can reach it."

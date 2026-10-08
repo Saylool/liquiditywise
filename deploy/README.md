@@ -339,6 +339,14 @@ and on the server that should hold the links:
 REDIS_URL=redis://127.0.0.1:6379/1 node /opt/liquiditywise/deploy/store-backup.mts restore < snapshot.json
 ```
 
+`restore-backup.sh` opens at most 128 MiB: it streams the decryption and
+gunzip through `head -c` into a mode-600 temporary file and refuses anything
+larger before a byte of it is parsed, because the Worker's 20 MiB cap is on
+the encrypted gzip, and gzip can expand a thousandfold. A reader costs a
+snapshot about 1.5 KB, so that is some 90,000 readers; the script's comment
+has the measurement. A genuine backup larger than that opens with
+`RESTORE_LIMIT_BYTES` set higher for the one run.
+
 It refuses a store that already holds links unless given `--replace`, and
 restores each key with the expiry it had, not a fresh one. With no server to
 fetch from, download `backup/<day>` from the Worker's KV namespace in the
@@ -399,6 +407,84 @@ screen:
 ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.local | cut -d= -f2-" | npx wrangler secret put SERVER_WATCH_BOT_TOKEN
 ```
 
+## Who the scheduled jobs run as
+
+`/opt/liquiditywise` belongs to the `liquiditywise` user, the one the site
+runs as — it has to, to fetch, build and run. So nothing root runs on a
+schedule comes from there: a root job that ran a script, a `.mts` file or a
+Python module out of the checkout would let whoever got hold of that account
+run code as root next Monday. `setup.sh` writes `/etc/cron.d/liquiditywise`
+to these rules, and `src/deployScripts.test.ts` holds them:
+
+| Job | Runs as | Why |
+| --- | --- | --- |
+| `liquiditywise-telegram-check`, every 5 min | `liquiditywise` | reads `.env.local`, calls `127.0.0.1` |
+| `liquiditywise-health`, every 5 min | `liquiditywise` | reads `.env.local`, Redis, the certificate; keeps its state in `/var/lib/liquiditywise/state/` |
+| `liquiditywise-backup`, daily 03:17 | `liquiditywise` | runs `store-backup.mts` from the checkout, so must not be root; its stamp is in `/var/lib/liquiditywise/state/` |
+| `liquiditywise-usage`, Monday 06:00 | root, then `liquiditywise` | root only to read the system journal; the report's node code runs after `setpriv` drops to `liquiditywise` |
+| `cloudflare-only.sh`, Monday 04:23 | root | rewrites the nginx site and reloads nginx |
+
+The layout:
+
+- `/usr/local/bin/liquiditywise-*`: root-owned copies of the four job
+  scripts, 755. Any of the first three started as root, by hand, starts
+  itself again as `liquiditywise` before doing anything.
+- `/usr/local/lib/liquiditywise/`: root-owned, 755, with root-owned copies of
+  `cloudflare-only.sh` (755) and `cloudflare_only.py` (644). Cron and
+  `nginx-site.sh` run these, and Python starts with `-I`, so nothing is
+  imported from the checkout, the environment or the working directory.
+- `/var/lib/liquiditywise/`: root's, 755, because nginx includes the
+  Cloudflare allow list from it. `state/` inside it is `liquiditywise`'s, 750:
+  the health check's state and the backup's stamp. The first deploy moves
+  them there from where they used to be.
+- The jobs' `PATH` is node's directory, `/usr/bin` and `/bin`; `setup.sh`
+  refuses to schedule anything if node resolves inside the checkout.
+
+The copies are made by `setup.sh` from the checkout, at deploy time, by root.
+That is a trust root still places in the checkout once per deploy — as it
+does in `setup.sh` itself and in `liquiditywise.service` — so run the
+deploy from GitHub (`curl … | bash`, as above) rather than from
+`/opt/liquiditywise/deploy/setup.sh`, and treat a checkout that is not
+exactly `origin/main` as a reason to stop.
+
+### After the first deploy with this layout
+
+As root on the server, once:
+
+```bash
+# Who runs what: three lines for liquiditywise, two for root, nothing under /opt in a root line.
+cat /etc/cron.d/liquiditywise
+
+# The root-run copies are root's and nobody else can write them.
+ls -ld /usr/local/lib/liquiditywise /usr/local/lib/liquiditywise/* /usr/local/bin/liquiditywise-*
+
+# The allow list's directory is root's; the state directory and its files are liquiditywise's.
+ls -ld /var/lib/liquiditywise /var/lib/liquiditywise/state /var/lib/liquiditywise/state/* /var/lib/liquiditywise/cloudflare-allow.conf
+
+# The credentials: owned by liquiditywise, -rw-------, and readable by it.
+ls -l /opt/liquiditywise/.env.local
+sudo -u liquiditywise test -r /opt/liquiditywise/.env.local && echo "liquiditywise can read .env.local"
+sudo -u liquiditywise test -w /var/lib/liquiditywise/state && echo "and write its state"
+
+# Each job by hand, the way cron will run it. The check is silent on success;
+# --hello sends one message to the operator chat; the backup stores (and
+# replaces) today's copy and should print "Stored backup/<day>, …".
+sudo -u liquiditywise env PATH=/usr/bin:/bin APP_PORT=3200 /usr/local/bin/liquiditywise-telegram-check
+sudo -u liquiditywise env PATH=/usr/bin:/bin APP_PORT=3200 /usr/local/bin/liquiditywise-health --hello
+sudo -u liquiditywise env PATH=/usr/bin:/bin /usr/local/bin/liquiditywise-backup
+liquiditywise-usage --print
+PATH=/usr/sbin:/usr/bin:/sbin:/bin bash /usr/local/lib/liquiditywise/cloudflare-only.sh
+
+# The certificate's expiry, as liquiditywise sees it. If the file is root's
+# alone, the health check falls back to this handshake; it must print a date.
+sudo -u liquiditywise test -r /etc/letsencrypt/live/liquiditywise.com/fullchain.pem && echo "file readable" ||
+  sudo -u liquiditywise timeout 10 openssl s_client -connect 127.0.0.1:443 -servername liquiditywise.com < /dev/null 2> /dev/null | openssl x509 -enddate -noout
+
+# Ten minutes later: cron has started the five-minute jobs as liquiditywise,
+# with no "Authentication failure" or "Permission denied" next to them.
+grep CRON /var/log/syslog | grep liquiditywise | tail -n 6
+```
+
 ## Files
 
 - `inspect.sh` — read-only survey of the machine.
@@ -413,7 +499,8 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
   checking it is not the product bot's and that your chat can receive from it.
 - `cloudflare-only.sh`, `cloudflare_only.py` — let only Cloudflare's ranges reach the
   HTTPS block, so CF-Connecting-IP (what the rate limit counts) cannot be forged
-  by connecting to the machine directly. Weekly from cron.
+  by connecting to the machine directly. Weekly from cron, as root, from the
+  root-owned copies in `/usr/local/lib/liquiditywise/`.
 - `usage-report.sh`, `usage-report.mts` — the Monday report of the week's use,
   through Server Watch: pages, pools, languages, explanations and what they cost.
   Counted from the journal lines in `src/lib/usage/usageLines.ts`, which record

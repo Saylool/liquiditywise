@@ -34,7 +34,12 @@ export type Env = {
 /** Seven days. What readers are told: out of the backups within seven days of /stop. */
 export const KEEP_SECONDS = 7 * 24 * 60 * 60;
 
-/** A copy is kilobytes today. Twenty megabytes is a hundred thousand links, and under KV's limit. */
+/**
+ * A copy is kilobytes today. Twenty megabytes is tens of thousands of readers, and under KV's limit.
+ *
+ * Of encrypted gzip, which bounds what is stored and nothing else: this never decrypts or
+ * decompresses (it has no key), so the limit on what a copy opens to is restore-backup.sh's.
+ */
 export const MAX_BYTES = 20 * 1024 * 1024;
 
 /** A secret shorter than this is a mistake, and a Worker with one would be guessable. */
