@@ -9,12 +9,13 @@ import { getEmailDigestCopy } from "../i18n/emailDigestCopy";
 import { localePath } from "../i18n/localePath";
 import { getRequestLocale } from "../i18n/requestLocale";
 import type { Locale } from "../i18n/locales";
+import { spendActionBudget } from "../ratelimit/actionBudget";
 import { clientKeyFromHeaders } from "../ratelimit/clientKey";
 import { confirmationEmail } from "./digestEmail";
 import { emailDigestSetup } from "./environment";
 import { EMAIL_FORM_ANCHOR, EMAIL_STATUS_PARAMETER, type EmailFormStatus } from "./formStatus";
 import { CONFIRM_TOKEN_TTL_MS } from "./signedToken";
-import { subscribeRateLimiter } from "./subscribeLimiter";
+import { SUBSCRIBE_BUDGET, subscribeRateLimiter } from "./subscribeLimiter";
 import { isEmailAddress, normalizeAddress, requestSubscription, subscriptionIdOf } from "./subscriptions";
 
 /*
@@ -31,9 +32,14 @@ import { isEmailAddress, normalizeAddress, requestSubscription, subscriptionIdOf
  *
  * Two things are refused before anything is written. An address that is not
  * one — the only check an address gets before the confirmation that proves
- * it. And a client that has sent more than a few in a quarter of an hour
- * (subscribeLimiter.ts): the form sends a stranger a mail, and the rate limit
- * is what keeps it from being a way to send a lot of them.
+ * it. And a request past its budget (subscribeLimiter.ts): a client that has
+ * sent more than a few in a quarter of an hour, counted in this process, then
+ * in the store every process shares — per client, and over everybody, so
+ * that many clients together cannot send more than `SUBSCRIBE_BUDGET.global`
+ * confirmations an hour either. The form sends a stranger a mail, and the
+ * budget is what keeps it from being a way to send a lot of them. Both are
+ * counted here, inside the action, which is reached by a POST that need not
+ * come from the form, and not only by the proxy in front of the page.
  *
  * The form always answers the same way for an address it did and did not
  * mail. Whether an address is already on the list is that address's owner's
@@ -66,6 +72,9 @@ export const subscribeToDigest = async (formData: FormData): Promise<void> => {
 
   const client = clientKeyFromHeaders(await headers());
   if (!subscribeRateLimiter.check(client).allowed) redirect(backTo(locale, chain, "busy"));
+  const budget = await spendActionBudget(setup.store, SUBSCRIBE_BUDGET, { clientKey: client, secret: setup.secret, now: Date.now() });
+  if (budget === "unavailable") redirect(backTo(locale, chain, "unavailable"));
+  if (budget !== "allowed") redirect(backTo(locale, chain, "busy"));
 
   const id = subscriptionIdOf(setup.secret, address);
   const outcome = await requestSubscription(setup.store, id, { address, chainId: chain.id, locale });

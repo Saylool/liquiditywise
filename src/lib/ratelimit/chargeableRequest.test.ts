@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { spendsUpstreamQuota } from "./chargeableRequest";
+import { isServerActionPost, spendsUpstreamQuota } from "./chargeableRequest";
 
 const POOL_ADDRESS = `0x${"a".repeat(40)}`;
 
@@ -124,5 +124,17 @@ describe("a position's share card", () => {
     expect(spendsUpstreamQuota(new URLSearchParams({ id: "998651" }), "/v4")).toBe(false);
     expect(spendsUpstreamQuota(new URLSearchParams({ id: "998651" }))).toBe(false);
     expect(spendsUpstreamQuota(query(`address=${POOL_ADDRESS}`), "/pool")).toBe(true);
+  });
+});
+
+describe("isServerActionPost", () => {
+  it("is a POST carrying the header Next sends an action's id in", () => {
+    expect(isServerActionPost("POST", new Headers({ "next-action": "7f00" }))).toBe(true);
+    expect(isServerActionPost("post", new Headers({ "Next-Action": "7f00" }))).toBe(true);
+  });
+
+  it("is nothing else: a GET with the header, or a POST without it", () => {
+    expect(isServerActionPost("GET", new Headers({ "next-action": "7f00" }))).toBe(false);
+    expect(isServerActionPost("POST", new Headers())).toBe(false);
   });
 });

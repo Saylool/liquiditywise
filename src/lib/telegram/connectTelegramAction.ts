@@ -1,14 +1,16 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { EvmAddressSchema } from "../../schemas/primitives";
 import { getRequestLocale } from "../i18n/requestLocale";
 import { telegramSetup } from "./environment";
-import { createPendingLink, forgetLink, TELEGRAM_LINK_COOKIE } from "./links";
+import { createPendingLink, forgetLink, PENDING_LINK_TTL_MS, readLink, TELEGRAM_LINK_COOKIE } from "./links";
 import { newLinkToken } from "./linkToken";
 import { chainBySlug, ETHEREUM } from "../chains/chains";
+import { type ActionBudget, spendActionBudget } from "../ratelimit/actionBudget";
+import { clientKeyFromHeaders } from "../ratelimit/clientKey";
 
 /*
  * The two things a reader can do about alerts from the site: ask for them,
@@ -21,7 +23,30 @@ import { chainBySlug, ETHEREUM } from "../chains/chains";
  * the pending record expires on its own if they never do.
  *
  * Both are Server Actions behind plain forms, working with scripts off.
+ *
+ * **Asking is budgeted, inside the action.** It is a POST anybody can send
+ * without the page, and each one used to be a fresh record in the store: a
+ * loop could have filled it. So before anything is written the request is
+ * counted (ratelimit/actionBudget.ts) — `TELEGRAM_LINK_BUDGET.perClient` per
+ * client and `TELEGRAM_LINK_BUDGET.global` over everybody, per half hour, the
+ * life of a pending link, so at most twice the global count is ever pending
+ * at once. And a browser that already has a pending link gives it up before
+ * it is handed another: its cookie names the one it minted, and that one is
+ * deleted, so pressing the button ten times leaves one pending link, not ten.
+ * A link already claimed is left alone: it belongs to a chat now, and only
+ * that chat, or the button that forgets it, ends it.
+ *
+ * Refused, the action does nothing and the page is drawn again as it was, as
+ * for every other request it cannot act on.
  */
+
+/** Per half hour: a reader trying two or three addresses, and a mistake or two. */
+export const TELEGRAM_LINK_BUDGET: ActionBudget = {
+  action: "telegram-link",
+  perClient: 5,
+  global: 300,
+  windowMs: PENDING_LINK_TTL_MS,
+};
 
 export const connectTelegram = async (formData: FormData): Promise<void> => {
   const setup = telegramSetup();
@@ -34,6 +59,17 @@ export const connectTelegram = async (formData: FormData): Promise<void> => {
   const chain = requestedChain === null ? ETHEREUM : typeof requestedChain === "string" ? chainBySlug(requestedChain) : null;
   if (chain === null) return;
 
+  const client = clientKeyFromHeaders(await headers());
+  const budget = await spendActionBudget(setup.store, TELEGRAM_LINK_BUDGET, { clientKey: client, secret: setup.webhookSecret, now: Date.now() });
+  if (budget !== "allowed") return;
+
+  const store = await cookies();
+  const outstanding = store.get(TELEGRAM_LINK_COOKIE)?.value;
+  if (outstanding !== undefined) {
+    const link = await readLink(setup.store, outstanding);
+    if (link !== null && link !== undefined && link.chatId === null) await forgetLink(setup.store, outstanding);
+  }
+
   const token = newLinkToken();
   const written = await createPendingLink(setup.store, token, {
     address: address.data,
@@ -43,7 +79,6 @@ export const connectTelegram = async (formData: FormData): Promise<void> => {
   });
   if (!written) return;
 
-  const store = await cookies();
   store.set({
     name: TELEGRAM_LINK_COOKIE,
     value: token,

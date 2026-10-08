@@ -34,6 +34,14 @@ export const fakeStore = (): KeyValueStore & {
       return true;
     },
     smembers: async (key: string) => (store.down ? null : [...(sets.get(key) ?? [])]),
+    scard: async (key: string) => (store.down ? null : (sets.get(key)?.size ?? 0)),
+    /* Lifetimes are not kept: a test that needs a window to pass uses a key of the next window, as the code does. */
+    increment: async (key: string) => {
+      if (store.down) return null;
+      const next = Number(data.get(key) ?? "0") + 1;
+      data.set(key, String(next));
+      return next;
+    },
   };
   return store;
 };

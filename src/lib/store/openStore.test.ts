@@ -17,7 +17,7 @@ describe("opening the store a deployment names", () => {
       openStore({ UPSTASH_REDIS_REST_URL: "https://x.example", UPSTASH_REDIS_REST_TOKEN: "t" }),
     ]) {
       expect(store).not.toBeNull();
-      expect(Object.keys(store ?? {}).sort()).toEqual(["del", "get", "sadd", "set", "smembers", "srem"]);
+      expect(Object.keys(store ?? {}).sort()).toEqual(["del", "get", "increment", "sadd", "scard", "set", "smembers", "srem"]);
     }
   });
 });

@@ -56,3 +56,17 @@ export const spendsUpstreamQuota = (parameters: URLSearchParams, page?: string):
 
   return readPoolSearchInput(query).kind === "terms";
 };
+
+/**
+ * True when a request is a Server Action: a POST carrying the header Next
+ * sends an action's id in, whatever page and query it was sent to.
+ *
+ * Counted on its own (serverActionRateLimiter.ts), and never by the rule
+ * above. An action is a POST anybody can send straight to any page, with no
+ * query at all, and a rule that read only the query would never see one. The
+ * actions that write something budget themselves as well, inside the action
+ * (ratelimit/actionBudget.ts): this is the line in front of them, not the one
+ * that holds.
+ */
+export const isServerActionPost = (method: string, headers: Headers): boolean =>
+  method.toUpperCase() === "POST" && headers.has("next-action");

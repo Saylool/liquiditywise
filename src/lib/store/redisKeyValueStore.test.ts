@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { INCREMENT_SCRIPT } from "./keyValueStore";
 import { createRedisKeyValueStore } from "./redisKeyValueStore";
 import type { RedisClient } from "./redisClient";
 import type { RespReply } from "./resp";
@@ -77,5 +78,29 @@ describe("the Redis key-value store", () => {
     expect(await scripted(string("a")).store.smembers("s")).toBeNull();
     expect(await scripted({ kind: "null" }).store.smembers("s")).toBeNull();
     expect(await scripted(null).store.smembers("s")).toBeNull();
+  });
+
+  it("counts a set's members, and a missing set as none", async () => {
+    const counting = scripted(integer(3));
+    expect(await counting.store.scard("s")).toBe(3);
+    expect(counting.asked).toEqual([["SCARD", "s"]]);
+    expect(await scripted(integer(0)).store.scard("s")).toBe(0);
+    expect(await scripted(null).store.scard("s")).toBeNull();
+    expect(await scripted(string("3")).store.scard("s")).toBeNull();
+  });
+
+  it("counts and gives the first count its lifetime in one script, so no count is left without one", async () => {
+    const counting = scripted(integer(1));
+    expect(await counting.store.increment("c", 60_000)).toBe(1);
+    expect(counting.asked).toEqual([["EVAL", INCREMENT_SCRIPT, "1", "c", "60000"]]);
+    expect(INCREMENT_SCRIPT).toContain("INCR");
+    expect(INCREMENT_SCRIPT).toContain("PEXPIRE");
+  });
+
+  it("answers no count rather than a wrong one", async () => {
+    expect(await scripted(null).store.increment("c", 1)).toBeNull();
+    expect(await scripted({ kind: "error", message: "NOSCRIPT" }).store.increment("c", 1)).toBeNull();
+    expect(await scripted(integer(0)).store.increment("c", 1)).toBeNull();
+    expect(await scripted(string("1")).store.increment("c", 1)).toBeNull();
   });
 });

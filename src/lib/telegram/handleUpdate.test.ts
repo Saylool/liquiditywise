@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 import { getDictionary } from "../i18n/dictionaries";
 import type { BotClient } from "./botApi";
 import { fakeStore } from "./fakeStore";
-import { handleUpdate } from "./handleUpdate";
-import { claimLink, createPendingLink, readLink, recordDigestSent, setSmartAlerts } from "./links";
+import { CHAT_COMMAND_WINDOW_MS, CHAT_COMMANDS_PER_WINDOW, handleUpdate } from "./handleUpdate";
+import { createFixedWindowRateLimiter } from "../ratelimit/fixedWindowLimiter";
+import { CHAT_INDEX_BUILT_KEY, claimLink, createPendingLink, MAX_LINKED_CHATS, readLink, recordDigestSent, setSmartAlerts, WATCHES_KEY } from "./links";
 import { poolWatchedText, poolWatchesText } from "./messages";
 import type { PoolWatchTarget } from "./poolWatchCommand";
 import type { PoolRangeReading } from "./poolRangeShift";
-import { POOL_WATCHERS_KEY, readPoolWatches } from "./poolWatches";
+import { MAX_POOL_WATCHERS, POOL_WATCHERS_KEY, readPoolWatches } from "./poolWatches";
 import type { TelegramUpdate } from "./update";
 
 const TOKEN = "abcDEF123456789012_-xy";
@@ -37,7 +38,9 @@ const setup = async () => {
   const store = fakeStore();
   await createPendingLink(store, TOKEN, { address: ADDRESS, locale: "de", now: new Date() });
   const { bot, sent } = fakeBot();
-  return { store, bot, sent, handling: { store, bot, dictionary: getDictionary, ...noPools } };
+  /* A budget of its own for every test, so one test's commands are never another's. */
+  const chatBudget = createFixedWindowRateLimiter({ limit: CHAT_COMMANDS_PER_WINDOW, windowMs: CHAT_COMMAND_WINDOW_MS, maxTrackedKeys: 100, now: () => 0 });
+  return { store, bot, sent, handling: { store, bot, dictionary: getDictionary, ...noPools, chatBudget } };
 };
 
 describe("handleUpdate", () => {
@@ -374,5 +377,90 @@ describe("handleUpdate and the pool watches", () => {
     await handleUpdate(message("/watches", 99, "en"), handling);
 
     expect(sent.map(({ text }) => text)).toEqual(Array(3).fill(getDictionary("en").telegram.storeDown));
+  });
+});
+
+describe("handleUpdate and a chat's bounds", () => {
+  const OTHER = "zyxWVU987654321098_-ab";
+  const V3 = `0x${"c".repeat(40)}`;
+
+  it("does nothing and says nothing past a chat's budget of commands, and reads no pool for it", async () => {
+    const { handling, sent } = await setup();
+    const asked: unknown[] = [];
+    const reading = { ...handling, readPoolRange: async (target: PoolWatchTarget) => {
+      asked.push(target);
+      return null;
+    } };
+    for (let n = 0; n < CHAT_COMMANDS_PER_WINDOW; n += 1) await handleUpdate(message(`/watch ${V3}`, 99, "en"), reading);
+    expect(sent).toHaveLength(CHAT_COMMANDS_PER_WINDOW);
+    expect(asked).toHaveLength(CHAT_COMMANDS_PER_WINDOW);
+
+    await handleUpdate(message(`/watch ${V3}`, 99, "en"), reading);
+    await handleUpdate(message("/watches", 99, "en"), reading);
+    expect(sent).toHaveLength(CHAT_COMMANDS_PER_WINDOW);
+    expect(asked).toHaveLength(CHAT_COMMANDS_PER_WINDOW);
+
+    /* Another chat's budget is its own. */
+    await handleUpdate(message("/watches", 7, "en"), reading);
+    expect(sent.at(-1)?.chatId).toBe(7);
+  });
+
+  it("follows one address per chat: a second /start replaces the first, and /stop then leaves nothing", async () => {
+    const { handling, sent, store } = await setup();
+    await createPendingLink(store, OTHER, { address: ADDRESS, locale: "es", now: new Date() });
+    await handleUpdate(message(`/start ${TOKEN}`), handling);
+    await handleUpdate(message(`/start ${OTHER}`), handling);
+
+    expect(await readLink(store, TOKEN)).toBeNull();
+    expect(await store.smembers(WATCHES_KEY)).toEqual([OTHER]);
+    expect(sent.at(-1)).toEqual({ chatId: 42, text: getDictionary("es").telegram.linked(ADDRESS) });
+
+    await handleUpdate(message(`/watch ${V3}`), { ...handling, readPoolRange: async (target: PoolWatchTarget) => ({ ...target, pair: { token0: "USDC", token1: "WETH" }, lpFeePpm: 500, currentPrice: 0.0004, range: [0.0003, 0.0005] }) });
+    await handleUpdate(message("/stop"), handling);
+
+    /* The link, the chat's key, the pool watches and both sets: nothing of the chat is left. */
+    expect([...store.data.keys()]).toEqual([]);
+    expect(await store.smembers(WATCHES_KEY)).toEqual([]);
+    expect(await store.smembers(POOL_WATCHERS_KEY)).toEqual([]);
+  });
+
+  it("finds a chat with no link from its key alone, without walking every link", async () => {
+    const { handling, sent, store } = await setup();
+    await store.set(CHAT_INDEX_BUILT_KEY, "1");
+    let walked = 0;
+    const smembers = store.smembers;
+    const counted = Object.assign(store, {
+      smembers: async (key: string) => {
+        if (key === WATCHES_KEY) walked += 1;
+        return smembers(key);
+      },
+    });
+
+    for (const command of ["/smart", "/weekly", "/stop"]) await handleUpdate(message(command, 77, "en"), { ...handling, store: counted });
+
+    expect(walked).toBe(0);
+    expect(sent.map(({ text }) => text)).toEqual([
+      getDictionary("en").telegram.smartNoLink,
+      getDictionary("en").telegram.smartNoLink,
+      getDictionary("en").telegram.nothingToStop,
+    ]);
+  });
+
+  it("turns a new chat away when the bot follows as many as it can, and says so", async () => {
+    const { handling, sent, store } = await setup();
+    for (let n = 0; n < MAX_LINKED_CHATS; n += 1) await store.sadd(WATCHES_KEY, `x${n}`);
+    await handleUpdate(message(`/start ${TOKEN}`, 42, "en"), handling);
+
+    expect((await readLink(store, TOKEN))?.chatId).toBeNull();
+    expect(sent).toEqual([{ chatId: 42, text: getDictionary("en").telegram.crowded }]);
+  });
+
+  it("turns a new chat away from /watch when as many chats as can are watching, and says so", async () => {
+    const { handling, sent, store } = await setup();
+    for (let n = 0; n < MAX_POOL_WATCHERS; n += 1) await store.sadd(POOL_WATCHERS_KEY, String(10_000 + n));
+    await handleUpdate(message(`/watch ${V3}`, 99, "en"), { ...handling, readPoolRange: async (target: PoolWatchTarget) => ({ ...target, pair: { token0: "USDC", token1: "WETH" }, lpFeePpm: 500, currentPrice: 0.0004, range: [0.0003, 0.0005] }) });
+
+    expect(await readPoolWatches(store, 99)).toBeNull();
+    expect(sent).toEqual([{ chatId: 99, text: getDictionary("en").telegram.crowded }]);
   });
 });

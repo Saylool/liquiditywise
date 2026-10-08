@@ -7,10 +7,11 @@ import type { PoolWatchTarget } from "./poolWatchCommand";
 import {
   addPoolWatch,
   forgetPoolWatches,
-  listPoolWatchers,
+  MAX_POOL_WATCHERS,
   MAX_POOL_WATCHES,
   POOL_WATCH_TTL_MS,
   POOL_WATCHERS_KEY,
+  poolWatchersForPass,
   readPoolWatches,
   recordRangeTold,
   removePoolWatch,
@@ -152,18 +153,31 @@ describe("pool watches", () => {
     expect((await recordRangeTold(store, 42, next, pool(1), [0.0004, 0.0006], LATER)).written).toBe(false);
   });
 
-  it("lists every chat with a watch, and drops from the set a chat whose record has gone or is no chat", async () => {
+  it("reads every chat with a watch in a pass that has room, and drops from the set a chat whose record has gone or is no chat", async () => {
     const store = await watching();
     await watching(store, 7, pool(2));
     await store.sadd(POOL_WATCHERS_KEY, "99");
     await store.sadd(POOL_WATCHERS_KEY, "not-a-chat");
 
-    const watchers = await listPoolWatchers(store);
-    expect(watchers?.map(({ chatId }) => chatId).sort()).toEqual([42, 7].sort());
+    const pass = await poolWatchersForPass(store, { budget: 100, after: null });
+    expect(pass?.watchers.map(({ chatId }) => chatId).sort()).toEqual([42, 7].sort());
+    expect(pass?.total).toBe(4);
     expect([...((await store.smembers(POOL_WATCHERS_KEY)) ?? [])].sort()).toEqual(["42", "7"]);
 
     store.down = true;
-    expect(await listPoolWatchers(store)).toBeNull();
+    expect(await poolWatchersForPass(store, { budget: 100, after: null })).toBeNull();
+  });
+
+  it("turns a new chat away past the ceiling over every chat, and never one that already watches", async () => {
+    const store = await watching(fakeStore(), 1, pool(1));
+    for (let chat = 2; chat <= MAX_POOL_WATCHERS; chat += 1) await store.sadd(POOL_WATCHERS_KEY, String(chat));
+
+    expect(await addPoolWatch(store, 5_000, { target: pool(1), range: RANGE, locale: "tr", now: NOW })).toBe("crowded");
+    expect(await readPoolWatches(store, 5_000)).toBeNull();
+    expect(await addPoolWatch(store, 1, { target: pool(2), range: RANGE, locale: "tr", now: NOW })).toBe("added");
+
+    await store.srem(POOL_WATCHERS_KEY, "2");
+    expect(await addPoolWatch(store, 5_000, { target: pool(1), range: RANGE, locale: "tr", now: NOW })).toBe("added");
   });
 
   it("throws away a record it cannot read as watches", async () => {
@@ -174,5 +188,48 @@ describe("pool watches", () => {
     expect(await readPoolWatches(store, 42)).toBeNull();
     store.data.set(`${BACKUP_PREFIX}pools:42`, JSON.stringify({ locale: "xx", watches: [] }));
     expect(await readPoolWatches(store, 42)).toBeNull();
+  });
+});
+
+describe("the pool watches one pass reads", () => {
+  /** Chats 10 to 19, chat n following n - 9 pools, up to five: forty pools in all. */
+  const crowd = async () => {
+    const store = fakeStore();
+    for (let chat = 10; chat < 20; chat += 1) {
+      for (let n = 1; n <= Math.min(chat - 9, MAX_POOL_WATCHES); n += 1) await watching(store, chat, pool(n));
+    }
+    return store;
+  };
+
+  it("reads whole chats until the next would pass the budget of pools, and never more", async () => {
+    const store = await crowd();
+    const pass = await poolWatchersForPass(store, { budget: 6, after: null });
+
+    /* 10 has one pool, 11 two, 12 three: six. 13's four would make ten. */
+    expect(pass?.watchers.map(({ chatId }) => chatId)).toEqual([10, 11, 12]);
+    expect(pass?.last).toBe("12");
+  });
+
+  it("starts after where the last pass stopped, comes round again, and reaches every chat", async () => {
+    const store = await crowd();
+    const seen: number[] = [];
+    let after: string | null = null;
+    for (let run = 0; run < 8; run += 1) {
+      const pass = await poolWatchersForPass(store, { budget: 10, after });
+      const pools = (pass?.watchers ?? []).reduce((sum, { record }) => sum + record.watches.length, 0);
+      expect(pools).toBeLessThanOrEqual(10);
+      seen.push(...(pass?.watchers ?? []).map(({ chatId }) => chatId));
+      after = pass?.last ?? null;
+    }
+
+    /* Eight passes of at most ten pools over forty: every chat reached, and none twice before all once. */
+    expect(new Set(seen)).toEqual(new Set([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]));
+    expect(new Set(seen.slice(0, 10)).size).toBe(10);
+  });
+
+  it("always reads one chat, even when the budget is smaller than its pools", async () => {
+    const store = await crowd();
+    const pass = await poolWatchersForPass(store, { budget: 1, after: "18" });
+    expect(pass?.watchers.map(({ chatId }) => chatId)).toEqual([19]);
   });
 });

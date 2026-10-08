@@ -6,7 +6,7 @@ import { BACKUP_PREFIX } from "../backup/storeBackup";
 import { type ChainId, isSupportedChainId } from "../chains/chains";
 import { isLocale, type Locale } from "../i18n/locales";
 import type { KeyValueStore } from "../store/keyValueStore";
-import { CLAIMED_LINK_TTL_MS } from "./links";
+import { CLAIMED_LINK_TTL_MS, rotation } from "./links";
 import type { PoolWatchTarget } from "./poolWatchCommand";
 import type { PriceRange } from "./poolRangeShift";
 
@@ -30,10 +30,23 @@ import type { PriceRange } from "./poolRangeShift";
  * to write for a year lapses on its own, as a link does.
  *
  * The set of chats that watch something is what the checker walks, as the
- * set of claimed tokens is for the links.
+ * set of claimed tokens is for the links — a few chats at a time, in turn
+ * (`poolWatchersForPass`), never the whole set in one pass.
+ *
+ * Bounded twice: a chat follows at most `MAX_POOL_WATCHES` pools, in its one
+ * record, and at most `MAX_POOL_WATCHERS` chats follow any, past which a chat
+ * that follows nothing yet is turned away. A chat already following a pool is
+ * never turned away by the second; it only ever adds to its own five.
  */
 
 export const MAX_POOL_WATCHES = 5;
+
+/**
+ * Chats with a pool watch, over everybody: two thousand chats, ten thousand
+ * pools at most, which the pass's budget (checkWatches.ts) still reaches
+ * within the day.
+ */
+export const MAX_POOL_WATCHERS = 2_000;
 
 /** The set of chat ids with a pool watch: what the checker walks. */
 export const POOL_WATCHERS_KEY = `${BACKUP_PREFIX}poolwatchers`;
@@ -108,13 +121,14 @@ const writeRecord = async (store: KeyValueStore, chatId: number, record: PoolWat
 export const samePool = (a: Pick<PoolWatch, "chainId" | "poolId">, b: Pick<PoolWatch, "chainId" | "poolId">): boolean =>
   a.chainId === b.chainId && a.poolId === b.poolId;
 
-export type AddOutcome = "added" | "full" | "unavailable";
+export type AddOutcome = "added" | "full" | "crowded" | "unavailable";
 
 /**
  * Adds a watch, with the range the chat has just been told as its baseline.
  * A pool already watched is told again rather than watched twice, and does
  * not count against the cap. The language is the one the chat wrote this
- * command in, and it moves with the latest ask.
+ * command in, and it moves with the latest ask. `crowded` is a chat that
+ * follows nothing yet, past `MAX_POOL_WATCHERS`.
  */
 export const addPoolWatch = async (
   store: KeyValueStore,
@@ -126,6 +140,11 @@ export const addPoolWatch = async (
 
   const kept = (existing?.watches ?? []).filter((watch) => !samePool(watch, input.target));
   if (kept.length >= MAX_POOL_WATCHES) return "full";
+  if (existing === null) {
+    const watchers = await store.scard(POOL_WATCHERS_KEY);
+    if (watchers === null) return "unavailable";
+    if (watchers >= MAX_POOL_WATCHERS) return "crowded";
+  }
 
   const watch: PoolWatch = {
     chainId: input.target.chainId,
@@ -179,33 +198,54 @@ export const forgetPoolWatches = async (store: KeyValueStore, chatId: number): P
   await store.srem(POOL_WATCHERS_KEY, String(chatId));
 };
 
+export type PoolWatcher = { readonly chatId: number; readonly record: PoolWatchRecord };
+
 /**
- * Every chat with a pool watch, or `null` when the set could not be read.
+ * The chats one pass reads, and their pools: the next in turn after `after`,
+ * as many whole chats as fit in `budget` pools — a chat's pools are told
+ * together, in one record, so a chat is never split — and always at least
+ * one, which `MAX_POOL_WATCHES` keeps inside any budget the pass uses. Also
+ * how many chats the set holds, and the last one read, for the next pass to
+ * start after. `null` when the set could not be read.
  *
- * A chat in the set whose record has lapsed or gone is dropped from the set
- * as it is met, so the set cannot grow with chats that watch nothing.
+ * A chat in the set whose record has lapsed or gone, or whose member is not a
+ * chat id, is dropped from the set as it is met, so the set cannot grow with
+ * chats that watch nothing.
  */
-export const listPoolWatchers = async (
+export const poolWatchersForPass = async (
   store: KeyValueStore,
-): Promise<readonly { readonly chatId: number; readonly record: PoolWatchRecord }[] | null> => {
+  options: { readonly budget: number; readonly after: string | null; readonly start?: number },
+): Promise<{ readonly total: number; readonly watchers: readonly PoolWatcher[]; readonly last: string | null } | null> => {
   const members = await store.smembers(POOL_WATCHERS_KEY);
   if (members === null) return null;
 
-  const watchers: { chatId: number; record: PoolWatchRecord }[] = [];
-  for (const member of members) {
+  const watchers: PoolWatcher[] = [];
+  let pools = 0;
+  let last = options.after;
+  /* At most one chat per pool of budget can fit, so no more are asked for. */
+  for (const member of rotation(members, options.budget, options.after, options.start)) {
     const chatId = Number(member);
-    if (!Number.isInteger(chatId)) {
+    if (!Number.isSafeInteger(chatId)) {
       await store.srem(POOL_WATCHERS_KEY, member);
+      last = member;
       continue;
     }
     const record = await readPoolWatches(store, chatId);
-    if (record === undefined) continue;
-    if (record === null) {
-      await store.srem(POOL_WATCHERS_KEY, member);
+    if (record === undefined) {
+      last = member;
       continue;
     }
+    if (record === null) {
+      await store.srem(POOL_WATCHERS_KEY, member);
+      last = member;
+      continue;
+    }
+    /* Stopped before the chat that would not fit, which is where the next pass starts. */
+    if (watchers.length > 0 && pools + record.watches.length > options.budget) break;
     watchers.push({ chatId, record });
+    pools += record.watches.length;
+    last = member;
   }
 
-  return watchers;
+  return { total: members.length, watchers, last };
 };

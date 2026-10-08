@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { spendActionBudget } from "../ratelimit/actionBudget";
 import { fakeStore } from "../telegram/fakeStore";
 import type { EmailMessage } from "./provider";
 import { verifyToken } from "./signedToken";
 import { confirmSubscription, readSubscription, subscriptionIdOf } from "./subscriptions";
+import { SUBSCRIBE_BUDGET } from "./subscribeLimiter";
 
 /*
  * The form, with the request around it replaced: what it writes, what it
@@ -165,5 +167,28 @@ describe("asking for the digest by e-mail", () => {
 
     expect(back).not.toContain("reader");
     expect(back).not.toContain("example.com");
+  });
+});
+
+describe("what the form can send, over every process and every client", () => {
+  it("turns a client away that other processes have already counted, though this one has seen nothing of it", async () => {
+    const client = "198.51.100.40";
+    for (let i = 0; i < SUBSCRIBE_BUDGET.perClient; i += 1) {
+      await spendActionBudget(store(), SUBSCRIBE_BUDGET, { clientKey: client, secret: SECRET, now: Date.now() });
+    }
+
+    expect(await submit({ email: "reader@example.com", chain: "base" }, client)).toBe("/tr/weekly?chain=base&email=busy#email");
+    expect(state.sent).toEqual([]);
+    expect(await readSubscription(store(), subscriptionIdOf(SECRET, "reader@example.com"))).toBeNull();
+  });
+
+  it("holds everybody together to the hour's ceiling of confirmations, however many clients they are", async () => {
+    for (let i = 0; i < SUBSCRIBE_BUDGET.global; i += 1) {
+      expect(await submit({ email: `reader${i}@example.com`, chain: "base" }, `203.0.113.${i + 1}`)).toBe("/tr/weekly?chain=base&email=sent#email");
+    }
+
+    expect(await submit({ email: "one-more@example.com", chain: "base" }, "203.0.113.200")).toBe("/tr/weekly?chain=base&email=busy#email");
+    expect(state.sent).toHaveLength(SUBSCRIBE_BUDGET.global);
+    expect(await readSubscription(store(), subscriptionIdOf(SECRET, "one-more@example.com"))).toBeNull();
   });
 });
