@@ -18,6 +18,7 @@ import { getRecentCopy } from "./recentCopy";
 import { getRecentringCopy } from "./recentringCopy";
 import { getSmartLiquidityCopy } from "./smartLiquidityCopy";
 import { getWeeklyCopy } from "./weeklyCopy";
+import { getWidthsTableCopy } from "./widthsTableCopy";
 
 /*
  * Traditional Chinese, held to the one thing its neighbour cannot check.
@@ -154,6 +155,7 @@ describe("the rest of the Traditional Chinese copy", () => {
     embed: getEmbedCopy,
     hookCheck: getHookCheckCopy,
     developers: getDevelopersCopy,
+    widthsTable: getWidthsTableCopy,
   } as const;
 
   it("carries no character that only exists in the Simplified script, in any copy module", () => {
