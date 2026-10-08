@@ -7,6 +7,12 @@ import {
   SMART_LIQUIDITY_FIRST_WARM_AFTER_MS,
   SMART_LIQUIDITY_WARM_EVERY_MS,
 } from "./getSmartLiquidity";
+import {
+  getMonthCases,
+  hydrateMonthCases,
+  MONTH_CASES_FIRST_WARM_AFTER_MS,
+  MONTH_CASES_WARM_EVERY_MS,
+} from "./getMonthCases";
 import { getMostTraded } from "./getMostTraded";
 import { HOOK_CHECK_FIRST_WARM_AFTER_MS, HOOK_CHECK_WARM_EVERY_MS, warmHookChecks } from "./warmHookChecks";
 import { startWarming } from "./warmMostTraded";
@@ -17,7 +23,7 @@ import {
   warmFrontPageExplanations,
 } from "./warmExplanations";
 
-/** Started once per server, from instrumentation.ts: the most-traded reads, the listed pools' price histories, the front page's explanations, the smart-money figures, and the checks beside every listed hook. */
+/** Started once per server, from instrumentation.ts: the most-traded reads, the listed pools' price histories, the front page's explanations, the smart-money figures, the month's cases, and the checks beside every listed hook. */
 export const startMostTradedWarmer = (): (() => void) => {
   const stopLists = startWarming({ chains: CHAINS, warm: (chain) => getMostTraded(chain.id, { refresh: true }) });
   const stopHistories = startWarming({
@@ -42,6 +48,15 @@ export const startMostTradedWarmer = (): (() => void) => {
     firstAfterMs: SMART_LIQUIDITY_FIRST_WARM_AFTER_MS,
   });
 
+  /* The cases page shows only what is kept, so the store is read first and each chain is measured every six hours after. */
+  for (const chain of CHAINS) void hydrateMonthCases(chain.id);
+  const stopCases = startWarming({
+    chains: CHAINS,
+    warm: (chain) => getMonthCases(chain.id, { refresh: true }),
+    everyMs: MONTH_CASES_WARM_EVERY_MS,
+    firstAfterMs: MONTH_CASES_FIRST_WARM_AFTER_MS,
+  });
+
   const stopHookChecks = startWarming({
     chains: V4_CHAINS,
     warm: warmHookChecks,
@@ -54,6 +69,7 @@ export const startMostTradedWarmer = (): (() => void) => {
     stopHistories();
     stopExplanations();
     stopSmart();
+    stopCases();
     stopHookChecks();
   };
 };

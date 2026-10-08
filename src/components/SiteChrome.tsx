@@ -5,6 +5,7 @@ import type { Locale } from "../lib/i18n/locales";
 import { getInterfaceCopy } from "../lib/i18n/interface";
 import { getMostTradedCopy } from "../lib/i18n/mostTradedCopy";
 import { getAboutCopy } from "../lib/i18n/aboutCopy";
+import { getCasesCopy } from "../lib/i18n/casesCopy";
 import { getDevelopersCopy } from "../lib/i18n/developersCopy";
 import { getMethodCopy } from "../lib/i18n/methodCopy";
 import { getSmartLiquidityCopy } from "../lib/i18n/smartLiquidityCopy";
@@ -70,6 +71,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </Link>
           <Link href={localePath(locale, "/most-traded")} prefetch={false} className="text-link">
             {getMostTradedCopy(locale).link}
+          </Link>
+          <Link href={localePath(locale, "/cases")} prefetch={false} className="text-link">
+            {getCasesCopy(locale).link}
           </Link>
           <Link href={localePath(locale, "/smart-money")} prefetch={false} className="text-link">
             {getSmartLiquidityCopy(locale).link}

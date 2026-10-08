@@ -27,6 +27,7 @@ export const PAGES = [
   "/hooks",
   "/learn",
   "/most-traded",
+  "/cases",
   "/smart-money",
   "/weekly",
   /* The link in a confirmation e-mail: counted, so the report can say how many came through, never for whom. */
@@ -64,6 +65,7 @@ const CHAIN_PAGES: readonly Page[] = [
   "/compare",
   "/holdings",
   "/most-traded",
+  "/cases",
   "/hooks",
   "/smart-money",
   "/weekly",
