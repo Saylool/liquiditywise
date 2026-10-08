@@ -17,6 +17,11 @@ import {
   type StreamCreator,
   streamInterpretation,
 } from "./interpretationTransport";
+import {
+  interpretationWithTokenSymbols,
+  sectionWithTokenSymbols,
+  type TokenSymbols,
+} from "./tokenSymbols";
 
 /*
  * Prompt, call, verify — the whole path from a finished analysis to a checked
@@ -61,9 +66,25 @@ export type InterpretRangeInput = {
  * checked. The early release hands on sections that have each passed the same
  * rule; this is where the answer as a whole is held to it.
  */
+/**
+ * The symbols the placeholders stand for, read from the analysis the prompt
+ * was masked from — the same pool, so `{TOKEN_A}` is always the token the
+ * prompt called by that name.
+ */
+const symbolsOf = (analysis: PoolRangeAnalysis): TokenSymbols => ({
+  token0: analysis.pool.token0.symbol,
+  token1: analysis.pool.token1.symbol,
+});
+
+/*
+ * Substitution happens below, once the answer has passed, and nowhere
+ * earlier: the rules are written for what the model wrote, and a symbol is
+ * not something it wrote. What leaves this module, and what the cache above
+ * it keeps, is display text — prose with the real symbols in it.
+ */
 const verifyAnswer = (
   response: InterpretationTransportResult,
-  input: Pick<InterpretRangeInput, "model" | "onDiagnostic">,
+  input: Pick<InterpretRangeInput, "analysis" | "model" | "onDiagnostic">,
 ): InterpretationOutcome<WrittenInterpretation> => {
   if (!response.ok) {
     return { status: "unavailable", reason: response.reason, notice: response.notice };
@@ -78,7 +99,10 @@ const verifyAnswer = (
 
   return {
     status: "success",
-    data: { interpretation: verified.data, model: response.model ?? input.model },
+    data: {
+      interpretation: interpretationWithTokenSymbols(verified.data, symbolsOf(input.analysis)),
+      model: response.model ?? input.model,
+    },
   };
 };
 
@@ -122,7 +146,8 @@ export const streamRange = async (
     apiKey: input.apiKey,
     model: input.model,
     createStream: input.createStream,
-    onSection: input.onSection,
+    /* Each early paragraph has passed its rule by now; see `newlyFinishedSections`. */
+    onSection: sectionWithTokenSymbols(input.onSection, symbolsOf(input.analysis)),
   });
 
   return verifyAnswer(response, input);

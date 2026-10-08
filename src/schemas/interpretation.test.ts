@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { INTERPRETATION_METHOD, RangeInterpretationSchema } from "./interpretation";
+import {
+  INTERPRETATION_METHOD,
+  MAX_SECTION_CHARACTERS,
+  RangeInterpretationSchema,
+} from "./interpretation";
 
 const section = (text: string) => text;
 
@@ -205,5 +209,51 @@ describe("RangeInterpretationSchema", () => {
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     expect(parsed.data.whatThisRangeMeans).toBe(valid.whatThisRangeMeans);
+  });
+});
+
+/*
+ * The model is never shown a token's symbol; it writes {TOKEN_A} and
+ * {TOKEN_B}, and the symbols go in after this contract has passed.
+ */
+describe("RangeInterpretationSchema and the token placeholders", () => {
+  it("accepts prose naming the tokens by their placeholders", () => {
+    const named = {
+      ...valid,
+      ifPriceLeavesTheRange:
+        "Below the range the position holds only {TOKEN_B}, and above it only {TOKEN_A}. It earns nothing more until the price comes back inside.",
+    };
+
+    expect(RangeInterpretationSchema.safeParse(named).success).toBe(true);
+  });
+
+  it.each([
+    ["a placeholder nobody defined", "{TOKEN_C}"],
+    ["a placeholder written in lower case", "{token_b}"],
+    ["a placeholder without its braces", "TOKEN_B"],
+    ["a placeholder left open", "{TOKEN_B"],
+  ])("refuses %s", (_label, written) => {
+    const stray = {
+      ...valid,
+      ifPriceLeavesTheRange: `Below the range the position holds only ${written}, and above it the other token. It earns nothing more until the price returns.`,
+    };
+
+    expect(RangeInterpretationSchema.safeParse(stray).success).toBe(false);
+  });
+
+  it.each([
+    ["English", "You should open this position now, while the price still sits comfortably inside the range shown above it."],
+    ["Turkish", "Fiyat aralığın ortasındayken bu pozisyonu açmanızı tavsiye ederiz; komisyonlar bu bantta en yüksek seviyededir."],
+    ["German", "Die Gebühren in diesem Bereich sind garantiert, solange der Preis innerhalb der beiden Grenzen oben bleibt."],
+    ["Arabic", "ننصحك بفتح هذا المركز الآن، ما دام السعر داخل النطاق المعروض أعلاه ولم يقترب من أي من حديه."],
+    /* Long enough on its own: a short one would be refused for its length, and prove nothing. */
+    ["Chinese", "我们建议您现在就在这个区间开仓，因为价格仍然位于上方所示区间的中间位置，离两条边都还很远，而这个池子收取的手续费在这段时间里也一直保持在较高的水平上。"],
+  ])("refuses advice, in %s, as it refuses a figure", (_label, prose) => {
+    /* Within the length bounds, so it is the advice that is refused and not the size. */
+    expect(prose.length).toBeGreaterThanOrEqual(60);
+    expect(prose.length).toBeLessThanOrEqual(MAX_SECTION_CHARACTERS);
+    expect(RangeInterpretationSchema.safeParse({ ...valid, whatThisRangeMeans: prose }).success).toBe(
+      false,
+    );
   });
 });

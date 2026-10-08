@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { containsAdvice } from "./adviceWords";
 import { containsNumberWord } from "./numberWords";
+import { containsStrayPlaceholder } from "./tokenPlaceholders";
 
 /*
  * What the model is allowed to hand back.
@@ -25,7 +27,14 @@ import { containsNumberWord } from "./numberWords";
  * has started giving advice whatever its disclaimer says. What the schema cannot
  * enforce is tone — a section can still be written as a suggestion — so that
  * part is the prompt's responsibility, and this comment is not pretending
- * otherwise.
+ * otherwise. It does refuse the handful of phrases that are never anything
+ * but advice or a pitch ("buy now", "guaranteed"), in every published
+ * language; that is a backstop for the loudest form, not a judge of tone.
+ *
+ * **No token is named by its symbol.** A symbol is the one string here a
+ * stranger wrote, so the model is never shown one: it writes `{TOKEN_A}` and
+ * `{TOKEN_B}`, and the symbols are substituted after this contract has passed.
+ * See `tokenPlaceholders.ts`.
  */
 
 /** Names the interpretation model, so two written differently are never mixed. */
@@ -129,6 +138,24 @@ const ProseSchema = z
   .refine((prose) => !containsNumberWord(prose), {
     error:
       "The explanation must not state figures in words either. Refer to the values shown alongside it instead.",
+  })
+  /*
+   * A token is named by its placeholder and nothing else. The symbols are put
+   * in after this check has passed (see `tokenPlaceholders.ts`), so anything
+   * that looks like a placeholder and is not exactly one would reach the page
+   * as a variable name — and a name the model was never given is a name it
+   * made up.
+   */
+  .refine((prose) => !containsStrayPlaceholder(prose), {
+    error: "The explanation must name a token only as {TOKEN_A} or {TOKEN_B}.",
+  })
+  /*
+   * The tone rule, for the few phrases a schema can recognise. The instruction
+   * still carries the rest of it; see `adviceWords.ts` for why the list is as
+   * short as it is.
+   */
+  .refine((prose) => !containsAdvice(prose), {
+    error: "The explanation must describe, not advise or promote.",
   });
 
 /**
