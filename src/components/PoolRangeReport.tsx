@@ -21,6 +21,7 @@ import type {
   PoolRangeAnalysisStep,
 } from "../lib/advisor/poolRangeAnalysis";
 import { compareWidths } from "../lib/advisor/widthComparison";
+import { type WidthsTable, widthsTable } from "../lib/advisor/widthsTable";
 import { widthWord } from "../lib/advisor/widthWords";
 import type { RealizedFeeRateResult } from "../lib/analytics/realizedFeeRate";
 import { Fragment } from "react";
@@ -56,6 +57,7 @@ import type { Locale } from "../lib/i18n/locales";
 import { localePath } from "../lib/i18n/localePath";
 import { getMethodCopy } from "../lib/i18n/methodCopy";
 import { getRecentringCopy } from "../lib/i18n/recentringCopy";
+import { getWidthsTableCopy } from "../lib/i18n/widthsTableCopy";
 import type { PriceBandParameters, StatedSwapFee, V4ProtocolFee } from "../schemas";
 import { Choice, optionsIncluding } from "./BandChoices";
 import { PriceHistoryChart } from "./PriceHistoryChart";
@@ -126,6 +128,7 @@ const PANELS = [
   "range",
   "basis",
   "widths",
+  "widths-table",
   "activity",
   "deposit",
   "realizedFee",
@@ -145,6 +148,7 @@ const panelTitles = (t: Dictionary, locale: Locale): Record<PanelId, string> => 
   range: t.report.rangeHeading,
   basis: t.report.basisHeading,
   widths: t.widths.heading,
+  "widths-table": getWidthsTableCopy(locale).heading,
   activity: t.activity.heading,
   deposit: t.deposit.heading,
   realizedFee: t.realizedFee.heading,
@@ -837,6 +841,221 @@ function RecentringResult({
 }
 
 /**
+ * The address of the widths table: the page's own, with the anchor.
+ *
+ * The pool, its chain, the band and the deposit, because the rows depend on
+ * every one of them; the cost per re-centre when one is counted, because the
+ * last columns do; not the reader's own range, which changes nothing here.
+ * Exported for its test.
+ */
+export const widthsTableHref = (
+  form: Pick<CustomRangeForm, "action" | "poolParameter" | "chain">,
+  poolId: string,
+  parameters: PriceBandParameters,
+  depositUsd: number,
+  gasPerRecentreUsd: number,
+): string => {
+  const query = new URLSearchParams({
+    ...(form.chain === undefined || form.chain === "ethereum" ? {} : { chain: form.chain }),
+    [form.poolParameter]: poolId,
+    [HORIZON_PARAMETER]: String(parameters.horizonDays),
+    [MULTIPLIER_PARAMETER]: String(parameters.standardDeviationMultiplier),
+    [DEPOSIT_PARAMETER]: String(depositUsd),
+  });
+  if (gasPerRecentreUsd > 0) query.set(GAS_PARAMETER, String(gasPerRecentreUsd));
+
+  return `${form.action}?${query.toString()}#widths-table`;
+};
+
+/**
+ * Narrow or wide: the month replayed at every width, one row each.
+ *
+ * Drawn twice from the same rows, and only one of the two is shown at a
+ * time. Eight columns of figures do not fit a phone — measured at 375px, the
+ * table ran to roughly twice the screen, and the document clips rather than
+ * scrolls what runs past its edge — so under the medium breakpoint each row
+ * is a card of labelled figures, and from it upward the table scrolls inside
+ * its own box with the width column held in place, so a figure is never read
+ * without the width it belongs to. The hidden one is `display: none`, which
+ * a screen reader skips as well, so nothing is read twice.
+ */
+function WidthsTablePanel({
+  table,
+  form,
+  poolId,
+  parameters,
+  disclosure,
+  edgesInQuote,
+  t,
+  locale,
+}: {
+  table: WidthsTable | null;
+  form: CustomRangeForm;
+  poolId: string;
+  parameters: PriceBandParameters;
+  disclosure: FeeDisclosure;
+  /** A computed interval as the widths panel writes one: both ends and the quote token. */
+  edgesInQuote: (lower: number, upper: number) => string;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const copy = getWidthsTableCopy(locale);
+  const whole = (value: number) => formatWhole(value, locale);
+  const percent = (ratio: number) => formatPercent(ratio, locale);
+  const usd = (value: number) => formatUsd(value, locale);
+  const signed = (value: number) => `${value > 0 ? "+" : ""}${usd(value)}`;
+  const widthLabel = (multiplier: number) =>
+    t.parameters.widthChoice(t.parameters.sigma(formatMultiplier(multiplier, locale)), widthWord(multiplier, t));
+
+  const methodLink = (
+    <Link href={`${localePath(locale, "/method")}#out-of-sample`} prefetch={false} className="text-link text-sm">
+      {getMethodCopy(locale).pointer}
+    </Link>
+  );
+
+  if (table === null) {
+    return (
+      <Panel id="widths-table" title={copy.heading}>
+        <p className="text-sm leading-relaxed text-muted">{copy.intro}</p>
+        <p className="text-sm leading-relaxed">{copy.noHistory}</p>
+        {methodLink}
+      </Panel>
+    );
+  }
+
+  /*
+   * The fee column only where some row has a figure for it: withheld by the
+   * hook rule it is on no row, and unread for want of a dollar rate it is on
+   * none either; both are said under the table in the month replayed's words.
+   */
+  const showsFees = table.rows.some((row) => row.replay?.fees != null);
+  const feesUnread = !table.feesWithheld && !showsFees;
+  const withFees = table.rows.some((row) => row.recentring?.withFees === true);
+  const recentres = table.rows.some((row) => row.recentring !== null);
+  const anyRecentred = table.rows.some((row) => (row.recentring?.recentres ?? 0) > 0);
+
+  /* Every cell written once, so the table and the cards cannot say one figure two ways. */
+  type Cell = { readonly label: string; readonly value: string; readonly ltr?: boolean };
+  const rows = table.rows.map((row) => ({
+    key: row.standardDeviationMultiplier,
+    chosen: row.chosen,
+    width: `${widthLabel(row.standardDeviationMultiplier)}${row.chosen ? ` · ${t.widths.chosen}` : ""}`,
+    cells: ([
+      { label: copy.columnRange, value: row.replay === null ? ABSENT : edgesInQuote(row.replay.lowerPrice, row.replay.upperPrice) },
+      {
+        label: copy.columnDays,
+        value: row.replay === null ? ABSENT : copy.daysValue(whole(row.replay.inside), whole(row.replay.crossed), whole(row.replay.outside)),
+      },
+      ...(showsFees
+        ? [{ label: copy.columnFees(usd(table.depositUsd)), value: row.replay?.fees == null ? ABSENT : usd(row.replay.fees.usd) }]
+        : []),
+      { label: copy.columnWorth, value: row.replay === null ? ABSENT : percent(row.replay.endValueVsHold) },
+      ...(recentres
+        ? [
+            { label: copy.columnRecentres, value: row.recentring === null ? ABSENT : whole(row.recentring.recentres) },
+            {
+              label: withFees ? copy.columnEndValue : copy.columnEndValueBeforeFees,
+              value:
+                row.recentring === null
+                  ? ABSENT
+                  : copy.endValues(usd(row.recentring.outcome.neverUsd), usd(row.recentring.outcome.recentredUsd)),
+              /*
+               * Laid out left to right whatever the page's direction. An
+               * Arabic dollar figure begins with a right-to-left mark, so two
+               * of them in a right-to-left cell swapped places around the
+               * arrow — measured at 375px on 2026-10-08 — and the arrow then
+               * pointed from the end back to the start. Every other figure
+               * on the site lays out left to right, and so does this pair.
+               */
+              ltr: true,
+            },
+            { label: copy.columnDifference, value: row.recentring === null ? ABSENT : signed(row.recentring.outcome.differenceUsd) },
+          ]
+        : []),
+    ] satisfies readonly Cell[]) as readonly Cell[],
+  }));
+  const columns = rows[0]?.cells.map((cell) => cell.label) ?? [];
+
+  return (
+    <Panel id="widths-table" title={copy.heading}>
+      <p className="text-sm leading-relaxed text-muted">{copy.intro}</p>
+      <p className="text-sm leading-relaxed">{copy.openedOn(formatUtcDate(table.openedAt))}</p>
+
+      {/* From the medium breakpoint up: one table, scrolling in its own box, the width column held in place. */}
+      <div className="scroll-hint hidden overflow-x-auto md:block">
+        <table className="w-full min-w-max text-sm">
+          <caption className="sr-only">{copy.tableCaption}</caption>
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-widest text-muted">
+              <th scope="col" className="sticky left-0 bg-surface pr-4 pb-2 font-normal">{copy.columnWidth}</th>
+              {columns.map((label) => (
+                <th key={label} scope="col" className="pr-4 pb-2 font-normal last:pr-0">{label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key} className={row.chosen ? "font-medium" : "text-muted"} data-chosen={row.chosen ? "true" : undefined}>
+                <th scope="row" className="sticky left-0 bg-surface py-1 pr-4 text-left font-medium">{row.width}</th>
+                {row.cells.map((cell) => (
+                  <td key={cell.label} className="py-1 pr-4 font-mono last:pr-0">
+                    {cell.ltr ? <bdi dir="ltr">{cell.value}</bdi> : cell.value}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Under it: a card per width, each figure under its own label. */}
+      <ul className="flex flex-col gap-3 md:hidden">
+        {rows.map((row) => (
+          <li
+            key={row.key}
+            className={`rounded-md border border-border px-4 py-3 ${row.chosen ? "bg-surface-sunken" : ""}`}
+            data-chosen={row.chosen ? "true" : undefined}
+          >
+            <h3 className="text-sm font-medium">{row.width}</h3>
+            <dl className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 text-sm">
+              {row.cells.map((cell) => (
+                <Fragment key={cell.label}>
+                  <dt className="min-w-0 text-xs leading-relaxed text-muted">{cell.label}</dt>
+                  <dd className="text-end font-mono">{cell.ltr ? <bdi dir="ltr">{cell.value}</bdi> : cell.value}</dd>
+                </Fragment>
+              ))}
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      <a href={widthsTableHref(form, poolId, parameters, table.depositUsd, table.gasPerRecentreUsd)} className="text-link text-sm">
+        {copy.share}
+      </a>
+
+      <p className="text-xs leading-relaxed text-muted">{copy.columnsNote}</p>
+      {/* What it leaves out, in the panels' own words where they have them. */}
+      {table.feesWithheld ? (
+        <p className="text-xs leading-relaxed text-muted">{t.backtest.feesWithheld}</p>
+      ) : feesUnread ? (
+        <p className="text-xs leading-relaxed text-muted">{t.backtest.feesUnread}</p>
+      ) : null}
+      {disclosure.hookMayAlterSwaps && anyRecentred ? (
+        <p className="text-xs leading-relaxed text-muted">{getRecentringCopy(locale).hookMayAlter}</p>
+      ) : null}
+      {recentres ? (
+        <p className="text-xs leading-relaxed text-muted">
+          {table.gasPerRecentreUsd > 0 ? copy.gasCounted(usd(table.gasPerRecentreUsd)) : copy.gasNotCounted}
+        </p>
+      ) : null}
+      {anyRecentred ? <p className="text-xs leading-relaxed text-muted">{copy.noImpact}</p> : null}
+      <p className="text-sm leading-relaxed">{copy.caveat}</p>
+      {methodLink}
+    </Panel>
+  );
+}
+
+/**
  * What the pool actually charged, beside what it says it charges.
  *
  * In v3 the two are the same number and this panel says so, which is worth a
@@ -1238,7 +1457,7 @@ export function PoolRangeReport({
         absent={[
           ...(backtest === null ? (["backtest"] as const) : []),
           ...(backtest === null || customRange === undefined ? (["customRange"] as const) : []),
-          ...(customRange === undefined ? (["recentring"] as const) : []),
+          ...(customRange === undefined ? (["widths-table", "recentring"] as const) : []),
         ]}
       />
 
@@ -1337,6 +1556,24 @@ export function PoolRangeReport({
         <p className="text-xs leading-relaxed text-muted">{t.widths.feeShareNote}</p>
         <p className="text-sm leading-relaxed">{t.widths.notAdvice}</p>
       </Panel>
+
+      {/*
+       * The same month at every one of those widths, directly under them, on
+       * the pages that can be linked to: the table's address is the page's
+       * own with an anchor, and the comparison page has no such address.
+       */}
+      {customRange === undefined ? null : (
+        <WidthsTablePanel
+          table={widthsTable(result.data)}
+          form={customRange}
+          poolId={poolId}
+          parameters={parameters}
+          disclosure={disclosure}
+          edgesInQuote={edgesInQuote}
+          t={t}
+          locale={locale}
+        />
+      )}
 
       <Panel id="activity" title={t.activity.heading}>
         <dl className={FIGURE_GRID}>

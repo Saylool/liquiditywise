@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DataResult, PoolDailyPriceHistory, PoolMarketSnapshot, V3Pool } from "../schemas";
 import { analysePoolRange, DEFAULT_DEPOSIT_USD, DEFAULT_PRICE_BAND_PARAMETERS } from "../lib/advisor/poolRangeAnalysis";
-import { formatMeasuredFeePpm, formatPercent, formatPrice } from "../lib/format/displayFormats";
+import { formatMeasuredFeePpm, formatPercent, formatPrice, formatUsd } from "../lib/format/displayFormats";
 import {
   choosePriceQuote,
   edgeDistances,
@@ -18,7 +18,9 @@ import {
 import type { ChainSlug } from "../lib/chains/chains";
 import { getDictionary } from "../lib/i18n/dictionaries";
 import { getRecentringCopy } from "../lib/i18n/recentringCopy";
-import { PoolRangeReport } from "./PoolRangeReport";
+import { getWidthsTableCopy } from "../lib/i18n/widthsTableCopy";
+import { widthsTable } from "../lib/advisor/widthsTable";
+import { PoolRangeReport, widthsTableHref } from "./PoolRangeReport";
 
 /*
  * Rendered through `react-dom/server`, which needs no DOM and no browser. The
@@ -1169,8 +1171,8 @@ describe("what a swap costs here", () => {
  * because they are the same list.
  */
 describe("the way into the page", () => {
-  const anchors = (markup: string) => [...markup.matchAll(/href="#([a-zA-Z]+)"/g)].map((m) => m[1]);
-  const targets = (markup: string) => [...markup.matchAll(/ id="([a-zA-Z]+)"/g)].map((m) => m[1]);
+  const anchors = (markup: string) => [...markup.matchAll(/href="#([a-zA-Z-]+)"/g)].map((m) => m[1]);
+  const targets = (markup: string) => [...markup.matchAll(/ id="([a-zA-Z-]+)"/g)].map((m) => m[1]);
 
   it("lists the sections under the range rather than in front of it", () => {
     const markup = render(analyse());
@@ -1766,5 +1768,244 @@ describe("re-centring when the price leaves", () => {
     expect(markup).toContain(escaped(turkish.recentredOn("2026-09-02 ve 2026-09-09")));
     expect(markup).toContain(turkish.columnRecentred);
     expect(markup).not.toContain(copy.heading);
+  });
+});
+
+/*
+ * Narrow or wide: every width over the same month, one row each, under the
+ * widths panel. Through the real pipeline on a month that drifts, so a tight
+ * range is left and re-centred and a wide one is not — and every figure the
+ * table shows is one the panels it is drawn from would show.
+ */
+describe("the widths table", () => {
+  const V4_REF = { protocolVersion: "v4", chainId: 1, id: `0x${"d".repeat(64)}` } as const;
+  /** `beforeSwap`, `afterSwap` and `afterSwapReturnsDelta`. */
+  const SWAP_HOOK = `0x${"1".repeat(36)}00c4`;
+  /** `beforeAddLiquidity` alone: it never runs on a swap. */
+  const LIQUIDITY_HOOK = `0x${"1".repeat(36)}0800`;
+  const RANGE_END = Date.parse("2026-08-21T00:00:00.000Z");
+
+  /** The width comparison's month: four-percent steps, seven of eleven the same way, fees every day. */
+  const drifting = (days = 121, ref: { protocolVersion: string; chainId: number; id: string } = POOL_REF): PoolDailyPriceHistory => {
+    const start = RANGE_END - days * DAY_MS;
+    const closes: number[] = new Array<number>(days);
+    closes[days - 1] = CURRENT_PRICE;
+    for (let day = days - 2; day >= 0; day -= 1) {
+      const step = (day * 7) % 11 < 7 ? 1.04 : 1 / 1.04;
+      closes[day] = (closes[day + 1] ?? CURRENT_PRICE) * step;
+    }
+    return {
+      pool: ref,
+      fetchedAt: FETCHED_AT,
+      sourceBlockNumber: "21500000",
+      sourceBlockTimestamp: "2026-08-21T09:14:48.000Z",
+      rangeStart: new Date(start).toISOString(),
+      rangeEndExclusive: new Date(RANGE_END).toISOString(),
+      interval: "1d",
+      priceDirection: "token0PriceInToken1",
+      points: closes.map((price, day) => ({
+        timestamp: new Date(start + day * DAY_MS).toISOString(),
+        price,
+        low: price / 1.004,
+        high: price * 1.004,
+        volumeUsd: 1_000_000,
+        feesUsd: 3_000,
+        activeLiquidity: "1000000000000000000",
+      })),
+      source: ref.protocolVersion === "v3" ? "uniswap-v3-subgraph" : "uniswap-v4-subgraph",
+    } as unknown as PoolDailyPriceHistory;
+  };
+  const v4 = (hookAddress: string | null) => ({
+    pool: ok({
+      ...V4_REF,
+      token0: { chainId: 1, address: `0x${"a".repeat(40)}`, symbol: "USDC", decimals: 6 },
+      token1: { chainId: 1, address: `0x${"b".repeat(40)}`, symbol: "WETH", decimals: 18 },
+      tickSpacing: 60,
+      fee: { kind: "static", feePpm: 3000 },
+      protocolFee: { zeroForOnePpm: 0, oneForZeroPpm: 0 },
+      hookAddress,
+    } as unknown as V3Pool),
+    snapshot: ok(snapshot({ pool: V4_REF, source: "uniswap-v4-subgraph" })),
+    history: ok(drifting(121, V4_REF)),
+  });
+  const analysed = (overrides: Parameters<typeof analyse>[0] = {}) => {
+    const result = analyse({ history: ok(drifting()), ...overrides });
+    if (result.status === "unavailable") throw new Error("fixture did not analyse");
+    return result;
+  };
+  const renderWith = (
+    result: ReturnType<typeof analysePoolRange>,
+    {
+      locale = "en" as "en" | "tr",
+      gas = { status: "none" } as RequestedRecentreGas,
+      action = "/pool",
+      poolParameter = "address",
+      chain = "ethereum" as ChainSlug,
+    } = {},
+  ) =>
+    renderToStaticMarkup(
+      <PoolRangeReport
+        result={result}
+        poolId={POOL_ID}
+        customRange={{ action, poolParameter, chain, requested: { status: "none" }, gas }}
+        t={getDictionary(locale)}
+        locale={locale}
+      />,
+    );
+  const panel = (markup: string) => markup.slice(markup.indexOf('id="widths-table"'), markup.indexOf('id="activity"'));
+  const copy = getWidthsTableCopy("en");
+  const escaped = (text: string) => text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;");
+  const usd = (value: number) => formatUsd(value, "en");
+
+  it("is only on a page with an address of its own, directly under the widths panel, and listed among the sections", () => {
+    const anchors = (markup: string) => [...markup.matchAll(/href="#([a-zA-Z-]+)"/g)].map((m) => m[1]);
+    const result = analysed();
+
+    expect(render(result)).not.toContain('id="widths-table"');
+    expect(anchors(render(result))).not.toContain("widths-table");
+    const markup = renderWith(result);
+    expect(markup).toContain('id="widths-table"');
+    expect(anchors(markup)).toContain("widths-table");
+    expect(markup.indexOf('id="widths"')).toBeLessThan(markup.indexOf('id="widths-table"'));
+    expect(markup.indexOf('id="widths-table"')).toBeLessThan(markup.indexOf('id="activity"'));
+  });
+
+  it("says so when the history is too short to replay a month at any width", () => {
+    const markup = renderWith(analyse());
+
+    expect(markup).toContain('id="widths-table"');
+    expect(markup).toContain(escaped(copy.noHistory));
+    expect(markup).not.toContain(copy.tableCaption);
+  });
+
+  it("gives one row per offered width, marks the one shown, and writes the panels' own figures into it", () => {
+    const result = analysed();
+    const markup = panel(renderWith(result));
+    const table = widthsTable(result.data);
+    const { backtest, recentring } = result.data;
+    if (table === null || backtest === null || recentring === null || backtest.fees === null || recentring.afterFees === null) {
+      throw new Error("the fixture should replay and re-centre");
+    }
+
+    expect(markup).toContain(copy.tableCaption);
+    expect(markup).toContain(`Every row opens at the close of ${backtest.openedAt.slice(0, 10)}.`);
+    /* Once in the table, once in the cards. */
+    expect(markup.match(/data-chosen="true"/g)).toHaveLength(2);
+    expect(markup.match(/Tight \(1σ\) · shown above/g)).toHaveLength(2);
+    for (const word of ["Medium (1.5σ)", "Wide (2σ)", "Very wide (3σ)"]) expect(markup).toContain(word);
+    expect(table.rows).toHaveLength(4);
+
+    /* The chosen row is the backtest panel's and the re-centring panel's figures, written as those panels write them. */
+    const from = markup.indexOf('data-chosen="true"');
+    const chosen = markup.slice(from, markup.indexOf("</tr>", from));
+    expect(chosen).toContain(`${formatPrice(1 / backtest.upperPrice)} – ${formatPrice(1 / backtest.lowerPrice)} USDC`);
+    expect(chosen).toContain(`>${backtest.inside} / ${backtest.crossed} / ${backtest.outside}<`);
+    expect(chosen).toContain(`>${usd(backtest.fees.usd)}<`);
+    expect(chosen).toContain(`>${formatPercent(backtest.endValueVsHold)}<`);
+    expect(recentring.recentres.length).toBeGreaterThan(0);
+    expect(chosen).toContain(`>${recentring.recentres.length}<`);
+    expect(chosen).toContain(`>${copy.endValues(usd(recentring.afterFees.neverUsd), usd(recentring.afterFees.recentredUsd))}<`);
+    expect(chosen).toContain(`>${recentring.afterFees.differenceUsd > 0 ? "+" : ""}${usd(recentring.afterFees.differenceUsd)}<`);
+    expect(markup).toContain("Fees on $1,000");
+    expect(markup).toContain(copy.columnEndValue);
+    expect(markup).toContain(copy.gasNotCounted);
+    expect(markup).toContain(escaped(copy.noImpact));
+    expect(markup).toContain("not a forecast");
+  });
+
+  /* The mark follows the page's width, not the first row: a page drawn at 2σ marks the third row in both renderings. */
+  it("marks the width the page was drawn with, wherever it sits", () => {
+    const markup = panel(renderWith(analysed({ parameters: { ...DEFAULT_PRICE_BAND_PARAMETERS, standardDeviationMultiplier: 2 } })));
+
+    expect(markup.match(/Wide \(2σ\) · shown above/g)).toHaveLength(2);
+    expect(markup).not.toContain("Tight (1σ) · shown above");
+    expect(markup.match(/data-chosen="true"/g)).toHaveLength(2);
+  });
+
+  it("lets a wide range keep more of the days and re-centre less often than a tight one", () => {
+    const result = analysed();
+    const [tight, , , wide] = widthsTable(result.data)?.rows ?? [];
+
+    expect(tight?.replay?.inside ?? 0).toBeLessThan(wide?.replay?.inside ?? 0);
+    expect(tight?.recentring?.recentres ?? 0).toBeGreaterThan(wide?.recentring?.recentres ?? 0);
+    const markup = panel(renderWith(result));
+    expect(markup).toContain(`>${tight?.recentring?.recentres}<`);
+    expect(markup).toContain(`>${wide?.recentring?.recentres}<`);
+  });
+
+  it("draws the rows twice: a table that scrolls in its own box with the width held in place, and a card per width", () => {
+    const markup = panel(renderWith(analysed()));
+
+    expect(markup).toContain('<div class="scroll-hint hidden overflow-x-auto md:block"><table class="w-full min-w-max text-sm">');
+    expect(markup.match(/<th scope="row" class="sticky left-0 bg-surface[^"]*"/g)).toHaveLength(4);
+    expect(markup).toContain('<ul class="flex flex-col gap-3 md:hidden">');
+    expect(markup.match(/<li /g)).toHaveLength(4);
+    expect(markup.match(/<h3 class="text-sm font-medium">/g)).toHaveLength(4);
+    /* Every column heading is a label on every card too: once in the head, once per card. */
+    for (const label of [copy.columnRange, copy.columnDays, copy.columnWorth, copy.columnRecentres, copy.columnDifference]) {
+      expect(markup.split(`>${label}<`).length - 1, label).toBe(5);
+    }
+  });
+
+  it("shares itself as the page's own address with the anchor, carrying the pool, chain, band, deposit and a counted gas cost", () => {
+    expect(renderWith(analysed())).toContain(`href="/pool?address=${POOL_ID}&amp;days=30&amp;sigma=1&amp;usd=1000#widths-table"`);
+    expect(
+      widthsTableHref({ action: "/v4", poolParameter: "id", chain: "base" }, V4_REF.id, { horizonDays: 90, standardDeviationMultiplier: 1.5 }, 10_000, 5),
+    ).toBe(`/v4?chain=base&id=${V4_REF.id}&days=90&sigma=1.5&usd=10000&gas=5#widths-table`);
+    expect(widthsTableHref({ action: "/pool", poolParameter: "address", chain: "ethereum" }, POOL_ID, DEFAULT_PRICE_BAND_PARAMETERS, 1_000, 0)).not.toContain("gas");
+    expect(renderWith(analysed())).toContain(`>${copy.share}<`);
+  });
+
+  it("counts the gas the page counts, and says so", () => {
+    const markup = panel(renderWith(analysed({ recentreGasUsd: 5 }), { gas: { status: "usable", usd: 5, written: "5" } }));
+
+    expect(markup).toContain(escaped(copy.gasCounted("$5.00")));
+    expect(markup).not.toContain(copy.gasNotCounted);
+    expect(markup).toContain("&amp;gas=5#widths-table");
+  });
+
+  /*
+   * The hook rule, as the backtest and re-centring panels apply it: no fee
+   * column, the end value before fees, and both qualifiers said under the
+   * table in those panels' own words.
+   */
+  it("withholds the fee column and ends before fees where a hook may alter a swap, and says why", () => {
+    const markup = panel(renderWith(analysed(v4(SWAP_HOOK)), { action: "/v4", poolParameter: "id" }));
+
+    expect(markup).not.toContain("Fees on $1,000");
+    expect(markup).toContain(copy.columnEndValueBeforeFees);
+    expect(markup).not.toContain(`>${copy.columnEndValue}<`);
+    expect(markup).toContain("so no fees are attributed to a range here");
+    expect(markup).toContain(escaped(getRecentringCopy("en").hookMayAlter));
+  });
+
+  it("leaves the fees alone where the hook never runs on a swap", () => {
+    const markup = panel(renderWith(analysed(v4(LIQUIDITY_HOOK)), { action: "/v4", poolParameter: "id" }));
+
+    expect(markup).toContain("Fees on $1,000");
+    expect(markup).toContain(`>${copy.columnEndValue}<`);
+    expect(markup).not.toContain(escaped(getRecentringCopy("en").hookMayAlter));
+  });
+
+  it("says the fees could not be sized where the pool's dollar rate could not be read", () => {
+    const markup = panel(renderWith(analysed({ snapshot: ok(snapshot({ lockedToken0: 0, lockedToken1: 0 })) })));
+
+    expect(markup).not.toContain("Fees on $1,000");
+    expect(markup).toContain("The fees could not be sized");
+  });
+
+  it("leads on to how it is measured, without prefetching", () => {
+    expect(panel(renderWith(analysed()))).toContain('href="/en/method#out-of-sample"');
+  });
+
+  it("speaks the reader's language", () => {
+    const markup = panel(renderWith(analysed(), { locale: "tr" }));
+    const turkish = getWidthsTableCopy("tr");
+
+    expect(markup).toContain(turkish.heading);
+    expect(markup).toContain("Dar (1σ) · yukarıda gösterilen");
+    expect(markup).toContain(escaped(turkish.columnFees(formatUsd(1000, "tr"))));
+    expect(markup).not.toContain(copy.heading);
+    expect(markup).not.toContain("Fees on");
   });
 });
