@@ -66,6 +66,15 @@ else
 fi
 
 # The credentials: yours to write, never this script's.
+#
+# The checkout belongs to the application user, so anything in it may have
+# been put there by that user — including a symbolic link where .env.local
+# should be, which the chmod below, run as root, would follow to whatever file
+# it names. Refused rather than followed.
+if [ -L "$APP_DIR/.env.local" ] || [ -L "$APP_DIR/.env.example" ]; then
+  echo "$APP_DIR/.env.local or .env.example is a symbolic link; not touching it as root." >&2
+  exit 1
+fi
 if [ ! -f "$APP_DIR/.env.local" ]; then
   cp "$APP_DIR/.env.example" "$APP_DIR/.env.local"
   chmod 600 "$APP_DIR/.env.local"
@@ -87,23 +96,81 @@ systemctl daemon-reload
 systemctl enable --quiet liquiditywise
 systemctl restart liquiditywise
 
-# The scheduled jobs: two every five minutes, and the backup once a day. All
-# read their secrets from .env.local at run time, so this file stays
-# world-readable and holds none.
-install -m 755 "$APP_DIR/deploy/telegram-check.sh" /usr/local/bin/liquiditywise-telegram-check
-install -m 755 "$APP_DIR/deploy/health-check.sh" /usr/local/bin/liquiditywise-health
-install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/liquiditywise-backup
-install -m 755 "$APP_DIR/deploy/usage-report.sh" /usr/local/bin/liquiditywise-usage
-install -d -m 755 /var/lib/liquiditywise
+# The scheduled jobs: two every five minutes, the backup once a day, two
+# weekly. All read their secrets from .env.local at run time, so the cron file
+# stays world-readable and holds none.
+#
+# Who runs them. The checkout above belongs to the application user, and so
+# does everything in it: the deploy scripts, the .mts files, the Python, every
+# module they import. A root job that ran any of it would make that account —
+# the one the internet-facing process runs as — a way to run code as root on a
+# schedule. So two rules, held by src/deployScripts.test.ts:
+#
+#   - A job that needs nothing only root has runs as $APP_USER. The Telegram
+#     check, the health check and the backup only read .env.local (which that
+#     user owns, mode 600), talk to 127.0.0.1, Redis, Telegram and the backup
+#     Worker, and keep their state in $STATE_DIR, which that user owns.
+#   - A job that does need root runs a root-owned copy installed here, never a
+#     file in the checkout, and that copy loads nothing from the checkout
+#     while it is root. cloudflare-only.sh rewrites the nginx site and reloads
+#     nginx, so it and its Python are copied to $LIB_DIR. The usage report
+#     needs root for one thing, reading the system journal: it reads it as
+#     root and hands it to the report's node code with the privileges dropped
+#     to $APP_USER (usage-report.sh says how).
+#
+# The copies are made from the checkout at deploy time, by this script, which
+# root runs by hand: the same trust as running the script at all, and no more.
+# The scripts in /usr/local/bin were always root-owned copies; what changed is
+# that none of them runs checkout code as root any longer.
+LIB_DIR="/usr/local/lib/liquiditywise"
+STATE_DIR="/var/lib/liquiditywise/state"
+install -o root -g root -m 755 "$APP_DIR/deploy/telegram-check.sh" /usr/local/bin/liquiditywise-telegram-check
+install -o root -g root -m 755 "$APP_DIR/deploy/health-check.sh" /usr/local/bin/liquiditywise-health
+install -o root -g root -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/bin/liquiditywise-backup
+install -o root -g root -m 755 "$APP_DIR/deploy/usage-report.sh" /usr/local/bin/liquiditywise-usage
+install -d -o root -g root -m 755 "$LIB_DIR"
+install -o root -g root -m 755 "$APP_DIR/deploy/cloudflare-only.sh" "$LIB_DIR/cloudflare-only.sh"
+install -o root -g root -m 644 "$APP_DIR/deploy/cloudflare_only.py" "$LIB_DIR/cloudflare_only.py"
+
+# /var/lib/liquiditywise stays root's: nginx includes the Cloudflare allow
+# list from it, and a directory the application user could write is one it
+# could swap that list in. The jobs' own state goes one level down, in a
+# directory of the application user's.
+install -d -o root -g root -m 755 /var/lib/liquiditywise
+install -d -o "$APP_USER" -g "$APP_USER" -m 750 "$STATE_DIR"
+# Moved, once, from where root's jobs used to keep them. Handed over while
+# still in root's directory and only then moved, so nothing is ever chowned
+# inside the application user's, where it could have been swapped for a link
+# to somebody else's file between one command and the next.
+for name in health.state backup.last; do
+  old="/var/lib/liquiditywise/$name"
+  [ -f "$old" ] && [ ! -L "$old" ] || continue
+  if [ -e "$STATE_DIR/$name" ] || [ -L "$STATE_DIR/$name" ]; then
+    rm -f "$old"
+  else
+    chown "$APP_USER:$APP_USER" "$old"
+    mv -T "$old" "$STATE_DIR/$name"
+  fi
+done
+
+# The jobs' PATH: where node is, and the system's. Never anything in the
+# checkout, where a `node` or a `curl` of the application user's would be
+# found first.
+JOB_PATH="$(dirname "$(command -v node)"):/usr/bin:/bin"
+case "$JOB_PATH" in
+  *"$APP_DIR"*) echo "node resolves inside $APP_DIR; not scheduling anything with that PATH." >&2; exit 1 ;;
+esac
 {
-  echo "*/5 * * * * root APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check"
-  echo "*/5 * * * * root APP_PORT=$APP_PORT DOMAIN=$DOMAIN /usr/local/bin/liquiditywise-health"
+  echo "*/5 * * * * $APP_USER PATH=$JOB_PATH APP_PORT=$APP_PORT /usr/local/bin/liquiditywise-telegram-check"
+  echo "*/5 * * * * $APP_USER PATH=$JOB_PATH APP_PORT=$APP_PORT DOMAIN=$DOMAIN /usr/local/bin/liquiditywise-health"
   # The week's use of the site, through Server Watch: Monday 06:00 UTC, 09:00 in Turkey.
-  echo "0 6 * * 1 root PATH=$(dirname "$(command -v node)"):/usr/bin:/bin /usr/local/bin/liquiditywise-usage > /dev/null"
-  # Cloudflare's address list, weekly: the site answers nothing else.
-  echo "23 4 * * 1 root /bin/bash $APP_DIR/deploy/cloudflare-only.sh > /dev/null"
+  # Root for the journal only; the report itself runs as $APP_USER.
+  echo "0 6 * * 1 root PATH=$JOB_PATH /usr/local/bin/liquiditywise-usage > /dev/null"
+  # Cloudflare's address list, weekly: the site answers nothing else. With
+  # /usr/sbin, where nginx is and cron's own PATH does not reach.
+  echo "23 4 * * 1 root PATH=/usr/sbin:/usr/bin:/sbin:/bin /bin/bash $LIB_DIR/cloudflare-only.sh > /dev/null"
   # Off the five-minute marks, and quiet until set-backup-secret.sh has run.
-  echo "17 3 * * * root PATH=$(dirname "$(command -v node)"):/usr/bin:/bin /usr/local/bin/liquiditywise-backup --if-set-up > /dev/null"
+  echo "17 3 * * * $APP_USER PATH=$JOB_PATH /usr/local/bin/liquiditywise-backup --if-set-up > /dev/null"
 } > /etc/cron.d/liquiditywise
 chmod 644 /etc/cron.d/liquiditywise
 

@@ -16,12 +16,27 @@
 # What this cannot do is tell you the machine is off. Nothing that runs on a
 # machine can. If that matters, point an outside uptime service at the site
 # as well; this covers everything short of it.
+#
+# Cron runs it as the application user, not root: everything it reads is that
+# user's or public, and its state is kept in a directory that user owns
+# (setup.sh says why that matters). Started as root by hand, it starts itself
+# again as that user, so a state file is never left behind that cron's runs
+# cannot write.
 set -uo pipefail
 
 APP_DIR="${APP_DIR:-/opt/liquiditywise}"
+APP_USER="${APP_USER:-liquiditywise}"
 APP_PORT="${APP_PORT:-3200}"
 DOMAIN="${DOMAIN:-liquiditywise.com}"
-STATE_FILE="${STATE_FILE:-/var/lib/liquiditywise/health.state}"
+STATE_FILE="${STATE_FILE:-/var/lib/liquiditywise/state/health.state}"
+
+# From the checkout, which that user can always enter, whatever directory it
+# was started in: node, for one, will not start in a directory it cannot read.
+self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+cd "$APP_DIR" || exit 1
+if [ "$(id -u)" = 0 ]; then
+  exec setpriv --reuid="$(id -u "$APP_USER")" --regid="$(id -g "$APP_USER")" --init-groups -- /bin/bash "$self" "$@"
+fi
 
 # Values out of .env.local, never printed, never passed as an argument.
 setting() {
@@ -87,15 +102,23 @@ fi
 
 query=""
 
+# Read from the file when this user may, and otherwise from nginx itself, on
+# loopback with the domain's name: the certificate is public, and certbot
+# keeps /etc/letsencrypt/live root's alone on some versions. The handshake is
+# all this takes; the Cloudflare-only allow list refuses the request after it,
+# which does not matter, because no request is sent.
 cert="/etc/letsencrypt/live/$DOMAIN/fullchain.pem"
 if [ -r "$cert" ]; then
   end="$(openssl x509 -enddate -noout -in "$cert" 2>/dev/null | cut -d= -f2)"
-  if [ -n "$end" ]; then
-    end_epoch="$(date -d "$end" +%s 2>/dev/null)"
-    # An unreadable date sends nothing: a reading that was not taken has to
-    # stay untaken, or the application would judge a number this made up.
-    [ -n "$end_epoch" ] && query="certificateDays=$(( (end_epoch - $(date +%s)) / 86400 ))"
-  fi
+else
+  end="$(timeout 10 openssl s_client -connect 127.0.0.1:443 -servername "$DOMAIN" < /dev/null 2>/dev/null |
+    openssl x509 -enddate -noout 2>/dev/null | cut -d= -f2)"
+fi
+if [ -n "$end" ]; then
+  end_epoch="$(date -d "$end" +%s 2>/dev/null)"
+  # An unreadable date sends nothing: a reading that was not taken has to
+  # stay untaken, or the application would judge a number this made up.
+  [ -n "$end_epoch" ] && query="certificateDays=$(( (end_epoch - $(date +%s)) / 86400 ))"
 fi
 
 disk="$(df -P "$APP_DIR" 2>/dev/null | awk 'NR==2 {gsub("%","",$5); print $5}')"
@@ -109,7 +132,8 @@ fi
 # widened for a monitor.
 if command -v redis-cli >/dev/null; then
   # The password, when REDIS_URL carries one, goes to redis-cli in its
-  # environment — readable by root and nobody else — not as an argument.
+  # environment — readable by this user and root, nobody else — not as an
+  # argument.
   redis_url="$(setting REDIS_URL)"
   redis_password=""
   case "$redis_url" in redis://:*@*) redis_password="${redis_url#redis://:}"; redis_password="${redis_password%%@*}" ;; esac
@@ -124,7 +148,7 @@ fi
 # set up. Before the first one there is no stamp and nothing to be late; from
 # the first one on, a stamp that stops moving is what a stopped backup looks
 # like.
-BACKUP_STAMP="${BACKUP_STAMP:-/var/lib/liquiditywise/backup.last}"
+BACKUP_STAMP="${BACKUP_STAMP:-/var/lib/liquiditywise/state/backup.last}"
 if [ -n "$(setting BACKUP_SECRET)" ] && [ -r "$BACKUP_STAMP" ]; then
   stored="$(tr -dc '0-9' < "$BACKUP_STAMP")"
   [ -n "$stored" ] && query="${query:+$query&}backupHours=$(( ($(date +%s) - stored) / 3600 ))"

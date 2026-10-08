@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # The daily backup of the Telegram links. Installed by setup.sh as
-# /usr/local/bin/liquiditywise-backup and run by cron once a day, as root.
+# /usr/local/bin/liquiditywise-backup and run by cron once a day, as the
+# application user — never as root, because it runs store-backup.mts from the
+# checkout, which that user can write (setup.sh says why that matters).
+# Started as root, as `ssh root@<server> liquiditywise-backup` does, it starts
+# itself again as that user first.
 #
 #   liquiditywise-backup                 take one now
 #   liquiditywise-backup --if-set-up     the same, and nothing at all before
@@ -30,9 +34,18 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/liquiditywise}"
+APP_USER="${APP_USER:-liquiditywise}"
 ENV_FILE="$APP_DIR/.env.local"
 RECIPIENT="${RECIPIENT:-$APP_DIR/deploy/backup-recipient.pem}"
-STAMP_FILE="${STAMP_FILE:-/var/lib/liquiditywise/backup.last}"
+STAMP_FILE="${STAMP_FILE:-/var/lib/liquiditywise/state/backup.last}"
+
+# From the checkout, which that user can always enter, whatever directory it
+# was started in: node will not start in a directory it cannot read.
+self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+cd "$APP_DIR"
+if [ "$(id -u)" = 0 ]; then
+  exec setpriv --reuid="$(id -u "$APP_USER")" --regid="$(id -g "$APP_USER")" --init-groups -- /bin/bash "$self" "$@"
+fi
 # What the copies are called. Only ever changed to prove a restore on made-up
 # links without writing over a real day's backup.
 NAME="${BACKUP_NAME_PREFIX:-backup}"
