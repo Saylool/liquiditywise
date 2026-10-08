@@ -60,6 +60,16 @@ export const EMBED_PAGES = ["/embed/pool", "/api/embed/pool"] as const;
 export const SHARE_PAGES = ["/api/share/position"] as const;
 
 /**
+ * The card a shared pool link unfurls into. Open to crawlers — they are who
+ * fetch it, and they read robots.txt — so it is in neither list above nor in
+ * CLOSED_PATHS. Named here because the proxy runs on it all the same: it reads
+ * one pool like the page it stands for, and is charged like it
+ * (ratelimit/chargeableRequest.ts). It is not a visit, and is not counted as
+ * one.
+ */
+export const CARD_PAGES = ["/og/pool"] as const;
+
+/**
  * Pages that read live data per request, plus the routes that are not pages
  * at all — and the two addresses a link in an e-mail opens (/weekly/confirm,
  * /weekly/unsubscribe), which do one thing for one reader and are nothing to

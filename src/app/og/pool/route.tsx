@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 
+import { OVER_BUDGET } from "@/lib/cache/concurrency";
+import type { PoolCardText } from "@/lib/og/poolCard";
+import { POOL_CARD_RETRY_AFTER_SECONDS, poolCardBudget } from "@/lib/og/poolCardBudget";
 import { readPoolCard } from "@/lib/og/readPoolCard";
 
 /*
@@ -12,6 +15,16 @@ import { readPoolCard } from "@/lib/og/readPoolCard";
  * can read gets the site's own card instead of an error, so a link is never a
  * broken image in somebody's feed. Kept a day per pool, here and in any cache
  * in front, because nothing on it changes with the price.
+ *
+ * Charged against the caller's allowance by the proxy like every other read
+ * of one pool, when it names one (og/poolCardRequest.ts) — and, because a
+ * crawler's addresses are many, also drawn inside one budget for the whole
+ * process (og/poolCardBudget.ts). The budget covers the drawing as well as
+ * the read: an ImageResponse renders as its body is read, after the handler
+ * has returned, so the image is read out whole inside the budget and only the
+ * finished bytes are handed on. Past the budget the card is not started, and
+ * the answer is a 503 to try again in a few seconds — kept by no cache, so
+ * the next fetch gets the card.
  */
 
 const BACKGROUND = "#120f14";
@@ -27,11 +40,9 @@ const MARK = `data:image/svg+xml;utf8,${encodeURIComponent(
 /** A day, here and in any cache in front: nothing on the card changes with the price. */
 const DAY_SECONDS = 86_400;
 
-export async function GET(request: NextRequest): Promise<ImageResponse> {
-  const params = request.nextUrl.searchParams;
-  const text = await readPoolCard(params);
-
-  return new ImageResponse(
+/** The card itself, for a pool's text, or the site's own when there is none. */
+const draw = (text: PoolCardText | null): ImageResponse =>
+  new ImageResponse(
     (
       <div
         style={{
@@ -78,4 +89,20 @@ export async function GET(request: NextRequest): Promise<ImageResponse> {
       headers: { "Cache-Control": `public, max-age=${DAY_SECONDS}, s-maxage=${DAY_SECONDS}` },
     },
   );
+
+export async function GET(request: NextRequest): Promise<Response> {
+  const params = request.nextUrl.searchParams;
+
+  const drawn = await poolCardBudget(async () => {
+    const image = draw(await readPoolCard(params));
+    return new Response(await image.arrayBuffer(), { status: image.status, headers: image.headers });
+  });
+
+  if (drawn === OVER_BUDGET) {
+    return new Response(null, {
+      status: 503,
+      headers: { "Retry-After": String(POOL_CARD_RETRY_AFTER_SECONDS), "Cache-Control": "no-store" },
+    });
+  }
+  return drawn;
 }

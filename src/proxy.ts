@@ -13,7 +13,7 @@ import {
   poolAnalysisRateLimiter,
 } from "./lib/ratelimit/poolAnalysisRateLimiter";
 import { EMBED_CARD_HEADERS, EMBED_CARD_PATH } from "./lib/security/responseHeaders";
-import { EMBED_PAGES, SHARE_PAGES } from "./lib/site/indexing";
+import { CARD_PAGES, EMBED_PAGES, SHARE_PAGES } from "./lib/site/indexing";
 import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
 
 /*
@@ -56,6 +56,12 @@ import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
  * one pool like the page it stands for, and each is counted. So is the share
  * card, which reads one position as the holdings page does.
  *
+ * And the card a shared pool link unfurls into, for the first reason only. It
+ * reads one pool as the page does, from any address a caller cares to vary,
+ * and was once left out of this list: the one public route that spent quota
+ * with nothing in front of it. It is charged like the page, and it is not a
+ * visit — the report counts readers, and its fetchers are crawlers.
+ *
  * And every open page's language addresses, which exist only because this
  * turns them into the page itself (see localePath.ts). Written out rather than
  * built from LOCALES because Next reads this object without running the file;
@@ -89,6 +95,7 @@ export const config = {
     "/embed/pool",
     "/api/embed/pool",
     "/api/share/position",
+    "/og/pool",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/hooks",
     "/:locale(en|tr|de|es|ar|hi|zh|ru|pt|zh-Hant)/learn",
@@ -161,6 +168,9 @@ const EMBED_DATA_PATH: (typeof EMBED_PAGES)[number] = "/api/embed/pool";
 /** Where a position's share card is drawn, which answers its failures in JSON like the embed API. */
 const SHARE_CARD_PATH: (typeof SHARE_PAGES)[number] = "/api/share/position";
 
+/** Where a shared pool link's card is drawn, which answers its refusal in JSON too. */
+const POOL_CARD_PATH: (typeof CARD_PAGES)[number] = "/og/pool";
+
 /** The pages whose language is in their address rather than the reader's cookie or browser. */
 const ADDRESSED_LANGUAGE_PAGES: readonly string[] = [...EMBED_PAGES, ...SHARE_PAGES];
 
@@ -182,8 +192,12 @@ const refuse = (retryAfterSeconds: number, locale: Locale, page: URL): NextRespo
       { status: 429, headers: { ...headers, "Access-Control-Allow-Origin": "*" } },
     );
   }
-  /* The share card too, in JSON a script can test — but it is an image, not an API another site reads, so without the opening. */
-  if (page.pathname === SHARE_CARD_PATH) {
+  /*
+   * The share card too, in JSON a script can test — but it is an image, not an
+   * API another site reads, so without the opening. And the pool card the same
+   * way: a crawler is the one asking, and a page of prose is no use to it.
+   */
+  if (page.pathname === SHARE_CARD_PATH || page.pathname === POOL_CARD_PATH) {
     return NextResponse.json({ error: "rate-limited", retryAfterSeconds }, { status: 429, headers });
   }
 

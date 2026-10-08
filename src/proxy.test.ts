@@ -149,12 +149,14 @@ describe("counting visits for the weekly report", () => {
     vi.restoreAllMocks();
   });
 
-  it("watches every page the report names", async () => {
+  /* Every page the report names, and the pool card, which is charged but is not a page anyone visits. */
+  it("watches every page the report names, and the card it does not", async () => {
     const { PAGES } = await import("./lib/usage/usageLines");
     const { config } = await import("./proxy");
     const { localeMatchers } = await import("./lib/i18n/localePath");
+    const { CARD_PAGES } = await import("./lib/site/indexing");
 
-    expect([...config.matcher].sort()).toEqual([...PAGES, ...localeMatchers()].sort());
+    expect([...config.matcher].sort()).toEqual([...PAGES, ...CARD_PAGES, ...localeMatchers()].sort());
   });
 
   it("counts a page once, with its pool and the reader's language", async () => {
@@ -442,5 +444,72 @@ describe("the share card", () => {
     expect(lines.mock.calls.map(([line]) => String(line)).filter((line) => line.startsWith("[visit]"))).toEqual([
       "[visit] page=/api/share/position pool=- locale=ru bot=0 outcome=served chain=base",
     ]);
+  });
+});
+
+/*
+ * The card a shared pool link unfurls into. It reads one pool like the page,
+ * from any address a caller cares to vary, and was once outside the matcher
+ * altogether: charged now like the page, refused in JSON, and never counted
+ * as a visit.
+ */
+describe("a pool's link card", () => {
+  const ID = `0x${"cd".repeat(32)}`;
+  const fetching = (path: string, client: string) =>
+    new NextRequest(`http://localhost${path}`, { headers: { "x-forwarded-for": client, "user-agent": "Twitterbot/1.0" } });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("is charged against the caller's allowance, and refused past it in JSON nothing keeps", async () => {
+    const client = "198.51.100.160";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) {
+      const path = i % 2 === 0 ? `/og/pool?protocol=v3&id=${POOL}` : `/og/pool?protocol=v4&id=${ID}&chain=unichain`;
+      expect((await proxy(fetching(path, client))).status).toBe(200);
+    }
+
+    const refused = await proxy(fetching(`/og/pool?protocol=v3&id=${POOL}`, client));
+
+    expect(refused.status).toBe(429);
+    expect(refused.headers.get("cache-control")).toBe("no-store");
+    expect(Number(refused.headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(await refused.json()).toMatchObject({ error: "rate-limited", retryAfterSeconds: expect.any(Number) });
+  });
+
+  it("charges nothing for an address that names no pool, which the route answers with the site's card", async () => {
+    const client = "198.51.100.161";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT + 2; i += 1) {
+      expect((await proxy(fetching(`/og/pool?protocol=v3&id=nope${i}`, client))).status).toBe(200);
+    }
+  });
+
+  it("is not counted as a visit", async () => {
+    const lines = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    await proxy(fetching(`/og/pool?protocol=v3&id=${POOL}`, "198.51.100.162"));
+
+    expect(lines.mock.calls.map(([line]) => String(line)).filter((line) => line.startsWith("[visit]"))).toEqual([]);
+  });
+});
+
+/*
+ * A malformed `address` beside the parameter a page actually reads once
+ * decided the request, uncharged, while the page went on to read. Each page is
+ * judged by its own parameter now, whatever else arrives.
+ */
+describe("a parameter the page does not read", () => {
+  const ID = `0x${"cd".repeat(32)}`;
+
+  it.each([
+    ["the v4 page", `/v4?id=${ID}&address=0xnope`, "198.51.100.170"],
+    ["the pair page", "/pair?q=USDC%2FWETH&address=0xnope", "198.51.100.171"],
+    ["the holdings page", `/holdings?address=${POOL}&id=nope`, "198.51.100.172"],
+  ])("never lets the limit be stepped around on %s", async (_label, path, client) => {
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) {
+      expect((await proxy(request(path, client))).status).toBe(200);
+    }
+
+    expect((await proxy(request(path, client))).status).toBe(429);
   });
 });

@@ -1,18 +1,53 @@
 # A site block for a Caddy that already serves other sites on this machine.
 # Import it from the main Caddyfile (`import /etc/caddy/sites/*.caddy`) or
 # paste it in; nothing else in that file changes. Port: the APP_PORT the
-# service was installed with.
+# service was installed with. Needs Caddy 2.7 or later, where `remote_ip`
+# matches the address that actually connected and nothing a header says.
 #
 # The application counts rate-limit requests by X-Real-IP, and behind
 # Cloudflare the visitor's address is CF-Connecting-IP — so that is handed on.
+#
+# But that header is only Cloudflare's on connections from Cloudflare. Anyone
+# who finds this machine's address can connect to it directly and send any
+# CF-Connecting-IP they like, a new one on every request: a fresh rate-limit
+# bucket every time, and no ceiling on what The Graph, the chain endpoints and
+# the model are asked to do. So nothing but Cloudflare may reach the site at
+# all — every other connection is dropped before a byte is proxied — and the
+# header is believed only because of that. This is not optional: without the
+# refusal, the line that hands the header on is the hole. It is the same rule
+# nginx is held to by deploy/cloudflare-only.sh, written into the block itself
+# because Caddy has no weekly script beside it.
+#
+# The ranges are Cloudflare's own, from https://api.cloudflare.com/client/v4/ips
+# (also https://www.cloudflare.com/ips/). They change rarely, and a change means
+# new Cloudflare edges are refused — the site fails closed, never open. Check
+# them against that list when deploying this; src/deployScripts.test.ts holds
+# them to the shape of one.
+#
+# Port 80 is left to Caddy's own redirect and certificate challenges, which
+# never reach the application.
 
+(cloudflare_only) {
+	@outside_cloudflare not remote_ip 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+	abort @outside_cloudflare
+}
+
+# Only a redirect, which reaches nothing behind it, so open like nginx's
+# port-80 blocks. (Caddy would run `redir` before `abort` here anyway: its
+# directives go in its own order, not the order they are written in.)
 www.liquiditywise.com {
 	redir https://liquiditywise.com{uri} permanent
 }
 
+# `abort` comes before `reverse_proxy` in Caddy's directive order, so a
+# connection from outside Cloudflare is dropped before anything is proxied.
 liquiditywise.com {
+	import cloudflare_only
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:3200 {
+		# Both from Cloudflare's header, and only it: X-Forwarded-For carries the
+		# same single address, never a list a client could have started.
 		header_up X-Real-IP {header.CF-Connecting-IP}
+		header_up X-Forwarded-For {header.CF-Connecting-IP}
 	}
 }

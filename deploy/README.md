@@ -57,7 +57,20 @@ stops. Set both A records to **DNS only**, run it again, then turn the proxy
 back on.
 
 For a machine running Caddy instead, `Caddyfile` holds the same site as one
-block to import; Caddy fetches the certificate itself.
+block to import; Caddy fetches the certificate itself. It needs Caddy 2.7 or
+later, and **its Cloudflare-only refusal is not optional**: the block hands
+the application `CF-Connecting-IP` as the address the rate limit counts, and
+anyone who connects to the machine directly can write that header themselves
+— a new address per request, and no limit at all. So the block drops every
+connection whose own address is outside Cloudflare's published ranges before
+anything is proxied, the same rule `cloudflare-only.sh` holds nginx to. Keep
+the `import cloudflare_only` line in the site block, and never add a block
+that proxies to the application without it; `src/deployScripts.test.ts`
+fails if either is lost. Caddy has no weekly script to refresh the ranges:
+check them against <https://api.cloudflare.com/client/v4/ips> when deploying.
+A stale list refuses new Cloudflare edges (closed), never lets anyone else in.
+A host firewall that admits only Cloudflare on 443 does the same job, and may
+sit in front as well — but not instead of this, unless it is certain to stay.
 
 ## 4. Cloudflare
 
@@ -65,6 +78,9 @@ block to import; Caddy fetches the certificate itself.
 - SSL/TLS: Full (strict) once the origin has its certificate.
 - The rate limiter keys visitors by `X-Real-IP`; both snippets fill it from
   `CF-Connecting-IP`. Without that, every visitor is one of Cloudflare's edges.
+  Both also refuse every connection not from Cloudflare — nginx through
+  `cloudflare-only.sh`, Caddy in its own block — because that header is only
+  Cloudflare's on connections from Cloudflare.
 
 ## 5. Where the links are kept
 
@@ -389,7 +405,8 @@ ssh root@<server> "grep -E '^SERVER_WATCH_BOT_TOKEN=' /opt/liquiditywise/.env.lo
 - `setup.sh` — install and update of the application only, as root.
 - `liquiditywise.service` — the systemd unit; the port is substituted in.
 - `nginx-liquiditywise.conf`, `Caddyfile` — one site block each, for the
-  server the machine already runs.
+  server the machine already runs. The Caddy block carries its own
+  Cloudflare-only refusal; nginx's is added by `cloudflare-only.sh`.
 - `telegram-check.sh` — one pass of the alert check; the cron entry calls it.
 - `health-check.sh` — the five-minute health check described above.
 - `set-server-watch-token.sh` — stores Server Watch's token, as root, after

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { limitConcurrency } from "./concurrency";
+import { concurrencyBudget, limitConcurrency, OVER_BUDGET } from "./concurrency";
 
 /** A task that runs until it is let go, and says how many were running beside it. */
 const gate = () => {
@@ -73,5 +73,64 @@ describe("a limit on how many run at once", () => {
 
     await expect(failing).rejects.toThrow("down");
     expect(await after).toBe("after");
+  });
+});
+
+/*
+ * The budget a stranger can spend: so many at once, so many in line, and
+ * everyone past that turned away without their task ever starting.
+ */
+describe("a budget on how many run and wait at once", () => {
+  it("runs its limit, queues its line, and turns the rest away without starting them", async () => {
+    const budget = concurrencyBudget(2, 1);
+    const { task, releases, peak } = gate();
+    const started: number[] = [];
+    const counted = (value: number) => () => {
+      started.push(value);
+      return task(value)();
+    };
+
+    const admitted = [1, 2, 3].map((value) => budget(counted(value)));
+    const turnedAway = await budget(counted(4));
+    await settle();
+
+    expect(turnedAway).toBe(OVER_BUDGET);
+    expect(started).toEqual([1, 2]);
+
+    while (releases.length > 0 || started.length < 3) {
+      releases.shift()?.();
+      await settle();
+    }
+
+    expect(await Promise.all(admitted)).toEqual([1, 2, 3]);
+    expect(started).toEqual([1, 2, 3]);
+    expect(peak()).toBe(2);
+  });
+
+  /* Bounded, not closed: a place that has settled is a place again. */
+  it("admits again once the work in it has finished", async () => {
+    const budget = concurrencyBudget(1, 0);
+    const { task, releases } = gate();
+
+    const first = budget(task(1));
+    expect(await budget(task(2))).toBe(OVER_BUDGET);
+
+    await settle();
+    releases.shift()?.();
+    expect(await first).toBe(1);
+
+    expect(await budget(async () => "again")).toBe("again");
+  });
+
+  it("gives a failed task's place back like an answered one", async () => {
+    const budget = concurrencyBudget(1, 0);
+
+    await expect(
+      budget(async () => {
+        throw new Error("down");
+      }),
+    ).rejects.toThrow("down");
+
+    expect(await budget(async () => "after")).toBe("after");
   });
 });

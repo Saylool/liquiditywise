@@ -5,7 +5,9 @@
  * Here that is nginx, which writes both from Cloudflare's CF-Connecting-IP —
  * and accepts connections from Cloudflare's ranges only
  * (deploy/cloudflare-only.sh), because on a connection that did not come
- * through Cloudflare that header is whatever the caller wrote. Deployed
+ * through Cloudflare that header is whatever the caller wrote. The Caddy
+ * alternative (deploy/Caddyfile) is held to the same rule inside its own site
+ * block, which drops every connection from outside Cloudflare. Deployed
  * anywhere that forwards a client's own headers through untouched, both are
  * attacker-controlled and the limit becomes trivially bypassable — the
  * limiter is only ever as trustworthy as the hop in front of it.

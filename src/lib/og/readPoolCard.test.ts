@@ -73,12 +73,71 @@ describe("reading a pool's card", () => {
     ]);
   });
 
-  it("does not keep a pool it could not read, and asks again", async () => {
-    asked.fail = true;
-    expect(await read(`protocol=v3&id=${ADDRESS}`)).toBeNull();
-    asked.fail = false;
-    expect(await read(`protocol=v3&id=${ADDRESS}`)).not.toBeNull();
+  /*
+   * A failure is kept, but briefly: a crawler fetching the card of a pool that
+   * does not exist, or of any pool while its source is down, asks the source
+   * once in five minutes rather than on every fetch — and a source that comes
+   * back is asked again once they are up.
+   */
+  it("keeps a pool it could not read for five minutes, then asks again", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-08T12:00:00Z") });
+    try {
+      asked.fail = true;
+      expect(await read(`protocol=v3&id=${ADDRESS}`)).toBeNull();
+      asked.fail = false;
 
-    expect(asked.v3).toHaveLength(2);
+      vi.setSystemTime(new Date("2026-10-08T12:04:59Z"));
+      expect(await read(`protocol=v3&id=${ADDRESS}`)).toBeNull();
+      expect(asked.v3).toHaveLength(1);
+
+      vi.setSystemTime(new Date("2026-10-08T12:05:00Z"));
+      expect(await read(`protocol=v3&id=${ADDRESS}`)).not.toBeNull();
+      expect(asked.v3).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps a card it could read for a day, and only a day", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-08T12:00:00Z") });
+    try {
+      await read(`protocol=v3&id=${ADDRESS}`);
+      vi.setSystemTime(new Date("2026-10-09T11:59:59Z"));
+      await read(`protocol=v3&id=${ADDRESS}`);
+      expect(asked.v3).toHaveLength(1);
+
+      vi.setSystemTime(new Date("2026-10-09T12:00:00Z"));
+      await read(`protocol=v3&id=${ADDRESS}`);
+      expect(asked.v3).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /*
+   * Bounded: a run of well-formed pools that do not exist is kept like any
+   * failure, and the oldest let go once five hundred are held — the cache is
+   * a ceiling, not a list that grows with whatever a caller sends.
+   */
+  it("holds at most five hundred cards, letting the oldest go first", async () => {
+    asked.fail = true;
+    const pool = (index: number) => `0x${index.toString(16).padStart(40, "0")}`;
+
+    for (let index = 0; index <= 500; index += 1) await read(`protocol=v3&id=${pool(index)}`);
+    expect(asked.v3).toHaveLength(501);
+
+    await read(`protocol=v3&id=${pool(500)}`);
+    expect(asked.v3).toHaveLength(501);
+    await read(`protocol=v3&id=${pool(0)}`);
+    expect(asked.v3).toHaveLength(502);
+  });
+
+  /* Only a pool is ever a key: junk is answered before the cache is touched, and pushes nothing out. */
+  it("keeps nothing for an address that names no pool", async () => {
+    await read(`protocol=v3&id=${ADDRESS}`);
+    for (let index = 0; index < 600; index += 1) await read(`protocol=v3&id=junk${index}`);
+    await read(`protocol=v3&id=${ADDRESS}`);
+
+    expect(asked.v3).toHaveLength(1);
   });
 });

@@ -47,14 +47,101 @@ describe("spendsUpstreamQuota", () => {
   });
 
   /*
-   * The address parameter is the canonical one and decides on its own. A page
-   * given both renders the analysis and never runs the search, so a valid `q`
-   * beside a broken address must not make the request chargeable for a search
-   * that will not happen.
+   * On the pool page the address parameter is the canonical one and decides on
+   * its own. The page given both renders the analysis, or refuses the address,
+   * and never runs the search — so a valid `q` beside a broken address must not
+   * make the request chargeable for a search that will not happen.
    */
-  it("lets the address parameter decide when both arrive", () => {
-    expect(spendsUpstreamQuota(query(`address=0xnope&q=weth+usdc`))).toBe(false);
-    expect(spendsUpstreamQuota(query(`address=${POOL_ADDRESS}&q=weth+usdc`))).toBe(true);
+  it("lets the address parameter decide on the pool page when both arrive", () => {
+    expect(spendsUpstreamQuota(query(`address=0xnope&q=weth+usdc`), "/pool")).toBe(false);
+    expect(spendsUpstreamQuota(query(`address=&q=weth+usdc`), "/pool")).toBe(false);
+    expect(spendsUpstreamQuota(query(`address=${POOL_ADDRESS}&q=weth+usdc`), "/pool")).toBe(true);
+    expect(spendsUpstreamQuota(query(`q=weth+usdc`), "/pool")).toBe(true);
+  });
+});
+
+/*
+ * The finding this rule was rewritten for: one rule for every page, returning
+ * on the first parameter it found, let a malformed `address` decide a request
+ * to a page that never reads one — uncharged, while the page read its `id` or
+ * its `q` all the same.
+ */
+describe("a parameter the page does not read", () => {
+  const POOL_ID = `0x${"ab".repeat(32)}`;
+
+  it.each([
+    ["the v4 page, given a malformed address beside its id", "/v4", `address=0xnope&id=${POOL_ID}`],
+    ["the v4 page, given an empty address beside its id", "/v4", `address=&id=${POOL_ID}`],
+    ["the v4 page, given a v3 pool's address beside its id", "/v4", `id=${POOL_ID}&address=${POOL_ADDRESS}`],
+    ["the pair page, given a malformed address beside its pair", "/pair", "address=0xnope&q=WETH%2FUSDC"],
+    ["the pair page, given a malformed id beside its pair", "/pair", "id=nope&q=WETH%2FUSDC"],
+    ["the holdings page, given a malformed id beside its address", "/holdings", `id=nope&address=${POOL_ADDRESS}`],
+    ["the comparison, given a junk search beside its address", "/compare", `q=%24&address=${POOL_ADDRESS}`],
+  ])("never lets it waive the charge on %s", (_label, page, search) => {
+    expect(spendsUpstreamQuota(query(search), page)).toBe(true);
+  });
+
+  /* And never makes one either: what a page does not read, it does not spend. */
+  it.each([
+    ["the v4 page, given only an address", "/v4", `address=${POOL_ADDRESS}`],
+    ["the v4 page, given only a search", "/v4", "q=weth+usdc"],
+    ["the pair page, given only an address", "/pair", `address=${POOL_ADDRESS}`],
+    ["the holdings page, given only a pool id", "/holdings", `id=${POOL_ID}`],
+  ])("charges nothing for it alone on %s", (_label, page, search) => {
+    expect(spendsUpstreamQuota(query(search), page)).toBe(false);
+  });
+
+  /*
+   * A page refuses a repeated parameter rather than pick a value, but the rule
+   * is wider than the page and never narrower: a good value anywhere among
+   * the repeats is charged, so no order of repeats can sneak one through.
+   */
+  it("charges a repeated parameter when any of its values would be read", () => {
+    expect(spendsUpstreamQuota(query(`id=nope&id=${POOL_ID}`), "/v4")).toBe(true);
+    expect(spendsUpstreamQuota(query(`address=0xnope&address=${POOL_ADDRESS}`), "/holdings")).toBe(true);
+    expect(spendsUpstreamQuota(query("q=a&q=weth"), "/pair")).toBe(true);
+  });
+
+  /*
+   * A page with no rule of its own — or no page named at all — is charged
+   * when any parameter a pool page reads would have been read: every one is
+   * tried, and a broken one never hides a good one beside it.
+   */
+  it("tries every parameter on a page with no rule of its own", () => {
+    expect(spendsUpstreamQuota(query(`address=0xnope&id=${POOL_ID}`))).toBe(true);
+    expect(spendsUpstreamQuota(query("address=0xnope&q=weth+usdc"))).toBe(true);
+    expect(spendsUpstreamQuota(query(`id=nope&address=${POOL_ADDRESS}`), "/")).toBe(true);
+    expect(spendsUpstreamQuota(query("address=0xnope&id=nope&q=a"), "/hooks")).toBe(false);
+  });
+});
+
+/*
+ * The card a shared pool link unfurls into: one pool read like the page it
+ * stands for, so charged like it, by the reader the route itself uses.
+ */
+describe("a pool's link card", () => {
+  const CARD = "/og/pool";
+  const POOL_ID = `0x${"ab".repeat(32)}`;
+
+  it("is counted for a pool the route would read", () => {
+    expect(spendsUpstreamQuota(query(`protocol=v3&id=${POOL_ADDRESS}`), CARD)).toBe(true);
+    expect(spendsUpstreamQuota(query(`protocol=v4&id=${POOL_ID}&chain=unichain`), CARD)).toBe(true);
+    expect(spendsUpstreamQuota(query(`protocol=v3&id=${POOL_ADDRESS}&address=0xnope`), CARD)).toBe(true);
+  });
+
+  it("is not counted for anything the route answers with the site's own card, asking nothing", () => {
+    for (const search of [
+      "",
+      `id=${POOL_ADDRESS}`,
+      `protocol=v3&id=nope`,
+      `protocol=v4&id=${POOL_ADDRESS}`,
+      `protocol=v3&id=${POOL_ADDRESS}&chain=unichain`,
+      `protocol=v3&id=${POOL_ADDRESS}&chain=solana`,
+      `protocol=v3&protocol=v3&id=${POOL_ADDRESS}`,
+      `protocol=v3&id=${POOL_ADDRESS}&id=${POOL_ADDRESS}`,
+    ]) {
+      expect(spendsUpstreamQuota(query(search), CARD), search).toBe(false);
+    }
   });
 });
 
