@@ -8,6 +8,7 @@ import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { localePath } from "@/lib/i18n/localePath";
 import type { Locale } from "@/lib/i18n/locales";
+import { getCasesCopy } from "@/lib/i18n/casesCopy";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
 
 
@@ -35,10 +36,17 @@ export async function HomeMostTraded({ locale, t }: { locale: Locale; t: Diction
         t={t}
         locale={locale}
       />
-      <Link href={localePath(locale, "/most-traded")} prefetch={false} className="text-link">
-        {copy.link}
-        <ArrowIcon />
-      </Link>
+      <div className="flex flex-wrap gap-x-8 gap-y-2">
+        <Link href={localePath(locale, "/most-traded")} prefetch={false} className="text-link">
+          {copy.link}
+          <ArrowIcon />
+        </Link>
+        {/* The same pools' month, replayed and written up: beyond one pool, as the list above is. */}
+        <Link href={localePath(locale, "/cases")} prefetch={false} className="text-link">
+          {getCasesCopy(locale).link}
+          <ArrowIcon />
+        </Link>
+      </div>
     </div>
   );
 }

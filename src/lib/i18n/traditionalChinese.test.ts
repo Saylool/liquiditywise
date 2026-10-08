@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { getLearnCopy } from "../learn/briefs";
 import { getTopicCopy } from "../learn/topics";
+import { getCasesCopy } from "./casesCopy";
 import { getChainCopy } from "./chainCopy";
 import { getDevelopersCopy } from "./developersCopy";
 import { getDictionary } from "./dictionaries";
@@ -137,6 +138,7 @@ describe("the Traditional Chinese dictionary", () => {
 
 describe("the rest of the Traditional Chinese copy", () => {
   const modules = {
+    cases: getCasesCopy,
     chainCopy: getChainCopy,
     interface: getInterfaceCopy,
     learn: getLearnCopy,

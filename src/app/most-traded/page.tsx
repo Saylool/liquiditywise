@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
+import { ArrowIcon } from "@/components/BrandMark";
 import { MostTradedPools } from "@/components/MostTradedPools";
 import { WorkspaceShell } from "@/components/WorkspaceShell";
 import { getMostTraded } from "@/lib/advisor/getMostTraded";
 import { DEFAULT_PRICE_BAND_PARAMETERS } from "@/lib/advisor/poolRangeAnalysis";
 import { getMostTradedCopy } from "@/lib/i18n/mostTradedCopy";
+import { getCasesCopy } from "@/lib/i18n/casesCopy";
 import { CHAIN_PARAMETER, readRequestedChain } from "@/lib/advisor/requestedParameters";
 import { chainLabel } from "@/lib/chains/chainLabel";
 import { type ChainId, readsV3, readsV4 } from "@/lib/chains/chains";
@@ -75,6 +78,15 @@ export default async function MostTradedPage({
         t={t}
         locale={locale}
       />
+      {/* The same pools a month later: each one's replay, written up as a case. The chain travels with the link. */}
+      <Link
+        href={chain.id === 1 ? localePath(locale, "/cases") : `${localePath(locale, "/cases")}?${CHAIN_PARAMETER}=${chain.slug}`}
+        prefetch={false}
+        className="text-link text-sm"
+      >
+        {getCasesCopy(locale).link}
+        <ArrowIcon />
+      </Link>
     </WorkspaceShell>
   );
 }
