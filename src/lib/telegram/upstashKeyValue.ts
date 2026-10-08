@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { KeyValueStore } from "../store/keyValueStore";
+import { INCREMENT_SCRIPT, type KeyValueStore } from "../store/keyValueStore";
 
 /*
  * A handful of Redis commands over Upstash's REST API, for the Telegram links.
@@ -86,6 +86,14 @@ export const createUpstashKeyValueStore = ({
       return Array.isArray(result) && result.every((item) => typeof item === "string")
         ? result
         : null;
+    },
+    scard: async (key) => {
+      const result = await command(["SCARD", key]);
+      return typeof result === "number" && Number.isInteger(result) && result >= 0 ? result : null;
+    },
+    increment: async (key, ttlMs) => {
+      const result = await command(["EVAL", INCREMENT_SCRIPT, "1", key, String(ttlMs)]);
+      return typeof result === "number" && Number.isInteger(result) && result >= 1 ? result : null;
     },
   };
 };

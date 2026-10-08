@@ -1,7 +1,7 @@
 import type { Dictionary } from "../i18n/dictionaries";
 import { DEFAULT_LOCALE, type Locale, negotiateLocale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
-import { claimLink, findByChat, forgetLink, setSmartAlerts, setWeeklyDigest } from "./links";
+import { claimLink, findByChat, forgetChatLink, readLink, setSmartAlerts, setWeeklyDigest } from "./links";
 import { poolWatchedText, poolWatchesText } from "./messages";
 import { parsePoolWatch, type PoolWatchParse, type PoolWatchTarget } from "./poolWatchCommand";
 import type { PoolRangeReading } from "./poolRangeShift";
@@ -9,6 +9,7 @@ import { addPoolWatch, forgetPoolWatches, MAX_POOL_WATCHES, readPoolWatches, rem
 import { readCommand, type TelegramUpdate } from "./update";
 import type { KeyValueStore } from "../store/keyValueStore";
 import { CHAINS } from "../chains/chains";
+import { createFixedWindowRateLimiter, type RateLimiter } from "../ratelimit/fixedWindowLimiter";
 import { formatWhole } from "../format/displayFormats";
 
 /*
@@ -38,9 +39,32 @@ import { formatWhole } from "../format/displayFormats";
  * watch is keyed by the chat, speaks the language the chat wrote `/watch`
  * in, and is the other thing `/stop` deletes.
  *
+ * **Each chat has a budget of commands**, `CHAT_COMMANDS_PER_WINDOW` in
+ * `CHAT_COMMAND_WINDOW_MS`, and past it the bot says nothing and does
+ * nothing: a `/watch` is a pool read and `/watches` up to five, and a chat
+ * sending them in a loop would otherwise be a way to make the site read pools
+ * as fast as Telegram delivers messages. Silence rather than a refusal,
+ * because a refusal is a message too. Counted in this process's memory and
+ * nowhere else, so the count writes no chat's id to the store; the webhook is
+ * answered by the one process the site runs in.
+ *
  * Pure of the framework: the store, the bot and the pool reader are handed
  * in, so a test can watch what would have been sent without a network.
  */
+
+/** Commands one chat may send in a window. More than a reader setting up and checking a few pools ever needs. */
+export const CHAT_COMMANDS_PER_WINDOW = 20;
+
+/** Ten minutes. */
+export const CHAT_COMMAND_WINDOW_MS = 10 * 60_000;
+
+/** The process's own count; a flood of distinct chats evicts the oldest windows, as the pool pages' does. */
+const chatCommandLimiter = createFixedWindowRateLimiter({
+  limit: CHAT_COMMANDS_PER_WINDOW,
+  windowMs: CHAT_COMMAND_WINDOW_MS,
+  maxTrackedKeys: 10_000,
+  now: () => Date.now(),
+});
 
 export type UpdateHandling = {
   readonly store: KeyValueStore;
@@ -50,6 +74,8 @@ export type UpdateHandling = {
   readonly readPoolRange: (target: PoolWatchTarget) => Promise<PoolRangeReading | null>;
   /** The time, handed in so a test can say when a range was told. */
   readonly now: () => Date;
+  /** Each chat's budget of commands. The default is this process's own; a test hands in its own. */
+  readonly chatBudget?: RateLimiter;
 };
 
 /** Telegram reports a sender's language as an IETF tag, which is what the negotiator reads. */
@@ -80,12 +106,13 @@ const watchProblem = (parsed: Exclude<PoolWatchParse, { ok: true }>, t: Dictiona
 
 export const handleUpdate = async (
   update: TelegramUpdate,
-  { store, bot, dictionary, readPoolRange, now }: UpdateHandling,
+  { store, bot, dictionary, readPoolRange, now, chatBudget = chatCommandLimiter }: UpdateHandling,
 ): Promise<void> => {
   const message = update.message;
   if (message === undefined || message.chat.type !== "private") return;
 
   const chatId = message.chat.id;
+  if (!chatBudget.check(String(chatId)).allowed) return;
   const locale = senderLocale(message.from?.language_code);
   const fallback = dictionary(locale);
   const command = readCommand(message.text);
@@ -108,7 +135,7 @@ export const handleUpdate = async (
     }
 
     /* Both kinds of record, whichever the chat had: one command, and nothing left behind. */
-    if (watch !== null) await forgetLink(store, watch.token);
+    if (watch !== null) await forgetChatLink(store, chatId, watch.token);
     if (pools !== null) await forgetPoolWatches(store, chatId);
     await bot.sendMessage(chatId, dictionary(watch?.link.locale ?? pools?.locale ?? locale).telegram.stopped);
     return;
@@ -184,6 +211,9 @@ export const handleUpdate = async (
       case "full":
         await bot.sendMessage(chatId, fallback.telegram.watchFull(formatWhole(MAX_POOL_WATCHES, locale)));
         return;
+      case "crowded":
+        await bot.sendMessage(chatId, fallback.telegram.crowded);
+        return;
       case "unavailable":
         await bot.sendMessage(chatId, fallback.telegram.storeDown);
         return;
@@ -237,11 +267,14 @@ export const handleUpdate = async (
   switch (outcome) {
     case "claimed": {
       /* Read back for the language and the address the site recorded. */
-      const watch = await findByChat(store, chatId);
-      const t = watch === null || watch === undefined ? fallback : dictionary(watch.link.locale);
-      await bot.sendMessage(chatId, t.telegram.linked(watch?.link.address ?? ""));
+      const link = await readLink(store, command.argument);
+      const t = link === null || link === undefined ? fallback : dictionary(link.locale);
+      await bot.sendMessage(chatId, t.telegram.linked(link?.address ?? ""));
       return;
     }
+    case "crowded":
+      await bot.sendMessage(chatId, fallback.telegram.crowded);
+      return;
     case "unknown":
       await bot.sendMessage(chatId, fallback.telegram.unknownStart);
       return;

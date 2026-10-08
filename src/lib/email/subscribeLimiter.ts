@@ -1,3 +1,4 @@
+import type { ActionBudget } from "../ratelimit/actionBudget";
 import { createFixedWindowRateLimiter } from "../ratelimit/fixedWindowLimiter";
 
 /*
@@ -15,6 +16,13 @@ import { createFixedWindowRateLimiter } from "../ratelimit/fixedWindowLimiter";
  * Keyed as the pool pages are, by the client address nginx hands on
  * (ratelimit/clientKey.ts), with the same honest limit: one process's
  * memory, a deterrent rather than a guarantee.
+ *
+ * The guarantee is the second count, `SUBSCRIBE_BUDGET`, kept in the store
+ * every process shares (ratelimit/actionBudget.ts): per client, and over
+ * everybody, which is the one no number of clients can get round. Twenty an
+ * hour over everybody is far past what the form is asked for, and keeps what
+ * a flood can cost to a few hundred mails a day and as many pending records,
+ * each of which lapses within the day.
  */
 
 /** Submissions per window per client. Five: a typo or two, and a second address. */
@@ -32,3 +40,11 @@ export const subscribeRateLimiter = createFixedWindowRateLimiter({
   maxTrackedKeys: MAX_TRACKED_CLIENTS,
   now: () => Date.now(),
 });
+
+/** The shared count: per client and over everybody, per hour. */
+export const SUBSCRIBE_BUDGET: ActionBudget = {
+  action: "email-digest",
+  perClient: SUBSCRIBE_REQUEST_LIMIT,
+  global: 20,
+  windowMs: 60 * 60_000,
+};

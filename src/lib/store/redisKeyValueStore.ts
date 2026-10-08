@@ -1,4 +1,4 @@
-import type { KeyValueStore } from "./keyValueStore";
+import { INCREMENT_SCRIPT, type KeyValueStore } from "./keyValueStore";
 import type { RedisClient } from "./redisClient";
 
 /*
@@ -7,7 +7,7 @@ import type { RedisClient } from "./redisClient";
  * This is the one that runs on the server: the database is a process on the
  * same machine, reached over loopback, and the addresses readers link stay
  * on hardware that belongs to them. The REST store next door speaks the same
- * six commands to a database somewhere else, and exists for a deployment
+ * commands to a database somewhere else, and exists for a deployment
  * that has nowhere to run one.
  *
  * Every reply is checked for the shape the command should have produced.
@@ -78,5 +78,18 @@ export const createRedisKeyValueStore = (client: RedisClient): KeyValueStore => 
     }
 
     return members;
+  },
+
+  scard: async (key) => {
+    const reply = await client.command(["SCARD", key]);
+
+    return reply !== null && reply.kind === "integer" ? reply.value : null;
+  },
+
+  increment: async (key, ttlMs) => {
+    const reply = await client.command(["EVAL", INCREMENT_SCRIPT, "1", key, String(ttlMs)]);
+
+    /* A count below one is not a count this script can produce, so it is not this counter. */
+    return reply !== null && reply.kind === "integer" && reply.value >= 1 ? reply.value : null;
   },
 });

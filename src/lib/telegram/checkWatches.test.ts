@@ -5,10 +5,10 @@ import type { AddressPositionsResult } from "../advisor/addressPositions";
 import type { Position } from "../../schemas";
 import { getDictionary } from "../i18n/dictionaries";
 import type { BotClient } from "./botApi";
-import { checkWatches } from "./checkWatches";
+import { checkWatches, LINKS_PER_PASS, type PassCursor, POOLS_PER_PASS } from "./checkWatches";
 import { fakeStore } from "./fakeStore";
 import type { SmartPair } from "../analytics/smartLiquidity";
-import { claimLink, createPendingLink, readLink, setSmartAlerts, setWeeklyDigest } from "./links";
+import { CHAT_INDEX_BUILT_KEY, claimLink, createPendingLink, findByChat, readLink, setSmartAlerts, setWeeklyDigest } from "./links";
 import { poolRangeMovedText } from "./messages";
 import type { PoolWatchTarget } from "./poolWatchCommand";
 import type { PoolRangeReading } from "./poolRangeShift";
@@ -949,5 +949,133 @@ describe("checkWatches and the pool watches", () => {
 
     expect(await pass()).toMatchObject({ watches: 1, poolWatches: 0, poolAlerts: 0, storeUnavailable: false });
     expect(logged).toEqual(["[telegram] the set of pool watchers could not be read; no pool was checked"]);
+  });
+});
+
+describe("checkWatches within its budget", () => {
+  /** A token for the n-th link: 22 characters, sorting in the order of n. */
+  const tokenOf = (n: number): string => `tok${String(n).padStart(19, "0")}`;
+
+  /** `links` claimed links, chat 1000 + n each, and `chats` chats watching five pools each. */
+  const crowded = async (links: number, chats = 0) => {
+    const store = fakeStore();
+    for (let n = 0; n < links; n += 1) {
+      await createPendingLink(store, tokenOf(n), { address: ADDRESS, locale: "tr", now: new Date() });
+      await claimLink(store, tokenOf(n), 1_000 + n);
+    }
+    for (let chat = 0; chat < chats; chat += 1) {
+      for (let n = 1; n <= 5; n += 1) {
+        const target = { protocol: "v3", chainId: 1, poolId: `0x${String(n).padStart(40, "0")}` } as const;
+        await addPoolWatch(store, 5_000 + chat, { target, range: [0.0003, 0.0005], locale: "tr", now: new Date("2026-10-06T09:00:00.000Z") });
+      }
+    }
+    return store;
+  };
+
+  const pass = (store: ReturnType<typeof fakeStore>, cursor: PassCursor, read: { addresses: number; pools: number }, random = () => 0) =>
+    checkWatches({
+      store,
+      bot: bot().client,
+      readPositions: async () => {
+        read.addresses += 1;
+        return answer([]);
+      },
+      dictionary: getDictionary,
+      ...noDigest,
+      readPoolRange: async () => {
+        read.pools += 1;
+        return null;
+      },
+      log: () => {},
+      readSmartPairs: none,
+      cursor,
+      random,
+    });
+
+  it("reads no more addresses and pools in one pass than its budget, however many there are", async () => {
+    const store = await crowded(LINKS_PER_PASS * 2 + 7, POOLS_PER_PASS / 5 + 9);
+    const read = { addresses: 0, pools: 0 };
+    const summary = await pass(store, { links: null, pools: null }, read);
+
+    expect(read.addresses).toBe(LINKS_PER_PASS);
+    expect(read.pools).toBe(POOLS_PER_PASS);
+    expect(summary).toMatchObject({ watches: LINKS_PER_PASS * 2 + 7, checked: LINKS_PER_PASS, poolWatches: POOLS_PER_PASS });
+  });
+
+  it("takes its turn, so every address and every pool is read within as many passes as there are budgets of them", async () => {
+    const links = LINKS_PER_PASS * 2 + 7;
+    const chats = POOLS_PER_PASS / 5 + 9;
+    const store = await crowded(links, chats);
+    const cursor: PassCursor = { links: null, pools: null };
+    const addresses: string[] = [];
+    const pools: number[] = [];
+
+    for (let run = 0; run < 3; run += 1) {
+      await checkWatches({
+        store,
+        bot: {
+          sendMessage: async (chatId) => {
+            pools.push(chatId);
+            return true;
+          },
+        },
+        readPositions: async (address) => {
+          addresses.push(address);
+          return answer([]);
+        },
+        dictionary: getDictionary,
+        readSmartSeries: async () => null,
+        now: () => new Date("2026-10-08T09:00:00.000Z"),
+        /* Every pool far off what was told, so each one read is told, and the chat it was told to is counted. */
+        readPoolRange: async (target) => ({ ...target, pair: { token0: "USDC", token1: "WETH" }, lpFeePpm: 500, currentPrice: 0.004, range: [0.003, 0.005] }),
+        log: () => {},
+        readSmartPairs: none,
+        cursor,
+        random: () => 0,
+      });
+    }
+
+    expect(addresses).toHaveLength(LINKS_PER_PASS * 3);
+    /* Three passes of fifty over a hundred and seven: once round, and the third stops forty-three into the next. */
+    const tokens = [...(await store.smembers("liquiditywise:telegram:watches"))!].sort();
+    expect(tokens).toHaveLength(links);
+    expect(cursor.links).toBe(tokenOf(LINKS_PER_PASS * 3 - links - 1));
+    expect(new Set(pools)).toEqual(new Set(Array.from({ length: chats }, (_, chat) => 5_000 + chat)));
+  });
+
+  it("starts a process's first pass at a place of chance, not at the top", async () => {
+    const store = await crowded(LINKS_PER_PASS + 10);
+    const cursor: PassCursor = { links: null, pools: null };
+    const read = { addresses: 0, pools: 0 };
+
+    await pass(store, cursor, read, () => 0.5);
+
+    expect(cursor.links).not.toBe(tokenOf(LINKS_PER_PASS - 1));
+  });
+
+  it("gives every link made before chats had keys its key on its first pass, and leaves its mark", async () => {
+    const store = fakeStore();
+    for (let n = 0; n < LINKS_PER_PASS + 5; n += 1) {
+      store.data.set(
+        `liquiditywise:telegram:link:${tokenOf(n)}`,
+        JSON.stringify({ address: ADDRESS, locale: "tr", chatId: 1_000 + n, createdAt: "2026-09-01T00:00:00.000Z", snapshot: null }),
+      );
+      await store.sadd("liquiditywise:telegram:watches", tokenOf(n));
+    }
+
+    await pass(store, { links: null, pools: null }, { addresses: 0, pools: 0 });
+
+    expect(store.data.get(CHAT_INDEX_BUILT_KEY)).toBe("1");
+    /* One read past the budget: its key was given by the walk, not by its turn. */
+    const asked: string[] = [];
+    const smembers = store.smembers;
+    const watched = Object.assign(store, {
+      smembers: async (key: string) => {
+        asked.push(key);
+        return smembers(key);
+      },
+    });
+    expect((await findByChat(watched, 1_000 + LINKS_PER_PASS + 4))?.token).toBe(tokenOf(LINKS_PER_PASS + 4));
+    expect(asked).toEqual([]);
   });
 });

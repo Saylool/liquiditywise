@@ -6,12 +6,12 @@ import type { Locale } from "../i18n/locales";
 import type { BotClient } from "./botApi";
 import type { SmartSnapshot } from "../analytics/smartHistory";
 import type { SmartPair } from "../analytics/smartLiquidity";
-import { listWatches, recordDigestSent, recordSnapshot, type TelegramLink } from "./links";
+import { buildChatIndex, recordDigestSent, recordSnapshot, type TelegramLink, watchesForPass } from "./links";
 import { alertText, poolRangeMovedText, smartShiftText, weeklyDigestText } from "./messages";
 import { positionChanges, snapshotOf } from "./positionChanges";
 import type { PoolWatchTarget } from "./poolWatchCommand";
 import { type PoolRangeReading, shouldTell } from "./poolRangeShift";
-import { listPoolWatchers, type PoolWatchRecord, recordRangeTold } from "./poolWatches";
+import { type PoolWatchRecord, poolWatchersForPass, recordRangeTold } from "./poolWatches";
 import { smartShifts } from "./smartShift";
 import type { KeyValueStore } from "../store/keyValueStore";
 import type { ChainId } from "../chains/chains";
@@ -20,7 +20,7 @@ import { type LeftRangeLines, recentreCost } from "./leftRange";
 import { feeYieldReader } from "./leftRangeReads";
 
 /*
- * One pass over every linked address.
+ * One pass over the linked addresses, a budget of them at a time.
  *
  * Reads each address's positions the way the page does — the same verified
  * composition, nothing estimated — compares with what it saw last time, sends
@@ -55,9 +55,38 @@ import { feeYieldReader } from "./leftRangeReads";
  * not told within a day, it is told, and what was told is kept. A pool that
  * could not be read is logged and passed over, and holds nothing else back;
  * a pass is never the slower or the shorter for one pool's source being down.
+ *
+ * **A pass has a hard budget, and takes its turn.** At most
+ * `LINKS_PER_PASS` links and `POOLS_PER_PASS` watched pools are read in one
+ * pass, however many there are: every link is a subgraph query and a sweep of
+ * contract calls, and a pass that grew with the number of readers would one
+ * day outgrow the five minutes between passes and the free tiers behind
+ * them. Which ones are read goes round: each pass starts after the last link
+ * and the last chat the one before it read, in a fixed order, so every one is
+ * read within as many passes as there are budgets' worth of them, and none is
+ * passed over for one that happens to sort first. Where the last pass
+ * stopped is kept in this process's memory (`PassCursor`) and nowhere else —
+ * a cursor in the store would be a chat's id kept after its `/stop` — and a
+ * process that has just started, with no memory of one, starts at a place of
+ * chance rather than at the top, so even a server restarted every few passes
+ * favours no one. The ceilings on links and watchers (links.ts,
+ * poolWatches.ts) keep a whole round within the day.
  */
 
+/** Links read per pass. Each is a few seconds of reads, and a pass has five minutes. */
+export const LINKS_PER_PASS = 50;
+
+/** Watched pools read per pass. Each goes through a cached reader, so most cost nothing upstream. */
+export const POOLS_PER_PASS = 100;
+
+/** Where the last pass stopped: the last token and the last chat it read. `null` before any. */
+export type PassCursor = { links: string | null; pools: string | null };
+
+/** The server's own, for as long as the process lives. */
+const processCursor: PassCursor = { links: null, pools: null };
+
 export type CheckSummary = {
+  /** Links over every chat, read this pass or not. */
   readonly watches: number;
   readonly checked: number;
   readonly unreadable: number;
@@ -65,7 +94,7 @@ export type CheckSummary = {
   readonly sent: number;
   /** Monday digests that went out this pass. */
   readonly digests: number;
-  /** Watched pools over every chat, how many of them could not be read, and how many range alerts went out. */
+  /** Watched pools read this pass, how many of them could not be read, and how many range alerts went out. */
   readonly poolWatches: number;
   readonly poolsUnreadable: number;
   readonly poolAlerts: number;
@@ -97,7 +126,14 @@ export type WatchChecking = {
   readonly readPoolRange: (target: PoolWatchTarget) => Promise<PoolRangeReading | null>;
   /** Where a pool that could not be read is noted. The default is the server's log; a test hands in its own. */
   readonly log?: (line: string) => void;
+  /** Where the last pass stopped. The default is this process's own; a test hands in its own. */
+  readonly cursor?: PassCursor;
+  /** A number in [0, 1), for where a pass with no cursor starts. The default is chance. */
+  readonly random?: () => number;
 };
+
+/** A starting place for a pass with no cursor: far enough into any set this could hold, by chance. */
+const startOf = (random: () => number): number => Math.floor(random() * 1_000_000_000);
 
 /** Whatever goes wrong in making one of the lines costs that line and nothing else. */
 const quietly = async <T>(make: () => T | Promise<T>): Promise<T | null> => {
@@ -119,11 +155,18 @@ export const checkWatches = async ({
   pairReaders,
   readPoolRange,
   log = (line) => console.error(line),
+  cursor = processCursor,
+  random = Math.random,
 }: WatchChecking): Promise<CheckSummary> => {
-  const watches = await listWatches(store);
-  if (watches === null) {
+  /* Once, on the first pass that can: the chat keys for every link made before them (links.ts). */
+  await buildChatIndex(store);
+
+  const pass = await watchesForPass(store, { budget: LINKS_PER_PASS, after: cursor.links, start: startOf(random) });
+  if (pass === null) {
     return { watches: 0, checked: 0, unreadable: 0, alerts: 0, sent: 0, digests: 0, poolWatches: 0, poolsUnreadable: 0, poolAlerts: 0, storeUnavailable: true };
   }
+  cursor.links = pass.last;
+  const watches = pass.watches;
 
   let checked = 0;
   let unreadable = 0;
@@ -199,9 +242,9 @@ export const checkWatches = async ({
     await recordSnapshot(store, token, link, snapshotOf(result.data.positions, link.snapshot), smart?.ranges);
   }
 
-  const pools = await checkPoolWatches({ store, bot, dictionary, now, readPoolRange, log });
+  const pools = await checkPoolWatches({ store, bot, dictionary, now, readPoolRange, log, cursor, random });
 
-  return { watches: watches.length, checked, unreadable, alerts, sent, digests, ...pools, storeUnavailable: false };
+  return { watches: pass.total, checked, unreadable, alerts, sent, digests, ...pools, storeUnavailable: false };
 };
 
 /**
@@ -216,14 +259,20 @@ const checkPoolWatches = async ({
   now,
   readPoolRange,
   log,
-}: Pick<WatchChecking, "store" | "bot" | "dictionary" | "now" | "readPoolRange"> & { readonly log: (line: string) => void }): Promise<
-  Pick<CheckSummary, "poolWatches" | "poolsUnreadable" | "poolAlerts">
-> => {
-  const watchers = await listPoolWatchers(store);
-  if (watchers === null) {
+  cursor,
+  random,
+}: Pick<WatchChecking, "store" | "bot" | "dictionary" | "now" | "readPoolRange"> & {
+  readonly log: (line: string) => void;
+  readonly cursor: PassCursor;
+  readonly random: () => number;
+}): Promise<Pick<CheckSummary, "poolWatches" | "poolsUnreadable" | "poolAlerts">> => {
+  const pass = await poolWatchersForPass(store, { budget: POOLS_PER_PASS, after: cursor.pools, start: startOf(random) });
+  if (pass === null) {
     log("[telegram] the set of pool watchers could not be read; no pool was checked");
     return { poolWatches: 0, poolsUnreadable: 0, poolAlerts: 0 };
   }
+  cursor.pools = pass.last;
+  const watchers = pass.watchers;
 
   let poolWatches = 0;
   let poolsUnreadable = 0;

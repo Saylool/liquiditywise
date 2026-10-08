@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { POOL_ANALYSIS_REQUEST_LIMIT } from "./lib/ratelimit/poolAnalysisRateLimiter";
+import { SERVER_ACTION_REQUEST_LIMIT } from "./lib/ratelimit/serverActionRateLimiter";
 import { proxy } from "./proxy";
 
 /*
@@ -511,5 +512,51 @@ describe("a parameter the page does not read", () => {
     }
 
     expect((await proxy(request(path, client))).status).toBe(429);
+  });
+});
+
+describe("a Server Action", () => {
+  /* An action as a script would send it: a POST with the action's id, straight to a page, with no query. */
+  const action = (path: string, client: string, cookie?: string) =>
+    new NextRequest(`http://localhost${path}`, {
+      method: "POST",
+      headers: { "x-forwarded-for": client, "next-action": "7f00deadbeef", ...(cookie === undefined ? {} : { cookie }) },
+      body: "[]",
+    });
+
+  it("is counted as an action whatever page it is sent to, with no query to charge, and refused past the limit", async () => {
+    const client = "198.51.100.60";
+    for (let i = 0; i < SERVER_ACTION_REQUEST_LIMIT; i += 1) {
+      expect((await proxy(action(i % 2 === 0 ? "/holdings" : "/weekly", client))).status).toBe(200);
+    }
+
+    const refused = await proxy(action("/holdings", client, "locale=tr"));
+    expect(refused.status).toBe(429);
+    expect(Number(refused.headers.get("retry-after"))).toBeGreaterThan(0);
+    const page = await refused.text();
+    expect(page).toContain("Çok fazla istek");
+    /* Not told it ran too many analyses: it ran none. */
+    expect(page).not.toContain("Uniswap");
+  });
+
+  it("is refused at a language's address too, which reaches the same action", async () => {
+    const client = "198.51.100.61";
+    for (let i = 0; i < SERVER_ACTION_REQUEST_LIMIT; i += 1) await proxy(action("/tr/weekly", client));
+
+    expect((await proxy(action("/de/weekly", client))).status).toBe(429);
+  });
+
+  it("does not spend a reader's allowance of actions on pages they only read", async () => {
+    const client = "198.51.100.62";
+    for (let i = 0; i < SERVER_ACTION_REQUEST_LIMIT + 5; i += 1) await proxy(request("/weekly", client));
+
+    expect((await proxy(action("/weekly", client))).status).toBe(200);
+  });
+
+  it("is still charged as an analysis when it is sent to a page that reads a pool", async () => {
+    const client = "198.51.100.63";
+    for (let i = 0; i < POOL_ANALYSIS_REQUEST_LIMIT; i += 1) await proxy(request(`/pool?address=${POOL}`, client));
+
+    expect((await proxy(action(`/pool?address=${POOL}`, client))).status).toBe(429);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { INCREMENT_SCRIPT } from "../store/keyValueStore";
 import { createUpstashKeyValueStore, type FetchLike } from "./upstashKeyValue";
 
 const answering = (result: unknown, status = 200) => {
@@ -58,5 +59,22 @@ describe("Upstash key-value store", () => {
     const fetchImpl: FetchLike = async () => new Response("not json", { status: 200 });
     expect(await store(fetchImpl).get("k")).toBeUndefined();
     expect(await store(fetchImpl).set("k", "v")).toBe(false);
+  });
+
+  it("counts a set's members, and only from a whole number", async () => {
+    const { fetchImpl, calls } = answering(4);
+    expect(await store(fetchImpl).scard("s")).toBe(4);
+    expect(calls[0]?.body).toEqual(["SCARD", "s"]);
+    expect(await store(answering("4").fetchImpl).scard("s")).toBeNull();
+    expect(await store(answering(4, 500).fetchImpl).scard("s")).toBeNull();
+  });
+
+  it("counts with the same one-step script as the Redis store, and answers no count rather than a wrong one", async () => {
+    const { fetchImpl, calls } = answering(2);
+    expect(await store(fetchImpl).increment("c", 900)).toBe(2);
+    expect(calls[0]?.body).toEqual(["EVAL", INCREMENT_SCRIPT, "1", "c", "900"]);
+    expect(await store(answering(0).fetchImpl).increment("c", 900)).toBeNull();
+    expect(await store(answering(null).fetchImpl).increment("c", 900)).toBeNull();
+    expect(await store(answering(2, 500).fetchImpl).increment("c", 900)).toBeNull();
   });
 });

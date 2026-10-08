@@ -27,6 +27,34 @@ import { type ChainId, isSupportedChainId } from "../chains/chains";
  * The daily backup (deploy/backup.sh) holds a copy for seven days more,
  * encrypted to a key that is not on the server. That is what readers are told:
  * deleted from the server at once, and from the backups within seven days.
+ *
+ * **One link per chat, and the chat's link found by the chat.** Beside each
+ * claimed link is a second key, the chat's numeric id naming its token —
+ * nothing a link does not already hold, the other way round, under the same
+ * prefix and so in the same backups and gone with the same `/stop`. It is what
+ * a command reads: a chat's `/stop`, `/smart` or `/weekly` costs one read of
+ * it and one of the link, where it used to walk every link anybody had made,
+ * and a chat that has none costs the one read. It is also what holds a chat
+ * to one link: a chat that claims a second token gives up the first, as one
+ * browser following one address always did on the site. A chat could
+ * otherwise claim as many tokens as it could mint, and every one of them
+ * would be another address read on every pass. Over every chat together
+ * there is a ceiling, `MAX_LINKED_CHATS`, past which a new chat is turned away.
+ *
+ * The store runs no transaction here, so every change that touches both keys
+ * is ordered so that a crash between two steps leaves something the next pass
+ * puts right, never a record nothing can find: the pass (checkWatches.ts) sets
+ * each link it meets against its chat's key — writes the key when it is
+ * missing or names a link that is not the chat's, and settles two links of
+ * one chat by keeping the newer — and a link is only ever deleted key first.
+ *
+ * **Made before the key existed**, a link has none, and nothing was migrated
+ * for it. The first pass after the key arrived writes one for every link —
+ * one walk, the walk every pass used to make — and leaves a mark that it has.
+ * Until the mark is there, a chat with no key is looked for the old way, so a
+ * `/stop` sent the minute after a deploy finds its link all the same; once it
+ * is, never. A chat that had claimed several links before is left with the
+ * newest, as claiming them one after another today would have left it.
  */
 
 const PREFIX = "liquiditywise:telegram:";
@@ -41,6 +69,19 @@ export const PENDING_LINK_TTL_MS = 30 * 60 * 1_000;
 export const CLAIMED_LINK_TTL_MS = 365 * 24 * 60 * 60 * 1_000;
 
 const linkKey = (token: string): string => `${PREFIX}link:${token}`;
+
+/** The token a chat has claimed, by the chat's numeric id. */
+const chatKey = (chatId: number): string => `${PREFIX}chat:${chatId}`;
+
+/** Written once a pass has given every link made before the chat keys one of its own. */
+export const CHAT_INDEX_BUILT_KEY = `${PREFIX}chat-index-built`;
+
+/**
+ * Chats with a link, over everybody. Ten thousand is far past what the site
+ * has, and a bound on what a pass can be asked to rotate through: at the pass's
+ * budget (checkWatches.ts) every link is still read within the day.
+ */
+export const MAX_LINKED_CHATS = 10_000;
 
 const LinkSchema = z.object({
   address: EvmAddressSchema,
@@ -140,15 +181,25 @@ export const createPendingLink = (
     snapshot: null,
   });
 
-export type ClaimOutcome = "claimed" | "unknown" | "already-claimed" | "unavailable";
+export type ClaimOutcome = "claimed" | "unknown" | "already-claimed" | "crowded" | "unavailable";
 
 /**
- * Ties a chat to the link its token names.
+ * Ties a chat to the link its token names, in place of any link it had.
  *
  * A token that has already been claimed is refused: the first chat to present
  * it is the one that clicked the button, and a second is somebody else who
- * saw the link. `unavailable` is the store not answering, which the caller
- * should say differently from "no such link".
+ * saw the link. `crowded` is a new chat past `MAX_LINKED_CHATS`; a chat that
+ * already has a link only swaps it, and is never turned away. `unavailable`
+ * is the store not answering, which the caller should say differently from
+ * "no such link".
+ *
+ * The steps are ordered for a crash between any two. The chat's key is
+ * written first: cut off there, it names a link that is not yet the chat's,
+ * which a command answers as no link and the pass writes back to the old one.
+ * The link next, then the set the pass walks, and the old link is let go
+ * last, so nothing is ever claimed that neither the chat's key nor the set
+ * can find. The key is written once more at the end, because a pass that met
+ * the old link in between may have pointed it back there.
  */
 export const claimLink = async (
   store: KeyValueStore,
@@ -158,12 +209,26 @@ export const claimLink = async (
   const link = await readLink(store, token);
   if (link === undefined) return "unavailable";
   if (link === null) return "unknown";
-  if (link.chatId !== null) return link.chatId === chatId ? "claimed" : "already-claimed";
+  if (link.chatId !== null && link.chatId !== chatId) return "already-claimed";
 
-  const written = await writeLink(store, token, { ...link, chatId });
-  if (!written) return "unavailable";
+  const previous = await store.get(chatKey(chatId));
+  if (previous === undefined) return "unavailable";
 
-  await store.sadd(WATCHES_KEY, token);
+  if (link.chatId === null && previous === null) {
+    const linked = await store.scard(WATCHES_KEY);
+    if (linked === null) return "unavailable";
+    if (linked >= MAX_LINKED_CHATS) return "crowded";
+  }
+
+  if (!(await store.set(chatKey(chatId), token, CLAIMED_LINK_TTL_MS))) return "unavailable";
+  /* Presented again by the chat that has it: nothing to write but what a claim cut off halfway may have missed. */
+  if (link.chatId === null && !(await writeLink(store, token, { ...link, chatId }))) return "unavailable";
+  if (!(await store.sadd(WATCHES_KEY, token))) return "unavailable";
+
+  if (previous !== null && previous !== token) {
+    await forgetLink(store, previous);
+    await store.set(chatKey(chatId), token, CLAIMED_LINK_TTL_MS);
+  }
   return "claimed";
 };
 
@@ -238,26 +303,81 @@ export const recordDigestSent = async (
   return next;
 };
 
-/** Removes a link and takes it out of the checker's set, whichever side asked. */
+/**
+ * Removes a link and takes it out of the checker's set, whichever side asked —
+ * and its chat's key, when the key still names it. The key goes first: a crash
+ * after it leaves a link the pass still walks and gives its key back, where
+ * the other order could leave a key naming nothing for a year.
+ */
 export const forgetLink = async (store: KeyValueStore, token: string): Promise<void> => {
   if (!isLinkToken(token)) return;
+  const link = await readLink(store, token);
+  if (link !== null && link !== undefined && link.chatId !== null) {
+    if ((await store.get(chatKey(link.chatId))) === token) await store.del(chatKey(link.chatId));
+  }
   await store.del(linkKey(token));
   await store.srem(WATCHES_KEY, token);
 };
 
 /**
- * Every claimed link, or `null` when the set could not be read.
- *
- * A token in the set whose record has expired or gone is dropped from the set
- * as it is met, so the set cannot grow with links that no longer exist.
+ * What `/stop` does to a chat's link: the link, its place in the set, and the
+ * chat's key whatever it names — the chat asked for everything to go, and a
+ * key left behind would be its id kept after it was told nothing is.
  */
-export const listWatches = async (
-  store: KeyValueStore,
-): Promise<readonly { readonly token: string; readonly link: TelegramLink }[] | null> => {
-  const tokens = await store.smembers(WATCHES_KEY);
-  if (tokens === null) return null;
+export const forgetChatLink = async (store: KeyValueStore, chatId: number, token: string): Promise<void> => {
+  await store.del(chatKey(chatId));
+  await forgetLink(store, token);
+};
 
-  const watches: { token: string; link: TelegramLink }[] = [];
+export type Watch = { readonly token: string; readonly link: TelegramLink };
+
+/**
+ * Sets one claimed link against its chat's key, and answers the token it let
+ * go, if any: this one or the other, whichever was the older of two links one
+ * chat holds. `null` when both, or the one, are still to be followed.
+ *
+ * The key is written when it is missing — a link made before keys existed, or
+ * a key that lapsed — or when it names something that is not this chat's link,
+ * which is what a claim cut off halfway, or a forget that could not read its
+ * link, leaves. Where it names another link of the same chat, the newer one
+ * stays: the one the chat claimed last, and the one claiming it today would
+ * have left.
+ */
+export const indexLink = async (store: KeyValueStore, token: string, link: TelegramLink): Promise<string | null> => {
+  const chatId = link.chatId;
+  if (chatId === null) return null;
+
+  const indexed = await store.get(chatKey(chatId));
+  /* Not answering is no reason to stop following anybody; the next pass asks again. */
+  if (indexed === undefined) return null;
+
+  if (indexed !== null && indexed !== token) {
+    const other = await readLink(store, indexed);
+    if (other === undefined) return null;
+    if (other !== null && other.chatId === chatId) {
+      const otherIsNewer = other.createdAt > link.createdAt || (other.createdAt === link.createdAt && indexed > token);
+      if (otherIsNewer) {
+        await forgetLink(store, token);
+        return token;
+      }
+      await store.set(chatKey(chatId), token, CLAIMED_LINK_TTL_MS);
+      await forgetLink(store, indexed);
+      return indexed;
+    }
+  }
+
+  /* Written on every visit, so the key lives as long as the link the pass keeps renewing. */
+  await store.set(chatKey(chatId), token, CLAIMED_LINK_TTL_MS);
+  return null;
+};
+
+/**
+ * Reads the links a list of tokens names, dropping from the set any whose
+ * record has expired or gone, so the set cannot grow with links that no
+ * longer exist. A token whose read did not answer is passed over and kept.
+ */
+const readWatches = async (store: KeyValueStore, tokens: readonly string[]): Promise<Watch[]> => {
+  const watches: Watch[] = [];
   for (const token of tokens) {
     const link = await readLink(store, token);
     if (link === undefined) continue;
@@ -267,22 +387,115 @@ export const listWatches = async (
     }
     watches.push({ token, link });
   }
-
   return watches;
 };
 
 /**
- * The chat that has claimed a token, found by walking the set.
- *
- * Only `/stop` needs this — a chat has no token of its own — and the set is
- * the size of the number of people who linked, so a walk is the honest cost.
+ * Up to `budget` members of a set, in a fixed order, starting after `after`
+ * and coming round again from the start: what a pass takes so that every
+ * member is reached within as many passes as the set is budgets long, however
+ * the set changes meanwhile. `after` is the last member the previous pass
+ * took — gone or not, its place in the order is still a place — and `null`
+ * starts at `start`, a position the caller picks.
  */
-export const findByChat = async (
-  store: KeyValueStore,
-  chatId: number,
-): Promise<{ readonly token: string; readonly link: TelegramLink } | null | undefined> => {
-  const watches = await listWatches(store);
-  if (watches === null) return undefined;
+export const rotation = (members: readonly string[], budget: number, after: string | null, start = 0): string[] => {
+  const ordered = [...members].sort();
+  if (ordered.length === 0) return [];
+  const next = after === null ? start % ordered.length : ordered.findIndex((member) => member > after);
+  const first = next === -1 ? 0 : next;
+  const taken: string[] = [];
+  for (let i = 0; i < Math.min(budget, ordered.length); i += 1) {
+    taken.push(ordered[(first + i) % ordered.length] as string);
+  }
+  return taken;
+};
 
-  return watches.find((watch) => watch.link.chatId === chatId) ?? null;
+/**
+ * The links one pass reads: at most `budget` of them, the next in turn after
+ * `after`, each set against its chat's key on the way (see `indexLink`). Also
+ * how many tokens the set holds, and the last one taken, for the next pass to
+ * start after. `null` when the set could not be read.
+ */
+export const watchesForPass = async (
+  store: KeyValueStore,
+  options: { readonly budget: number; readonly after: string | null; readonly start?: number },
+): Promise<{ readonly total: number; readonly watches: readonly Watch[]; readonly last: string | null } | null> => {
+  const tokens = await store.smembers(WATCHES_KEY);
+  if (tokens === null) return null;
+
+  const taken = rotation(tokens, options.budget, options.after, options.start);
+  const read = await readWatches(store, taken);
+  /* A link let go may be one already read this pass, as the older of two met in either order. */
+  const letGo = new Set<string>();
+  for (const watch of read) {
+    if (letGo.has(watch.token)) continue;
+    const dropped = await indexLink(store, watch.token, watch.link);
+    if (dropped !== null) letGo.add(dropped);
+  }
+  return { total: tokens.length, watches: read.filter((watch) => !letGo.has(watch.token)), last: taken.at(-1) ?? options.after };
+};
+
+/**
+ * Gives every link made before the chat keys one, once: walks the whole set —
+ * the walk every pass made before there were keys — and leaves the mark that
+ * ends the commands' fallback. Not marked when any link could not be read, so
+ * the next pass tries again. `true` once the mark is there.
+ */
+export const buildChatIndex = async (store: KeyValueStore): Promise<boolean> => {
+  const built = await store.get(CHAT_INDEX_BUILT_KEY);
+  if (built === undefined) return false;
+  if (built !== null) return true;
+
+  const tokens = await store.smembers(WATCHES_KEY);
+  if (tokens === null) return false;
+
+  let complete = true;
+  for (const token of tokens) {
+    const link = await readLink(store, token);
+    if (link === undefined) {
+      complete = false;
+      continue;
+    }
+    if (link === null || link.chatId === null) {
+      await store.srem(WATCHES_KEY, token);
+      continue;
+    }
+    await indexLink(store, token, link);
+  }
+
+  return complete && (await store.set(CHAT_INDEX_BUILT_KEY, "1"));
+};
+
+/**
+ * The link a chat has claimed: its key, then the link the key names.
+ *
+ * Until a pass has given the links made before keys one of their own
+ * (`buildChatIndex`), a chat with no key may still be one of them, and is
+ * looked for the old way, by walking the set — and given its key when found.
+ * After that, a chat with no key has no link, and costs one read to say so.
+ *
+ * A key naming something that is not this chat's link is deleted as it is
+ * met: whatever it named is gone, or is a claim cut off halfway, which writes
+ * the key again as it finishes.
+ */
+export const findByChat = async (store: KeyValueStore, chatId: number): Promise<Watch | null | undefined> => {
+  const indexed = await store.get(chatKey(chatId));
+  if (indexed === undefined) return undefined;
+
+  if (indexed !== null) {
+    const link = await readLink(store, indexed);
+    if (link === undefined) return undefined;
+    if (link !== null && link.chatId === chatId) return { token: indexed, link };
+    await store.del(chatKey(chatId));
+  }
+
+  const built = await store.get(CHAT_INDEX_BUILT_KEY);
+  if (built === undefined) return undefined;
+  if (built !== null) return null;
+
+  const tokens = await store.smembers(WATCHES_KEY);
+  if (tokens === null) return undefined;
+  const found = (await readWatches(store, tokens)).find((watch) => watch.link.chatId === chatId) ?? null;
+  if (found !== null) await store.set(chatKey(chatId), found.token, CLAIMED_LINK_TTL_MS);
+  return found;
 };

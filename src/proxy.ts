@@ -4,7 +4,7 @@ import { readEmbedLocale } from "./lib/embed/embedRequest";
 import { getDictionary } from "./lib/i18n/dictionaries";
 import { LOCALE_HEADER, PATH_HEADER, splitLocalePath } from "./lib/i18n/localePath";
 import { LOCALE_COOKIE, localeCookie, type Locale, resolveLocale } from "./lib/i18n/locales";
-import { spendsUpstreamQuota } from "./lib/ratelimit/chargeableRequest";
+import { isServerActionPost, spendsUpstreamQuota } from "./lib/ratelimit/chargeableRequest";
 import { clientKeyFromHeaders } from "./lib/ratelimit/clientKey";
 import { logUsage } from "./lib/observability/serverDiagnostics";
 import { checkSharedPoolAnalysisLimit } from "./lib/ratelimit/poolAnalysisSharedLimiter";
@@ -12,6 +12,7 @@ import {
   POOL_ANALYSIS_REQUEST_LIMIT,
   poolAnalysisRateLimiter,
 } from "./lib/ratelimit/poolAnalysisRateLimiter";
+import { serverActionRateLimiter } from "./lib/ratelimit/serverActionRateLimiter";
 import { EMBED_CARD_HEADERS, EMBED_CARD_PATH } from "./lib/security/responseHeaders";
 import { CARD_PAGES, EMBED_PAGES, SHARE_PAGES } from "./lib/site/indexing";
 import { visitFrom, visitLine, type Outcome } from "./lib/usage/usageLines";
@@ -124,9 +125,10 @@ export const config = {
  * cost being avoided. Only a number reaches the markup.
  *
  * It still speaks the reader's language, because being turned away is exactly
- * the moment an explanation has to land.
+ * the moment an explanation has to land. The line about analyses is left out
+ * for a form that was sent too often, which was not an analysis.
  */
-const tooManyRequestsPage = (retryAfterSeconds: number, locale: Locale): string => `<!doctype html>
+const tooManyRequestsPage = (retryAfterSeconds: number, locale: Locale, analysis: boolean): string => `<!doctype html>
 <html lang="${locale}">
   <head>
     <meta charset="utf-8" />
@@ -147,7 +149,7 @@ const tooManyRequestsPage = (retryAfterSeconds: number, locale: Locale): string 
   <body>
     <main>
       <h1>${getDictionary(locale).rateLimited.title}</h1>
-      <p>${getDictionary(locale).rateLimited.body(POOL_ANALYSIS_REQUEST_LIMIT)}</p>
+      ${analysis ? `<p>${getDictionary(locale).rateLimited.body(POOL_ANALYSIS_REQUEST_LIMIT)}</p>` : ""}
       <p>${getDictionary(locale).rateLimited.retry(retryAfterSeconds)}</p>
       <p><a href="/">${getDictionary(locale).rateLimited.back}</a></p>
     </main>
@@ -174,7 +176,7 @@ const POOL_CARD_PATH: (typeof CARD_PAGES)[number] = "/og/pool";
 /** The pages whose language is in their address rather than the reader's cookie or browser. */
 const ADDRESSED_LANGUAGE_PAGES: readonly string[] = [...EMBED_PAGES, ...SHARE_PAGES];
 
-const refuse = (retryAfterSeconds: number, locale: Locale, page: URL): NextResponse => {
+const refuse = (retryAfterSeconds: number, locale: Locale, page: URL, analysis = true): NextResponse => {
   const headers = {
     "Retry-After": String(retryAfterSeconds),
     // Never let a shared cache serve one visitor's refusal to another.
@@ -201,7 +203,7 @@ const refuse = (retryAfterSeconds: number, locale: Locale, page: URL): NextRespo
     return NextResponse.json({ error: "rate-limited", retryAfterSeconds }, { status: 429, headers });
   }
 
-  return new NextResponse(tooManyRequestsPage(retryAfterSeconds, locale), {
+  return new NextResponse(tooManyRequestsPage(retryAfterSeconds, locale, analysis), {
     status: 429,
     headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },
   });
@@ -288,6 +290,21 @@ const recordVisit = (
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const routed = route(request);
   const answer = (response: NextResponse) => openToFraming(response, routed.page);
+
+  /*
+   * A Server Action is counted as one, by what the request is rather than
+   * what its address asks for: a POST straight to a page, with no query, is
+   * how an action is sent without its form. Counted before the page's own
+   * rule, and as well as it — an action sent to a page that reads a pool is
+   * still a page that reads a pool when it is drawn again.
+   */
+  if (isServerActionPost(request.method, request.headers)) {
+    const action = serverActionRateLimiter.check(clientKeyFromHeaders(request.headers));
+    if (!action.allowed) {
+      recordVisit(request, routed, "refused");
+      return answer(refuse(action.retryAfterSeconds, routed.locale, routed.page, false));
+    }
+  }
 
   if (!spendsUpstreamQuota(routed.page.searchParams, routed.page.pathname)) {
     recordVisit(request, routed, "served");
