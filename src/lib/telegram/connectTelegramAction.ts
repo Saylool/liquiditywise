@@ -6,10 +6,11 @@ import { redirect } from "next/navigation";
 import { EvmAddressSchema } from "../../schemas/primitives";
 import { getRequestLocale } from "../i18n/requestLocale";
 import { telegramSetup } from "./environment";
-import { createPendingLink, forgetLink, PENDING_LINK_TTL_MS, readLink, TELEGRAM_LINK_COOKIE } from "./links";
+import { createPendingLink, forgetLink, readLink, TELEGRAM_LINK_COOKIE } from "./links";
 import { newLinkToken } from "./linkToken";
+import { TELEGRAM_LINK_BUDGET } from "./telegramLinkBudget";
 import { chainBySlug, ETHEREUM } from "../chains/chains";
-import { type ActionBudget, spendActionBudget } from "../ratelimit/actionBudget";
+import { spendActionBudget } from "../ratelimit/actionBudget";
 import { clientKeyFromHeaders } from "../ratelimit/clientKey";
 
 /*
@@ -27,7 +28,7 @@ import { clientKeyFromHeaders } from "../ratelimit/clientKey";
  * **Asking is budgeted, inside the action.** It is a POST anybody can send
  * without the page, and each one used to be a fresh record in the store: a
  * loop could have filled it. So before anything is written the request is
- * counted (ratelimit/actionBudget.ts) — `TELEGRAM_LINK_BUDGET.perClient` per
+ * counted (ratelimit/actionBudget.ts) — `TELEGRAM_LINK_BUDGET.perClient` (telegramLinkBudget.ts) per
  * client and `TELEGRAM_LINK_BUDGET.global` over everybody, per half hour, the
  * life of a pending link, so at most twice the global count is ever pending
  * at once. And a browser that already has a pending link gives it up before
@@ -39,14 +40,6 @@ import { clientKeyFromHeaders } from "../ratelimit/clientKey";
  * Refused, the action does nothing and the page is drawn again as it was, as
  * for every other request it cannot act on.
  */
-
-/** Per half hour: a reader trying two or three addresses, and a mistake or two. */
-export const TELEGRAM_LINK_BUDGET: ActionBudget = {
-  action: "telegram-link",
-  perClient: 5,
-  global: 300,
-  windowMs: PENDING_LINK_TTL_MS,
-};
 
 export const connectTelegram = async (formData: FormData): Promise<void> => {
   const setup = telegramSetup();

@@ -83,7 +83,7 @@ describe("starting to follow an address", () => {
 
 describe("what asking can write", () => {
   it("holds one client to its budget, posting straight to the action with no cookie and no page", async () => {
-    const { TELEGRAM_LINK_BUDGET } = await import("./connectTelegramAction");
+    const { TELEGRAM_LINK_BUDGET } = await import("./telegramLinkBudget");
     for (let n = 0; n < TELEGRAM_LINK_BUDGET.perClient; n += 1) expect(await connect()).not.toBeNull();
 
     state.redirected = null;
@@ -93,7 +93,7 @@ describe("what asking can write", () => {
   });
 
   it("holds everybody together to the ceiling, however many clients they are", async () => {
-    const { TELEGRAM_LINK_BUDGET } = await import("./connectTelegramAction");
+    const { TELEGRAM_LINK_BUDGET } = await import("./telegramLinkBudget");
     for (let n = 0; n < TELEGRAM_LINK_BUDGET.global; n += 1) {
       state.client = `10.0.${Math.floor(n / 250)}.${n % 250}`;
       await connect();
